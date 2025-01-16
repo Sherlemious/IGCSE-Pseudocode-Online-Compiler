@@ -131,6 +131,7 @@ celerybeat.pid
 .env
 .venv
 env/
+backend/venv
 venv/
 ENV/
 env.bak/
@@ -169,3 +170,31 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+# backend development
+backend/.vscode
+backend/.idea
+backend/node_modules
+backend/dist
+backend/certs
+backend/src/uploads
+backend/uploads
+backend/tmp
+
+# backend .env
+backend/.env
+backend/.env.local
+backend/.env.development
+backend/.env.test
+backend/.env.production
+
+# frontend
+frontend/node_modules
+frontend/dist
+
+# frontend .env
+frontend/.env
+frontend/.env.local
+frontend/.env.development
+frontend/.env.test
+frontend/.env.production
