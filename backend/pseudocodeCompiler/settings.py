@@ -13,7 +13,7 @@ SECRET_KEY = 'django-insecure-3%p+ixn*2#efyjuiy1xee#7*n)tr&2=$02&x+#0y^j@d6k+qv%
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['igcse-pseudocode-online-compiler.onrender.com']
 
 
 # Application definition
