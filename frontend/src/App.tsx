@@ -1,9 +1,15 @@
-import './App.css'
+import React from 'react';
+import Home from './pages/home';
 
-function App() {
+const App: React.FC = () => {
   return (
-    <div></div>
-  )
-}
+    <div className="flex flex-col min-h-screen">
+      {/* Main Content */}
+      <main className="flex-grow overflow-auto">
+        <Home />
+      </main>
+    </div>
+  );
+};
 
-export default App
+export default App;
