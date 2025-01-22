@@ -1,9 +1,17 @@
+declare global {
+  interface Window {
+    loadPyodide: (config: { indexURL: string }) => Promise<any>;
+    pyodide: any;
+    pyodideLoading: Promise<any> | null;
+  }
+}
+
 /**
  * Loads the Pyodide script if not already loaded.
  * @returns {Promise<void>}
  */
 const loadPyodideScript = async (): Promise<void> => {
-  if (!(window as any).loadPyodide) {
+  if (!window.loadPyodide) {
     const script = document.createElement('script');
     script.src = 'https://cdn.jsdelivr.net/pyodide/v0.18.1/full/pyodide.js';
     script.onload = () => {
@@ -15,9 +23,9 @@ const loadPyodideScript = async (): Promise<void> => {
     document.head.appendChild(script);
 
     // Wait for the script to load
-    await new Promise((resolve, reject) => {
-      script.onload = resolve;
-      script.onerror = reject;
+    await new Promise<void>((resolve, reject) => {
+      script.onload = () => resolve();
+      script.onerror = () => reject(new Error('Failed to load Pyodide script'));
     });
   }
 };
@@ -33,25 +41,22 @@ export const runPythonCode = async (pythonCode: string): Promise<string> => {
     await loadPyodideScript();
 
     // Check if Pyodide is already loaded or loading
-    if (!(window as any).pyodide) {
-      // Load Pyodide with indexURL
-      (window as any).pyodide = await (window as any).loadPyodide({
-        indexURL: 'https://cdn.jsdelivr.net/pyodide/v0.18.1/full/',
-      });
-    } else if ((window as any).pyodideLoading) {
-      // Wait for the existing loading process to complete
-      await (window as any).pyodideLoading;
-    } else {
-      // Mark Pyodide as loading
-      (window as any).pyodideLoading = (window as any).loadPyodide({
-        indexURL: 'https://cdn.jsdelivr.net/pyodide/v0.18.1/full/',
-      });
-      (window as any).pyodide = await (window as any).pyodideLoading;
-      delete (window as any).pyodideLoading;
+    if (!window.pyodide) {
+      if (!window.pyodideLoading) {
+        // Load Pyodide with indexURL
+        window.pyodideLoading = window.loadPyodide({
+          indexURL: 'https://cdn.jsdelivr.net/pyodide/v0.18.1/full/',
+        });
+        window.pyodide = await window.pyodideLoading;
+        window.pyodideLoading = null;
+      } else {
+        // Wait for the existing loading process to complete
+        await window.pyodideLoading;
+      }
     }
 
     // Run the Python code in the browser
-    const output = (window as any).pyodide.runPython(pythonCode);
+    const output = window.pyodide.runPython(pythonCode);
 
     return output;
   } catch (error) {
