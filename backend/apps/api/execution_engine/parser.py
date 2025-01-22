@@ -194,8 +194,6 @@ class PseudocodeConverter:
             result = self.process_input_line(line)
             if result:
                 self.output_lines.append(result)
-                
-        self.output_lines.append('input("Press enter to exit ")')
 
         return self.output_lines
 
