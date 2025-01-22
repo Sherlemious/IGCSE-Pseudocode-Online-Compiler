@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import CodeInput from '../components/compiler/codeInput';
 import OutputDisplay from '../components/compiler/outputDisplay';
 import { compilePseudocode } from '../utils/api';
-import { runPythonCode } from '../utils/runPython';
+import runPythonCode from '../utils/runPython';
 
 const Home: React.FC = () => {
   const [code, setCode] = useState('');
@@ -22,9 +22,7 @@ const Home: React.FC = () => {
       setOutput([]);
 
       const pythonCode = await compilePseudocode(code);
-      await runPythonCode(pythonCode, (message) => {
-        setOutput((prevOutput) => [...prevOutput, message]);
-      });
+      runPythonCode(pythonCode, setOutput);
     } catch (error) {
       setError(error instanceof Error ? error.message : 'An unknown error occurred');
     } finally {
