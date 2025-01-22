@@ -17,7 +17,6 @@ export const compilePseudocode = async (pseudocode: string): Promise<string> => 
     // Format the compiled Python code by replacing \n with actual line breaks and \" with "
     let formattedPythonCode: string = response.data.python_code.replace(/\\n/g, '\n');
     formattedPythonCode = formattedPythonCode.replace(/\\"/g, '"');
-    console.log('Formatted Python code:', formattedPythonCode);
     // Return the formatted Python code from the backend response
     return formattedPythonCode;
   } catch (error) {

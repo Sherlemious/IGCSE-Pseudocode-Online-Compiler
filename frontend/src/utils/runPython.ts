@@ -1,41 +1,12 @@
-declare global {
-  interface Window {
-    loadPyodide: (config: { indexURL: string }) => Promise<any>;
-    pyodide: any;
-    pyodideLoading: Promise<any> | null;
-  }
-}
-
-/**
- * Loads the Pyodide script if not already loaded.
- * @returns {Promise<void>}
- */
-const loadPyodideScript = async (): Promise<void> => {
-  if (!window.loadPyodide) {
-    const script = document.createElement('script');
-    script.src = 'https://cdn.jsdelivr.net/pyodide/v0.18.1/full/pyodide.js';
-    script.onload = () => {
-      console.log('Pyodide script loaded successfully');
-    };
-    script.onerror = () => {
-      console.error('Failed to load Pyodide script');
-    };
-    document.head.appendChild(script);
-
-    // Wait for the script to load
-    await new Promise<void>((resolve, reject) => {
-      script.onload = () => resolve();
-      script.onerror = () => reject(new Error('Failed to load Pyodide script'));
-    });
-  }
-};
+import loadPyodideScript from './loadPyodideScript'; // Assuming you have a separate file for loading Pyodide
 
 /**
  * Runs the compiled Python code in the browser using Pyodide.
  * @param {string} pythonCode - The Python code to execute.
- * @returns {Promise<string>} - Resolves with the result of the Python execution.
+ * @param {(message: string) => void} onOutput - Callback to handle output messages.
+ * @returns {Promise<void>} - Resolves when the Python execution is complete.
  */
-export const runPythonCode = async (pythonCode: string): Promise<string> => {
+export const runPythonCode = async (pythonCode: string, onOutput: (message: string) => void): Promise<void> => {
   try {
     // Load Pyodide script if not already loaded
     await loadPyodideScript();
@@ -55,10 +26,21 @@ export const runPythonCode = async (pythonCode: string): Promise<string> => {
       }
     }
 
-    // Run the Python code in the browser
-    const output = window.pyodide.runPython(pythonCode);
+    // Set up input handling using prompt
+    window.pyodide.globals.set('input', () => prompt('Enter input:') || '');
 
-    return output;
+    // Capture the output
+    const originalConsoleLog = console.log;
+    console.log = (message: any) => {
+      onOutput(message);
+      originalConsoleLog(message);
+    };
+
+    // Run the Python code in the browser
+    window.pyodide.runPython(pythonCode);
+
+    // Restore the original console.log
+    console.log = originalConsoleLog;
   } catch (error) {
     console.error('Error running Python code:', error);
     throw new Error('Failed to execute Python code in the browser');
