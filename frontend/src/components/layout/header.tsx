@@ -16,15 +16,15 @@ const Header: React.FC = () => {
             How to Use
           </Link>
           <a
-            href="https://github.com/sherlemious"
+            href="https://github.com/Sherlemious/IGCSE-Pseudocode-Online-Compiler"
             className="text-light-text hover:text-secondary transition duration-200"
             target="_blank"
             rel="noopener noreferrer"
           >
-            GitHub
+            GitHub Repo
           </a>
           <a
-            href="https://sherlemious.github.io/portfolio"
+            href="https://www.sherlemious.com"
             className="text-light-text hover:text-secondary transition duration-200"
             target="_blank"
             rel="noopener noreferrer"
