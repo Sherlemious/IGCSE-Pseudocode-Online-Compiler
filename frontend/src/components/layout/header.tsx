@@ -1,35 +1,33 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router-dom'; // Ensure this import is correct
 
 const Header: React.FC = () => {
   return (
-    <header className="bg-primary dark:bg-dark-primary text-light-text px-6 py-4">
-      <div className="max-w-144 mx-auto flex flex-col sm:flex-row justify-between items-center gap-4">
-        <h1 className="text-xl font-bold">
-          <Link to="/" className="hover:text-secondary transition-colors duration-200">
+    <header className="bg-primary text-light-text shadow-cool h-16">
+      <div className="max-w-screen-xl mx-auto px-4 py-4 flex justify-between items-center">
+        <div className="text-xl font-semibold">
+          <Link to="/" className="hover:text-secondary transition duration-200">
             Pseudocode Compiler
           </Link>
-        </h1>
-        <nav className="flex flex-wrap justify-center gap-6 sm:gap-8">
-          <Link to="/" className="hover:text-secondary transition-colors duration-200">
-            Home
-          </Link>
-          <Link to="/how-to-use" className="hover:text-secondary transition-colors duration-200">
+        </div>
+
+        <nav className="space-x-6">
+          <Link to="/how-to-use" className="text-light-text hover:text-secondary transition duration-200">
             How to Use
           </Link>
           <a
-            href="https://github.com/sherlemious"
+            href="https://github.com/Sherlemious/IGCSE-Pseudocode-Online-Compiler"
+            className="text-light-text hover:text-secondary transition duration-200"
             target="_blank"
             rel="noopener noreferrer"
-            className="hover:text-secondary transition-colors duration-200"
           >
-            GitHub
+            GitHub Repo
           </a>
           <a
-            href="https://linkedin.com/in/sherlemious"
+            href="https://www.sherlemious.com"
+            className="text-light-text hover:text-secondary transition duration-200"
             target="_blank"
             rel="noopener noreferrer"
-            className="hover:text-secondary transition-colors duration-200"
           >
             Portfolio
           </a>
