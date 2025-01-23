@@ -5,7 +5,7 @@ module.exports = {
     extend: {
       colors: {
         // Dark Mode Default Colors
-        primary: '#06B6D4', // Cool Indigo
+        primary: '#06B6D4', // Bright Blue
         secondary: '#F43F5E', // Vibrant Pink-Red
         accent: '#10B981', // Emerald Green
         background: '#18181B', // Near Black Background

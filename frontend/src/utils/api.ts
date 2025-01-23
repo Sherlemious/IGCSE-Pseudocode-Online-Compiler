@@ -12,10 +12,13 @@ export const compilePseudocode = async (pseudocode: string): Promise<string> => 
     const apiUrl = API_PATHS.postCompileCode();
 
     // Call the backend to get the Python code
-    const response = await axios.post(apiUrl, { code: pseudocode });
+    const response = await axios.post(apiUrl, { pseudocode: pseudocode });
 
-    // Return the compiled Python code from the backend response
-    return response.data.pythonCode;
+    // Format the compiled Python code by replacing \n with actual line breaks and \" with "
+    let formattedPythonCode: string = response.data.python_code.replace(/\\n/g, '\n');
+    formattedPythonCode = formattedPythonCode.replace(/\\"/g, '"');
+    // Return the formatted Python code from the backend response
+    return formattedPythonCode;
   } catch (error) {
     console.error('Error compiling pseudocode:', error);
     if (axios.isAxiosError(error) && error.response) {

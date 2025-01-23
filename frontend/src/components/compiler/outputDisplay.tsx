@@ -9,7 +9,7 @@ interface OutputDisplayProps {
 const OutputDisplay: React.FC<OutputDisplayProps> = ({ output, error, isLoading }) => {
   return (
     <div className="flex-1 flex flex-col p-6">
-      <h2 className="text-2xl font-sans font-semibold text-light-text mb-4">Output</h2>
+      <h2 className="text-2xl font-sans font-semibold text-light-text mb-6 mt-2">Output</h2>
 
       <div
         className="flex-1 min-h-0 bg-background
