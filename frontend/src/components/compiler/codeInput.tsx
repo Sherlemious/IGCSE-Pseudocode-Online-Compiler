@@ -9,7 +9,7 @@ interface CodeInputProps {
 
 const CodeInput: React.FC<CodeInputProps> = ({ code, onCodeChange, onRunCode, isLoading }) => {
   return (
-    <div className="flex-1 flex flex-col p-6 border-r border-dark-text">
+    <div className="min-h-full flex-1 flex flex-col p-6 border-r border-dark-text">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-2xl font-sans font-semibold text-light-text">Pseudocode Editor</h2>
         <button

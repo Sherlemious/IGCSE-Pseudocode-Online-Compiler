@@ -31,8 +31,8 @@ const Home: React.FC = () => {
   };
 
   return (
-    <div className="h-screen flex flex-col bg-background text-light-text overflow-hidden">
-      <div className="flex-1 flex flex-col lg:flex-row">
+    <div className="min-h-full flex flex-col bg-background text-light-text overflow-hidden">
+      <div className=" flex-1 flex flex-col lg:flex-row">
         <CodeInput code={code} onCodeChange={setCode} onRunCode={handleRunCode} isLoading={isLoading} />
         <OutputDisplay output={output.join('\n')} error={error} isLoading={isLoading} />
       </div>
