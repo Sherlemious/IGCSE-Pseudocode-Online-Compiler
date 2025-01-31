@@ -180,6 +180,8 @@ backend/certs
 backend/src/uploads
 backend/uploads
 backend/tmp
+backend/apps/api/execution_engine/input.txt
+backend/apps/api/execution_engine/output.py
 
 # backend .env
 backend/.env
