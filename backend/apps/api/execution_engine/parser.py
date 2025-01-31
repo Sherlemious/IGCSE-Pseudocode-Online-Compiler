@@ -39,7 +39,8 @@ class PseudocodeConverter:
         # Handle single equals for comparison
         for i, char in enumerate(result):
             if (char == "=" and i > 0 and i < len(result) - 1 and
-                result[i-1] != '!' and result[i-1] != '=' and result[i+1] != '='):
+                result[i-1] != '!' and result[i-1] != '=' and result[i+1] != '=' and
+                result[i-1] != '<' and result[i-1] != '>'):
                 result = f"{result[:i]}=={result[i+1:]}"
                 
         return result
@@ -116,7 +117,24 @@ class PseudocodeConverter:
             if 'THEN' in condition.upper():
                 condition = condition[:condition.upper().find('THEN')].strip()
             return f"{indent}if {self.convert_condition(condition)}:"
-            
+        
+        elif upper_line.startswith('ELSE'):
+            # Handle the else indentation
+            self.state.indent_level -= 4
+            indent = " " * self.state.indent_level
+            self.state.indent_level += 4
+
+            # Check if the ELSE is part of an ELSE IF, and convert it to elif
+            if 'IF' in upper_line:
+                # 'ELSE IF' is the same as 'ELSEIF' in pseudocode, 'ELSE IF' is 7 characters long
+                condition = line[7:].strip()
+                # Remove the Then if it exists
+                if 'THEN' in condition.upper():
+                    condition = condition[:condition.upper().find('THEN')].strip()
+                return f"{indent}elif {self.convert_condition(condition)}:"
+
+            return f"{indent}else:"
+
         elif upper_line.startswith('FOR'):
             self.state.indent_level += 4
             var, start, end = self.parse_for_loop(line)
@@ -194,8 +212,6 @@ class PseudocodeConverter:
             result = self.process_input_line(line)
             if result:
                 self.output_lines.append(result)
-                
-        self.output_lines.append('input("Press enter to exit ")')
 
         return self.output_lines
 
