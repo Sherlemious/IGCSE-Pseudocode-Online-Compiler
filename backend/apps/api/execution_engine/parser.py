@@ -140,28 +140,26 @@ class PseudocodeConverter:
         upper_line = line.upper()
 
         # Handle procedure definitions
+        # In the PROCEDURE branch, remove .lower():
         if upper_line.startswith('PROCEDURE'):
-            # Match syntax: PROCEDURE ProcName(param1 : Type, param2 : Type, ...)
             match = re.match(r'PROCEDURE\s+(\w+)\((.*?)\)', line, re.IGNORECASE)
             if match:
                 proc_name, params = match.groups()
-                # Extract parameter names (ignoring types)
                 param_list = []
                 for param in params.split(','):
                     param_name = param.split(':')[0].strip()
                     param_list.append(param_name)
                 params_str = ", ".join(param_list)
                 self.state.indent_level += 4
-                return f"{indent}def {proc_name.lower()}({params_str}):"
+                return f"{indent}def {proc_name}({params_str}):"
             else:
                 raise ValueError("Invalid PROCEDURE syntax")
 
+        # In the FUNCTION branch, remove .lower() for both versions:
         elif upper_line.startswith('FUNCTION'):
-            # Try matching a function with parameters:
             match = re.match(r"FUNCTION\s+(\w+)\s*\((.*?)\)\s+RETURNS\s+(\w+)", line, re.IGNORECASE)
             if match:
                 func_name, params, ret_type = match.groups()
-                # Extract parameter names (ignoring data types)
                 param_list = []
                 for param in params.split(','):
                     if param.strip():
@@ -169,16 +167,19 @@ class PseudocodeConverter:
                         param_list.append(param_name)
                 params_str = ", ".join(param_list)
                 self.state.indent_level += 4
-                return f"{indent}def {func_name.lower()}({params_str}):  # Returns {ret_type}"
+                return f"{indent}def {func_name}({params_str}):  # Returns {ret_type}"
             else:
-                # Match a function without parameters
                 match = re.match(r"FUNCTION\s+(\w+)\s+RETURNS\s+(\w+)", line, re.IGNORECASE)
                 if match:
                     func_name, ret_type = match.groups()
                     self.state.indent_level += 4
-                    return f"{indent}def {func_name.lower()}():  # Returns {ret_type}"
+                    return f"{indent}def {func_name}():  # Returns {ret_type}"
                 else:
                     raise ValueError("Invalid FUNCTION syntax")
+        elif upper_line.startswith('RETURN'):
+            expr = line[len("RETURN"):].strip()
+            expr = self.evaluate_expression(expr)
+            return f"{indent}return {expr}"
 
         # Handle DECLARE statements (including arrays and scalar variables)
         elif upper_line.startswith('DECLARE'):
@@ -218,13 +219,13 @@ class PseudocodeConverter:
         elif upper_line.startswith('CALL'):
             call_content = line[4:].strip()
             if '(' in call_content and call_content.endswith(')'):
-                proc_name = call_content[:call_content.find('(')].strip()
+                proc_name = call_content[:call_content.find('(')].strip()  # no .lower()
                 params = call_content[call_content.find('(')+1: call_content.rfind(')')].strip()
                 params_eval = self.evaluate_expression(params)
-                return f"{indent}{proc_name.lower()}({params_eval})"
+                return f"{indent}{proc_name}({params_eval})"
             else:
                 proc_name = call_content.strip()
-                return f"{indent}{proc_name.lower()}()"
+                return f"{indent}{proc_name}()"
 
         # Handle array initialization
         elif '=' in line and '[' in line:
