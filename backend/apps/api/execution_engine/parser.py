@@ -1,5 +1,6 @@
 import os
 from dataclasses import dataclass
+import re
 from typing import List, Optional, Dict, Set
 
 @dataclass
@@ -21,14 +22,72 @@ class PseudocodeConverter:
         'random': 'random.random',
         'INT': 'int',
         'LENGTH': 'len',
-        'length': 'len'
+        'length': 'len',
+        'LCASE': 'LCASE',
+        'UCASE': 'UCASE',
+        'SUBSTRING': 'SUBSTRING',
+        'ROUND': 'round'
     }
 
     def __init__(self):
         self.state = CodeState()
-        self.output_lines = ["import random", "import math"]
+        self.output_lines = [
+            "import random",
+            "import math",
+            "",
+            "def LCASE(s):",
+            "    return s.lower()",
+            "",
+            "def UCASE(s):",
+            "    return s.upper()",
+            "",
+            "def SUBSTRING(s, start, length):",
+            "    # Adjust for 1-based indexing",
+            "    return s[start-1:start-1+length]",
+            "",
+            "# ROUND is provided by Python's built-in round function",
+        ]        
         self.array_declarations: Set[str] = set()
         self.explicit_arrays: Dict[str, bool] = {}  # Tracks arrays with explicit initialization
+
+    def insensitive_replace(self, text: str, old: str, new: str) -> str:
+        pattern = re.compile(re.escape(old), re.IGNORECASE)
+        return pattern.sub(new, text)
+    
+    def handle_string_concatenation(self, expression: str) -> str:
+        """
+        Detects plus operators between a string literal and a numeric expression,
+        and wraps the numeric expression with str() to avoid type errors.
+        This is a simple heuristic; more robust handling might require proper parsing.
+        """
+        import re
+        # Split the expression by the plus operator while preserving it.
+        tokens = re.split(r'(\+)', expression)
+        # Check if any token is a string literal.
+        has_string = any(token.strip().startswith(('"', "'")) for token in tokens if token.strip() and token != '+')
+        if not has_string:
+            return expression
+
+        new_tokens = []
+        for token in tokens:
+            stripped = token.strip()
+            # Skip the plus operator.
+            if token == '+':
+                new_tokens.append(token)
+            # Leave string literals untouched.
+            elif stripped.startswith(('"', "'")) and stripped.endswith(('"', "'")):
+                new_tokens.append(token)
+            # For other tokens, wrap with str() if they are not already wrapped.
+            elif stripped:
+                # Avoid double-wrapping if already a str(...) call.
+                if not re.match(r'str\s*\(.*\)', token):
+                    new_tokens.append(f"str({token.strip()})")
+                else:
+                    new_tokens.append(token)
+            else:
+                new_tokens.append(token)
+        return ''.join(new_tokens)
+
 
     def convert_condition(self, statement: str) -> str:
         """Converts pseudocode conditional statements to Python syntax."""
@@ -53,37 +112,23 @@ class PseudocodeConverter:
             result = result.replace(old, new)
             
         for old, new in self.BUILTIN_MAPPINGS.items():
-            result = result.replace(old, new)
-            
+            result = self.insensitive_replace(result, old, new)
+        
+        # Handle cases where '+' is used between strings and numbers
+        result = self.handle_string_concatenation(result)
         return result
 
-    def parse_for_loop(self, line: str) -> tuple[str, int, str]:
-        """Parse FOR loop components safely."""
-        parts = line[3:].strip().split(None, 1)
-        if not parts:
+    def parse_for_loop(self, line: str) -> tuple[str, str, str, Optional[str]]:
+        """
+        Parse FOR loop components: "FOR <identifier> ← <value1> TO <value2> STEP <increment>"
+        STEP clause is optional.
+        """
+        pattern = r"FOR\s+(\w+)\s*[←=]\s*(.+?)\s+TO\s+(.+?)(?:\s+STEP\s+(.+))?$"
+        match = re.match(pattern, line, re.IGNORECASE)
+        if not match:
             raise ValueError("Invalid FOR loop syntax")
-            
-        var_part = parts[0]
-        rest = parts[1] if len(parts) > 1 else ""
-        
-        to_split = None
-        for to_variant in ['TO', 'To', 'to']:
-            if to_variant in rest:
-                to_split = rest.split(to_variant)
-                break
-                
-        if not to_split or len(to_split) != 2:
-            raise ValueError("Invalid FOR loop syntax: missing TO")
-            
-        start_val = to_split[0].replace('=', '').strip()
-        end_val = to_split[1].strip()
-        
-        try:
-            start_num = int(start_val) - 1
-        except ValueError:
-            raise ValueError(f"Invalid start value in FOR loop: {start_val}")
-            
-        return var_part, start_num, end_val
+        var, start, end, step = match.groups()
+        return var, start.strip(), end.strip(), step.strip() if step else None
 
     def process_input_line(self, line: str) -> Optional[str]:
         """Processes a single line of pseudocode and returns Python equivalent."""
@@ -94,8 +139,95 @@ class PseudocodeConverter:
         indent = " " * self.state.indent_level
         upper_line = line.upper()
 
+        # Handle procedure definitions
+        if upper_line.startswith('PROCEDURE'):
+            # Match syntax: PROCEDURE ProcName(param1 : Type, param2 : Type, ...)
+            match = re.match(r'PROCEDURE\s+(\w+)\((.*?)\)', line, re.IGNORECASE)
+            if match:
+                proc_name, params = match.groups()
+                # Extract parameter names (ignoring types)
+                param_list = []
+                for param in params.split(','):
+                    param_name = param.split(':')[0].strip()
+                    param_list.append(param_name)
+                params_str = ", ".join(param_list)
+                self.state.indent_level += 4
+                return f"{indent}def {proc_name.lower()}({params_str}):"
+            else:
+                raise ValueError("Invalid PROCEDURE syntax")
+
+        elif upper_line.startswith('FUNCTION'):
+            # Try matching a function with parameters:
+            match = re.match(r"FUNCTION\s+(\w+)\s*\((.*?)\)\s+RETURNS\s+(\w+)", line, re.IGNORECASE)
+            if match:
+                func_name, params, ret_type = match.groups()
+                # Extract parameter names (ignoring data types)
+                param_list = []
+                for param in params.split(','):
+                    if param.strip():
+                        param_name = param.split(':')[0].strip()
+                        param_list.append(param_name)
+                params_str = ", ".join(param_list)
+                self.state.indent_level += 4
+                return f"{indent}def {func_name.lower()}({params_str}):  # Returns {ret_type}"
+            else:
+                # Match a function without parameters
+                match = re.match(r"FUNCTION\s+(\w+)\s+RETURNS\s+(\w+)", line, re.IGNORECASE)
+                if match:
+                    func_name, ret_type = match.groups()
+                    self.state.indent_level += 4
+                    return f"{indent}def {func_name.lower()}():  # Returns {ret_type}"
+                else:
+                    raise ValueError("Invalid FUNCTION syntax")
+
+        # Handle DECLARE statements (including arrays and scalar variables)
+        elif upper_line.startswith('DECLARE'):
+            if 'ARRAY' in upper_line:
+                # Handles array declarations as empty dictionaries.
+                # Example: DECLARE StudentNames : ARRAY[1:30] OF STRING
+                pattern = r"DECLARE\s+(\w+)\s*:\s*ARRAY\[(.*?)\]\s+OF\s+(\w+)"
+                match = re.match(pattern, line, re.IGNORECASE)
+                if match:
+                    var_name, dims, type_name = match.groups()
+                    dims = dims.strip()
+                    return f"{indent}{var_name} = {{}}  # Array with dimensions [{dims}] of type {type_name}"
+                else:
+                    raise ValueError("Invalid DECLARE ARRAY syntax")
+            else:
+                # Handles scalar declarations, e.g.: DECLARE Counter : INTEGER
+                pattern = r"DECLARE\s+(\w+)\s*:\s*(\w+)"
+                match = re.match(pattern, line, re.IGNORECASE)
+                if match:
+                    var_name, type_name = match.groups()
+                    return f"{indent}{var_name} = None  # Declared as {type_name}"
+                else:
+                    raise ValueError("Invalid DECLARE syntax")
+
+        # Handle CONSTANT declarations, for example:
+        # CONSTANT HourlyRate ← 6.50
+        # CONSTANT DefaultText ← "N/A"
+        elif upper_line.startswith('CONSTANT'):
+            pattern = r"CONSTANT\s+(\w+)\s*=\s*(.+)"
+            match = re.match(pattern, line, re.IGNORECASE)
+            if match:
+                var_name, value = match.groups()
+                return f"{indent}{var_name} = {value}"
+            else:
+                raise ValueError("Invalid CONSTANT syntax")
+
+        elif upper_line.startswith('CALL'):
+            call_content = line[4:].strip()
+            if '(' in call_content and call_content.endswith(')'):
+                proc_name = call_content[:call_content.find('(')].strip()
+                params = call_content[call_content.find('(')+1: call_content.rfind(')')].strip()
+                params_eval = self.evaluate_expression(params)
+                return f"{indent}{proc_name.lower()}({params_eval})"
+            else:
+                proc_name = call_content.strip()
+                return f"{indent}{proc_name.lower()}()"
+
         # Handle array initialization
-        if '=' in line and '[' in line:
+        elif '=' in line and '[' in line:
             var_name = line[:line.find('=')].strip()
             if '[' in var_name:  # This is an array access, not initialization
                 return f"{indent}{self.evaluate_expression(line)}"
@@ -105,7 +237,7 @@ class PseudocodeConverter:
                 return f"{indent}{var_name} = {value}"
             
         # Control structures
-        if upper_line.startswith('WHILE'):
+        elif upper_line.startswith('WHILE'):
             self.state.indent_level += 4
             condition = line[5:].split('DO')[0].strip()
             return f"{indent}while {self.convert_condition(condition)}:"
@@ -137,11 +269,14 @@ class PseudocodeConverter:
 
         elif upper_line.startswith('FOR'):
             self.state.indent_level += 4
-            var, start, end = self.parse_for_loop(line)
-            return f"{indent}for {var} in range({start}, {end}):"
+            var, start, end, step = self.parse_for_loop(line)
+            if step:
+                return f"{indent}for {var} in range({start}, {end}, {step}):"
+            else:
+                return f"{indent}for {var} in range({start}, {end}):"
             
         # Block endings
-        elif upper_line in ('ENDWHILE', 'ENDIF', 'NEXT'):
+        elif re.search(r"\b(ENDWHILE|ENDIF|NEXT|ENDFUNCTION|ENDPROCEDURE)\b", upper_line):
             self.state.indent_level -= 4
             return None
             
@@ -150,18 +285,45 @@ class PseudocodeConverter:
             content = line[5:].strip()
             if content == '':  # Empty print
                 return f"{indent}print()"
+            content = self.evaluate_expression(content)
+            return f"{indent}print({content})"
+        
+        elif upper_line.startswith('OUTPUT'):
+            content = line[6:].strip()
+            if content == '':
+                return f"{indent}print('')"
+            content = self.evaluate_expression(content)
             return f"{indent}print({content})"
             
         elif upper_line.startswith('INPUT'):
-            var = line[5:].strip()
-            return f"{indent}{var} = eval(input())"
-            
-        # Assignment
+            content = line[5:].strip()
+            # Check if the input line contains a prompt expression and a variable separated by whitespace
+            parts = content.rsplit(maxsplit=1)
+            if len(parts) == 2:
+                prompt_expr, var = parts
+                # Evaluate the prompt expression to apply concatenation handling and built-in mappings
+                prompt_expr_evaluated = self.evaluate_expression(prompt_expr)
+                return f"{indent}{var} = eval(input({prompt_expr_evaluated}))"
+            else:
+                # Fallback: if there's no variable part, assume entire content is a prompt
+                # Check if a prompt string is included (starts with a quote)
+                if content and content[0] in ('"', "'"):
+                    quote_char = content[0]
+                    end_quote_index = content.find(quote_char, 1)
+                    if end_quote_index == -1:
+                        raise ValueError("INPUT prompt string not terminated")
+                    prompt = content[:end_quote_index+1]
+                    var = content[end_quote_index+1:].strip()
+                    return f"{indent}{var} = eval(input({prompt}))"
+                else:
+                    var = content
+                    return f"{indent}{var} = eval(input())"
+    
         elif '=' in line:
             return f"{indent}{self.evaluate_expression(line)}"
-            
+        
         return None
-
+            
     def find_arrays(self, lines: List[str]) -> None:
         """Identifies arrays used in the code and their dimensions."""
         for line in lines:
