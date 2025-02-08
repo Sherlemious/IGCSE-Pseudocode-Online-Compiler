@@ -10,7 +10,7 @@ A **Web-based Pseudocode Interpreter** that allows users to write pseudocode, wh
   - **Pyodide** for running Python code in the browser.
 
 - **Backend:**
-  - **Django**: A powerful Python framework used for handling the logic of compiling pseudocode to Python. It exposes a simple API for the frontend to interact with.
+  - **Django**: A powerful Python framework used to handle the logic of compiling pseudocode into Python. It exposes a simple API for the frontend to interact with.
   - **Python**: Used for pseudocode-to-Python compilation and for executing Python code.
 
 - **APIs:**
@@ -26,7 +26,7 @@ A **Web-based Pseudocode Interpreter** that allows users to write pseudocode, wh
 
 - **Real-time pseudocode-to-Python compilation**: Converts pseudocode to Python code and runs it in the browser.
 - **Interactive editor**: A user-friendly interface to enter pseudocode and instantly see the output.
-- **Output Display**: Once compiled, the output is displayed beside the editor for users to see the results.
+- **Output Display**: Once compiled, the output is displayed beside the editor so users can see the results.
 - **Responsive Design**: The application is fully responsive, ensuring a smooth experience on desktops, tablets, and smartphones.
 
 ---
@@ -49,12 +49,11 @@ A **Web-based Pseudocode Interpreter** that allows users to write pseudocode, wh
 ## Features and Functionality
 
 - **Code Input**:
-  - Write pseudocode in a user-friendly, syntax-highlighted editor.
+  - Write pseudocode in a user-friendly editor.
   - Clear the code with a single click.
 
 - **Compilation**:
   - The pseudocode is compiled into Python code via a REST API.
-  - View the Python code that was generated from the pseudocode.
 
 - **Execution**:
   - Run the generated Python code directly in the browser using Pyodide.
@@ -123,6 +122,8 @@ To get started with the project locally, follow these steps:
   
 ---
 
+
+
 ## Contributing
 
 If you'd like to contribute to the project, feel free to submit a pull request with your changes! Please make sure to follow the below guidelines:
@@ -141,3 +142,233 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ---
 
 Let me know if you need any more changes or additions!
+
+# Pseudocode Language Documentation
+
+## Introduction
+This documentation outlines the syntax and structure of a pseudocode language designed for educational purposes. It progresses from basic input/output to advanced file handling.
+
+---
+
+## 1. Comments
+Comments provide explanations and are ignored during execution.
+```pseudocode
+// Single-line comment
+/* 
+Multi-line comment 
+(Note: Based on examples, single-line `//` is shown)
+*/
+
+// Example:
+// This procedure swaps values of X and Y
+PROCEDURE SWAP(X : INTEGER, Y : INTEGER)
+  Temp ← X  // Temporarily store X
+  X ← Y
+  Y ← Temp
+ENDPROCEDURE
+```
+
+---
+
+## 2. Basic Input/Output
+### Output
+```pseudocode
+OUTPUT "Hello, World!"       // Print text
+OUTPUT Score                 // Print variable
+OUTPUT "Lives left: ", Lives // Combine text and variables
+```
+
+### Input
+```pseudocode
+INPUT Answer  // Read user input into a variable
+```
+
+---
+
+## 3. Variables and Constants
+### Variable Declaration
+```pseudocode
+DECLARE Counter : INTEGER
+DECLARE TotalToPay : REAL
+DECLARE GameOver : BOOLEAN
+```
+
+### Constant Declaration
+```pseudocode
+CONSTANT HourlyRate ← 6.50
+CONSTANT DefaultText ← "N/A"
+```
+
+---
+
+## 4. Data Types and Assignments
+### Supported Data Types
+- `INTEGER`, `REAL`, `BOOLEAN`, `CHAR`, `STRING`
+
+### Assignments
+```pseudocode
+Counter ← 0                      // Direct assignment
+Counter ← Counter + 1            // Arithmetic operation
+TotalToPay ← NumberOfHours * HourlyRate  // Expression
+```
+
+---
+
+## 5. Arithmetic and Boolean Operations
+### Arithmetic Operators
+```pseudocode
+Answer ← Score * 100 / MaxMark   // Basic operations
+Area ← Pi * Radius ^ 2           // Exponentiation
+```
+
+### MOD and DIV
+```pseudocode
+DIV(10, 3)  // Returns 3 (integer division)
+MOD(10, 3)  // Returns 1 (remainder)
+```
+
+### Comparison Operators
+- `=`, `<`, `<=`, `>`, `>=`, `<>` (not equal)
+- Result is always `BOOLEAN`.
+
+### Boolean Operators
+- `AND`, `OR`, `NOT`
+- Use parentheses for clarity:  
+  ```pseudocode
+  IF (Age < 18) OR (Age > 65) THEN ...
+  ```
+
+---
+
+## 6. Control Structures
+### Selection: `IF` Statements
+```pseudocode
+IF Temperature > 100 THEN
+  OUTPUT "Boiling"
+ELSE
+  OUTPUT "Not boiling"
+ENDIF
+```
+
+### Selection: `CASE` Statements
+```pseudocode
+CASE OF Grade
+  'A' : OUTPUT "Excellent"
+  'B' : OUTPUT "Good"
+  OTHERWISE OUTPUT "Needs improvement"
+ENDCASE
+```
+
+---
+
+## 7. Loops
+### `REPEAT UNTIL` (Post-Condition)
+```pseudocode
+REPEAT
+  OUTPUT "Enter password:"
+  INPUT Password
+UNTIL Password = "Secret"
+```
+
+### `WHILE` Loop (Pre-Condition)
+```pseudocode
+WHILE Number > 9 DO
+  Number ← Number - 9
+ENDWHILE
+```
+
+### `FOR` Loop (Count-Controlled)
+```pseudocode
+FOR Index ← 1 TO 30
+  StudentNames[Index] ← ""
+NEXT Index
+```
+
+---
+
+## 8. Arrays
+### Declaration
+```pseudocode
+DECLARE StudentNames : ARRAY[1:30] OF STRING         // 1D
+DECLARE Grid : ARRAY[1:3, 1:3] OF CHAR               // 2D
+```
+
+### Usage
+```pseudocode
+StudentNames[1] ← "Ali"           // Assign value
+Grid[2, 3] ← 'X'                  // 2D assignment
+StudentNames[n+1] ← StudentNames[n]  // Dynamic index
+```
+
+---
+
+## 9. String Operations
+```pseudocode
+LENGTH("Hello")        // Returns 5
+LCASE('A')             // Returns 'a'
+UCASE("test")          // Returns "TEST"
+SUBSTRING("Hello", 1, 3)  // Returns "Hel"
+```
+
+---
+
+## 10. Built-In Functions
+### Math Functions
+```pseudocode
+Value ← ROUND(3.1415, 2)  // Returns 3.14
+DiceRoll ← ROUND(RANDOM() * 6, 0)  // Random integer 0-6
+```
+
+---
+
+## 11. Procedures and Functions
+### Procedure (No Return Value)
+```pseudocode
+PROCEDURE Greet(Name : STRING)
+  OUTPUT "Hello, ", Name
+ENDPROCEDURE
+
+CALL Greet("Alice")  // Usage
+```
+
+### Function (Returns Value)
+```pseudocode
+FUNCTION SumSquare(A : INTEGER, B : INTEGER) RETURNS INTEGER
+  RETURN A^2 + B^2
+ENDFUNCTION
+
+Result ← SumSquare(3, 4)  // Result = 25
+```
+
+---
+
+## 12. File Handling
+### File Operations
+```pseudocode
+DECLARE Data : STRING
+OPENFILE "input.txt" FOR READ
+OPENFILE "output.txt" FOR WRITE
+
+READFILE "input.txt", Data     // Read from file
+WRITEFILE "output.txt", Data   // Write to file
+
+CLOSEFILE "input.txt"
+CLOSEFILE "output.txt"
+```
+
+### Modes
+- `READ`: Read existing data.
+- `WRITE`: Overwrite/create new file.
+
+---
+
+## Best Practices
+1. Use parentheses to clarify complex expressions.
+2. Always close files after use.
+3. Declare variables and constants before use.
+```pseudocode
+// Example: Full Program Structure
+DECLARE Name : STRING
+INPUT Name
+OUTPUT "Welcome, ", Name
+```
