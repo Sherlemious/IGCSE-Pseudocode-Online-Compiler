@@ -27,6 +27,7 @@ const Home: React.FC = () => {
       setOutput([]);
 
       const pythonCode = await compilePseudocode(code);
+      console.log(pythonCode);
       runPythonCode(pythonCode, setOutput);
     } catch (error) {
       setError(error instanceof Error ? error.message : 'An unknown error occurred');

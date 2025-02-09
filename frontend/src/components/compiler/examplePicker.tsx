@@ -11,27 +11,40 @@ const examples: Example[] = [
   {
     title: 'Hello World',
     category: 'Basics',
-    code: 'OUTPUT "Hello, World!"',
+    code: `OUTPUT "Hello, World!"`,
   },
   {
     title: 'User Input',
     category: 'Input/Output',
-    code: 'INPUT name\nOUTPUT "Hello, " + name',
+    code: `INPUT "Enter your name: " name
+OUTPUT "Hello, " + name`,
   },
   {
     title: 'Simple Loop',
     category: 'Loops',
-    code: `FOR i = 1 TO 5\n    OUTPUT i\nNEXT i`,
+    code: `FOR i = 1 TO 5
+    OUTPUT i
+NEXT i`,
   },
   {
     title: 'While Loop',
     category: 'Loops',
-    code: `count = 1\nWHILE count <= 5\n    OUTPUT count\n    count = count + 1\nENDWHILE`,
+    code: `count = 1
+WHILE count <= 5 DO
+    OUTPUT count
+    count = count + 1
+ENDWHILE`,
   },
   {
     title: 'Array Operations',
     category: 'Arrays',
-    code: `DECLARE numbers : ARRAY[1:5] OF INTEGER\nFOR i = 1 TO 5\n    numbers[i] = i * 2\nNEXT i\nFOR i = 1 TO 5\n    OUTPUT numbers[i]\nNEXT i`,
+    code: `DECLARE numbers : ARRAY[1:5] OF INTEGER
+FOR i = 1 TO 5
+    numbers[i] = i * 2
+NEXT i
+FOR i = 1 TO 5
+    OUTPUT numbers[i]
+NEXT i`,
   },
   {
     title: 'Number Guessing Game',
@@ -40,10 +53,10 @@ const examples: Example[] = [
 guesses = 0
 guess = 0
 
-WHILE guess <> secret
+WHILE guess <> secret DO
     INPUT "Enter your guess (1-100): " guess
     guesses = guesses + 1
-    
+
     IF guess < secret THEN
         OUTPUT "Too low!"
     ELSEIF guess > secret THEN
@@ -81,6 +94,7 @@ FOR i = 2 TO 5
         max = numbers[i]
     ENDIF
 NEXT i
+
 OUTPUT "Maximum number is: " + max`,
   },
   {
