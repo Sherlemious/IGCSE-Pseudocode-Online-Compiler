@@ -135,225 +135,284 @@ class PseudocodeConverter:
         line = line.strip()
         if not line or line.startswith('//'):
             return None
-            
+
         indent = " " * self.state.indent_level
         upper_line = line.upper()
 
-        # Handle procedure definitions
-        # In the PROCEDURE branch, remove .lower():
         if upper_line.startswith('PROCEDURE'):
-            match = re.match(r'PROCEDURE\s+(\w+)\((.*?)\)', line, re.IGNORECASE)
-            if match:
-                proc_name, params = match.groups()
-                param_list = []
-                for param in params.split(','):
-                    param_name = param.split(':')[0].strip()
-                    param_list.append(param_name)
-                params_str = ", ".join(param_list)
-                self.state.indent_level += 4
-                return f"{indent}def {proc_name}({params_str}):"
-            else:
-                raise ValueError("Invalid PROCEDURE syntax")
-
-        # In the FUNCTION branch, remove .lower() for both versions:
+            return self.handle_procedure(line, indent)
         elif upper_line.startswith('FUNCTION'):
-            match = re.match(r"FUNCTION\s+(\w+)\s*\((.*?)\)\s+RETURNS\s+(\w+)", line, re.IGNORECASE)
-            if match:
-                func_name, params, ret_type = match.groups()
-                param_list = []
-                for param in params.split(','):
-                    if param.strip():
-                        param_name = param.split(':')[0].strip()
-                        param_list.append(param_name)
-                params_str = ", ".join(param_list)
-                self.state.indent_level += 4
-                return f"{indent}def {func_name}({params_str}):  # Returns {ret_type}"
-            else:
-                match = re.match(r"FUNCTION\s+(\w+)\s+RETURNS\s+(\w+)", line, re.IGNORECASE)
-                if match:
-                    func_name, ret_type = match.groups()
-                    self.state.indent_level += 4
-                    return f"{indent}def {func_name}():  # Returns {ret_type}"
-                else:
-                    raise ValueError("Invalid FUNCTION syntax")
+            return self.handle_function(line, indent)
         elif upper_line.startswith('RETURN'):
-            expr = line[len("RETURN"):].strip()
-            expr = self.evaluate_expression(expr)
-            return f"{indent}return {expr}"
-
-        # Handle DECLARE statements (including arrays and scalar variables)
+            return self.handle_return(line, indent)
         elif upper_line.startswith('DECLARE'):
-            if 'ARRAY' in upper_line:
-                # Handles array declarations as empty dictionaries.
-                # Example: DECLARE StudentNames : ARRAY[1:30] OF STRING
-                pattern = r"DECLARE\s+(\w+)\s*:\s*ARRAY\[(.*?)\]\s+OF\s+(\w+)"
-                match = re.match(pattern, line, re.IGNORECASE)
-                if match:
-                    var_name, dims, type_name = match.groups()
-                    dims = dims.strip()
-                    return f"{indent}{var_name} = {{}}  # Array with dimensions [{dims}] of type {type_name}"
-                else:
-                    raise ValueError("Invalid DECLARE ARRAY syntax")
-            else:
-                # Handles scalar declarations, e.g.: DECLARE Counter : INTEGER
-                pattern = r"DECLARE\s+(\w+)\s*:\s*(\w+)"
-                match = re.match(pattern, line, re.IGNORECASE)
-                if match:
-                    var_name, type_name = match.groups()
-                    return f"{indent}{var_name} = None  # Declared as {type_name}"
-                else:
-                    raise ValueError("Invalid DECLARE syntax")
-
-        # Handle CONSTANT declarations, for example:
-        # CONSTANT HourlyRate ← 6.50
-        # CONSTANT DefaultText ← "N/A"
+            return self.handle_declaration(line, indent)
         elif upper_line.startswith('CONSTANT'):
-            pattern = r"CONSTANT\s+(\w+)\s*=\s*(.+)"
-            match = re.match(pattern, line, re.IGNORECASE)
-            if match:
-                var_name, value = match.groups()
-                return f"{indent}{var_name} = {value}"
-            else:
-                raise ValueError("Invalid CONSTANT syntax")
-
+            return self.handle_constant(line, indent)
         elif upper_line.startswith('CALL'):
-            call_content = line[4:].strip()
-            if '(' in call_content and call_content.endswith(')'):
-                proc_name = call_content[:call_content.find('(')].strip()  # no .lower()
-                params = call_content[call_content.find('(')+1: call_content.rfind(')')].strip()
-                params_eval = self.evaluate_expression(params)
-                return f"{indent}{proc_name}({params_eval})"
-            else:
-                proc_name = call_content.strip()
-                return f"{indent}{proc_name}()"
-
-        # Handle array initialization
+            return self.handle_call(line, indent)
+        # Array initialization must be checked before generic assignment.
         elif '=' in line and '[' in line:
-            var_name = line[:line.find('=')].strip()
-            if '[' in var_name:  # This is an array access, not initialization
-                return f"{indent}{self.evaluate_expression(line)}"
-            value = line[line.find('=')+1:].strip()
-            if '[' in value:  # This is array initialization
-                self.explicit_arrays[var_name] = '][' in value
-                return f"{indent}{var_name} = {value}"
-            
-        # Control structures
+            return self.handle_array_initialization(line, indent)
         elif upper_line.startswith('WHILE'):
-            self.state.indent_level += 4
-            condition = line[5:].split('DO')[0].strip()
-            return f"{indent}while {self.convert_condition(condition)}:"
-            
+            return self.handle_while(line, indent)
         elif upper_line.startswith('IF'):
-            self.state.indent_level += 4
-            # Remove 'THEN' from the condition
-            condition = line[2:].strip()
-            if 'THEN' in condition.upper():
-                condition = condition[:condition.upper().find('THEN')].strip()
-            return f"{indent}if {self.convert_condition(condition)}:"
-        
+            return self.handle_if(line, indent)
         elif upper_line.startswith('ELSE'):
-            # Handle the else indentation
-            self.state.indent_level -= 4
-            indent = " " * self.state.indent_level
-            self.state.indent_level += 4
-
-            # Check if the ELSE is part of an ELSE IF, and convert it to elif
-            if 'IF' in upper_line:
-                # 'ELSE IF' is the same as 'ELSEIF' in pseudocode, 'ELSE IF' is 7 characters long
-                condition = line[7:].strip()
-                # Remove the Then if it exists
-                if 'THEN' in condition.upper():
-                    condition = condition[:condition.upper().find('THEN')].strip()
-                return f"{indent}elif {self.convert_condition(condition)}:"
-
-            return f"{indent}else:"
-
+            return self.handle_else(line, indent)
         elif upper_line.startswith('FOR'):
-            self.state.indent_level += 4
-            var, start, end, step = self.parse_for_loop(line)
-            if step:
-                return f"{indent}for {var} in range({start}, {end}, {step}):"
-            else:
-                return f"{indent}for {var} in range({start}, {end}):"
-            
-        # Block endings
+            return self.handle_for(line, indent)
         elif re.search(r"\b(ENDWHILE|ENDIF|NEXT|ENDFUNCTION|ENDPROCEDURE)\b", upper_line):
             self.state.indent_level -= 4
             return None
-            
-        # Input/Output
         elif upper_line.startswith('PRINT'):
-            content = line[5:].strip()
-            if content == '':  # Empty print
-                return f"{indent}print()"
-            content = self.evaluate_expression(content)
-            return f"{indent}print({content})"
-        
+            return self.handle_print(line, indent)
         elif upper_line.startswith('OUTPUT'):
-            content = line[6:].strip()
-            if content == '':
-                return f"{indent}print('')"
-            content = self.evaluate_expression(content)
-            return f"{indent}print({content})"
-            
+            return self.handle_output(line, indent)
         elif upper_line.startswith('INPUT'):
-            content = line[5:].strip()
-            # Check if the input line contains a prompt expression and a variable separated by whitespace
-            parts = content.rsplit(maxsplit=1)
-            if len(parts) == 2:
-                prompt_expr, var = parts
-                # Evaluate the prompt expression to apply concatenation handling and built-in mappings
-                prompt_expr_evaluated = self.evaluate_expression(prompt_expr)
-                return f"{indent}{var} = eval(input({prompt_expr_evaluated}))"
-            else:
-                # Fallback: if there's no variable part, assume entire content is a prompt
-                # Check if a prompt string is included (starts with a quote)
-                if content and content[0] in ('"', "'"):
-                    quote_char = content[0]
-                    end_quote_index = content.find(quote_char, 1)
-                    if end_quote_index == -1:
-                        raise ValueError("INPUT prompt string not terminated")
-                    prompt = content[:end_quote_index+1]
-                    var = content[end_quote_index+1:].strip()
-                    return f"{indent}{var} = eval(input({prompt}))"
-                else:
-                    var = content
-                    return f"{indent}{var} = eval(input())"
-    
+            return self.handle_input(line, indent)
         elif '=' in line:
             return f"{indent}{self.evaluate_expression(line)}"
-        
         return None
+    
+    
+    def handle_procedure(self, line: str, indent: str) -> str:
+        """Converts a PROCEDURE definition to a Python function."""
+        match = re.match(r'PROCEDURE\s+(\w+)\((.*?)\)', line, re.IGNORECASE)
+        if match:
+            proc_name, params = match.groups()
+            param_list = []
+            for param in params.split(','):
+                param_name = param.split(':')[0].strip()
+                param_list.append(param_name)
+            params_str = ", ".join(param_list)
+            self.state.indent_level += 4
+            return f"{indent}def {proc_name}({params_str}):"
+        else:
+            raise ValueError("Invalid PROCEDURE syntax")
+    
+    
+    def handle_function(self, line: str, indent: str) -> str:
+        """Converts a FUNCTION definition to a Python function."""
+        match = re.match(r"FUNCTION\s+(\w+)\s*\((.*?)\)\s+RETURNS\s+(\w+)", line, re.IGNORECASE)
+        if match:
+            func_name, params, ret_type = match.groups()
+            param_list = []
+            for param in params.split(','):
+                if param.strip():
+                    param_name = param.split(':')[0].strip()
+                    param_list.append(param_name)
+            params_str = ", ".join(param_list)
+            self.state.indent_level += 4
+            return f"{indent}def {func_name}({params_str}):  # Returns {ret_type}"
+        else:
+            match = re.match(r"FUNCTION\s+(\w+)\s+RETURNS\s+(\w+)", line, re.IGNORECASE)
+            if match:
+                func_name, ret_type = match.groups()
+                self.state.indent_level += 4
+                return f"{indent}def {func_name}():  # Returns {ret_type}"
+            else:
+                raise ValueError("Invalid FUNCTION syntax")
+    
+    
+    def handle_return(self, line: str, indent: str) -> str:
+        """Converts a RETURN statement."""
+        expr = line[len("RETURN"):].strip()
+        expr = self.evaluate_expression(expr)
+        return f"{indent}return {expr}"
+    
+    
+    def handle_declaration(self, line: str, indent: str) -> str:
+        """Converts a DECLARE statement for scalars or arrays."""
+        upper_line = line.upper()
+        if 'ARRAY' in upper_line:
+            pattern = r"DECLARE\s+(\w+)\s*:\s*ARRAY\[(.*?)\]\s+OF\s+(\w+)"
+            match = re.match(pattern, line, re.IGNORECASE)
+            if match:
+                var_name, dims, type_name = match.groups()
+                dims = dims.strip()
+                return f"{indent}{var_name} = {{}}  # Array with dimensions [{dims}] of type {type_name}"
+            else:
+                raise ValueError("Invalid DECLARE ARRAY syntax")
+        else:
+            pattern = r"DECLARE\s+(\w+)\s*:\s*(\w+)"
+            match = re.match(pattern, line, re.IGNORECASE)
+            if match:
+                var_name, type_name = match.groups()
+                return f"{indent}{var_name} = None  # Declared as {type_name}"
+            else:
+                raise ValueError("Invalid DECLARE syntax")
+    
+    
+    def handle_constant(self, line: str, indent: str) -> str:
+        """Converts a CONSTANT declaration."""
+        pattern = r"CONSTANT\s+(\w+)\s*=\s*(.+)"
+        match = re.match(pattern, line, re.IGNORECASE)
+        if match:
+            var_name, value = match.groups()
+            return f"{indent}{var_name} = {value}"
+        else:
+            raise ValueError("Invalid CONSTANT syntax")
+    
+    
+    def handle_call(self, line: str, indent: str) -> str:
+        """Converts a CALL statement to a function call."""
+        call_content = line[4:].strip()
+        if '(' in call_content and call_content.endswith(')'):
+            proc_name = call_content[:call_content.find('(')].strip()
+            params = call_content[call_content.find('(')+1: call_content.rfind(')')].strip()
+            params_eval = self.evaluate_expression(params)
+            return f"{indent}{proc_name}({params_eval})"
+        else:
+            proc_name = call_content.strip()
+            return f"{indent}{proc_name}()"
+    
+    
+    def handle_array_initialization(self, line: str, indent: str) -> str:
+        """Handles explicit array initialization lines."""
+        var_name = line[:line.find('=')].strip()
+        # If the LHS contains an array access, then simply evaluate the expression
+        if '[' in var_name:
+            return f"{indent}{self.evaluate_expression(line)}"
+        value = line[line.find('=')+1:].strip()
+        if '[' in value:
+            self.explicit_arrays[var_name] = ('][' in value)
+            return f"{indent}{var_name} = {value}"
+        return f"{indent}{self.evaluate_expression(line)}"
+    
+    
+    def handle_while(self, line: str, indent: str) -> str:
+        """Converts a WHILE loop."""
+        self.state.indent_level += 4
+        condition = line[5:].split('DO')[0].strip()
+        return f"{indent}while {self.convert_condition(condition)}:"
+    
+    
+    def handle_if(self, line: str, indent: str) -> str:
+        """Converts an IF statement."""
+        self.state.indent_level += 4
+        condition = line[2:].strip()
+        if 'THEN' in condition.upper():
+            condition = condition[:condition.upper().find('THEN')].strip()
+        return f"{indent}if {self.convert_condition(condition)}:"
+    
+    
+    def handle_else(self, line: str, indent: str) -> str:
+        """Converts an ELSE or ELSE IF statement."""
+        self.state.indent_level -= 4
+        indent = " " * self.state.indent_level
+        self.state.indent_level += 4
+        upper_line = line.upper()
+        if 'IF' in upper_line:
+            # For ELSE IF, skip the "ELSE " portion (7 characters)
+            condition = line[7:].strip()
+            if 'THEN' in condition.upper():
+                condition = condition[:condition.upper().find('THEN')].strip()
+            return f"{indent}elif {self.convert_condition(condition)}:"
+        return f"{indent}else:"
+    
+    
+    def handle_for(self, line: str, indent: str) -> str:
+        """Converts a FOR loop."""
+        self.state.indent_level += 4
+        var, start, end, step = self.parse_for_loop(line)
+        if step:
+            return f"{indent}for {var} in range({start}, ({end})+1, {step}):"
+        else:
+            return f"{indent}for {var} in range({start}, ({end})+1):"
+    
+    
+    def handle_print(self, line: str, indent: str) -> str:
+        """Converts a PRINT statement."""
+        content = line[5:].strip()
+        if content == '':
+            return f"{indent}print()"
+        content = self.evaluate_expression(content)
+        return f"{indent}print({content})"
+    
+    
+    def handle_output(self, line: str, indent: str) -> str:
+        """Converts an OUTPUT statement."""
+        content = line[6:].strip()
+        if content == '':
+            return f"{indent}print('')"
+        content = self.evaluate_expression(content)
+        return f"{indent}print({content})"
+    
+    
+    def handle_input(self, line: str, indent: str) -> str:
+        """Converts an INPUT statement."""
+        content = line[5:].strip()
+        parts = content.rsplit(maxsplit=1)
+        if len(parts) == 2:
+            prompt_expr, var = parts
+            prompt_expr_evaluated = self.evaluate_expression(prompt_expr)
+            return f"{indent}{var} = eval(input({prompt_expr_evaluated}))"
+        else:
+            if content and content[0] in ('"', "'"):
+                quote_char = content[0]
+                end_quote_index = content.find(quote_char, 1)
+                if end_quote_index == -1:
+                    raise ValueError("INPUT prompt string not terminated")
+                prompt = content[:end_quote_index+1]
+                var = content[end_quote_index+1:].strip()
+                return f"{indent}{var} = eval(input({prompt}))"
+            else:
+                var = content
+                return f"{indent}{var} = eval(input())"
             
     def find_arrays(self, lines: List[str]) -> None:
-        """Identifies arrays used in the code and their dimensions."""
+        """
+        Identifies arrays used in the code and their dimensions.
+        
+        Explicit array declarations (via DECLARE or assignment statement using [ ) 
+        are flagged as "explicit" while implicit accesses are captured separately.
+        Multi-dimensional access (e.g., arr[i][j]) is partially handled by a simple regex.
+        """
         for line in lines:
+            stripped = line.strip()
+            upper_line = stripped.upper()
+
+            # Process explicit array declarations
+            if upper_line.startswith("DECLARE") and "ARRAY" in upper_line:
+                pattern = r"DECLARE\s+(\w+)\s*:\s*ARRAY\[(.*?)\]\s+OF\s+(\w+)"
+                match = re.match(pattern, stripped, re.IGNORECASE)
+                if match:
+                    var_name, dims, type_name = match.groups()
+                    dims = dims.strip()
+                    # Flag as explicitly declared (could also store dims/type if needed)
+                    self.explicit_arrays[var_name] = True
+                continue
+
+            # Process assignment lines for explicit array initialization
             if '=' in line:
                 parts = line.split('=')
-                var_name = parts[0].strip()
-                value = parts[1].strip()
-                
-                # Check explicit array initialization
-                if value.startswith('['):
-                    self.explicit_arrays[var_name] = '][' in value
+                lhs = parts[0].strip()
+                rhs = parts[1].strip()
+                # If the RHS starts with '[' (suggesting explicit initialization), mark it.
+                if rhs.startswith('['):
+                    self.explicit_arrays[lhs] = True
                     continue
-                    
-            # Check array access
-            if '[' in line and '=' in line:
-                var_name = line[:line.find('[')].strip()
-                if var_name not in self.explicit_arrays and not any(op in var_name.upper() for op in self.OPERATORS_MAPPING):
-                    self.array_declarations.add(var_name)
-                    self.explicit_arrays[var_name] = '][' in line
+
+            # Process implicit array accesses:
+            # The regex handles single or multi-dimensional array accesses (e.g., arr[ or matrix[)
+            # by matching the first occurrence of an identifier followed by '['.
+            for match in re.findall(r"(\w+)\s*\[", line):
+                if match not in self.explicit_arrays:
+                    self.array_declarations.add(match)
+                    self.explicit_arrays[match] = False
 
     def generate_array_initializations(self) -> List[str]:
-        """Generates initialization code for arrays."""
+        """
+        Generates initialization code for arrays that were accessed implicitly.
+        All arrays are initialized as dictionaries.
+        """
         result = []
         for name in self.array_declarations:
-            if name in self.explicit_arrays:
-                if self.explicit_arrays[name]:
-                    result.append(f"{name}=[[0 for i in range(1000)] for f in range(1000)]")
-                else:
-                    result.append(f"{name}=[0 for i in range(1000)]")
+            # Only auto-initialize if not explicitly declared/initialized.
+            if name in self.explicit_arrays and self.explicit_arrays[name]:
+                continue
+            result.append(f"{name} = {{}}")
         return result
 
     def convert(self, lines: List[str]) -> List[str]:
