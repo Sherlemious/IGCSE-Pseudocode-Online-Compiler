@@ -91,17 +91,18 @@ class PseudocodeConverter:
 
     def convert_condition(self, statement: str) -> str:
         """Converts pseudocode conditional statements to Python syntax."""
+        statement = re.sub(r'\bthen\b', '', statement, flags=re.IGNORECASE).strip()
+        
         result = statement
         for old, new in self.OPERATORS_MAPPING.items():
-            result = result.replace(old, new)
-            
-        # Handle single equals for comparison
-        for i, char in enumerate(result):
-            if (char == "=" and i > 0 and i < len(result) - 1 and
-                result[i-1] != '!' and result[i-1] != '=' and result[i+1] != '=' and
-                result[i-1] != '<' and result[i-1] != '>'):
-                result = f"{result[:i]}=={result[i+1:]}"
-                
+            result = self.insensitive_replace(result, old, new)
+        
+        # Use regex to replace lone '=' with '=='
+        result = re.sub(r'(?<=[^!<>=])=(?=[^=])', '==', result)
+        
+        # Handle array access in conditions
+        result = self.evaluate_expression(result)
+        
         return result
 
     def evaluate_expression(self, statement: str) -> str:
@@ -152,8 +153,6 @@ class PseudocodeConverter:
         elif upper_line.startswith('CALL'):
             return self.handle_call(line, indent)
         # Array initialization must be checked before generic assignment.
-        elif '=' in line and '[' in line:
-            return self.handle_array_initialization(line, indent)
         elif upper_line.startswith('WHILE'):
             return self.handle_while(line, indent)
         elif upper_line.startswith('IF'):
@@ -171,6 +170,8 @@ class PseudocodeConverter:
             return self.handle_output(line, indent)
         elif upper_line.startswith('INPUT'):
             return self.handle_input(line, indent)
+        elif '=' in line and '[' in line:
+            return self.handle_array_initialization(line, indent)
         elif '=' in line:
             return f"{indent}{self.evaluate_expression(line)}"
         return None
@@ -294,7 +295,8 @@ class PseudocodeConverter:
         condition = line[2:].strip()
         if 'THEN' in condition.upper():
             condition = condition[:condition.upper().find('THEN')].strip()
-        return f"{indent}if {self.convert_condition(condition)}:"
+        converted_condition = self.convert_condition(condition)
+        return f"{indent}if {converted_condition}:"
     
     
     def handle_else(self, line: str, indent: str) -> str:
