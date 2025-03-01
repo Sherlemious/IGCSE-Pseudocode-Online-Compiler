@@ -35,6 +35,31 @@ class PseudocodeConverter:
             "import random",
             "import math",
             "",
+            "# Helper class for 1-indexed array implementation",
+            "class Array(dict):",
+            "    def __init__(self, *args, **kwargs):",
+            "        super().__init__(*args, **kwargs)",
+            "",
+            "    def __getitem__(self, key):",
+            "        if isinstance(key, tuple):",
+            "            # Handle multi-dimensional access",
+            "            return super().__getitem__(key)",
+            "        return super().__getitem__(key)",
+            "",
+            "    def __setitem__(self, key, value):",
+            "        super().__setitem__(key, value)",
+            "",
+            "def init_array(values=None, dimensions=None):",
+            "    \"\"\"Initialize a 1-indexed array\"\"\"",
+            "    array = Array()",
+            "    if values is not None:",
+            "        # If initializing with list values, convert to 1-indexed dictionary",
+            "        if isinstance(values, list):",
+            "            for i, value in enumerate(values, 1):  # Start indexing at 1",
+            "                array[i] = value",
+            "        return array",
+            "    return array",
+            "",
             "def LCASE(s):",
             "    return s.lower()",
             "",
@@ -88,6 +113,28 @@ class PseudocodeConverter:
                 new_tokens.append(token)
         return ''.join(new_tokens)
 
+    def convert_array_access(self, expr: str) -> str:
+        """
+        Converts array access notation in expressions, preserving 1-indexed access.
+        This handles both simple array[index] and 2D array[row,col] notations.
+        """
+        # Pattern for array access with comma-separated indices (2D arrays)
+        pattern_2d = r'(\w+)\[([^,\]]+),([^,\]]+)\]'
+        # Replace 2D array access with tuple key format
+        while re.search(pattern_2d, expr):
+            expr = re.sub(pattern_2d, r'\1[(\2, \3)]', expr)
+        
+        # Pattern for simple array access (1D arrays)
+        pattern_1d = r'(\w+)\[([^\]]+)\]'
+        # No adjustment needed as we're using the Array class for 1-indexed access
+        
+        return expr
+
+    def convert_array_initialization(self, expr: str) -> str:
+        """Converts array initialization to use our custom init_array function."""
+        if expr.strip().startswith('[') and expr.strip().endswith(']'):
+            return f"init_array({expr})"
+        return expr
 
     def convert_condition(self, statement: str) -> str:
         """Converts pseudocode conditional statements to Python syntax."""
@@ -101,6 +148,7 @@ class PseudocodeConverter:
         result = re.sub(r'(?<=[^!<>=])=(?=[^=])', '==', result)
         
         # Handle array access in conditions
+        result = self.convert_array_access(result)
         result = self.evaluate_expression(result)
         
         return result
@@ -110,13 +158,25 @@ class PseudocodeConverter:
         result = statement
         
         for old, new in self.OPERATORS_MAPPING.items():
-            result = result.replace(old, new)
+            result = self.insensitive_replace(result, old, new)
             
         for old, new in self.BUILTIN_MAPPINGS.items():
             result = self.insensitive_replace(result, old, new)
         
+        # Handle array access
+        result = self.convert_array_access(result)
+        
         # Handle cases where '+' is used between strings and numbers
         result = self.handle_string_concatenation(result)
+        
+        # Handle array initialization with square brackets
+        if '[' in result and ']' in result and '=' in result:
+            parts = result.split('=', 1)
+            lhs = parts[0].strip()
+            rhs = parts[1].strip()
+            if rhs.startswith('[') and rhs.endswith(']'):
+                result = f"{lhs} = init_array({rhs})"
+        
         return result
 
     def parse_for_loop(self, line: str) -> tuple[str, str, str, Optional[str]]:
@@ -190,7 +250,13 @@ class PseudocodeConverter:
             self.state.indent_level += 4
             return f"{indent}def {proc_name}({params_str}):"
         else:
-            raise ValueError("Invalid PROCEDURE syntax")
+            match = re.match(r'PROCEDURE\s+(\w+)', line, re.IGNORECASE)
+            if match:
+                proc_name = match.group(1)
+                self.state.indent_level += 4
+                return f"{indent}def {proc_name}():"
+            else:
+                raise ValueError("Invalid PROCEDURE syntax")
     
     
     def handle_function(self, line: str, indent: str) -> str:
@@ -232,7 +298,27 @@ class PseudocodeConverter:
             if match:
                 var_name, dims, type_name = match.groups()
                 dims = dims.strip()
-                return f"{indent}{var_name} = {{}}  # Array with dimensions [{dims}] of type {type_name}"
+                
+                # Add to our explicit arrays tracking
+                self.explicit_arrays[var_name] = True
+                
+                # Process dimensions for 2D arrays
+                dim_parts = dims.split(',')
+                if len(dim_parts) == 2:
+                    # Handle 2D array with format like "1:10, 1:5"
+                    dim_init_args = []
+                    for dim_part in dim_parts:
+                        bounds = dim_part.split(':')
+                        if len(bounds) == 2:
+                            dim_init_args.append(int(bounds[0].strip()))
+                            dim_init_args.append(int(bounds[1].strip()))
+                    
+                    if len(dim_init_args) == 4:
+                        # Format is min_row:max_row, min_col:max_col
+                        return f"{indent}{var_name} = init_array(dimensions=({dim_init_args[0]}, {dim_init_args[1]}, {dim_init_args[2]}, {dim_init_args[3]}))  # 2D Array with dimensions [{dims}] of type {type_name}"
+                
+                # Initialize as our custom Array type (default case)
+                return f"{indent}{var_name} = init_array()  # Array with dimensions [{dims}] of type {type_name}"
             else:
                 raise ValueError("Invalid DECLARE ARRAY syntax")
         else:
@@ -275,10 +361,23 @@ class PseudocodeConverter:
         # If the LHS contains an array access, then simply evaluate the expression
         if '[' in var_name:
             return f"{indent}{self.evaluate_expression(line)}"
+        
         value = line[line.find('=')+1:].strip()
+        
+        # Mark this as an explicit array
         if '[' in value:
-            self.explicit_arrays[var_name] = ('][' in value)
-            return f"{indent}{var_name} = {value}"
+            self.explicit_arrays[var_name] = True
+            
+            # If it's a standard-looking array initialization, use our init_array function
+            if value.startswith('[') and value.endswith(']'):
+                # Check if it's a 2D array initialization by looking for nested lists
+                if re.search(r'\[\s*\[', value):
+                    # This is likely a 2D array initialization like [[1,2], [3,4]]
+                    return f"{indent}{var_name} = init_array({value})"
+                else:
+                    # This is a 1D array initialization
+                    return f"{indent}{var_name} = init_array({value})"
+            
         return f"{indent}{self.evaluate_expression(line)}"
     
     
@@ -407,14 +506,14 @@ class PseudocodeConverter:
     def generate_array_initializations(self) -> List[str]:
         """
         Generates initialization code for arrays that were accessed implicitly.
-        All arrays are initialized as dictionaries.
+        All arrays are initialized as our custom Array class.
         """
         result = []
         for name in self.array_declarations:
             # Only auto-initialize if not explicitly declared/initialized.
             if name in self.explicit_arrays and self.explicit_arrays[name]:
                 continue
-            result.append(f"{name} = {{}}")
+            result.append(f"{name} = init_array()")
         return result
 
     def convert(self, lines: List[str]) -> List[str]:
