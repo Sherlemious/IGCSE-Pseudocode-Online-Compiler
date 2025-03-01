@@ -1,7 +1,7 @@
 import os
 from dataclasses import dataclass
 import re
-from typing import List, Optional, Dict, Set
+from typing import List, Optional, Dict, Set, Tuple
 
 @dataclass
 class CodeState:
@@ -80,7 +80,7 @@ class PseudocodeConverter:
         Preprocesses the input pseudocode by:
         1. Removing empty lines
         2. Removing comments (lines starting with //)
-        3. Removing inline comments (anything after // on a line)
+        3. Removing inline comments (anything after // on a line) while preserving string literals
         4. Stripping whitespace
         
         Args:
@@ -92,24 +92,79 @@ class PseudocodeConverter:
         processed_lines = []
         
         for line in lines:
-            # Remove inline comments (anything after //)
-            if '//' in line:
-                line = line.split('//', 1)[0]
-                
-            # Strip whitespace
-            line = line.strip()
-            
             # Skip empty lines and comment-only lines
-            if not line or line.startswith('//'):
+            if not line.strip() or line.strip().startswith('//'):
                 continue
+            
+            # Handle inline comments while preserving string literals
+            result_line = ""
+            i = 0
+            in_string = False
+            string_char = None
+            
+            while i < len(line):
+                # Check for string boundaries
+                if line[i] in ('"', "'") and (i == 0 or line[i-1] != '\\'):
+                    if not in_string:
+                        in_string = True
+                        string_char = line[i]
+                    elif line[i] == string_char:
+                        in_string = False
                 
-            processed_lines.append(line)
+                # Check for comment start but only if we're not inside a string
+                if i < len(line) - 1 and line[i:i+2] == '//' and not in_string:
+                    break  # Found a comment start outside of strings, stop processing
+                
+                result_line += line[i]
+                i += 1
+            
+            # Strip whitespace and add to processed lines
+            result_line = result_line.strip()
+            if result_line:
+                processed_lines.append(result_line)
             
         return processed_lines
 
     def insensitive_replace(self, text: str, old: str, new: str) -> str:
-        pattern = re.compile(re.escape(old), re.IGNORECASE)
-        return pattern.sub(new, text)
+        """
+        Replaces occurrences of 'old' with 'new' in 'text', case-insensitively,
+        but preserves text within string literals.
+        """
+        result = ""
+        i = 0
+        in_string = False
+        string_char = None
+        
+        while i < len(text):
+            # Check for string boundaries
+            if text[i] in ('"', "'") and (i == 0 or text[i-1] != '\\'):
+                if not in_string:
+                    in_string = True
+                    string_char = text[i]
+                    result += text[i]
+                elif text[i] == string_char:
+                    in_string = False
+                    result += text[i]
+                else:
+                    result += text[i]
+                i += 1
+                continue
+            
+            # If we're inside a string, add the character as-is
+            if in_string:
+                result += text[i]
+                i += 1
+                continue
+            
+            # If we're not in a string and we find the pattern, replace it
+            if i + len(old) <= len(text) and text[i:i+len(old)].upper() == old.upper():
+                result += new
+                i += len(old)
+            else:
+                result += text[i]
+                i += 1
+        
+        return result
     
     def handle_string_concatenation(self, expression: str) -> str:
         """
@@ -156,10 +211,6 @@ class PseudocodeConverter:
         while re.search(pattern_2d, expr):
             expr = re.sub(pattern_2d, r'\1[(\2, \3)]', expr)
         
-        # Pattern for simple array access (1D arrays)
-        pattern_1d = r'(\w+)\[([^\]]+)\]'
-        # No adjustment needed as we're using the Array class for 1-indexed access
-        
         return expr
 
     def convert_array_initialization(self, expr: str) -> str:
@@ -176,12 +227,51 @@ class PseudocodeConverter:
         for old, new in self.OPERATORS_MAPPING.items():
             result = self.insensitive_replace(result, old, new)
         
-        # Use regex to replace lone '=' with '=='
-        result = re.sub(r'(?<=[^!<>=])=(?=[^=])', '==', result)
+        # Use regex to replace lone '=' with '==' but not inside strings
+        result = self.replace_equality_operator(result)
         
         # Handle array access in conditions
         result = self.convert_array_access(result)
         result = self.evaluate_expression(result)
+        
+        return result
+    
+    def replace_equality_operator(self, text: str) -> str:
+        """
+        Replaces '=' with '==' in conditions, but only outside of string literals.
+        """
+        result = ""
+        i = 0
+        in_string = False
+        string_char = None
+        
+        while i < len(text):
+            # Check for string boundaries
+            if text[i] in ('"', "'") and (i == 0 or text[i-1] != '\\'):
+                if not in_string:
+                    in_string = True
+                    string_char = text[i]
+                    result += text[i]
+                elif text[i] == string_char:
+                    in_string = False
+                    result += text[i]
+                else:
+                    result += text[i]
+                i += 1
+                continue
+            
+            # If we're inside a string, add the character as-is
+            if in_string:
+                result += text[i]
+                i += 1
+                continue
+            
+            # If not in a string and we find a standalone '=', replace with '=='
+            if text[i] == '=' and (i == 0 or text[i-1] not in '!<>=') and (i == len(text)-1 or text[i+1] != '='):
+                result += '=='
+            else:
+                result += text[i]
+            i += 1
         
         return result
 
@@ -211,7 +301,7 @@ class PseudocodeConverter:
         
         return result
 
-    def parse_for_loop(self, line: str) -> tuple[str, str, str, Optional[str]]:
+    def parse_for_loop(self, line: str) -> Tuple[str, str, str, Optional[str]]:
         """
         Parse FOR loop components: "FOR <identifier> ← <value1> TO <value2> STEP <increment>"
         STEP clause is optional.
@@ -219,7 +309,7 @@ class PseudocodeConverter:
         pattern = r"FOR\s+(\w+)\s*[←=]\s*(.+?)\s+TO\s+(.+?)(?:\s+STEP\s+(.+))?$"
         match = re.match(pattern, line, re.IGNORECASE)
         if not match:
-            raise ValueError("Invalid FOR loop syntax")
+            raise ValueError(f"Invalid FOR loop syntax: {line}")
         var, start, end, step = match.groups()
         return var, start.strip(), end.strip(), step.strip() if step else None
 
@@ -288,7 +378,7 @@ class PseudocodeConverter:
                 self.state.indent_level += 4
                 return f"{indent}def {proc_name}():"
             else:
-                raise ValueError("Invalid PROCEDURE syntax")
+                raise ValueError(f"Invalid PROCEDURE syntax: {line}")
     
     
     def handle_function(self, line: str, indent: str) -> str:
@@ -311,7 +401,7 @@ class PseudocodeConverter:
                 self.state.indent_level += 4
                 return f"{indent}def {func_name}():  # Returns {ret_type}"
             else:
-                raise ValueError("Invalid FUNCTION syntax")
+                raise ValueError(f"Invalid FUNCTION syntax: {line}")
     
     
     def handle_return(self, line: str, indent: str) -> str:
@@ -352,7 +442,7 @@ class PseudocodeConverter:
                 # Initialize as our custom Array type (default case)
                 return f"{indent}{var_name} = init_array()  # Array with dimensions [{dims}] of type {type_name}"
             else:
-                raise ValueError("Invalid DECLARE ARRAY syntax")
+                raise ValueError(f"Invalid DECLARE ARRAY syntax: {line}")
         else:
             pattern = r"DECLARE\s+(\w+)\s*:\s*(\w+)"
             match = re.match(pattern, line, re.IGNORECASE)
@@ -360,7 +450,7 @@ class PseudocodeConverter:
                 var_name, type_name = match.groups()
                 return f"{indent}{var_name} = None  # Declared as {type_name}"
             else:
-                raise ValueError("Invalid DECLARE syntax")
+                raise ValueError(f"Invalid DECLARE syntax: {line}")
     
     
     def handle_constant(self, line: str, indent: str) -> str:
@@ -371,7 +461,7 @@ class PseudocodeConverter:
             var_name, value = match.groups()
             return f"{indent}{var_name} = {value}"
         else:
-            raise ValueError("Invalid CONSTANT syntax")
+            raise ValueError(f"Invalid CONSTANT syntax: {line}")
     
     
     def handle_call(self, line: str, indent: str) -> str:
