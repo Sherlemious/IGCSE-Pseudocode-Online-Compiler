@@ -13,6 +13,7 @@ class PseudocodeConverter:
         'DIV': '//',
         '<>': '!=',
         '><': '!=',
+        '^': '**',
         'OR': 'or',
         'AND': 'and',
         'NOT': 'not',
