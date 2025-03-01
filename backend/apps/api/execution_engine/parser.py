@@ -70,10 +70,42 @@ class PseudocodeConverter:
             "    # Adjust for 1-based indexing",
             "    return s[start-1:start-1+length]",
             "",
-            "# ROUND is provided by Python's built-in round function",
+            "# Start of main program",
         ]        
         self.array_declarations: Set[str] = set()
         self.explicit_arrays: Dict[str, bool] = {}  # Tracks arrays with explicit initialization
+
+    def preprocess_code(self, lines: List[str]) -> List[str]:
+        """
+        Preprocesses the input pseudocode by:
+        1. Removing empty lines
+        2. Removing comments (lines starting with //)
+        3. Removing inline comments (anything after // on a line)
+        4. Stripping whitespace
+        
+        Args:
+            lines: The original pseudocode lines
+            
+        Returns:
+            A cleaned list of pseudocode lines
+        """
+        processed_lines = []
+        
+        for line in lines:
+            # Remove inline comments (anything after //)
+            if '//' in line:
+                line = line.split('//', 1)[0]
+                
+            # Strip whitespace
+            line = line.strip()
+            
+            # Skip empty lines and comment-only lines
+            if not line or line.startswith('//'):
+                continue
+                
+            processed_lines.append(line)
+            
+        return processed_lines
 
     def insensitive_replace(self, text: str, old: str, new: str) -> str:
         pattern = re.compile(re.escape(old), re.IGNORECASE)
@@ -518,16 +550,16 @@ class PseudocodeConverter:
 
     def convert(self, lines: List[str]) -> List[str]:
         """Converts pseudocode lines to Python and executes it."""
+        
+        # Preprocess the code to remove comments and empty lines
+        cleaned_lines = self.preprocess_code(lines)
             
-        self.find_arrays(lines)
+        self.find_arrays(cleaned_lines)
         array_inits = self.generate_array_initializations()
         if array_inits:
             self.output_lines.extend(array_inits)
         
-        for line in lines:
-            if not line.strip() or line.strip().startswith('//'):
-                continue
-                
+        for line in cleaned_lines:
             # Skip lines that are just array declarations we've already handled
             if '=' in line and any(line.strip().startswith(arr_name) for arr_name in self.array_declarations):
                 continue
