@@ -70,7 +70,7 @@ class PseudocodeConverter:
             "    # Adjust for 1-based indexing",
             "    return s[start-1:start-1+length]",
             "",
-            "# Start of main program",
+            "# Start of Main Program",
         ]        
         self.array_declarations: Set[str] = set()
         self.explicit_arrays: Dict[str, bool] = {}  # Tracks arrays with explicit initialization
@@ -172,33 +172,84 @@ class PseudocodeConverter:
         and wraps the numeric expression with str() to avoid type errors.
         This is a simple heuristic; more robust handling might require proper parsing.
         """
-        import re
-        # Split the expression by the plus operator while preserving it.
-        tokens = re.split(r'(\+)', expression)
-        # Check if any token is a string literal.
-        has_string = any(token.strip().startswith(('"', "'")) for token in tokens if token.strip() and token != '+')
-        if not has_string:
+        # First, identify string boundaries to avoid incorrect parsing
+        string_ranges = self.find_string_ranges(expression)
+        
+        # If no string literals or no plus operators, return as-is
+        if not string_ranges or '+' not in expression:
             return expression
-
-        new_tokens = []
-        for token in tokens:
-            stripped = token.strip()
-            # Skip the plus operator.
-            if token == '+':
-                new_tokens.append(token)
-            # Leave string literals untouched.
-            elif stripped.startswith(('"', "'")) and stripped.endswith(('"', "'")):
-                new_tokens.append(token)
-            # For other tokens, wrap with str() if they are not already wrapped.
-            elif stripped:
-                # Avoid double-wrapping if already a str(...) call.
-                if not re.match(r'str\s*\(.*\)', token):
-                    new_tokens.append(f"str({token.strip()})")
+            
+        # Process the expression carefully to avoid modifying string contents
+        result = ""
+        i = 0
+        while i < len(expression):
+            # Check if current position is inside a string
+            in_string = any(start <= i <= end for start, end in string_ranges)
+            
+            # If not in string and we find a '+', analyze context
+            if not in_string and expression[i] == '+':
+                # Find left and right operands
+                left_end = i
+                right_start = i + 1
+                
+                # Capture left operand
+                left_operand = expression[:left_end].strip()
+                # Capture right operand
+                right_operand = expression[right_start:].strip()
+                
+                # Check if either operand is a string literal
+                left_is_string = left_operand and (left_operand[0] in ('"', "'"))
+                right_is_string = right_operand and (right_operand[0] in ('"', "'"))
+                
+                if left_is_string and not right_is_string and right_operand:
+                    # String + non-string: wrap right with str()
+                    if not right_operand.startswith('str('):
+                        result += f"{left_operand} + str({right_operand})"
+                        i = len(expression)  # Skip to end as we've handled everything
+                    else:
+                        result += expression[i]
+                        i += 1
+                elif not left_is_string and right_is_string and left_operand:
+                    # Non-string + string: wrap left with str()
+                    if not left_operand.startswith('str('):
+                        result = f"str({left_operand}) + {right_operand}"
+                        i = len(expression)  # Skip to end as we've handled everything
+                    else:
+                        result += expression[i]
+                        i += 1
                 else:
-                    new_tokens.append(token)
+                    result += expression[i]
+                    i += 1
             else:
-                new_tokens.append(token)
-        return ''.join(new_tokens)
+                result += expression[i]
+                i += 1
+                
+        return result
+    
+    def find_string_ranges(self, text: str) -> List[Tuple[int, int]]:
+        """
+        Finds the start and end indices of all string literals in the text.
+        Returns a list of tuples (start, end) marking the boundaries (inclusive).
+        """
+        ranges = []
+        i = 0
+        in_string = False
+        string_char = None
+        start_index = -1
+        
+        while i < len(text):
+            # Check for string boundaries
+            if text[i] in ('"', "'") and (i == 0 or text[i-1] != '\\'):
+                if not in_string:
+                    in_string = True
+                    string_char = text[i]
+                    start_index = i
+                elif text[i] == string_char:
+                    in_string = False
+                    ranges.append((start_index, i))
+            i += 1
+            
+        return ranges
 
     def convert_array_access(self, expr: str) -> str:
         """
@@ -210,6 +261,10 @@ class PseudocodeConverter:
         # Replace 2D array access with tuple key format
         while re.search(pattern_2d, expr):
             expr = re.sub(pattern_2d, r'\1[(\2, \3)]', expr)
+        
+        # Pattern for simple array access (1D arrays)
+        pattern_1d = r'(\w+)\[([^\]]+)\]'
+        # No adjustment needed as we're using the Array class for 1-indexed access
         
         return expr
 
@@ -227,47 +282,34 @@ class PseudocodeConverter:
         for old, new in self.OPERATORS_MAPPING.items():
             result = self.insensitive_replace(result, old, new)
         
-        # Use regex to replace lone '=' with '==' but not inside strings
+        # In a condition context, we need to convert '=' to '=='
         result = self.replace_equality_operator(result)
         
         # Handle array access in conditions
         result = self.convert_array_access(result)
-        result = self.evaluate_expression(result)
+        result = self.evaluate_expression(result, is_condition=True)
         
         return result
     
     def replace_equality_operator(self, text: str) -> str:
         """
         Replaces '=' with '==' in conditions, but only outside of string literals.
+        Uses a two-phase approach to ensure accurate string boundary detection.
         """
+        # First find all string ranges
+        string_ranges = self.find_string_ranges(text)
+        
+        # Then process the text, making replacements only outside string ranges
         result = ""
         i = 0
-        in_string = False
-        string_char = None
-        
         while i < len(text):
-            # Check for string boundaries
-            if text[i] in ('"', "'") and (i == 0 or text[i-1] != '\\'):
-                if not in_string:
-                    in_string = True
-                    string_char = text[i]
-                    result += text[i]
-                elif text[i] == string_char:
-                    in_string = False
-                    result += text[i]
-                else:
-                    result += text[i]
-                i += 1
-                continue
+            # Check if current position is inside any string
+            in_string = any(start <= i <= end for start, end in string_ranges)
             
-            # If we're inside a string, add the character as-is
-            if in_string:
-                result += text[i]
-                i += 1
-                continue
-            
-            # If not in a string and we find a standalone '=', replace with '=='
-            if text[i] == '=' and (i == 0 or text[i-1] not in '!<>=') and (i == len(text)-1 or text[i+1] != '='):
+            # Replace standalone '=' with '==' but only if not in a string
+            if (not in_string and text[i] == '=' and 
+                (i == 0 or text[i-1] not in '!<>=') and 
+                (i == len(text)-1 or text[i+1] != '=')):
                 result += '=='
             else:
                 result += text[i]
@@ -275,29 +317,64 @@ class PseudocodeConverter:
         
         return result
 
-    def evaluate_expression(self, statement: str) -> str:
-        """Evaluates and converts pseudocode expressions to Python syntax."""
-        result = statement
+    def evaluate_expression(self, statement: str, is_condition=False) -> str:
+        """
+        Evaluates and converts pseudocode expressions to Python syntax.
         
+        Args:
+            statement: The pseudocode expression to convert
+            is_condition: Whether this expression is in a condition context (if/while)
+        """
+        # First find all string literal ranges
+        string_ranges = self.find_string_ranges(statement)
+        
+        # Apply operator mappings (DIV, MOD, etc.)
+        result = statement
         for old, new in self.OPERATORS_MAPPING.items():
             result = self.insensitive_replace(result, old, new)
             
+        # Apply built-in function mappings
         for old, new in self.BUILTIN_MAPPINGS.items():
             result = self.insensitive_replace(result, old, new)
         
         # Handle array access
         result = self.convert_array_access(result)
         
+        # Only convert equality operators in condition contexts
+        if is_condition:
+            result = self.replace_equality_operator(result)
+            
         # Handle cases where '+' is used between strings and numbers
         result = self.handle_string_concatenation(result)
         
         # Handle array initialization with square brackets
         if '[' in result and ']' in result and '=' in result:
-            parts = result.split('=', 1)
-            lhs = parts[0].strip()
-            rhs = parts[1].strip()
-            if rhs.startswith('[') and rhs.endswith(']'):
-                result = f"{lhs} = init_array({rhs})"
+            # Find string literals first
+            string_ranges = self.find_string_ranges(result)
+            
+            # Find the assignment operator outside of strings
+            equals_pos = -1
+            i = 0
+            while i < len(result):
+                if any(start <= i <= end for start, end in string_ranges):
+                    i += 1
+                    continue
+                    
+                if result[i] == '=' and (i == 0 or result[i-1] != '=') and (i == len(result)-1 or result[i+1] != '='):
+                    equals_pos = i
+                    break
+                i += 1
+            
+            if equals_pos != -1:
+                lhs = result[:equals_pos].strip()
+                rhs = result[equals_pos+1:].strip()
+                
+                # Check if the RHS is an array literal outside of strings
+                if rhs.startswith('[') and rhs.endswith(']'):
+                    # Make sure the '[' and ']' are not inside strings
+                    if not any(start <= rhs.find('[') <= end for start, end in string_ranges) and \
+                    not any(start <= rhs.rfind(']') <= end for start, end in string_ranges):
+                        result = f"{lhs} = init_array({rhs})"
         
         return result
 
@@ -334,7 +411,6 @@ class PseudocodeConverter:
             return self.handle_constant(line, indent)
         elif upper_line.startswith('CALL'):
             return self.handle_call(line, indent)
-        # Array initialization must be checked before generic assignment.
         elif upper_line.startswith('WHILE'):
             return self.handle_while(line, indent)
         elif upper_line.startswith('IF'):
@@ -355,7 +431,8 @@ class PseudocodeConverter:
         elif '=' in line and '[' in line:
             return self.handle_array_initialization(line, indent)
         elif '=' in line:
-            return f"{indent}{self.evaluate_expression(line)}"
+            # This is a regular assignment, not a condition
+            return f"{indent}{self.evaluate_expression(line, is_condition=False)}"
         return None
     
     
