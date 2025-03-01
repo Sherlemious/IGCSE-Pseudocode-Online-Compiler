@@ -1,7 +1,7 @@
 import os
 from dataclasses import dataclass
 import re
-from typing import List, Optional, Dict, Set
+from typing import List, Optional, Dict, Set, Tuple
 
 @dataclass
 class CodeState:
@@ -13,6 +13,7 @@ class PseudocodeConverter:
         'DIV': '//',
         '<>': '!=',
         '><': '!=',
+        '^': '**',
         'OR': 'or',
         'AND': 'and',
         'NOT': 'not',
@@ -70,14 +71,101 @@ class PseudocodeConverter:
             "    # Adjust for 1-based indexing",
             "    return s[start-1:start-1+length]",
             "",
-            "# ROUND is provided by Python's built-in round function",
+            "# Start of Main Program",
         ]        
         self.array_declarations: Set[str] = set()
         self.explicit_arrays: Dict[str, bool] = {}  # Tracks arrays with explicit initialization
 
+    def preprocess_code(self, lines: List[str]) -> List[str]:
+        """
+        Preprocesses the input pseudocode by:
+        1. Removing empty lines
+        2. Removing comments (lines starting with //)
+        3. Removing inline comments (anything after // on a line) while preserving string literals
+        4. Stripping whitespace
+        
+        Args:
+            lines: The original pseudocode lines
+            
+        Returns:
+            A cleaned list of pseudocode lines
+        """
+        processed_lines = []
+        
+        for line in lines:
+            # Skip empty lines and comment-only lines
+            if not line.strip() or line.strip().startswith('//'):
+                continue
+            
+            # Handle inline comments while preserving string literals
+            result_line = ""
+            i = 0
+            in_string = False
+            string_char = None
+            
+            while i < len(line):
+                # Check for string boundaries
+                if line[i] in ('"', "'") and (i == 0 or line[i-1] != '\\'):
+                    if not in_string:
+                        in_string = True
+                        string_char = line[i]
+                    elif line[i] == string_char:
+                        in_string = False
+                
+                # Check for comment start but only if we're not inside a string
+                if i < len(line) - 1 and line[i:i+2] == '//' and not in_string:
+                    break  # Found a comment start outside of strings, stop processing
+                
+                result_line += line[i]
+                i += 1
+            
+            # Strip whitespace and add to processed lines
+            result_line = result_line.strip()
+            if result_line:
+                processed_lines.append(result_line)
+            
+        return processed_lines
+
     def insensitive_replace(self, text: str, old: str, new: str) -> str:
-        pattern = re.compile(re.escape(old), re.IGNORECASE)
-        return pattern.sub(new, text)
+        """
+        Replaces occurrences of 'old' with 'new' in 'text', case-insensitively,
+        but preserves text within string literals.
+        """
+        result = ""
+        i = 0
+        in_string = False
+        string_char = None
+        
+        while i < len(text):
+            # Check for string boundaries
+            if text[i] in ('"', "'") and (i == 0 or text[i-1] != '\\'):
+                if not in_string:
+                    in_string = True
+                    string_char = text[i]
+                    result += text[i]
+                elif text[i] == string_char:
+                    in_string = False
+                    result += text[i]
+                else:
+                    result += text[i]
+                i += 1
+                continue
+            
+            # If we're inside a string, add the character as-is
+            if in_string:
+                result += text[i]
+                i += 1
+                continue
+            
+            # If we're not in a string and we find the pattern, replace it
+            if i + len(old) <= len(text) and text[i:i+len(old)].upper() == old.upper():
+                result += new
+                i += len(old)
+            else:
+                result += text[i]
+                i += 1
+        
+        return result
     
     def handle_string_concatenation(self, expression: str) -> str:
         """
@@ -85,33 +173,84 @@ class PseudocodeConverter:
         and wraps the numeric expression with str() to avoid type errors.
         This is a simple heuristic; more robust handling might require proper parsing.
         """
-        import re
-        # Split the expression by the plus operator while preserving it.
-        tokens = re.split(r'(\+)', expression)
-        # Check if any token is a string literal.
-        has_string = any(token.strip().startswith(('"', "'")) for token in tokens if token.strip() and token != '+')
-        if not has_string:
+        # First, identify string boundaries to avoid incorrect parsing
+        string_ranges = self.find_string_ranges(expression)
+        
+        # If no string literals or no plus operators, return as-is
+        if not string_ranges or '+' not in expression:
             return expression
-
-        new_tokens = []
-        for token in tokens:
-            stripped = token.strip()
-            # Skip the plus operator.
-            if token == '+':
-                new_tokens.append(token)
-            # Leave string literals untouched.
-            elif stripped.startswith(('"', "'")) and stripped.endswith(('"', "'")):
-                new_tokens.append(token)
-            # For other tokens, wrap with str() if they are not already wrapped.
-            elif stripped:
-                # Avoid double-wrapping if already a str(...) call.
-                if not re.match(r'str\s*\(.*\)', token):
-                    new_tokens.append(f"str({token.strip()})")
+            
+        # Process the expression carefully to avoid modifying string contents
+        result = ""
+        i = 0
+        while i < len(expression):
+            # Check if current position is inside a string
+            in_string = any(start <= i <= end for start, end in string_ranges)
+            
+            # If not in string and we find a '+', analyze context
+            if not in_string and expression[i] == '+':
+                # Find left and right operands
+                left_end = i
+                right_start = i + 1
+                
+                # Capture left operand
+                left_operand = expression[:left_end].strip()
+                # Capture right operand
+                right_operand = expression[right_start:].strip()
+                
+                # Check if either operand is a string literal
+                left_is_string = left_operand and (left_operand[0] in ('"', "'"))
+                right_is_string = right_operand and (right_operand[0] in ('"', "'"))
+                
+                if left_is_string and not right_is_string and right_operand:
+                    # String + non-string: wrap right with str()
+                    if not right_operand.startswith('str('):
+                        result += f"{left_operand} + str({right_operand})"
+                        i = len(expression)  # Skip to end as we've handled everything
+                    else:
+                        result += expression[i]
+                        i += 1
+                elif not left_is_string and right_is_string and left_operand:
+                    # Non-string + string: wrap left with str()
+                    if not left_operand.startswith('str('):
+                        result = f"str({left_operand}) + {right_operand}"
+                        i = len(expression)  # Skip to end as we've handled everything
+                    else:
+                        result += expression[i]
+                        i += 1
                 else:
-                    new_tokens.append(token)
+                    result += expression[i]
+                    i += 1
             else:
-                new_tokens.append(token)
-        return ''.join(new_tokens)
+                result += expression[i]
+                i += 1
+                
+        return result
+    
+    def find_string_ranges(self, text: str) -> List[Tuple[int, int]]:
+        """
+        Finds the start and end indices of all string literals in the text.
+        Returns a list of tuples (start, end) marking the boundaries (inclusive).
+        """
+        ranges = []
+        i = 0
+        in_string = False
+        string_char = None
+        start_index = -1
+        
+        while i < len(text):
+            # Check for string boundaries
+            if text[i] in ('"', "'") and (i == 0 or text[i-1] != '\\'):
+                if not in_string:
+                    in_string = True
+                    string_char = text[i]
+                    start_index = i
+                elif text[i] == string_char:
+                    in_string = False
+                    ranges.append((start_index, i))
+            i += 1
+            
+        return ranges
 
     def convert_array_access(self, expr: str) -> str:
         """
@@ -144,42 +283,103 @@ class PseudocodeConverter:
         for old, new in self.OPERATORS_MAPPING.items():
             result = self.insensitive_replace(result, old, new)
         
-        # Use regex to replace lone '=' with '=='
-        result = re.sub(r'(?<=[^!<>=])=(?=[^=])', '==', result)
+        # In a condition context, we need to convert '=' to '=='
+        result = self.replace_equality_operator(result)
         
         # Handle array access in conditions
         result = self.convert_array_access(result)
-        result = self.evaluate_expression(result)
+        result = self.evaluate_expression(result, is_condition=True)
+        
+        return result
+    
+    def replace_equality_operator(self, text: str) -> str:
+        """
+        Replaces '=' with '==' in conditions, but only outside of string literals.
+        Uses a two-phase approach to ensure accurate string boundary detection.
+        """
+        # First find all string ranges
+        string_ranges = self.find_string_ranges(text)
+        
+        # Then process the text, making replacements only outside string ranges
+        result = ""
+        i = 0
+        while i < len(text):
+            # Check if current position is inside any string
+            in_string = any(start <= i <= end for start, end in string_ranges)
+            
+            # Replace standalone '=' with '==' but only if not in a string
+            if (not in_string and text[i] == '=' and 
+                (i == 0 or text[i-1] not in '!<>=') and 
+                (i == len(text)-1 or text[i+1] != '=')):
+                result += '=='
+            else:
+                result += text[i]
+            i += 1
         
         return result
 
-    def evaluate_expression(self, statement: str) -> str:
-        """Evaluates and converts pseudocode expressions to Python syntax."""
-        result = statement
+    def evaluate_expression(self, statement: str, is_condition=False) -> str:
+        """
+        Evaluates and converts pseudocode expressions to Python syntax.
         
+        Args:
+            statement: The pseudocode expression to convert
+            is_condition: Whether this expression is in a condition context (if/while)
+        """
+        # First find all string literal ranges
+        string_ranges = self.find_string_ranges(statement)
+        
+        # Apply operator mappings (DIV, MOD, etc.)
+        result = statement
         for old, new in self.OPERATORS_MAPPING.items():
             result = self.insensitive_replace(result, old, new)
             
+        # Apply built-in function mappings
         for old, new in self.BUILTIN_MAPPINGS.items():
             result = self.insensitive_replace(result, old, new)
         
         # Handle array access
         result = self.convert_array_access(result)
         
+        # Only convert equality operators in condition contexts
+        if is_condition:
+            result = self.replace_equality_operator(result)
+            
         # Handle cases where '+' is used between strings and numbers
         result = self.handle_string_concatenation(result)
         
         # Handle array initialization with square brackets
         if '[' in result and ']' in result and '=' in result:
-            parts = result.split('=', 1)
-            lhs = parts[0].strip()
-            rhs = parts[1].strip()
-            if rhs.startswith('[') and rhs.endswith(']'):
-                result = f"{lhs} = init_array({rhs})"
+            # Find string literals first
+            string_ranges = self.find_string_ranges(result)
+            
+            # Find the assignment operator outside of strings
+            equals_pos = -1
+            i = 0
+            while i < len(result):
+                if any(start <= i <= end for start, end in string_ranges):
+                    i += 1
+                    continue
+                    
+                if result[i] == '=' and (i == 0 or result[i-1] != '=') and (i == len(result)-1 or result[i+1] != '='):
+                    equals_pos = i
+                    break
+                i += 1
+            
+            if equals_pos != -1:
+                lhs = result[:equals_pos].strip()
+                rhs = result[equals_pos+1:].strip()
+                
+                # Check if the RHS is an array literal outside of strings
+                if rhs.startswith('[') and rhs.endswith(']'):
+                    # Make sure the '[' and ']' are not inside strings
+                    if not any(start <= rhs.find('[') <= end for start, end in string_ranges) and \
+                    not any(start <= rhs.rfind(']') <= end for start, end in string_ranges):
+                        result = f"{lhs} = init_array({rhs})"
         
         return result
 
-    def parse_for_loop(self, line: str) -> tuple[str, str, str, Optional[str]]:
+    def parse_for_loop(self, line: str) -> Tuple[str, str, str, Optional[str]]:
         """
         Parse FOR loop components: "FOR <identifier> ← <value1> TO <value2> STEP <increment>"
         STEP clause is optional.
@@ -187,7 +387,7 @@ class PseudocodeConverter:
         pattern = r"FOR\s+(\w+)\s*[←=]\s*(.+?)\s+TO\s+(.+?)(?:\s+STEP\s+(.+))?$"
         match = re.match(pattern, line, re.IGNORECASE)
         if not match:
-            raise ValueError("Invalid FOR loop syntax")
+            raise ValueError(f"Invalid FOR loop syntax: {line}")
         var, start, end, step = match.groups()
         return var, start.strip(), end.strip(), step.strip() if step else None
 
@@ -212,7 +412,6 @@ class PseudocodeConverter:
             return self.handle_constant(line, indent)
         elif upper_line.startswith('CALL'):
             return self.handle_call(line, indent)
-        # Array initialization must be checked before generic assignment.
         elif upper_line.startswith('WHILE'):
             return self.handle_while(line, indent)
         elif upper_line.startswith('IF'):
@@ -233,7 +432,8 @@ class PseudocodeConverter:
         elif '=' in line and '[' in line:
             return self.handle_array_initialization(line, indent)
         elif '=' in line:
-            return f"{indent}{self.evaluate_expression(line)}"
+            # This is a regular assignment, not a condition
+            return f"{indent}{self.evaluate_expression(line, is_condition=False)}"
         return None
     
     
@@ -256,7 +456,7 @@ class PseudocodeConverter:
                 self.state.indent_level += 4
                 return f"{indent}def {proc_name}():"
             else:
-                raise ValueError("Invalid PROCEDURE syntax")
+                raise ValueError(f"Invalid PROCEDURE syntax: {line}")
     
     
     def handle_function(self, line: str, indent: str) -> str:
@@ -279,7 +479,7 @@ class PseudocodeConverter:
                 self.state.indent_level += 4
                 return f"{indent}def {func_name}():  # Returns {ret_type}"
             else:
-                raise ValueError("Invalid FUNCTION syntax")
+                raise ValueError(f"Invalid FUNCTION syntax: {line}")
     
     
     def handle_return(self, line: str, indent: str) -> str:
@@ -320,7 +520,7 @@ class PseudocodeConverter:
                 # Initialize as our custom Array type (default case)
                 return f"{indent}{var_name} = init_array()  # Array with dimensions [{dims}] of type {type_name}"
             else:
-                raise ValueError("Invalid DECLARE ARRAY syntax")
+                raise ValueError(f"Invalid DECLARE ARRAY syntax: {line}")
         else:
             pattern = r"DECLARE\s+(\w+)\s*:\s*(\w+)"
             match = re.match(pattern, line, re.IGNORECASE)
@@ -328,7 +528,7 @@ class PseudocodeConverter:
                 var_name, type_name = match.groups()
                 return f"{indent}{var_name} = None  # Declared as {type_name}"
             else:
-                raise ValueError("Invalid DECLARE syntax")
+                raise ValueError(f"Invalid DECLARE syntax: {line}")
     
     
     def handle_constant(self, line: str, indent: str) -> str:
@@ -339,7 +539,7 @@ class PseudocodeConverter:
             var_name, value = match.groups()
             return f"{indent}{var_name} = {value}"
         else:
-            raise ValueError("Invalid CONSTANT syntax")
+            raise ValueError(f"Invalid CONSTANT syntax: {line}")
     
     
     def handle_call(self, line: str, indent: str) -> str:
@@ -518,16 +718,16 @@ class PseudocodeConverter:
 
     def convert(self, lines: List[str]) -> List[str]:
         """Converts pseudocode lines to Python and executes it."""
+        
+        # Preprocess the code to remove comments and empty lines
+        cleaned_lines = self.preprocess_code(lines)
             
-        self.find_arrays(lines)
+        self.find_arrays(cleaned_lines)
         array_inits = self.generate_array_initializations()
         if array_inits:
             self.output_lines.extend(array_inits)
         
-        for line in lines:
-            if not line.strip() or line.strip().startswith('//'):
-                continue
-                
+        for line in cleaned_lines:
             # Skip lines that are just array declarations we've already handled
             if '=' in line and any(line.strip().startswith(arr_name) for arr_name in self.array_declarations):
                 continue
