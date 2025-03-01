@@ -16,8 +16,8 @@ const examples: Example[] = [
   {
     title: 'User Input',
     category: 'Input/Output',
-    code: `INPUT "Enter your name: " name
-OUTPUT "Hello, " + name`,
+    code: `INPUT name
+OUTPUT "Hello, ", name`,
   },
   {
     title: 'Simple Loop',
@@ -47,45 +47,25 @@ FOR i = 1 TO 5
 NEXT i`,
   },
   {
-    title: 'Number Guessing Game',
-    category: 'Games',
-    code: `secret = RANDOM(1, 100)
-guesses = 0
-guess = 0
-
-WHILE guess <> secret DO
-    INPUT "Enter your guess (1-100): " guess
-    guesses = guesses + 1
-
-    IF guess < secret THEN
-        OUTPUT "Too low!"
-    ELSEIF guess > secret THEN
-        OUTPUT "Too high!"
-    ENDIF
-ENDWHILE
-
-OUTPUT "Congratulations! You found it in " + guesses + " guesses!"`,
-  },
-  {
     title: 'Calculate Average',
     category: 'Math',
     code: `DECLARE numbers : ARRAY[1:5] OF INTEGER
 sum = 0
 
 FOR i = 1 TO 5
-    INPUT "Enter number " + i + ": " numbers[i]
+    INPUT numbers[i]
     sum = sum + numbers[i]
 NEXT i
 
 average = sum / 5
-OUTPUT "The average is: " + average`,
+OUTPUT "The average is: ", average`,
   },
   {
     title: 'Find Maximum',
     category: 'Arrays',
     code: `DECLARE numbers : ARRAY[1:5] OF INTEGER
 FOR i = 1 TO 5
-    INPUT "Enter number " + i + ": " numbers[i]
+    INPUT numbers[i]
 NEXT i
 
 max = numbers[1]
@@ -95,21 +75,21 @@ FOR i = 2 TO 5
     ENDIF
 NEXT i
 
-OUTPUT "Maximum number is: " + max`,
+OUTPUT "Maximum number is: ", max`,
   },
   {
     title: 'Temperature Converter',
     category: 'Math',
-    code: `INPUT "Enter temperature in Celsius: " celsius
+    code: `INPUT celsius
 fahrenheit = (celsius * 9/5) + 32
-OUTPUT celsius + "°C is " + fahrenheit + "°F"`,
+OUTPUT celsius, "°C is ", fahrenheit, "°F"`,
   },
   {
     title: 'Simple Calculator',
     category: 'Math',
-    code: `INPUT "Enter first number: " num1
-INPUT "Enter operator (+,-,*,/): " op
-INPUT "Enter second number: " num2
+    code: `INPUT num1
+INPUT op
+INPUT num2
 
 IF op = "+" THEN
     result = num1 + num2
@@ -125,7 +105,84 @@ ELSEIF op = "/" THEN
     ENDIF
 ENDIF
 
-OUTPUT num1 + " " + op + " " + num2 + " = " + result`,
+OUTPUT num1, " ", op, " ", num2, " = ", result`,
+  },
+  {
+    title: 'UserInput Example',
+    category: 'Input/Output',
+    code: `name = UserInput
+age = UserInput
+OUTPUT "Hello, ", name, "! You are ", age, " years old."`,
+  },
+  {
+    title: 'Array with UserInput',
+    category: 'Arrays',
+    code: `DECLARE scores : ARRAY[1:5] OF INTEGER
+sum = 0
+
+FOR i = 1 TO 5
+    scores[i] = UserInput
+    sum = sum + scores[i]
+NEXT i
+
+average = sum / 5
+OUTPUT "The average score is: ", average`,
+  },
+  {
+    title: 'Input Validation Loop',
+    category: 'Input/Output',
+    code: `valid = FALSE
+WHILE NOT valid DO
+    password = UserInput
+    IF LENGTH(password) < 8 THEN
+        OUTPUT "Password too short, must be at least 8 characters"
+    ELSE
+        valid = TRUE
+        OUTPUT "Password accepted"
+    ENDIF
+ENDWHILE`,
+  },
+  {
+    title: 'Interactive Menu',
+    category: 'Input/Output',
+    code: `choice = 0
+WHILE choice <> 4 DO
+    OUTPUT "===== MENU ====="
+    OUTPUT "1. Option One"
+    OUTPUT "2. Option Two"
+    OUTPUT "3. Option Three"
+    OUTPUT "4. Exit"
+    
+    choice = UserInput
+    
+    IF choice = 1 THEN
+        OUTPUT "You selected Option One"
+    ELSEIF choice = 2 THEN
+        OUTPUT "You selected Option Two"
+    ELSEIF choice = 3 THEN
+        OUTPUT "You selected Option Three"
+    ELSEIF choice <> 4 THEN
+        OUTPUT "Invalid choice, please try again"
+    ENDIF
+ENDWHILE`,
+  },
+  {
+    title: 'Compound Interest Calculator',
+    category: 'Finance',
+    code: `OUTPUT "Enter principal amount: "
+principal = UserInput
+OUTPUT "Enter annual interest rate (as decimal): "
+rate = UserInput
+OUTPUT "Enter time period in years: "
+time = UserInput
+OUTPUT "Enter number of times interest is compounded per year: "
+n = UserInput
+
+amount = principal * (1 + rate/n) ^ (n * time)
+interest = amount - principal
+
+OUTPUT "Final amount: ", amount
+OUTPUT "Interest earned: ", interest`,
   },
 ];
 
