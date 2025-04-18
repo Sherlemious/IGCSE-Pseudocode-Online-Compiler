@@ -36,7 +36,7 @@ async function runPythonCode(pythonCode: string, setOutput: Dispatch<SetStateAct
     });
 
     // Run the Python code in the browser
-    window.pyodide.runPython(pythonCode);
+    await window.pyodide.runPythonAsync(pythonCode);
   } catch (error) {
     console.error('Error running Python code:', error);
     throw new Error('Failed to execute Python code in the browser');
