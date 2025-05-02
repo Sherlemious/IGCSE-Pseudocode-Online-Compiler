@@ -9,7 +9,7 @@ import API_PATHS from './apiConfig';
 export const compilePseudocode = async (pseudocode: string): Promise<string> => {
   try {
     // Get the API URL for the compilation endpoint
-    const apiUrl = API_PATHS.postCompileCode();
+    const apiUrl = API_PATHS.postCompileCodeGemini();
 
     // Call the backend to get the Python code
     const response = await axios.post(apiUrl, { pseudocode: pseudocode });

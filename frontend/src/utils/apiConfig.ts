@@ -6,6 +6,9 @@ const API_PATHS = {
   postCompileCode() {
     return `${BASE_URL}/execution/convert/`;
   },
+  postCompileCodeGemini() {
+    return `${BASE_URL}/execution/convert/gemini/`;
+  },
 };
 
 export default API_PATHS;
