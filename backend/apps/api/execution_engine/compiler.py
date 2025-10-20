@@ -11,7 +11,7 @@ from lark import Lark, Transformer, Token, Tree
 from lark.exceptions import LarkError
 from typing import List, Optional, Union
 import ast_nodes as nodes
-from grammar_v2 import PSEUDOCODE_GRAMMAR_V2
+from grammar import PSEUDOCODE_GRAMMAR
 from codegen import PythonCodeGenerator
 from errors import (
     CompilerError, ParseError, format_lark_error,
@@ -553,7 +553,7 @@ class PseudocodeCompiler:
         """
         try:
             self.parser = Lark(
-                PSEUDOCODE_GRAMMAR_V2,
+                PSEUDOCODE_GRAMMAR,
                 start='program',
                 parser='lalr',  # LALR parser for better performance
                 maybe_placeholders=False

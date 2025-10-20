@@ -1,5 +1,5 @@
 """
-Test the new grammar v2
+Test the grammar parsing
 """
 
 from lark import Lark
@@ -8,11 +8,11 @@ import os
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'apps', 'api', 'execution_engine'))
 
-from grammar_v2 import PSEUDOCODE_GRAMMAR_V2
+from grammar import PSEUDOCODE_GRAMMAR
 
 try:
-    parser = Lark(PSEUDOCODE_GRAMMAR_V2, start='program', parser='lalr')
-    print("✓ Grammar V2 loaded successfully!")
+    parser = Lark(PSEUDOCODE_GRAMMAR, start='program', parser='lalr')
+    print("✓ Grammar loaded successfully!")
 
     # Test simple pseudocode
     test_code = """

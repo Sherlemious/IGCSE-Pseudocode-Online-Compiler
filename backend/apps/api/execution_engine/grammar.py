@@ -1,397 +1,188 @@
 """
 Lark Grammar for IGCSE Pseudocode
 
-This module contains the formal grammar definition for IGCSE pseudocode
-using Lark's EBNF-like syntax. The grammar is case-insensitive.
+Formal grammar definition using Lark LALR parser for IGCSE pseudocode.
+Supports all standard pseudocode constructs with proper operator precedence.
 """
 
 PSEUDOCODE_GRAMMAR = r"""
-    // ========================================================================
-    // Program Structure
-    // ========================================================================
+?start: program
 
-    ?start: program
+program: _NL* (statement _NL+)*  statement?
 
-    program: (statement | NEWLINE)*
+// Statements
+?statement: declaration
+          | constant_decl
+          | assignment
+          | input_stmt
+          | output_stmt
+          | if_stmt
+          | for_loop
+          | while_loop
+          | repeat_loop
+          | function_decl
+          | procedure_decl
+          | return_stmt
+          | call_stmt
 
-    ?statement: declaration
-              | constant_declaration
-              | assignment
-              | input_statement
-              | output_statement
-              | if_statement
-              | case_statement
-              | for_loop
-              | while_loop
-              | repeat_until_loop
-              | procedure_declaration
-              | function_declaration
-              | return_statement
-              | call_statement
-              | file_operation
-              | comment
+// Declarations
+declaration: DECLARE IDENT COLON type_spec
+constant_decl: CONSTANT IDENT EQUALS expression
 
-    // ========================================================================
-    // Declarations
-    // ========================================================================
+type_spec: simple_type
+         | array_type
 
-    declaration: "DECLARE"i IDENTIFIER ":" type_spec
+simple_type: INTEGER | REAL | STRING | BOOLEAN | CHAR | DATE
 
-    constant_declaration: "CONSTANT"i IDENTIFIER "=" expression
+array_type: ARRAY LBRACK array_dim (COMMA array_dim)* RBRACK OF simple_type
 
-    type_spec: simple_type
-             | array_type
+array_dim: NUMBER COLON NUMBER
 
-    simple_type: "INTEGER"i
-               | "REAL"i
-               | "STRING"i
-               | "BOOLEAN"i
-               | "CHAR"i
-               | "DATE"i
+// Expressions (precedence from low to high)
+?expression: or_expr
 
-    array_type: "ARRAY"i "[" array_dimension ("," array_dimension)* "]" "OF"i simple_type
+?or_expr: and_expr (OR and_expr)*
 
-    array_dimension: NUMBER ":" NUMBER
+?and_expr: not_expr (AND not_expr)*
 
-    // ========================================================================
-    // Expressions
-    // ========================================================================
-
-    ?expression: logical_or
-
-    ?logical_or: logical_and ("OR"i logical_and)*
-
-    ?logical_and: logical_not ("AND"i logical_not)*
-
-    ?logical_not: "NOT"i logical_not -> unary_not
-                | comparison
-
-    ?comparison: additive (comp_op additive)?
-
-    comp_op: "="
-           | "<>"
-           | "><"
-           | "<="
-           | ">="
-           | "<"
-           | ">"
-
-    ?additive: multiplicative (("+"|"-") multiplicative)*
-
-    ?multiplicative: power (("*"|"/"|"DIV"i|"MOD"i) power)*
-
-    ?power: unary ("^" unary)*
-
-    ?unary: "-" unary -> unary_minus
-          | "+" unary -> unary_plus
-          | primary
-
-    ?primary: NUMBER -> number
-            | STRING -> string
-            | "TRUE"i -> true
-            | "FALSE"i -> false
-            | function_call
-            | array_access
-            | IDENTIFIER -> identifier
-            | paren_expr
-
-    paren_expr: "(" expression ")"
-
-    // ========================================================================
-    // Function Calls
-    // ========================================================================
-
-    function_call: IDENTIFIER "(" [arguments] ")"
-
-    arguments: expression ("," expression)*
-
-    // ========================================================================
-    // Array Access
-    // ========================================================================
-
-    array_access: IDENTIFIER "[" indices "]"
-
-    indices: expression ("," expression)*
-
-    // ========================================================================
-    // Statements
-    // ========================================================================
-
-    assignment: (IDENTIFIER | array_access) ("=" | "<-") expression
-
-    input_statement: "INPUT"i (IDENTIFIER | array_access)
-
-    output_statement: ("OUTPUT"i | "PRINT"i) expression ("," expression)*
-
-    // ========================================================================
-    // Control Flow - Conditionals
-    // ========================================================================
-
-    if_statement: "IF"i expression "THEN"i NEWLINE
-                  (statement | NEWLINE)*
-                  elif_part*
-                  [else_part]
-                  "ENDIF"i
-
-    elif_part: "ELSEIF"i expression "THEN"i NEWLINE
-               (statement | NEWLINE)*
-
-    else_part: "ELSE"i NEWLINE
-               (statement | NEWLINE)*
-
-    case_statement: "CASE"i "OF"i expression NEWLINE
-                    case_branch+
-                    [otherwise_part]
-                    "ENDCASE"i
-
-    case_branch: expression ":" NEWLINE
-                 (statement | NEWLINE)+
-
-    otherwise_part: "OTHERWISE"i ":" NEWLINE
-                    (statement | NEWLINE)+
-
-    // ========================================================================
-    // Control Flow - Loops
-    // ========================================================================
-
-    for_loop: "FOR"i IDENTIFIER "=" expression "TO"i expression ["STEP"i expression] NEWLINE
-              (statement | NEWLINE)*
-              "NEXT"i IDENTIFIER
-
-    while_loop: "WHILE"i expression "DO"i NEWLINE
-                (statement | NEWLINE)*
-                "ENDWHILE"i
-
-    repeat_until_loop: "REPEAT"i NEWLINE
-                       (statement | NEWLINE)*
-                       "UNTIL"i expression
-
-    // ========================================================================
-    // Functions and Procedures
-    // ========================================================================
-
-    procedure_declaration: "PROCEDURE"i IDENTIFIER "(" [parameter_list] ")" NEWLINE
-                          (statement | NEWLINE)*
-                          "ENDPROCEDURE"i
-
-    function_declaration: "FUNCTION"i IDENTIFIER "(" [parameter_list] ")" "RETURNS"i simple_type NEWLINE
-                         (statement | NEWLINE)*
-                         "ENDFUNCTION"i
-
-    parameter_list: parameter ("," parameter)*
-
-    parameter: ["BYREF"i | "BYVAL"i] IDENTIFIER ":" type_spec
-
-    return_statement: "RETURN"i expression
-
-    call_statement: "CALL"i IDENTIFIER "(" [arguments] ")"
-
-    // ========================================================================
-    // File Operations
-    // ========================================================================
-
-    file_operation: open_file
-                  | read_file
-                  | write_file
-                  | close_file
-
-    open_file: "OPENFILE"i expression "FOR"i file_mode
-
-    file_mode: "READ"i
-             | "WRITE"i
-             | "APPEND"i
-
-    read_file: "READFILE"i expression "," (IDENTIFIER | array_access)
-
-    write_file: "WRITEFILE"i expression "," expression
-
-    close_file: "CLOSEFILE"i expression
-
-    // ========================================================================
-    // Comments
-    // ========================================================================
-
-    comment: COMMENT
-
-    // ========================================================================
-    // Terminals (Lexer Rules)
-    // ========================================================================
-
-    IDENTIFIER: /[a-zA-Z_][a-zA-Z0-9_]*/
-
-    NUMBER: /\d+\.?\d*/
-
-    STRING: /"[^"]*"/ | /'[^']*'/
-
-    COMMENT: /\/\/[^\n]*/
-
-    NEWLINE: /\r?\n/+
-
-    // Ignore whitespace (except newlines, which are significant)
-    %import common.WS_INLINE
-    %ignore WS_INLINE
-"""
-
-# Alternative: More permissive grammar that handles various edge cases
-PSEUDOCODE_GRAMMAR_PERMISSIVE = r"""
-    // This is a more permissive version that allows optional THEN, DO keywords
-    // and handles cases where users might write slightly non-standard pseudocode
-
-    ?start: program
-
-    program: (statement | NEWLINE)*
-
-    ?statement: declaration
-              | constant_declaration
-              | assignment
-              | input_statement
-              | output_statement
-              | if_statement
-              | case_statement
-              | for_loop
-              | while_loop
-              | repeat_until_loop
-              | procedure_declaration
-              | function_declaration
-              | return_statement
-              | call_statement
-              | comment
-
-    declaration: "DECLARE"i IDENTIFIER ":" type_spec
-
-    constant_declaration: "CONSTANT"i IDENTIFIER "=" expression
-
-    type_spec: simple_type
-             | array_type
-
-    simple_type: "INTEGER"i
-               | "REAL"i
-               | "STRING"i
-               | "BOOLEAN"i
-               | "CHAR"i
-               | "DATE"i
-
-    array_type: "ARRAY"i "[" array_dimension ("," array_dimension)* "]" "OF"i simple_type
-
-    array_dimension: NUMBER ":" NUMBER
-
-    ?expression: logical_or
-
-    ?logical_or: logical_and ("OR"i logical_and)*
-
-    ?logical_and: logical_not ("AND"i logical_not)*
-
-    ?logical_not: "NOT"i logical_not -> unary_not
-                | comparison
-
-    ?comparison: additive (comp_op additive)?
-
-    comp_op: "="
-           | "<>"
-           | "><"
-           | "<="
-           | ">="
-           | "<"
-           | ">"
-
-    ?additive: multiplicative (("+"|"-"|"&") multiplicative)*
-
-    ?multiplicative: power (("*"|"/"|"DIV"i|"MOD"i) power)*
-
-    ?power: unary ("^" unary)*
-
-    ?unary: "-" unary -> unary_minus
-          | "+" unary -> unary_plus
-          | primary
-
-    ?primary: NUMBER -> number
-            | STRING -> string
-            | "TRUE"i -> true
-            | "FALSE"i -> false
-            | function_call
-            | array_access
-            | IDENTIFIER -> identifier
-            | paren_expr
-
-    paren_expr: "(" expression ")"
-
-    function_call: IDENTIFIER "(" [arguments] ")"
-
-    arguments: expression ("," expression)*
-
-    array_access: IDENTIFIER "[" indices "]"
-
-    indices: expression ("," expression)*
-
-    assignment: (IDENTIFIER | array_access) ("=" | "<-") expression
-
-    input_statement: "INPUT"i (IDENTIFIER | array_access)
-
-    output_statement: ("OUTPUT"i | "PRINT"i) expression ("," expression)*
-
-    if_statement: "IF"i expression ["THEN"i] NEWLINE
-                  (statement | NEWLINE)*
-                  elif_part*
-                  [else_part]
-                  "ENDIF"i
-
-    elif_part: "ELSEIF"i expression ["THEN"i] NEWLINE
-               (statement | NEWLINE)*
-
-    else_part: "ELSE"i NEWLINE
-               (statement | NEWLINE)*
-
-    case_statement: "CASE"i "OF"i expression NEWLINE
-                    case_branch+
-                    [otherwise_part]
-                    "ENDCASE"i
-
-    case_branch: expression ":" NEWLINE
-                 (statement | NEWLINE)+
-
-    otherwise_part: "OTHERWISE"i ":" NEWLINE
-                    (statement | NEWLINE)+
-
-    for_loop: "FOR"i IDENTIFIER "=" expression "TO"i expression ["STEP"i expression] NEWLINE
-              (statement | NEWLINE)*
-              "NEXT"i IDENTIFIER
-
-    while_loop: "WHILE"i expression ["DO"i] NEWLINE
-                (statement | NEWLINE)*
-                "ENDWHILE"i
-
-    repeat_until_loop: "REPEAT"i NEWLINE
-                       (statement | NEWLINE)*
-                       "UNTIL"i expression
-
-    procedure_declaration: "PROCEDURE"i IDENTIFIER "(" [parameter_list] ")" NEWLINE
-                          (statement | NEWLINE)*
-                          "ENDPROCEDURE"i
-
-    function_declaration: "FUNCTION"i IDENTIFIER "(" [parameter_list] ")" "RETURNS"i simple_type NEWLINE
-                         (statement | NEWLINE)*
-                         "ENDFUNCTION"i
-
-    parameter_list: parameter ("," parameter)*
-
-    parameter: ["BYREF"i | "BYVAL"i] IDENTIFIER ":" type_spec
-
-    return_statement: "RETURN"i expression
-
-    call_statement: "CALL"i IDENTIFIER "(" [arguments] ")"
-
-    comment: COMMENT
-
-    IDENTIFIER: /[a-zA-Z_][a-zA-Z0-9_]*/
-
-    NUMBER: /\d+\.?\d*/
-
-    STRING: /"[^"]*"/ | /'[^']*'/
-
-    COMMENT: /\/\/[^\n]*/
-
-    NEWLINE: /\r?\n/+
-
-    %import common.WS_INLINE
-    %ignore WS_INLINE
+?not_expr: NOT not_expr -> not_op
+         | comparison
+
+?comparison: add_expr (comp_op add_expr)?
+
+comp_op: EQUALS | NEQ | LEQ | GEQ | LT | GT
+
+?add_expr: mul_expr ((PLUS|MINUS) mul_expr)*
+
+?mul_expr: power_expr ((STAR|SLASH|DIV|MOD) power_expr)*
+
+?power_expr: unary_expr (POWER unary_expr)*
+
+?unary_expr: MINUS unary_expr -> neg
+           | PLUS unary_expr -> pos
+           | atom
+
+?atom: NUMBER -> number
+     | STRING_LIT -> string
+     | TRUE -> true
+     | FALSE -> false
+     | func_call
+     | arr_access
+     | IDENT -> ident
+     | LPAR expression RPAR
+
+// Function calls and array access
+func_call: IDENT LPAR [expression (COMMA expression)*] RPAR
+arr_access: IDENT LBRACK expression (COMMA expression)* RBRACK
+
+// Statements
+assignment: (IDENT | arr_access) (EQUALS | ARROW) expression
+
+input_stmt: INPUT (IDENT | arr_access)
+
+output_stmt: (OUTPUT | PRINT) expression (COMMA expression)*
+
+// Control flow
+if_stmt: IF expression THEN _NL+ (statement _NL+)* elif_part* else_part? ENDIF
+
+elif_part: ELSEIF expression THEN _NL+ (statement _NL+)*
+
+else_part: ELSE _NL+ (statement _NL+)*
+
+for_loop: FOR IDENT EQUALS expression TO expression (STEP expression)? _NL+ (statement _NL+)* NEXT IDENT
+
+while_loop: WHILE expression DO _NL+ (statement _NL+)* ENDWHILE
+
+repeat_loop: REPEAT _NL+ (statement _NL+)* UNTIL expression
+
+// Functions and procedures
+procedure_decl: PROCEDURE IDENT LPAR [param_list] RPAR _NL+ (statement _NL+)* ENDPROCEDURE
+
+function_decl: FUNCTION IDENT LPAR [param_list] RPAR RETURNS simple_type _NL+ (statement _NL+)* ENDFUNCTION
+
+param_list: parameter (COMMA parameter)*
+
+parameter: (BYREF | BYVAL)? IDENT COLON type_spec
+
+return_stmt: RETURN expression
+
+call_stmt: CALL IDENT LPAR [expression (COMMA expression)*] RPAR
+
+// Terminals (case-insensitive keywords with priority)
+DECLARE.2: /DECLARE/i
+CONSTANT.2: /CONSTANT/i
+INTEGER.2: /INTEGER/i
+REAL.2: /REAL/i
+STRING.2: /STRING/i
+BOOLEAN.2: /BOOLEAN/i
+CHAR.2: /CHAR/i
+DATE.2: /DATE/i
+ARRAY.2: /ARRAY/i
+OF.2: /OF/i
+INPUT.2: /INPUT/i
+OUTPUT.2: /OUTPUT/i
+PRINT.2: /PRINT/i
+IF.2: /IF/i
+THEN.2: /THEN/i
+ELSEIF.2: /ELSEIF/i
+ELSE.2: /ELSE/i
+ENDIF.2: /ENDIF/i
+FOR.2: /FOR/i
+TO.2: /TO/i
+STEP.2: /STEP/i
+NEXT.2: /NEXT/i
+WHILE.2: /WHILE/i
+DO.2: /DO/i
+ENDWHILE.2: /ENDWHILE/i
+REPEAT.2: /REPEAT/i
+UNTIL.2: /UNTIL/i
+PROCEDURE.2: /PROCEDURE/i
+ENDPROCEDURE.2: /ENDPROCEDURE/i
+FUNCTION.2: /FUNCTION/i
+ENDFUNCTION.2: /ENDFUNCTION/i
+RETURNS.2: /RETURNS/i
+RETURN.2: /RETURN/i
+CALL.2: /CALL/i
+BYREF.2: /BYREF/i
+BYVAL.2: /BYVAL/i
+AND.2: /AND/i
+OR.2: /OR/i
+NOT.2: /NOT/i
+DIV.2: /DIV/i
+MOD.2: /MOD/i
+TRUE.2: /TRUE/i
+FALSE.2: /FALSE/i
+
+// Operators and punctuation
+ARROW: "<-"
+NEQ: "<>" | "><"
+LEQ: "<="
+GEQ: ">="
+EQUALS: "="
+LT: "<"
+GT: ">"
+PLUS: "+"
+MINUS: "-"
+STAR: "*"
+SLASH: "/"
+POWER: "^"
+LPAR: "("
+RPAR: ")"
+LBRACK: "["
+RBRACK: "]"
+COMMA: ","
+COLON: ":"
+
+// Identifiers, numbers, strings
+IDENT: /[a-zA-Z_][a-zA-Z0-9_]*/
+NUMBER: /\d+(\.\d+)?/
+STRING_LIT: /"[^"]*"/ | /'[^']*'/
+
+// Whitespace and comments
+COMMENT: /\/\/[^\n]*/
+_NL: /\r?\n/+
+
+%import common.WS_INLINE
+%ignore WS_INLINE
+%ignore COMMENT
 """
