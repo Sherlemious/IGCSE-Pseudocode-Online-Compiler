@@ -17,6 +17,8 @@ class PythonCodeGenerator:
         self.indent_string = "    "  # 4 spaces
         self.declared_arrays = set()
         self.in_function = False
+        self.current_byref_params = set()  # Track BYREF parameters in current function/procedure
+        self.procedure_signatures = {}  # Maps procedure/function name to list of (param_name, is_byref)
 
     def generate(self, ast: nodes.Program) -> str:
         """
@@ -171,6 +173,34 @@ def safe_numeric_input(prompt: str = "") -> Union[int, float]:
     except ValueError:
         # If not a number, return as string
         return value
+
+
+class Reference:
+    """
+    Reference wrapper for pass-by-reference semantics (BYREF parameters)
+
+    In IGCSE pseudocode, BYREF parameters allow procedures/functions to modify
+    the original variable. Since Python doesn't support true pass-by-reference,
+    we wrap variables in this Reference object.
+
+    Usage:
+        ref = Reference(5)
+        modify_value(ref)
+        print(ref.value)  # Value has been modified
+    """
+    def __init__(self, value: Any):
+        self.value = value
+
+    def get(self) -> Any:
+        """Get the referenced value"""
+        return self.value
+
+    def set(self, value: Any):
+        """Set the referenced value"""
+        self.value = value
+
+    def __repr__(self):
+        return f"Ref({self.value!r})"
 
 '''
 
@@ -399,11 +429,17 @@ def safe_numeric_input(prompt: str = "") -> Union[int, float]:
 
     def _generate_procedure(self, node: nodes.ProcedureDeclaration) -> str:
         """Generate procedure (function without return)"""
+        # Store procedure signature for CALL statement generation
+        self.procedure_signatures[node.name] = [(p.name, p.by_ref) for p in node.parameters]
+
         params = ", ".join(p.name for p in node.parameters)
         code = f"{self._indent()}def {node.name}({params}):\n"
 
         self.indent_level += 1
         self.in_function = True
+
+        # Track BYREF parameters for this procedure
+        self.current_byref_params = {p.name for p in node.parameters if p.by_ref}
 
         if node.body:
             for stmt in node.body:
@@ -412,17 +448,24 @@ def safe_numeric_input(prompt: str = "") -> Union[int, float]:
             code += f"{self._indent()}pass\n"
 
         self.in_function = False
+        self.current_byref_params = set()
         self.indent_level -= 1
 
         return code + "\n"
 
     def _generate_function(self, node: nodes.FunctionDeclaration) -> str:
         """Generate function"""
+        # Store function signature for function call generation
+        self.procedure_signatures[node.name] = [(p.name, p.by_ref) for p in node.parameters]
+
         params = ", ".join(p.name for p in node.parameters)
         code = f"{self._indent()}def {node.name}({params}):\n"
 
         self.indent_level += 1
         self.in_function = True
+
+        # Track BYREF parameters for this function
+        self.current_byref_params = {p.name for p in node.parameters if p.by_ref}
 
         if node.body:
             for stmt in node.body:
@@ -431,6 +474,7 @@ def safe_numeric_input(prompt: str = "") -> Union[int, float]:
             code += f"{self._indent()}pass\n"
 
         self.in_function = False
+        self.current_byref_params = set()
         self.indent_level -= 1
 
         return code + "\n"
@@ -441,10 +485,57 @@ def safe_numeric_input(prompt: str = "") -> Union[int, float]:
         return f"{self._indent()}return {value}\n"
 
     def _generate_call(self, node: nodes.CallStatement) -> str:
-        """Generate procedure call"""
-        args = [self._generate_expression(arg) for arg in node.arguments]
-        args_str = ", ".join(args)
-        return f"{self._indent()}{node.name}({args_str})\n"
+        """
+        Generate procedure call with BYREF parameter support
+
+        For BYREF parameters, we:
+        1. Create Reference wrapper before the call
+        2. Pass the reference to the procedure
+        3. Unwrap the reference after the call
+        """
+        code = ""
+
+        # Check if we have signature information for this procedure
+        if node.name in self.procedure_signatures:
+            signature = self.procedure_signatures[node.name]
+            byref_vars = []  # List of (original_var_name, ref_var_name) tuples
+
+            # Generate arguments, wrapping BYREF ones in Reference
+            call_args = []
+            for i, arg in enumerate(node.arguments):
+                if i < len(signature):
+                    param_name, is_byref = signature[i]
+
+                    if is_byref and isinstance(arg, nodes.Identifier):
+                        # This is a BYREF parameter - wrap it in Reference
+                        ref_var_name = f"_ref_{arg.name}"
+                        byref_vars.append((arg.name, ref_var_name))
+
+                        # Create reference before call
+                        code += f"{self._indent()}{ref_var_name} = Reference({arg.name})\n"
+                        call_args.append(ref_var_name)
+                    else:
+                        # Regular parameter
+                        call_args.append(self._generate_expression(arg))
+                else:
+                    # No signature info for this arg
+                    call_args.append(self._generate_expression(arg))
+
+            # Generate the procedure call
+            args_str = ", ".join(call_args)
+            code += f"{self._indent()}{node.name}({args_str})\n"
+
+            # Unwrap BYREF references after the call
+            for var_name, ref_var_name in byref_vars:
+                code += f"{self._indent()}{var_name} = {ref_var_name}.value\n"
+
+            return code
+        else:
+            # No signature information - generate simple call
+            # This happens for built-in functions or if procedure is defined after use
+            args = [self._generate_expression(arg) for arg in node.arguments]
+            args_str = ", ".join(args)
+            return f"{self._indent()}{node.name}({args_str})\n"
 
     def _generate_comment(self, node: nodes.Comment) -> str:
         """Generate comment"""
@@ -461,6 +552,9 @@ def safe_numeric_input(prompt: str = "") -> Union[int, float]:
         elif isinstance(node, nodes.BooleanLiteral):
             return "True" if node.value else "False"
         elif isinstance(node, nodes.Identifier):
+            # If this identifier is a BYREF parameter, access its .value
+            if node.name in self.current_byref_params:
+                return f"{node.name}.value"
             return node.name
         elif isinstance(node, nodes.BinaryOp):
             return self._generate_binary_op(node)

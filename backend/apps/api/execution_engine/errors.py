@@ -129,8 +129,9 @@ def format_lark_error(error: Exception, source_code: str) -> str:
 
         message = f"Unexpected token '{token}'"
         if expected:
-            expected_str = ", ".join(expected[:5])  # Show first 5 expected tokens
-            if len(expected) > 5:
+            expected_list = list(expected)  # Convert set to list
+            expected_str = ", ".join(expected_list[:5])  # Show first 5 expected tokens
+            if len(expected_list) > 5:
                 expected_str += "..."
             message += f" (expected: {expected_str})"
 

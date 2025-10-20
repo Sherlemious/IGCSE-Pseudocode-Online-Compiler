@@ -197,7 +197,7 @@ class ForLoop(ASTNode):
     start: ASTNode
     end: ASTNode
     step: Optional[ASTNode] = None
-    body: List[ASTNode] = None
+    body: Optional[List[ASTNode]] = None
 
 
 @dataclass

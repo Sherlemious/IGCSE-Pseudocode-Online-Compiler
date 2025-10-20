@@ -31,15 +31,43 @@ class ASTTransformer(Transformer):
         super().__init__()
         self.current_line = 1
 
+    def _get_position(self, items, meta=None):
+        """
+        Extract line and column position from items or meta
+
+        Args:
+            items: List of tokens/nodes from Lark
+            meta: Optional meta object from Lark Tree
+
+        Returns:
+            Tuple of (line, column)
+        """
+        # Try to get from meta first (most accurate for tree nodes)
+        if meta is not None:
+            return (getattr(meta, 'line', 1), getattr(meta, 'column', 1))
+
+        # Try to find first token in items
+        for item in items:
+            if isinstance(item, Token):
+                return (item.line, item.column)
+            # If item is a Tree, check its meta
+            if hasattr(item, 'meta'):
+                return (item.meta.line, item.meta.column)
+
+        # Default fallback
+        return (1, 1)
+
     # ========================================================================
     # Program Structure
     # ========================================================================
 
     def program(self, items):
         """Transform program rule"""
+        # Program always starts at line 1, column 1
+        line, column = 1, 1
         # Filter out None values (empty statements, newlines, etc.)
         statements = [item for item in items if item is not None and not isinstance(item, Token)]
-        return nodes.Program(statements=statements, line=1, column=1)
+        return nodes.Program(statements=statements, line=line, column=column)
 
     # ========================================================================
     # Declarations
@@ -47,6 +75,7 @@ class ASTTransformer(Transformer):
 
     def declaration(self, items):
         """DECLARE x : INTEGER"""
+        line, column = self._get_position(items)
         name = str(items[0])
         type_spec = items[1]
 
@@ -58,7 +87,7 @@ class ASTTransformer(Transformer):
                 type_=base_type,
                 is_array=is_array,
                 dimensions=dimensions,
-                line=1, column=1
+                line=line, column=column
             )
         else:
             # Simple type
@@ -66,14 +95,15 @@ class ASTTransformer(Transformer):
                 name=name,
                 type_=type_spec,
                 is_array=False,
-                line=1, column=1
+                line=line, column=column
             )
 
     def constant_declaration(self, items):
         """CONSTANT PI = 3.14"""
+        line, column = self._get_position(items)
         name = str(items[0])
         value = items[1]
-        return nodes.ConstantDeclaration(name=name, value=value, line=1, column=1)
+        return nodes.ConstantDeclaration(name=name, value=value, line=line, column=column)
 
     def simple_type(self, items):
         """INTEGER, REAL, STRING, etc."""
@@ -102,33 +132,36 @@ class ASTTransformer(Transformer):
             return items[0]
         result = items[0]
         for i in range(1, len(items)):
-            result = nodes.BinaryOp(operator="OR", left=result, right=items[i], line=1, column=1)
+            result = nodes.BinaryOp(operator="OR", left=result, right=items[i], line=line, column=column)
         return result
 
     def logical_and(self, items):
         """a AND b"""
+        line, column = self._get_position(items)
         if len(items) == 1:
             return items[0]
         result = items[0]
         for i in range(1, len(items)):
-            result = nodes.BinaryOp(operator="AND", left=result, right=items[i], line=1, column=1)
+            result = nodes.BinaryOp(operator="AND", left=result, right=items[i], line=line, column=column)
         return result
 
     def unary_not(self, items):
         """NOT a (old grammar)"""
-        return nodes.UnaryOp(operator="NOT", operand=items[0], line=1, column=1)
+        return nodes.UnaryOp(operator="NOT", operand=items[0], line=line, column=column)
 
     def not_op(self, items):
         """NOT a (new grammar)"""
-        return nodes.UnaryOp(operator="NOT", operand=items[0], line=1, column=1)
+        line, column = self._get_position(items)
+        return nodes.UnaryOp(operator="NOT", operand=items[0], line=line, column=column)
 
     def neg(self, items):
         """-x (new grammar)"""
-        return nodes.UnaryOp(operator="-", operand=items[0], line=1, column=1)
+        return nodes.UnaryOp(operator="-", operand=items[0], line=line, column=column)
 
     def pos(self, items):
         """+x (new grammar)"""
-        return nodes.UnaryOp(operator="+", operand=items[0], line=1, column=1)
+        line, column = self._get_position(items)
+        return nodes.UnaryOp(operator="+", operand=items[0], line=line, column=column)
 
     def comparison(self, items):
         """a = b, a < b, etc."""
@@ -137,10 +170,11 @@ class ASTTransformer(Transformer):
         left = items[0]
         op = str(items[1])
         right = items[2]
-        return nodes.Comparison(operator=op, left=left, right=right, line=1, column=1)
+        return nodes.Comparison(operator=op, left=left, right=right, line=line, column=column)
 
     def comp_op(self, items):
         """Comparison operator"""
+        line, column = self._get_position(items)
         return str(items[0])
 
     def additive(self, items):
@@ -151,19 +185,20 @@ class ASTTransformer(Transformer):
         i = 1
         while i < len(items):
             op = str(items[i])
-            result = nodes.BinaryOp(operator=op, left=result, right=items[i+1], line=1, column=1)
+            result = nodes.BinaryOp(operator=op, left=result, right=items[i+1], line=line, column=column)
             i += 2
         return result
 
     def multiplicative(self, items):
         """a * b, a / b, a MOD b"""
+        line, column = self._get_position(items)
         if len(items) == 1:
             return items[0]
         result = items[0]
         i = 1
         while i < len(items):
             op = str(items[i])
-            result = nodes.BinaryOp(operator=op, left=result, right=items[i+1], line=1, column=1)
+            result = nodes.BinaryOp(operator=op, left=result, right=items[i+1], line=line, column=column)
             i += 2
         return result
 
@@ -174,39 +209,44 @@ class ASTTransformer(Transformer):
         # Right-associative: a^b^c = a^(b^c)
         result = items[-1]
         for i in range(len(items) - 2, -1, -1):
-            result = nodes.BinaryOp(operator="^", left=items[i], right=result, line=1, column=1)
+            result = nodes.BinaryOp(operator="^", left=items[i], right=result, line=line, column=column)
         return result
 
     def unary_minus(self, items):
         """-x"""
-        return nodes.UnaryOp(operator="-", operand=items[0], line=1, column=1)
+        line, column = self._get_position(items)
+        return nodes.UnaryOp(operator="-", operand=items[0], line=line, column=column)
 
     def unary_plus(self, items):
         """+x"""
-        return nodes.UnaryOp(operator="+", operand=items[0], line=1, column=1)
+        return nodes.UnaryOp(operator="+", operand=items[0], line=line, column=column)
 
     def number(self, items):
         """Numeric literal"""
+        line, column = self._get_position(items)
         value = float(items[0])
-        return nodes.NumberLiteral(value=value, line=1, column=1)
+        return nodes.NumberLiteral(value=value, line=line, column=column)
 
     def string(self, items):
         """String literal"""
+        line, column = self._get_position(items)
         # Remove quotes
         value = str(items[0])[1:-1]
-        return nodes.StringLiteral(value=value, line=1, column=1)
+        return nodes.StringLiteral(value=value, line=line, column=column)
 
     def true(self, items):
         """TRUE"""
-        return nodes.BooleanLiteral(value=True, line=1, column=1)
+        line, column = self._get_position(items)
+        return nodes.BooleanLiteral(value=True, line=line, column=column)
 
     def false(self, items):
         """FALSE"""
-        return nodes.BooleanLiteral(value=False, line=1, column=1)
+        return nodes.BooleanLiteral(value=False, line=line, column=column)
 
     def identifier(self, items):
         """Variable name"""
-        return nodes.Identifier(name=str(items[0]), line=1, column=1)
+        line, column = self._get_position(items)
+        return nodes.Identifier(name=str(items[0]), line=line, column=column)
 
     def paren_expr(self, items):
         """Parenthesized expression - just return the inner expression"""
@@ -214,7 +254,8 @@ class ASTTransformer(Transformer):
 
     def ident(self, items):
         """Identifier in expression (from new grammar)"""
-        return nodes.Identifier(name=str(items[0]), line=1, column=1)
+        line, column = self._get_position(items)
+        return nodes.Identifier(name=str(items[0]), line=line, column=column)
 
     # ========================================================================
     # Function Calls and Array Access (new grammar names)
@@ -222,25 +263,27 @@ class ASTTransformer(Transformer):
 
     def func_call(self, items):
         """Function call from new grammar: func(a, b, c)"""
+        line, column = self._get_position(items)
         name = str(items[0])
         # Remaining items are the arguments
         args = [item for item in items[1:] if item is not None]
-        return nodes.FunctionCall(name=name, arguments=args, line=1, column=1)
+        return nodes.FunctionCall(name=name, arguments=args, line=line, column=column)
 
     def arr_access(self, items):
         """Array access from new grammar: arr[i] or arr[i, j]"""
         name = str(items[0])
         # Remaining items are the indices
         indices = [item for item in items[1:] if item is not None]
-        return nodes.ArrayAccess(name=name, indices=indices, line=1, column=1)
+        return nodes.ArrayAccess(name=name, indices=indices, line=line, column=column)
 
     # Old grammar support (kept for compatibility)
     def function_call(self, items):
         """func(a, b, c)"""
+        line, column = self._get_position(items)
         name = str(items[0])
         # items[1] will be the arguments list if present
         args = items[1] if len(items) > 1 else []
-        return nodes.FunctionCall(name=name, arguments=args, line=1, column=1)
+        return nodes.FunctionCall(name=name, arguments=args, line=line, column=column)
 
     def arguments(self, items):
         """Argument list for function calls"""
@@ -251,10 +294,11 @@ class ASTTransformer(Transformer):
         name = str(items[0])
         # items[1] will be the indices list
         indices = items[1] if len(items) > 1 else []
-        return nodes.ArrayAccess(name=name, indices=indices, line=1, column=1)
+        return nodes.ArrayAccess(name=name, indices=indices, line=line, column=column)
 
     def indices(self, items):
         """Index list for array access"""
+        line, column = self._get_position(items)
         return list(items)
 
     # ========================================================================
@@ -263,31 +307,34 @@ class ASTTransformer(Transformer):
 
     def assignment(self, items):
         """x = 5"""
+        line, column = self._get_position(items)
         target = items[0]
         value = items[1]
-        return nodes.Assignment(target=target, value=value, line=1, column=1)
+        return nodes.Assignment(target=target, value=value, line=line, column=column)
 
     def input_statement(self, items):
         """INPUT x (old grammar)"""
         variable = items[0]
-        return nodes.Input(variable=variable, line=1, column=1)
+        return nodes.Input(variable=variable, line=line, column=column)
 
     def input_stmt(self, items):
         """INPUT x (new grammar)"""
+        line, column = self._get_position(items)
         # Skip the INPUT keyword token, get the variable
         variable = [item for item in items if not isinstance(item, Token)][0]
-        return nodes.Input(variable=variable, line=1, column=1)
+        return nodes.Input(variable=variable, line=line, column=column)
 
     def output_statement(self, items):
         """OUTPUT "Hello", x (old grammar)"""
         expressions = items
-        return nodes.Output(expressions=expressions, line=1, column=1)
+        return nodes.Output(expressions=expressions, line=line, column=column)
 
     def output_stmt(self, items):
         """OUTPUT "Hello", x (new grammar)"""
+        line, column = self._get_position(items)
         # Filter out keyword tokens, keep only expressions
         expressions = [item for item in items if not isinstance(item, Token)]
-        return nodes.Output(expressions=expressions, line=1, column=1)
+        return nodes.Output(expressions=expressions, line=line, column=column)
 
     # ========================================================================
     # Control Flow - Conditionals
@@ -319,14 +366,15 @@ class ASTTransformer(Transformer):
             then_body=then_body,
             elif_parts=elif_parts if elif_parts else None,
             else_body=else_body,
-            line=1, column=1
+            line=line, column=column
         )
 
     def elif_part(self, items):
         """ELSEIF condition THEN ..."""
+        line, column = self._get_position(items)
         condition = items[0]
         body = items[1:]
-        return nodes.ElifPart(condition=condition, body=body, line=1, column=1)
+        return nodes.ElifPart(condition=condition, body=body, line=line, column=column)
 
     def else_part(self, items):
         """ELSE ..."""
@@ -349,14 +397,15 @@ class ASTTransformer(Transformer):
             expression=expression,
             cases=cases,
             otherwise=otherwise,
-            line=1, column=1
+            line=line, column=column
         )
 
     def case_branch(self, items):
         """value: statements"""
+        line, column = self._get_position(items)
         value = items[0]
         body = items[1:]
-        return nodes.CaseBranch(value=value, body=body, line=1, column=1)
+        return nodes.CaseBranch(value=value, body=body, line=line, column=column)
 
     def otherwise_part(self, items):
         """OTHERWISE: statements"""
@@ -368,6 +417,8 @@ class ASTTransformer(Transformer):
 
     def for_loop(self, items):
         """FOR i = 1 TO 10 STEP 1 ... NEXT i"""
+        line, column = self._get_position(items)
+
         # Filter items: separate tokens from AST nodes
         tokens = [item for item in items if isinstance(item, Token)]
         ast_items = [item for item in items if not isinstance(item, Token)]
@@ -400,7 +451,7 @@ class ASTTransformer(Transformer):
             end=end,
             step=step,
             body=body,
-            line=1, column=1
+            line=line, column=column
         )
 
     def while_loop(self, items):
@@ -409,16 +460,17 @@ class ASTTransformer(Transformer):
         ast_items = [item for item in items if not isinstance(item, Token)]
         condition = ast_items[0] if ast_items else None
         body = ast_items[1:] if len(ast_items) > 1 else []
-        return nodes.WhileLoop(condition=condition, body=body, line=1, column=1)
+        return nodes.WhileLoop(condition=condition, body=body, line=line, column=column)
 
     def repeat_until_loop(self, items):
         """REPEAT ... UNTIL condition"""
+        line, column = self._get_position(items)
         # Filter out tokens
         ast_items = [item for item in items if not isinstance(item, Token)]
         # Last item is the condition
         condition = ast_items[-1] if ast_items else None
         body = ast_items[:-1] if len(ast_items) > 1 else []
-        return nodes.RepeatUntilLoop(body=body, condition=condition, line=1, column=1)
+        return nodes.RepeatUntilLoop(body=body, condition=condition, line=line, column=column)
 
     def repeat_loop(self, items):
         """REPEAT ... UNTIL condition (new grammar name)"""
@@ -428,8 +480,13 @@ class ASTTransformer(Transformer):
     # Functions and Procedures
     # ========================================================================
 
+    def procedure_decl(self, items):
+        """PROCEDURE from new grammar"""
+        return self.procedure_declaration(items)
+
     def procedure_declaration(self, items):
         """PROCEDURE name(params) ... ENDPROCEDURE"""
+        line, column = self._get_position(items)
         name = str(items[0])
 
         # Find where parameters end and body begins
@@ -450,11 +507,16 @@ class ASTTransformer(Transformer):
             name=name,
             parameters=params,
             body=body,
-            line=1, column=1
+            line=line, column=column
         )
+
+    def function_decl(self, items):
+        """FUNCTION from new grammar"""
+        return self.function_declaration(items)
 
     def function_declaration(self, items):
         """FUNCTION name(params) RETURNS type ... ENDFUNCTION"""
+        line, column = self._get_position(items)
         name = str(items[0])
         return_type = None
         params = []
@@ -473,7 +535,7 @@ class ASTTransformer(Transformer):
             parameters=params,
             return_type=return_type,
             body=body,
-            line=1, column=1
+            line=line, column=column
         )
 
     def parameter(self, items):
@@ -500,14 +562,19 @@ class ASTTransformer(Transformer):
     def return_statement(self, items):
         """RETURN value"""
         value = items[0]
-        return nodes.ReturnStatement(value=value, line=1, column=1)
+        return nodes.ReturnStatement(value=value, line=line, column=column)
+
+    def call_stmt(self, items):
+        """CALL from new grammar"""
+        return self.call_statement(items)
 
     def call_statement(self, items):
         """CALL proc(a, b, c)"""
+        line, column = self._get_position(items)
         name = str(items[0])
         # items[1] will be the arguments list if present
         args = items[1] if len(items) > 1 else []
-        return nodes.CallStatement(name=name, arguments=args, line=1, column=1)
+        return nodes.CallStatement(name=name, arguments=args, line=line, column=column)
 
     # ========================================================================
     # Comments and Special
@@ -516,7 +583,7 @@ class ASTTransformer(Transformer):
     def comment(self, items):
         """// comment"""
         text = str(items[0])[2:].strip()  # Remove // and whitespace
-        return nodes.Comment(text=text, line=1, column=1)
+        return nodes.Comment(text=text, line=line, column=column)
 
     # ========================================================================
     # Handle tokens
@@ -524,6 +591,7 @@ class ASTTransformer(Transformer):
 
     def IDENTIFIER(self, token):
         """Handle identifier token"""
+        line, column = self._get_position(items)
         return str(token)
 
     def NUMBER(self, token):
