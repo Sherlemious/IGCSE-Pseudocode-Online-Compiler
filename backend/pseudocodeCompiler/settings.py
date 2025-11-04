@@ -1,4 +1,5 @@
 from pathlib import Path
+import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -8,12 +9,16 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-3%p+ixn*2#efyjuiy1xee#7*n)tr&2=$02&x+#0y^j@d6k+qv%'
+SECRET_KEY = os.environ.get(
+    'DJANGO_SECRET_KEY',
+    'django-insecure-3%p+ixn*2#efyjuiy1xee#7*n)tr&2=$02&x+#0y^j@d6k+qv%'  # Development fallback
+)
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.environ.get('DEBUG', 'False').lower() in ('true', '1', 't')
 
-ALLOWED_HOSTS = ['igcse-pseudocode-online-compiler.onrender.com']
+# Parse allowed hosts from environment variable
+ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
 
 
 # Application definition
@@ -43,7 +48,16 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = 'pseudocodeCompiler.urls'
-CORS_ALLOW_ALL_ORIGINS = True
+
+# CORS Configuration
+# In production, specify allowed origins via environment variable
+CORS_ALLOWED_ORIGINS_ENV = os.environ.get('CORS_ALLOWED_ORIGINS', '')
+if CORS_ALLOWED_ORIGINS_ENV:
+    CORS_ALLOWED_ORIGINS = [origin.strip() for origin in CORS_ALLOWED_ORIGINS_ENV.split(',')]
+    CORS_ALLOW_ALL_ORIGINS = False
+else:
+    # Development fallback - allow all origins
+    CORS_ALLOW_ALL_ORIGINS = True
 
 TEMPLATES = [
     {
@@ -109,7 +123,8 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
