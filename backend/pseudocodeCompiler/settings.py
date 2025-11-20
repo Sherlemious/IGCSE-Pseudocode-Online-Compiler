@@ -18,7 +18,7 @@ SECRET_KEY = os.environ.get(
 DEBUG = os.environ.get('DEBUG', 'False').lower() in ('true', '1', 't')
 
 # Parse allowed hosts from environment variable
-ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1').replace(',', ' ').split()
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
@@ -50,14 +50,7 @@ MIDDLEWARE = [
 ROOT_URLCONF = 'pseudocodeCompiler.urls'
 
 # CORS Configuration
-# In production, specify allowed origins via environment variable
-CORS_ALLOWED_ORIGINS_ENV = os.environ.get('CORS_ALLOWED_ORIGINS', '')
-if CORS_ALLOWED_ORIGINS_ENV:
-    CORS_ALLOWED_ORIGINS = [origin.strip() for origin in CORS_ALLOWED_ORIGINS_ENV.split(',')]
-    CORS_ALLOW_ALL_ORIGINS = False
-else:
-    # Development fallback - allow all origins
-    CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_ALL_ORIGINS = True
 
 TEMPLATES = [
     {
