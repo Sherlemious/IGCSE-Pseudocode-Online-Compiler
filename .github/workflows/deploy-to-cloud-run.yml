@@ -11,6 +11,8 @@ env:
   GCP_REGION: ${{ secrets.GCP_REGION || 'us-central1' }}
   BACKEND_SERVICE_NAME: igcse-pseudocode-backend
   FRONTEND_SERVICE_NAME: igcse-pseudocode-frontend
+  BACKEND_DOMAIN: ${{ secrets.BACKEND_DOMAIN }}
+  FRONTEND_DOMAIN: ${{ secrets.FRONTEND_DOMAIN }}
 
 jobs:
   deploy-backend:
@@ -76,11 +78,11 @@ jobs:
           echo "Backend deployed to: $URL"
 
       - name: Map Backend Custom Domain (if configured)
-        if: secrets.BACKEND_DOMAIN != ''
+        if: env.BACKEND_DOMAIN != ''
         run: |
           gcloud run domain-mappings create \
             --service ${{ env.BACKEND_SERVICE_NAME }} \
-            --domain ${{ secrets.BACKEND_DOMAIN }} \
+            --domain ${{ env.BACKEND_DOMAIN }} \
             --region ${{ env.GCP_REGION }} || echo "Domain mapping already exists or DNS not configured"
 
     outputs:
@@ -150,11 +152,11 @@ jobs:
           echo "Frontend deployed to: $URL"
 
       - name: Map Frontend Custom Domain (if configured)
-        if: secrets.FRONTEND_DOMAIN != ''
+        if: env.FRONTEND_DOMAIN != ''
         run: |
           gcloud run domain-mappings create \
             --service ${{ env.FRONTEND_SERVICE_NAME }} \
-            --domain ${{ secrets.FRONTEND_DOMAIN }} \
+            --domain ${{ env.FRONTEND_DOMAIN }} \
             --region ${{ env.GCP_REGION }} || echo "Domain mapping already exists or DNS not configured"
 
     outputs:
