@@ -8,37 +8,139 @@ interface Example {
 }
 
 const examples: Example[] = [
+  // ========== Basics ==========
   {
     title: 'Hello World',
     category: 'Basics',
     code: `OUTPUT "Hello, World!"`,
   },
   {
-    title: 'User Input',
+    title: 'Variables and Assignment',
+    category: 'Basics',
+    code: `DECLARE x : INTEGER
+DECLARE y : INTEGER
+x = 10
+y = 20
+OUTPUT "x = ", x
+OUTPUT "y = ", y
+OUTPUT "x + y = ", x + y`,
+  },
+  {
+    title: 'Constants',
+    category: 'Basics',
+    code: `CONSTANT PI = 3.14159
+DECLARE radius : REAL
+radius = 5
+area = PI * radius * radius
+OUTPUT "Area of circle: ", area`,
+  },
+
+  // ========== Input/Output ==========
+  {
+    title: 'Simple Input',
     category: 'Input/Output',
-    code: `INPUT name
+    code: `DECLARE name : STRING
+INPUT name
 OUTPUT "Hello, ", name`,
   },
   {
-    title: 'Simple Loop',
+    title: 'Multiple Inputs',
+    category: 'Input/Output',
+    code: `DECLARE length : REAL
+DECLARE width : REAL
+OUTPUT "Enter length: "
+INPUT length
+OUTPUT "Enter width: "
+INPUT width
+area = length * width
+OUTPUT "Area = ", area`,
+  },
+
+  // ========== Conditionals ==========
+  {
+    title: 'IF Statement',
+    category: 'Conditionals',
+    code: `DECLARE age : INTEGER
+INPUT age
+IF age >= 18 THEN
+    OUTPUT "You are an adult"
+ELSE
+    OUTPUT "You are a minor"
+ENDIF`,
+  },
+  {
+    title: 'Nested IF',
+    category: 'Conditionals',
+    code: `DECLARE score : INTEGER
+INPUT score
+IF score >= 90 THEN
+    OUTPUT "Grade: A"
+ELSEIF score >= 80 THEN
+    OUTPUT "Grade: B"
+ELSEIF score >= 70 THEN
+    OUTPUT "Grade: C"
+ELSEIF score >= 60 THEN
+    OUTPUT "Grade: D"
+ELSE
+    OUTPUT "Grade: F"
+ENDIF`,
+  },
+
+  // ========== Loops ==========
+  {
+    title: 'FOR Loop',
     category: 'Loops',
-    code: `FOR i = 1 TO 5
+    code: `DECLARE i : INTEGER
+FOR i = 1 TO 10
     OUTPUT i
 NEXT i`,
   },
   {
-    title: 'While Loop',
+    title: 'FOR Loop with STEP',
     category: 'Loops',
-    code: `count = 1
+    code: `DECLARE i : INTEGER
+FOR i = 0 TO 20 STEP 2
+    OUTPUT i
+NEXT i`,
+  },
+  {
+    title: 'WHILE Loop',
+    category: 'Loops',
+    code: `DECLARE count : INTEGER
+count = 1
 WHILE count <= 5 DO
     OUTPUT count
     count = count + 1
 ENDWHILE`,
   },
   {
-    title: 'Array Operations',
+    title: 'REPEAT Loop',
+    category: 'Loops',
+    code: `DECLARE num : INTEGER
+num = 1
+REPEAT
+    OUTPUT num
+    num = num + 1
+UNTIL num > 5`,
+  },
+  {
+    title: 'Nested Loops',
+    category: 'Loops',
+    code: `DECLARE i : INTEGER
+DECLARE j : INTEGER
+FOR i = 1 TO 3
+    FOR j = 1 TO 3
+        OUTPUT i, " x ", j, " = ", i * j
+    NEXT j
+NEXT i`,
+  },
+
+  // ========== Arrays ==========
+  {
+    title: '1D Array',
     category: 'Arrays',
     code: `DECLARE numbers : ARRAY[1:5] OF INTEGER
+DECLARE i : INTEGER
 FOR i = 1 TO 5
     numbers[i] = i * 2
 NEXT i
@@ -47,142 +149,240 @@ FOR i = 1 TO 5
 NEXT i`,
   },
   {
-    title: 'Calculate Average',
-    category: 'Math',
-    code: `DECLARE numbers : ARRAY[1:5] OF INTEGER
-sum = 0
-
-FOR i = 1 TO 5
-    INPUT numbers[i]
-    sum = sum + numbers[i]
+    title: '2D Array',
+    category: 'Arrays',
+    code: `DECLARE matrix : ARRAY[1:3, 1:3] OF INTEGER
+DECLARE i : INTEGER
+DECLARE j : INTEGER
+FOR i = 1 TO 3
+    FOR j = 1 TO 3
+        matrix[i, j] = i * j
+    NEXT j
 NEXT i
-
-average = sum / 5
-OUTPUT "The average is: ", average`,
+FOR i = 1 TO 3
+    FOR j = 1 TO 3
+        OUTPUT matrix[i, j], " "
+    NEXT j
+    OUTPUT ""
+NEXT i`,
   },
   {
-    title: 'Find Maximum',
+    title: 'Find Maximum in Array',
     category: 'Arrays',
     code: `DECLARE numbers : ARRAY[1:5] OF INTEGER
+DECLARE i : INTEGER
+DECLARE max : INTEGER
 FOR i = 1 TO 5
     INPUT numbers[i]
 NEXT i
-
 max = numbers[1]
 FOR i = 2 TO 5
     IF numbers[i] > max THEN
         max = numbers[i]
     ENDIF
 NEXT i
+OUTPUT "Maximum: ", max`,
+  },
 
-OUTPUT "Maximum number is: ", max`,
+  // ========== Procedures ==========
+  {
+    title: 'Simple Procedure',
+    category: 'Procedures',
+    code: `PROCEDURE Greet()
+    OUTPUT "Hello from procedure!"
+ENDPROCEDURE
+
+CALL Greet()`,
   },
   {
-    title: 'Temperature Converter',
-    category: 'Math',
-    code: `INPUT celsius
-fahrenheit = (celsius * 9/5) + 32
-OUTPUT celsius, "°C is ", fahrenheit, "°F"`,
+    title: 'Procedure with Parameters',
+    category: 'Procedures',
+    code: `PROCEDURE PrintSum(a : INTEGER, b : INTEGER)
+    DECLARE sum : INTEGER
+    sum = a + b
+    OUTPUT "Sum = ", sum
+ENDPROCEDURE
+
+CALL PrintSum(5, 3)
+CALL PrintSum(10, 20)`,
   },
   {
-    title: 'Simple Calculator',
-    category: 'Math',
-    code: `INPUT num1
-INPUT op
-INPUT num2
+    title: 'Procedure with BYREF',
+    category: 'Procedures',
+    code: `PROCEDURE Swap(BYREF a : INTEGER, BYREF b : INTEGER)
+    DECLARE temp : INTEGER
+    temp = a
+    a = b
+    b = temp
+ENDPROCEDURE
 
-IF op = "+" THEN
-    result = num1 + num2
-ELSEIF op = "-" THEN
-    result = num1 - num2
-ELSEIF op = "*" THEN
-    result = num1 * num2
-ELSEIF op = "/" THEN
-    IF num2 = 0 THEN
-        OUTPUT "Error: Cannot divide by zero"
-    ELSE
-        result = num1 / num2
+DECLARE x : INTEGER
+DECLARE y : INTEGER
+x = 5
+y = 10
+OUTPUT "Before: x=", x, ", y=", y
+CALL Swap(x, y)
+OUTPUT "After: x=", x, ", y=", y`,
+  },
+
+  // ========== Functions ==========
+  {
+    title: 'Simple Function',
+    category: 'Functions',
+    code: `FUNCTION Square(n : INTEGER) RETURNS INTEGER
+    RETURN n * n
+ENDFUNCTION
+
+DECLARE result : INTEGER
+result = Square(5)
+OUTPUT "5 squared = ", result`,
+  },
+  {
+    title: 'Function with Multiple Parameters',
+    category: 'Functions',
+    code: `FUNCTION Add(a : INTEGER, b : INTEGER) RETURNS INTEGER
+    RETURN a + b
+ENDFUNCTION
+
+DECLARE sum : INTEGER
+sum = Add(10, 20)
+OUTPUT "Sum = ", sum`,
+  },
+  {
+    title: 'Factorial Function',
+    category: 'Functions',
+    code: `FUNCTION Factorial(n : INTEGER) RETURNS INTEGER
+    DECLARE result : INTEGER
+    DECLARE i : INTEGER
+    result = 1
+    FOR i = 1 TO n
+        result = result * i
+    NEXT i
+    RETURN result
+ENDFUNCTION
+
+DECLARE num : INTEGER
+DECLARE fact : INTEGER
+num = 5
+fact = Factorial(num)
+OUTPUT num, "! = ", fact`,
+  },
+  {
+    title: 'Is Prime Function',
+    category: 'Functions',
+    code: `FUNCTION IsPrime(n : INTEGER) RETURNS BOOLEAN
+    DECLARE i : INTEGER
+    IF n <= 1 THEN
+        RETURN FALSE
     ENDIF
-ENDIF
+    FOR i = 2 TO n - 1
+        IF n MOD i = 0 THEN
+            RETURN FALSE
+        ENDIF
+    NEXT i
+    RETURN TRUE
+ENDFUNCTION
 
-OUTPUT num1, " ", op, " ", num2, " = ", result`,
+DECLARE num : INTEGER
+num = 17
+IF IsPrime(num) THEN
+    OUTPUT num, " is prime"
+ELSE
+    OUTPUT num, " is not prime"
+ENDIF`,
+  },
+
+  // ========== Strings ==========
+  {
+    title: 'String Operations',
+    category: 'Strings',
+    code: `DECLARE text : STRING
+text = "Hello"
+OUTPUT "Length: ", LENGTH(text)
+OUTPUT "Substring: ", SUBSTRING(text, 1, 3)`,
   },
   {
-    title: 'UserInput Example',
-    category: 'Input/Output',
-    code: `name = UserInput
-age = UserInput
-OUTPUT "Hello, ", name, "! You are ", age, " years old."`,
+    title: 'String Concatenation',
+    category: 'Strings',
+    code: `DECLARE first : STRING
+DECLARE last : STRING
+DECLARE full : STRING
+first = "John"
+last = "Doe"
+full = first + " " + last
+OUTPUT "Full name: ", full`,
   },
+
+  // ========== Complete Programs ==========
   {
-    title: 'Array with UserInput',
-    category: 'Arrays',
-    code: `DECLARE scores : ARRAY[1:5] OF INTEGER
+    title: 'Calculate Average',
+    category: 'Complete Programs',
+    code: `DECLARE numbers : ARRAY[1:5] OF INTEGER
+DECLARE i : INTEGER
+DECLARE sum : INTEGER
+DECLARE average : REAL
 sum = 0
-
 FOR i = 1 TO 5
-    scores[i] = UserInput
-    sum = sum + scores[i]
+    OUTPUT "Enter number ", i, ": "
+    INPUT numbers[i]
+    sum = sum + numbers[i]
+NEXT i
+average = sum / 5
+OUTPUT "Average = ", average`,
+  },
+  {
+    title: 'Number Guessing Game',
+    category: 'Complete Programs',
+    code: `DECLARE secret : INTEGER
+DECLARE guess : INTEGER
+DECLARE attempts : INTEGER
+secret = 42
+attempts = 0
+OUTPUT "Guess the number (1-100)!"
+REPEAT
+    INPUT guess
+    attempts = attempts + 1
+    IF guess < secret THEN
+        OUTPUT "Too low!"
+    ELSEIF guess > secret THEN
+        OUTPUT "Too high!"
+    ENDIF
+UNTIL guess = secret
+OUTPUT "Correct! You got it in ", attempts, " attempts"`,
+  },
+  {
+    title: 'Bubble Sort',
+    category: 'Complete Programs',
+    code: `DECLARE arr : ARRAY[1:5] OF INTEGER
+DECLARE i : INTEGER
+DECLARE j : INTEGER
+DECLARE temp : INTEGER
+DECLARE swapped : BOOLEAN
+
+OUTPUT "Enter 5 numbers:"
+FOR i = 1 TO 5
+    INPUT arr[i]
 NEXT i
 
-average = sum / 5
-OUTPUT "The average score is: ", average`,
-  },
-  {
-    title: 'Input Validation Loop',
-    category: 'Input/Output',
-    code: `valid = FALSE
-WHILE NOT valid DO
-    password = UserInput
-    IF LENGTH(password) < 8 THEN
-        OUTPUT "Password too short, must be at least 8 characters"
-    ELSE
-        valid = TRUE
-        OUTPUT "Password accepted"
+FOR i = 1 TO 4
+    swapped = FALSE
+    FOR j = 1 TO 5 - i
+        IF arr[j] > arr[j + 1] THEN
+            temp = arr[j]
+            arr[j] = arr[j + 1]
+            arr[j + 1] = temp
+            swapped = TRUE
+        ENDIF
+    NEXT j
+    IF NOT swapped THEN
+        i = 5
     ENDIF
-ENDWHILE`,
-  },
-  {
-    title: 'Interactive Menu',
-    category: 'Input/Output',
-    code: `choice = 0
-WHILE choice <> 4 DO
-    OUTPUT "===== MENU ====="
-    OUTPUT "1. Option One"
-    OUTPUT "2. Option Two"
-    OUTPUT "3. Option Three"
-    OUTPUT "4. Exit"
-    
-    choice = UserInput
-    
-    IF choice = 1 THEN
-        OUTPUT "You selected Option One"
-    ELSEIF choice = 2 THEN
-        OUTPUT "You selected Option Two"
-    ELSEIF choice = 3 THEN
-        OUTPUT "You selected Option Three"
-    ELSEIF choice <> 4 THEN
-        OUTPUT "Invalid choice, please try again"
-    ENDIF
-ENDWHILE`,
-  },
-  {
-    title: 'Compound Interest Calculator',
-    category: 'Finance',
-    code: `OUTPUT "Enter principal amount: "
-principal = UserInput
-OUTPUT "Enter annual interest rate (as decimal): "
-rate = UserInput
-OUTPUT "Enter time period in years: "
-time = UserInput
-OUTPUT "Enter number of times interest is compounded per year: "
-n = UserInput
+NEXT i
 
-amount = principal * (1 + rate/n) ^ (n * time)
-interest = amount - principal
-
-OUTPUT "Final amount: ", amount
-OUTPUT "Interest earned: ", interest`,
+OUTPUT "Sorted array:"
+FOR i = 1 TO 5
+    OUTPUT arr[i]
+NEXT i`,
   },
 ];
 
