@@ -52,7 +52,10 @@ class ASTTransformer(Transformer):
                 return (item.line, item.column)
             # If item is a Tree, check its meta
             if hasattr(item, 'meta'):
-                return (item.meta.line, item.meta.column)
+                line = getattr(item.meta, 'line', None)
+                column = getattr(item.meta, 'column', None)
+                if line is not None and column is not None:
+                    return (line, column)
 
         # Default fallback
         return (1, 1)
@@ -165,6 +168,7 @@ class ASTTransformer(Transformer):
 
     def comparison(self, items):
         """a = b, a < b, etc."""
+        line, column = self._get_position(items)
         if len(items) == 1:
             return items[0]
         left = items[0]
@@ -241,6 +245,7 @@ class ASTTransformer(Transformer):
 
     def false(self, items):
         """FALSE"""
+        line, column = self._get_position(items)
         return nodes.BooleanLiteral(value=False, line=line, column=column)
 
     def identifier(self, items):
@@ -271,6 +276,7 @@ class ASTTransformer(Transformer):
 
     def arr_access(self, items):
         """Array access from new grammar: arr[i] or arr[i, j]"""
+        line, column = self._get_position(items)
         name = str(items[0])
         # Remaining items are the indices
         indices = [item for item in items[1:] if item is not None]
@@ -321,11 +327,22 @@ class ASTTransformer(Transformer):
         """INPUT x (new grammar)"""
         line, column = self._get_position(items)
         # Skip the INPUT keyword token, get the variable
-        variable = [item for item in items if not isinstance(item, Token)][0]
+        non_token_items = [item for item in items if not isinstance(item, Token)]
+        if non_token_items:
+            variable = non_token_items[0]
+        else:
+            # If all items are tokens, find the identifier token
+            for item in items:
+                if isinstance(item, Token) and item.type == 'IDENT':
+                    variable = nodes.Identifier(name=str(item), line=line, column=column)
+                    break
+            else:
+                variable = items[0] if items else None
         return nodes.Input(variable=variable, line=line, column=column)
 
     def output_statement(self, items):
         """OUTPUT "Hello", x (old grammar)"""
+        line, column = self._get_position(items)
         expressions = items
         return nodes.Output(expressions=expressions, line=line, column=column)
 
@@ -456,6 +473,7 @@ class ASTTransformer(Transformer):
 
     def while_loop(self, items):
         """WHILE condition DO ... ENDWHILE"""
+        line, column = self._get_position(items)
         # Filter out tokens
         ast_items = [item for item in items if not isinstance(item, Token)]
         condition = ast_items[0] if ast_items else None
@@ -561,6 +579,7 @@ class ASTTransformer(Transformer):
 
     def return_statement(self, items):
         """RETURN value"""
+        line, column = self._get_position(items)
         value = items[0]
         return nodes.ReturnStatement(value=value, line=line, column=column)
 
@@ -582,6 +601,7 @@ class ASTTransformer(Transformer):
 
     def comment(self, items):
         """// comment"""
+        line, column = self._get_position(items)
         text = str(items[0])[2:].strip()  # Remove // and whitespace
         return nodes.Comment(text=text, line=line, column=column)
 
