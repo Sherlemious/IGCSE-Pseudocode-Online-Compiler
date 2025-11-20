@@ -29,7 +29,6 @@ class ASTTransformer(Transformer):
 
     def __init__(self):
         super().__init__()
-        self.current_line = 1
 
     def _get_position(self, items, meta=None):
         """
@@ -604,27 +603,6 @@ class ASTTransformer(Transformer):
         line, column = self._get_position(items)
         text = str(items[0])[2:].strip()  # Remove // and whitespace
         return nodes.Comment(text=text, line=line, column=column)
-
-    # ========================================================================
-    # Handle tokens
-    # ========================================================================
-
-    def IDENTIFIER(self, token):
-        """Handle identifier token"""
-        line, column = self._get_position(items)
-        return str(token)
-
-    def NUMBER(self, token):
-        """Handle number token"""
-        return str(token)
-
-    def STRING(self, token):
-        """Handle string token"""
-        return str(token)
-
-    def NEWLINE(self, token):
-        """Handle newline - return None to filter it out"""
-        return None
 
 
 class PseudocodeCompiler:

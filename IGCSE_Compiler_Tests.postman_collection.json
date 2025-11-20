@@ -1,0 +1,628 @@
+{
+	"info": {
+		"name": "IGCSE Pseudocode Compiler",
+		"description": "Test collection for IGCSE Pseudocode Compiler API with 30 comprehensive examples",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "1. Basics",
+			"item": [
+				{
+					"name": "Hello World",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"pseudocode\": \"OUTPUT \\\"Hello, World!\\\"\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/execution/convert/",
+							"host": ["{{baseUrl}}"],
+							"path": ["execution", "convert", ""]
+						}
+					}
+				},
+				{
+					"name": "Variables and Assignment",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"pseudocode\": \"DECLARE x : INTEGER\\nDECLARE y : INTEGER\\nx = 10\\ny = 20\\nOUTPUT \\\"x = \\\", x\\nOUTPUT \\\"y = \\\", y\\nOUTPUT \\\"x + y = \\\", x + y\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/execution/convert/",
+							"host": ["{{baseUrl}}"],
+							"path": ["execution", "convert", ""]
+						}
+					}
+				},
+				{
+					"name": "Constants",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"pseudocode\": \"CONSTANT PI = 3.14159\\nDECLARE radius : REAL\\nradius = 5\\narea = PI * radius * radius\\nOUTPUT \\\"Area of circle: \\\", area\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/execution/convert/",
+							"host": ["{{baseUrl}}"],
+							"path": ["execution", "convert", ""]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "2. Input/Output",
+			"item": [
+				{
+					"name": "Simple Input",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"pseudocode\": \"DECLARE name : STRING\\nINPUT name\\nOUTPUT \\\"Hello, \\\", name\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/execution/convert/",
+							"host": ["{{baseUrl}}"],
+							"path": ["execution", "convert", ""]
+						}
+					}
+				},
+				{
+					"name": "Multiple Inputs",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"pseudocode\": \"DECLARE length : REAL\\nDECLARE width : REAL\\nOUTPUT \\\"Enter length: \\\"\\nINPUT length\\nOUTPUT \\\"Enter width: \\\"\\nINPUT width\\narea = length * width\\nOUTPUT \\\"Area = \\\", area\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/execution/convert/",
+							"host": ["{{baseUrl}}"],
+							"path": ["execution", "convert", ""]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "3. Conditionals",
+			"item": [
+				{
+					"name": "IF Statement",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"pseudocode\": \"DECLARE age : INTEGER\\nINPUT age\\nIF age >= 18 THEN\\n    OUTPUT \\\"You are an adult\\\"\\nELSE\\n    OUTPUT \\\"You are a minor\\\"\\nENDIF\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/execution/convert/",
+							"host": ["{{baseUrl}}"],
+							"path": ["execution", "convert", ""]
+						}
+					}
+				},
+				{
+					"name": "Nested IF (Grade Calculator)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"pseudocode\": \"DECLARE score : INTEGER\\nINPUT score\\nIF score >= 90 THEN\\n    OUTPUT \\\"Grade: A\\\"\\nELSEIF score >= 80 THEN\\n    OUTPUT \\\"Grade: B\\\"\\nELSEIF score >= 70 THEN\\n    OUTPUT \\\"Grade: C\\\"\\nELSEIF score >= 60 THEN\\n    OUTPUT \\\"Grade: D\\\"\\nELSE\\n    OUTPUT \\\"Grade: F\\\"\\nENDIF\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/execution/convert/",
+							"host": ["{{baseUrl}}"],
+							"path": ["execution", "convert", ""]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "4. Loops",
+			"item": [
+				{
+					"name": "FOR Loop",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"pseudocode\": \"DECLARE i : INTEGER\\nFOR i = 1 TO 10\\n    OUTPUT i\\nNEXT i\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/execution/convert/",
+							"host": ["{{baseUrl}}"],
+							"path": ["execution", "convert", ""]
+						}
+					}
+				},
+				{
+					"name": "FOR Loop with STEP",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"pseudocode\": \"DECLARE i : INTEGER\\nFOR i = 0 TO 20 STEP 2\\n    OUTPUT i\\nNEXT i\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/execution/convert/",
+							"host": ["{{baseUrl}}"],
+							"path": ["execution", "convert", ""]
+						}
+					}
+				},
+				{
+					"name": "WHILE Loop",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"pseudocode\": \"DECLARE count : INTEGER\\ncount = 1\\nWHILE count <= 5 DO\\n    OUTPUT count\\n    count = count + 1\\nENDWHILE\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/execution/convert/",
+							"host": ["{{baseUrl}}"],
+							"path": ["execution", "convert", ""]
+						}
+					}
+				},
+				{
+					"name": "REPEAT Loop",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"pseudocode\": \"DECLARE num : INTEGER\\nnum = 1\\nREPEAT\\n    OUTPUT num\\n    num = num + 1\\nUNTIL num > 5\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/execution/convert/",
+							"host": ["{{baseUrl}}"],
+							"path": ["execution", "convert", ""]
+						}
+					}
+				},
+				{
+					"name": "Nested Loops",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"pseudocode\": \"DECLARE i : INTEGER\\nDECLARE j : INTEGER\\nFOR i = 1 TO 3\\n    FOR j = 1 TO 3\\n        OUTPUT i, \\\" x \\\", j, \\\" = \\\", i * j\\n    NEXT j\\nNEXT i\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/execution/convert/",
+							"host": ["{{baseUrl}}"],
+							"path": ["execution", "convert", ""]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "5. Arrays",
+			"item": [
+				{
+					"name": "1D Array",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"pseudocode\": \"DECLARE numbers : ARRAY[1:5] OF INTEGER\\nDECLARE i : INTEGER\\nFOR i = 1 TO 5\\n    numbers[i] = i * 2\\nNEXT i\\nFOR i = 1 TO 5\\n    OUTPUT numbers[i]\\nNEXT i\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/execution/convert/",
+							"host": ["{{baseUrl}}"],
+							"path": ["execution", "convert", ""]
+						}
+					}
+				},
+				{
+					"name": "2D Array (Matrix)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"pseudocode\": \"DECLARE matrix : ARRAY[1:3, 1:3] OF INTEGER\\nDECLARE i : INTEGER\\nDECLARE j : INTEGER\\nFOR i = 1 TO 3\\n    FOR j = 1 TO 3\\n        matrix[i, j] = i * j\\n    NEXT j\\nNEXT i\\nFOR i = 1 TO 3\\n    FOR j = 1 TO 3\\n        OUTPUT matrix[i, j], \\\" \\\"\\n    NEXT j\\n    OUTPUT \\\"\\\"\\nNEXT i\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/execution/convert/",
+							"host": ["{{baseUrl}}"],
+							"path": ["execution", "convert", ""]
+						}
+					}
+				},
+				{
+					"name": "Find Maximum in Array",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"pseudocode\": \"DECLARE numbers : ARRAY[1:5] OF INTEGER\\nDECLARE i : INTEGER\\nDECLARE max : INTEGER\\nFOR i = 1 TO 5\\n    INPUT numbers[i]\\nNEXT i\\nmax = numbers[1]\\nFOR i = 2 TO 5\\n    IF numbers[i] > max THEN\\n        max = numbers[i]\\n    ENDIF\\nNEXT i\\nOUTPUT \\\"Maximum: \\\", max\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/execution/convert/",
+							"host": ["{{baseUrl}}"],
+							"path": ["execution", "convert", ""]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "6. Procedures",
+			"item": [
+				{
+					"name": "Simple Procedure",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"pseudocode\": \"PROCEDURE Greet()\\n    OUTPUT \\\"Hello from procedure!\\\"\\nENDPROCEDURE\\n\\nCALL Greet()\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/execution/convert/",
+							"host": ["{{baseUrl}}"],
+							"path": ["execution", "convert", ""]
+						}
+					}
+				},
+				{
+					"name": "Procedure with Parameters",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"pseudocode\": \"PROCEDURE PrintSum(a : INTEGER, b : INTEGER)\\n    DECLARE sum : INTEGER\\n    sum = a + b\\n    OUTPUT \\\"Sum = \\\", sum\\nENDPROCEDURE\\n\\nCALL PrintSum(5, 3)\\nCALL PrintSum(10, 20)\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/execution/convert/",
+							"host": ["{{baseUrl}}"],
+							"path": ["execution", "convert", ""]
+						}
+					}
+				},
+				{
+					"name": "Procedure with BYREF (Swap)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"pseudocode\": \"PROCEDURE Swap(BYREF a : INTEGER, BYREF b : INTEGER)\\n    DECLARE temp : INTEGER\\n    temp = a\\n    a = b\\n    b = temp\\nENDPROCEDURE\\n\\nDECLARE x : INTEGER\\nDECLARE y : INTEGER\\nx = 5\\ny = 10\\nOUTPUT \\\"Before: x=\\\", x, \\\", y=\\\", y\\nCALL Swap(x, y)\\nOUTPUT \\\"After: x=\\\", x, \\\", y=\\\", y\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/execution/convert/",
+							"host": ["{{baseUrl}}"],
+							"path": ["execution", "convert", ""]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "7. Functions",
+			"item": [
+				{
+					"name": "Simple Function (Square)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"pseudocode\": \"FUNCTION Square(n : INTEGER) RETURNS INTEGER\\n    RETURN n * n\\nENDFUNCTION\\n\\nDECLARE result : INTEGER\\nresult = Square(5)\\nOUTPUT \\\"5 squared = \\\", result\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/execution/convert/",
+							"host": ["{{baseUrl}}"],
+							"path": ["execution", "convert", ""]
+						}
+					}
+				},
+				{
+					"name": "Function with Multiple Parameters",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"pseudocode\": \"FUNCTION Add(a : INTEGER, b : INTEGER) RETURNS INTEGER\\n    RETURN a + b\\nENDFUNCTION\\n\\nDECLARE sum : INTEGER\\nsum = Add(10, 20)\\nOUTPUT \\\"Sum = \\\", sum\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/execution/convert/",
+							"host": ["{{baseUrl}}"],
+							"path": ["execution", "convert", ""]
+						}
+					}
+				},
+				{
+					"name": "Factorial Function",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"pseudocode\": \"FUNCTION Factorial(n : INTEGER) RETURNS INTEGER\\n    DECLARE result : INTEGER\\n    DECLARE i : INTEGER\\n    result = 1\\n    FOR i = 1 TO n\\n        result = result * i\\n    NEXT i\\n    RETURN result\\nENDFUNCTION\\n\\nDECLARE num : INTEGER\\nDECLARE fact : INTEGER\\nnum = 5\\nfact = Factorial(num)\\nOUTPUT num, \\\"! = \\\", fact\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/execution/convert/",
+							"host": ["{{baseUrl}}"],
+							"path": ["execution", "convert", ""]
+						}
+					}
+				},
+				{
+					"name": "Is Prime Function",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"pseudocode\": \"FUNCTION IsPrime(n : INTEGER) RETURNS BOOLEAN\\n    DECLARE i : INTEGER\\n    IF n <= 1 THEN\\n        RETURN FALSE\\n    ENDIF\\n    FOR i = 2 TO n - 1\\n        IF n MOD i = 0 THEN\\n            RETURN FALSE\\n        ENDIF\\n    NEXT i\\n    RETURN TRUE\\nENDFUNCTION\\n\\nDECLARE num : INTEGER\\nnum = 17\\nIF IsPrime(num) THEN\\n    OUTPUT num, \\\" is prime\\\"\\nELSE\\n    OUTPUT num, \\\" is not prime\\\"\\nENDIF\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/execution/convert/",
+							"host": ["{{baseUrl}}"],
+							"path": ["execution", "convert", ""]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "8. Strings",
+			"item": [
+				{
+					"name": "String Operations",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"pseudocode\": \"DECLARE text : STRING\\ntext = \\\"Hello\\\"\\nOUTPUT \\\"Length: \\\", LENGTH(text)\\nOUTPUT \\\"Substring: \\\", SUBSTRING(text, 1, 3)\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/execution/convert/",
+							"host": ["{{baseUrl}}"],
+							"path": ["execution", "convert", ""]
+						}
+					}
+				},
+				{
+					"name": "String Concatenation",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"pseudocode\": \"DECLARE first : STRING\\nDECLARE last : STRING\\nDECLARE full : STRING\\nfirst = \\\"John\\\"\\nlast = \\\"Doe\\\"\\nfull = first + \\\" \\\" + last\\nOUTPUT \\\"Full name: \\\", full\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/execution/convert/",
+							"host": ["{{baseUrl}}"],
+							"path": ["execution", "convert", ""]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "9. Complete Programs",
+			"item": [
+				{
+					"name": "Calculate Average",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"pseudocode\": \"DECLARE numbers : ARRAY[1:5] OF INTEGER\\nDECLARE i : INTEGER\\nDECLARE sum : INTEGER\\nDECLARE average : REAL\\nsum = 0\\nFOR i = 1 TO 5\\n    OUTPUT \\\"Enter number \\\", i, \\\": \\\"\\n    INPUT numbers[i]\\n    sum = sum + numbers[i]\\nNEXT i\\naverage = sum / 5\\nOUTPUT \\\"Average = \\\", average\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/execution/convert/",
+							"host": ["{{baseUrl}}"],
+							"path": ["execution", "convert", ""]
+						}
+					}
+				},
+				{
+					"name": "Number Guessing Game",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"pseudocode\": \"DECLARE secret : INTEGER\\nDECLARE guess : INTEGER\\nDECLARE attempts : INTEGER\\nsecret = 42\\nattempts = 0\\nOUTPUT \\\"Guess the number (1-100)!\\\"\\nREPEAT\\n    INPUT guess\\n    attempts = attempts + 1\\n    IF guess < secret THEN\\n        OUTPUT \\\"Too low!\\\"\\n    ELSEIF guess > secret THEN\\n        OUTPUT \\\"Too high!\\\"\\n    ENDIF\\nUNTIL guess = secret\\nOUTPUT \\\"Correct! You got it in \\\", attempts, \\\" attempts\\\"\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/execution/convert/",
+							"host": ["{{baseUrl}}"],
+							"path": ["execution", "convert", ""]
+						}
+					}
+				},
+				{
+					"name": "Bubble Sort",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"pseudocode\": \"DECLARE arr : ARRAY[1:5] OF INTEGER\\nDECLARE i : INTEGER\\nDECLARE j : INTEGER\\nDECLARE temp : INTEGER\\nDECLARE swapped : BOOLEAN\\n\\nOUTPUT \\\"Enter 5 numbers:\\\"\\nFOR i = 1 TO 5\\n    INPUT arr[i]\\nNEXT i\\n\\nFOR i = 1 TO 4\\n    swapped = FALSE\\n    FOR j = 1 TO 5 - i\\n        IF arr[j] > arr[j + 1] THEN\\n            temp = arr[j]\\n            arr[j] = arr[j + 1]\\n            arr[j + 1] = temp\\n            swapped = TRUE\\n        ENDIF\\n    NEXT j\\n    IF NOT swapped THEN\\n        i = 5\\n    ENDIF\\nNEXT i\\n\\nOUTPUT \\\"Sorted array:\\\"\\nFOR i = 1 TO 5\\n    OUTPUT arr[i]\\nNEXT i\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/execution/convert/",
+							"host": ["{{baseUrl}}"],
+							"path": ["execution", "convert", ""]
+						}
+					}
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:8000",
+			"type": "string"
+		}
+	]
+}
