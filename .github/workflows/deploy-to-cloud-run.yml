@@ -57,10 +57,10 @@ jobs:
             --platform managed \
             --region ${{ env.GCP_REGION }} \
             --allow-unauthenticated \
-            --set-env-vars "DEBUG=False" \
-            --set-env-vars "DJANGO_SECRET_KEY=${{ secrets.DJANGO_SECRET_KEY }}" \
-            --set-env-vars "ALLOWED_HOSTS=${{ secrets.BACKEND_DOMAIN }},${{ env.BACKEND_SERVICE_NAME }}-*-${{ env.GCP_REGION }}.a.run.app" \
-            --set-env-vars "CORS_ALLOWED_ORIGINS=${{ secrets.FRONTEND_URL }}" \
+            --set-env-vars 'DEBUG=False' \
+            --set-env-vars 'DJANGO_SECRET_KEY=${{ secrets.DJANGO_SECRET_KEY }}' \
+            --set-env-vars 'ALLOWED_HOSTS=${{ env.BACKEND_DOMAIN }},${{ env.BACKEND_SERVICE_NAME }}-*-${{ env.GCP_REGION }}.a.run.app' \
+            --set-env-vars 'CORS_ALLOWED_ORIGINS=${{ secrets.FRONTEND_URL }}' \
             --min-instances 0 \
             --max-instances 10 \
             --memory 512Mi \
