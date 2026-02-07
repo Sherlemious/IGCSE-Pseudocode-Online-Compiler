@@ -18,7 +18,7 @@ const CodeBlock = ({ code }: { code: string }) => {
     <div className="relative group my-2">
       <pre
         style={{ fontSize: 'var(--editor-font-size)' }}
-        className="bg-code-bg p-3 rounded font-mono text-light-text overflow-x-auto
+        className="bg-code-bg border border-border p-3 rounded font-mono text-light-text overflow-x-auto
           scrollbar-thin scrollbar-thumb-primary hover:scrollbar-thumb-primary-hover
           scrollbar-track-background scrollbar-thumb-rounded-full leading-relaxed"
       >
@@ -37,7 +37,7 @@ const CodeBlock = ({ code }: { code: string }) => {
 };
 
 const Kw = ({ children }: { children: React.ReactNode }) => (
-  <code className="bg-code-bg px-1 py-0.5 rounded font-mono text-primary text-[0.9em]">{children}</code>
+  <code className="bg-code-bg border border-border px-1.5 py-0.5 rounded font-mono text-primary text-[0.9em]">{children}</code>
 );
 
 /* ────────────────────────────────────────────────────────── */

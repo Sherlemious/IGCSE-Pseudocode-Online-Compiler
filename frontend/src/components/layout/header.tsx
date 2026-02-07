@@ -108,7 +108,7 @@ const Header: React.FC = () => {
                 onClick={() => setIsMenuOpen(false)}
               >
                 <BookOpen size={14} />
-                Documentation
+                Docs
               </Link>
               <a
                 href="https://github.com/Sherlemious/IGCSE-Pseudocode-Online-Compiler"
