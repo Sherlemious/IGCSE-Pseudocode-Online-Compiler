@@ -37,7 +37,9 @@ const CodeBlock = ({ code }: { code: string }) => {
 };
 
 const Kw = ({ children }: { children: React.ReactNode }) => (
-  <code className="bg-code-bg border border-border px-1.5 py-0.5 rounded font-mono text-primary text-[0.9em]">{children}</code>
+  <code className="bg-code-bg border border-border px-1.5 py-0.5 rounded font-mono text-primary text-[0.9em]">
+    {children}
+  </code>
 );
 
 /* ────────────────────────────────────────────────────────── */
@@ -156,7 +158,7 @@ const Documentation = () => {
           }
         }
       },
-      { root: container, rootMargin: '-10% 0px -80% 0px', threshold: 0 },
+      { root: container, rootMargin: '-10% 0px -80% 0px', threshold: 0 }
     );
 
     headings.forEach((h) => observer.observe(h));
@@ -206,7 +208,10 @@ const Documentation = () => {
 
   /* ── Section heading helper ────────────────────────────── */
   const H2 = ({ id, children }: { id: string; children: React.ReactNode }) => (
-    <h2 data-section={id} className="text-lg font-semibold text-light-text pt-6 pb-2 border-b border-border scroll-mt-4">
+    <h2
+      data-section={id}
+      className="text-lg font-semibold text-light-text pt-6 pb-2 border-b border-border scroll-mt-4"
+    >
       {children}
     </h2>
   );
@@ -236,9 +241,7 @@ const Documentation = () => {
               scrollbar-thin scrollbar-thumb-primary scrollbar-track-background scrollbar-thumb-rounded-full"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="text-xs font-semibold uppercase tracking-wider text-dark-text mb-3 px-3">
-              Contents
-            </div>
+            <div className="text-xs font-semibold uppercase tracking-wider text-dark-text mb-3 px-3">Contents</div>
             {renderToc()}
           </div>
         </div>
@@ -249,9 +252,7 @@ const Documentation = () => {
         className="hidden lg:block w-56 shrink-0 border-r border-border bg-surface overflow-y-auto p-2
           scrollbar-thin scrollbar-thumb-primary scrollbar-track-background scrollbar-thumb-rounded-full"
       >
-        <div className="text-xs font-semibold uppercase tracking-wider text-dark-text mb-2 px-3 pt-2">
-          Contents
-        </div>
+        <div className="text-xs font-semibold uppercase tracking-wider text-dark-text mb-2 px-3 pt-2">Contents</div>
         {renderToc()}
       </aside>
 
@@ -276,10 +277,17 @@ const Documentation = () => {
           {/* ──────────────────────────────────────────────── */}
           <H2 id="general">General Syntax Rules</H2>
           <ul className="list-disc pl-5 text-dark-text space-y-1 text-sm">
-            <li>Comments use <Kw>{'//'}</Kw> — everything after is ignored until end of line</li>
-            <li>Keywords are <strong className="text-light-text">case-insensitive</strong> — <Kw>IF</Kw>, <Kw>if</Kw>, and <Kw>If</Kw> all work</li>
+            <li>
+              Comments use <Kw>{'//'}</Kw> — everything after is ignored until end of line
+            </li>
+            <li>
+              Keywords are <strong className="text-light-text">case-insensitive</strong> — <Kw>IF</Kw>, <Kw>if</Kw>, and{' '}
+              <Kw>If</Kw> all work
+            </li>
             <li>Indentation is recommended but not enforced</li>
-            <li>Assignment uses <Kw>{'<-'}</Kw> (preferred) or <Kw>=</Kw></li>
+            <li>
+              Assignment uses <Kw>{'<-'}</Kw> (preferred) or <Kw>=</Kw>
+            </li>
             <li>Each statement goes on its own line</li>
           </ul>
 
@@ -321,11 +329,41 @@ CONSTANT DefaultText <- "N/A"`}
                 </tr>
               </thead>
               <tbody className="text-dark-text">
-                <tr className="border-b border-border"><td className="px-3 py-1"><Kw>INTEGER</Kw></td><td className="px-3 py-1">Whole numbers</td><td className="px-3 py-1 font-mono">5, -3, 0</td></tr>
-                <tr className="border-b border-border"><td className="px-3 py-1"><Kw>REAL</Kw></td><td className="px-3 py-1">Decimal numbers</td><td className="px-3 py-1 font-mono">4.7, 0.3</td></tr>
-                <tr className="border-b border-border"><td className="px-3 py-1"><Kw>CHAR</Kw></td><td className="px-3 py-1">Single character (single quotes)</td><td className="px-3 py-1 font-mono">'x', 'A'</td></tr>
-                <tr className="border-b border-border"><td className="px-3 py-1"><Kw>STRING</Kw></td><td className="px-3 py-1">Text (double quotes)</td><td className="px-3 py-1 font-mono">"Hello"</td></tr>
-                <tr><td className="px-3 py-1"><Kw>BOOLEAN</Kw></td><td className="px-3 py-1">Logical value</td><td className="px-3 py-1 font-mono">TRUE, FALSE</td></tr>
+                <tr className="border-b border-border">
+                  <td className="px-3 py-1">
+                    <Kw>INTEGER</Kw>
+                  </td>
+                  <td className="px-3 py-1">Whole numbers</td>
+                  <td className="px-3 py-1 font-mono">5, -3, 0</td>
+                </tr>
+                <tr className="border-b border-border">
+                  <td className="px-3 py-1">
+                    <Kw>REAL</Kw>
+                  </td>
+                  <td className="px-3 py-1">Decimal numbers</td>
+                  <td className="px-3 py-1 font-mono">4.7, 0.3</td>
+                </tr>
+                <tr className="border-b border-border">
+                  <td className="px-3 py-1">
+                    <Kw>CHAR</Kw>
+                  </td>
+                  <td className="px-3 py-1">Single character (single quotes)</td>
+                  <td className="px-3 py-1 font-mono">'x', 'A'</td>
+                </tr>
+                <tr className="border-b border-border">
+                  <td className="px-3 py-1">
+                    <Kw>STRING</Kw>
+                  </td>
+                  <td className="px-3 py-1">Text (double quotes)</td>
+                  <td className="px-3 py-1 font-mono">"Hello"</td>
+                </tr>
+                <tr>
+                  <td className="px-3 py-1">
+                    <Kw>BOOLEAN</Kw>
+                  </td>
+                  <td className="px-3 py-1">Logical value</td>
+                  <td className="px-3 py-1 font-mono">TRUE, FALSE</td>
+                </tr>
               </tbody>
             </table>
           </div>
@@ -407,13 +445,45 @@ OUTPUT Grid[1,1]`}
                 </tr>
               </thead>
               <tbody className="text-dark-text">
-                <tr className="border-b border-border"><td className="px-3 py-1 font-mono">+</td><td className="px-3 py-1">Addition</td><td className="px-3 py-1 font-mono">5 + 3 → 8</td></tr>
-                <tr className="border-b border-border"><td className="px-3 py-1 font-mono">-</td><td className="px-3 py-1">Subtraction</td><td className="px-3 py-1 font-mono">10 - 4 → 6</td></tr>
-                <tr className="border-b border-border"><td className="px-3 py-1 font-mono">*</td><td className="px-3 py-1">Multiplication</td><td className="px-3 py-1 font-mono">3 * 7 → 21</td></tr>
-                <tr className="border-b border-border"><td className="px-3 py-1 font-mono">/</td><td className="px-3 py-1">Division</td><td className="px-3 py-1 font-mono">10 / 3 → 3.33…</td></tr>
-                <tr className="border-b border-border"><td className="px-3 py-1 font-mono">^</td><td className="px-3 py-1">Power</td><td className="px-3 py-1 font-mono">2 ^ 3 → 8</td></tr>
-                <tr className="border-b border-border"><td className="px-3 py-1"><Kw>DIV</Kw></td><td className="px-3 py-1">Integer division</td><td className="px-3 py-1 font-mono">10 DIV 3 → 3</td></tr>
-                <tr><td className="px-3 py-1"><Kw>MOD</Kw></td><td className="px-3 py-1">Remainder (modulo)</td><td className="px-3 py-1 font-mono">10 MOD 3 → 1</td></tr>
+                <tr className="border-b border-border">
+                  <td className="px-3 py-1 font-mono">+</td>
+                  <td className="px-3 py-1">Addition</td>
+                  <td className="px-3 py-1 font-mono">5 + 3 → 8</td>
+                </tr>
+                <tr className="border-b border-border">
+                  <td className="px-3 py-1 font-mono">-</td>
+                  <td className="px-3 py-1">Subtraction</td>
+                  <td className="px-3 py-1 font-mono">10 - 4 → 6</td>
+                </tr>
+                <tr className="border-b border-border">
+                  <td className="px-3 py-1 font-mono">*</td>
+                  <td className="px-3 py-1">Multiplication</td>
+                  <td className="px-3 py-1 font-mono">3 * 7 → 21</td>
+                </tr>
+                <tr className="border-b border-border">
+                  <td className="px-3 py-1 font-mono">/</td>
+                  <td className="px-3 py-1">Division</td>
+                  <td className="px-3 py-1 font-mono">10 / 3 → 3.33…</td>
+                </tr>
+                <tr className="border-b border-border">
+                  <td className="px-3 py-1 font-mono">^</td>
+                  <td className="px-3 py-1">Power</td>
+                  <td className="px-3 py-1 font-mono">2 ^ 3 → 8</td>
+                </tr>
+                <tr className="border-b border-border">
+                  <td className="px-3 py-1">
+                    <Kw>DIV</Kw>
+                  </td>
+                  <td className="px-3 py-1">Integer division</td>
+                  <td className="px-3 py-1 font-mono">10 DIV 3 → 3</td>
+                </tr>
+                <tr>
+                  <td className="px-3 py-1">
+                    <Kw>MOD</Kw>
+                  </td>
+                  <td className="px-3 py-1">Remainder (modulo)</td>
+                  <td className="px-3 py-1 font-mono">10 MOD 3 → 1</td>
+                </tr>
               </tbody>
             </table>
           </div>
@@ -436,12 +506,30 @@ OUTPUT 2 ^ 3        // 8`}
                 </tr>
               </thead>
               <tbody className="text-dark-text">
-                <tr className="border-b border-border"><td className="px-3 py-1 font-mono">=</td><td className="px-3 py-1">Equal to</td></tr>
-                <tr className="border-b border-border"><td className="px-3 py-1 font-mono">{'<>'}</td><td className="px-3 py-1">Not equal to</td></tr>
-                <tr className="border-b border-border"><td className="px-3 py-1 font-mono">{'>'}</td><td className="px-3 py-1">Greater than</td></tr>
-                <tr className="border-b border-border"><td className="px-3 py-1 font-mono">{'<'}</td><td className="px-3 py-1">Less than</td></tr>
-                <tr className="border-b border-border"><td className="px-3 py-1 font-mono">{'>='}</td><td className="px-3 py-1">Greater than or equal to</td></tr>
-                <tr><td className="px-3 py-1 font-mono">{'<='}</td><td className="px-3 py-1">Less than or equal to</td></tr>
+                <tr className="border-b border-border">
+                  <td className="px-3 py-1 font-mono">=</td>
+                  <td className="px-3 py-1">Equal to</td>
+                </tr>
+                <tr className="border-b border-border">
+                  <td className="px-3 py-1 font-mono">{'<>'}</td>
+                  <td className="px-3 py-1">Not equal to</td>
+                </tr>
+                <tr className="border-b border-border">
+                  <td className="px-3 py-1 font-mono">{'>'}</td>
+                  <td className="px-3 py-1">Greater than</td>
+                </tr>
+                <tr className="border-b border-border">
+                  <td className="px-3 py-1 font-mono">{'<'}</td>
+                  <td className="px-3 py-1">Less than</td>
+                </tr>
+                <tr className="border-b border-border">
+                  <td className="px-3 py-1 font-mono">{'>='}</td>
+                  <td className="px-3 py-1">Greater than or equal to</td>
+                </tr>
+                <tr>
+                  <td className="px-3 py-1 font-mono">{'<='}</td>
+                  <td className="px-3 py-1">Less than or equal to</td>
+                </tr>
               </tbody>
             </table>
           </div>
@@ -456,9 +544,24 @@ OUTPUT 2 ^ 3        // 8`}
                 </tr>
               </thead>
               <tbody className="text-dark-text">
-                <tr className="border-b border-border"><td className="px-3 py-1"><Kw>AND</Kw></td><td className="px-3 py-1">Both conditions must be true</td></tr>
-                <tr className="border-b border-border"><td className="px-3 py-1"><Kw>OR</Kw></td><td className="px-3 py-1">At least one condition must be true</td></tr>
-                <tr><td className="px-3 py-1"><Kw>NOT</Kw></td><td className="px-3 py-1">Inverts a boolean value</td></tr>
+                <tr className="border-b border-border">
+                  <td className="px-3 py-1">
+                    <Kw>AND</Kw>
+                  </td>
+                  <td className="px-3 py-1">Both conditions must be true</td>
+                </tr>
+                <tr className="border-b border-border">
+                  <td className="px-3 py-1">
+                    <Kw>OR</Kw>
+                  </td>
+                  <td className="px-3 py-1">At least one condition must be true</td>
+                </tr>
+                <tr>
+                  <td className="px-3 py-1">
+                    <Kw>NOT</Kw>
+                  </td>
+                  <td className="px-3 py-1">Inverts a boolean value</td>
+                </tr>
               </tbody>
             </table>
           </div>
@@ -476,8 +579,10 @@ ENDIF`}
           <p className="text-sm text-dark-text mb-2">
             Use <Kw>&</Kw> to join strings together:
           </p>
-          <CodeBlock code={`FullName <- FirstName & " " & LastName
-OUTPUT "Hello " & Name & "!"`} />
+          <CodeBlock
+            code={`FullName <- FirstName & " " & LastName
+OUTPUT "Hello " & Name & "!"`}
+          />
 
           {/* ──────────────────────────────────────────────── */}
           {/*  Selection                                       */}
@@ -493,7 +598,9 @@ ELSE
     OUTPUT "Fail"
 ENDIF`}
           />
-          <p className="text-sm text-dark-text mb-2">Multiple conditions with <Kw>ELSEIF</Kw>:</p>
+          <p className="text-sm text-dark-text mb-2">
+            Multiple conditions with <Kw>ELSEIF</Kw>:
+          </p>
           <CodeBlock
             code={`IF Score >= 90 THEN
     OUTPUT "A"
@@ -552,7 +659,8 @@ NEXT i`}
 
           <H3 id="while">WHILE Loop</H3>
           <p className="text-sm text-dark-text mb-2">
-            Pre-condition loop — tests the condition <strong className="text-light-text">before</strong> each iteration. May execute zero times:
+            Pre-condition loop — tests the condition <strong className="text-light-text">before</strong> each iteration.
+            May execute zero times:
           </p>
           <CodeBlock
             code={`DECLARE Number : INTEGER
@@ -562,11 +670,14 @@ WHILE Number > 9 DO
 ENDWHILE
 OUTPUT Number`}
           />
-          <p className="text-xs text-dark-text italic">The <Kw>DO</Kw> keyword after the condition is optional.</p>
+          <p className="text-xs text-dark-text italic">
+            The <Kw>DO</Kw> keyword after the condition is optional.
+          </p>
 
           <H3 id="repeat">REPEAT Loop</H3>
           <p className="text-sm text-dark-text mb-2">
-            Post-condition loop — always executes <strong className="text-light-text">at least once</strong>, then checks the condition:
+            Post-condition loop — always executes <strong className="text-light-text">at least once</strong>, then
+            checks the condition:
           </p>
           <CodeBlock
             code={`DECLARE Password : STRING
@@ -632,13 +743,48 @@ OUTPUT "Larger: ", Max(10, 25)`}
                 </tr>
               </thead>
               <tbody className="text-dark-text">
-                <tr className="border-b border-border"><td className="px-3 py-1"><Kw>LENGTH(s)</Kw></td><td className="px-3 py-1">Number of characters in a string</td></tr>
-                <tr className="border-b border-border"><td className="px-3 py-1"><Kw>LCASE(s)</Kw></td><td className="px-3 py-1">Convert to lowercase</td></tr>
-                <tr className="border-b border-border"><td className="px-3 py-1"><Kw>UCASE(s)</Kw></td><td className="px-3 py-1">Convert to uppercase</td></tr>
-                <tr className="border-b border-border"><td className="px-3 py-1"><Kw>SUBSTRING(s, start, len)</Kw></td><td className="px-3 py-1">Extract characters (1-based index)</td></tr>
-                <tr className="border-b border-border"><td className="px-3 py-1"><Kw>MID(s, start, len)</Kw></td><td className="px-3 py-1">Same as SUBSTRING (alias)</td></tr>
-                <tr className="border-b border-border"><td className="px-3 py-1"><Kw>LEFT(s, len)</Kw></td><td className="px-3 py-1">Leftmost characters</td></tr>
-                <tr><td className="px-3 py-1"><Kw>RIGHT(s, len)</Kw></td><td className="px-3 py-1">Rightmost characters</td></tr>
+                <tr className="border-b border-border">
+                  <td className="px-3 py-1">
+                    <Kw>LENGTH(s)</Kw>
+                  </td>
+                  <td className="px-3 py-1">Number of characters in a string</td>
+                </tr>
+                <tr className="border-b border-border">
+                  <td className="px-3 py-1">
+                    <Kw>LCASE(s)</Kw>
+                  </td>
+                  <td className="px-3 py-1">Convert to lowercase</td>
+                </tr>
+                <tr className="border-b border-border">
+                  <td className="px-3 py-1">
+                    <Kw>UCASE(s)</Kw>
+                  </td>
+                  <td className="px-3 py-1">Convert to uppercase</td>
+                </tr>
+                <tr className="border-b border-border">
+                  <td className="px-3 py-1">
+                    <Kw>SUBSTRING(s, start, len)</Kw>
+                  </td>
+                  <td className="px-3 py-1">Extract characters (1-based index)</td>
+                </tr>
+                <tr className="border-b border-border">
+                  <td className="px-3 py-1">
+                    <Kw>MID(s, start, len)</Kw>
+                  </td>
+                  <td className="px-3 py-1">Same as SUBSTRING (alias)</td>
+                </tr>
+                <tr className="border-b border-border">
+                  <td className="px-3 py-1">
+                    <Kw>LEFT(s, len)</Kw>
+                  </td>
+                  <td className="px-3 py-1">Leftmost characters</td>
+                </tr>
+                <tr>
+                  <td className="px-3 py-1">
+                    <Kw>RIGHT(s, len)</Kw>
+                  </td>
+                  <td className="px-3 py-1">Rightmost characters</td>
+                </tr>
               </tbody>
             </table>
           </div>
@@ -662,11 +808,36 @@ OUTPUT RIGHT("Hello", 3)        // llo`}
                 </tr>
               </thead>
               <tbody className="text-dark-text">
-                <tr className="border-b border-border"><td className="px-3 py-1"><Kw>ROUND(n, places)</Kw></td><td className="px-3 py-1">Round to decimal places</td></tr>
-                <tr className="border-b border-border"><td className="px-3 py-1"><Kw>RANDOM()</Kw></td><td className="px-3 py-1">Random number between 0 and 1</td></tr>
-                <tr className="border-b border-border"><td className="px-3 py-1"><Kw>INT(n)</Kw></td><td className="px-3 py-1">Truncate to integer (towards zero)</td></tr>
-                <tr className="border-b border-border"><td className="px-3 py-1"><Kw>DIV(a, b)</Kw></td><td className="px-3 py-1">Integer division</td></tr>
-                <tr><td className="px-3 py-1"><Kw>MOD(a, b)</Kw></td><td className="px-3 py-1">Remainder after division</td></tr>
+                <tr className="border-b border-border">
+                  <td className="px-3 py-1">
+                    <Kw>ROUND(n, places)</Kw>
+                  </td>
+                  <td className="px-3 py-1">Round to decimal places</td>
+                </tr>
+                <tr className="border-b border-border">
+                  <td className="px-3 py-1">
+                    <Kw>RANDOM()</Kw>
+                  </td>
+                  <td className="px-3 py-1">Random number between 0 and 1</td>
+                </tr>
+                <tr className="border-b border-border">
+                  <td className="px-3 py-1">
+                    <Kw>INT(n)</Kw>
+                  </td>
+                  <td className="px-3 py-1">Truncate to integer (towards zero)</td>
+                </tr>
+                <tr className="border-b border-border">
+                  <td className="px-3 py-1">
+                    <Kw>DIV(a, b)</Kw>
+                  </td>
+                  <td className="px-3 py-1">Integer division</td>
+                </tr>
+                <tr>
+                  <td className="px-3 py-1">
+                    <Kw>MOD(a, b)</Kw>
+                  </td>
+                  <td className="px-3 py-1">Remainder after division</td>
+                </tr>
               </tbody>
             </table>
           </div>
@@ -687,11 +858,36 @@ OUTPUT INT(RANDOM() * 6)   // Random 0-5`}
                 </tr>
               </thead>
               <tbody className="text-dark-text">
-                <tr className="border-b border-border"><td className="px-3 py-1"><Kw>ASC(c)</Kw></td><td className="px-3 py-1">ASCII code of a character</td></tr>
-                <tr className="border-b border-border"><td className="px-3 py-1"><Kw>CHR(n)</Kw></td><td className="px-3 py-1">Character from ASCII code</td></tr>
-                <tr className="border-b border-border"><td className="px-3 py-1"><Kw>NUM_TO_STRING(n)</Kw></td><td className="px-3 py-1">Convert number to string</td></tr>
-                <tr className="border-b border-border"><td className="px-3 py-1"><Kw>STRING_TO_NUM(s)</Kw></td><td className="px-3 py-1">Convert string to number</td></tr>
-                <tr><td className="px-3 py-1"><Kw>IS_NUM(s)</Kw></td><td className="px-3 py-1">Check if string is numeric (returns BOOLEAN)</td></tr>
+                <tr className="border-b border-border">
+                  <td className="px-3 py-1">
+                    <Kw>ASC(c)</Kw>
+                  </td>
+                  <td className="px-3 py-1">ASCII code of a character</td>
+                </tr>
+                <tr className="border-b border-border">
+                  <td className="px-3 py-1">
+                    <Kw>CHR(n)</Kw>
+                  </td>
+                  <td className="px-3 py-1">Character from ASCII code</td>
+                </tr>
+                <tr className="border-b border-border">
+                  <td className="px-3 py-1">
+                    <Kw>NUM_TO_STRING(n)</Kw>
+                  </td>
+                  <td className="px-3 py-1">Convert number to string</td>
+                </tr>
+                <tr className="border-b border-border">
+                  <td className="px-3 py-1">
+                    <Kw>STRING_TO_NUM(s)</Kw>
+                  </td>
+                  <td className="px-3 py-1">Convert string to number</td>
+                </tr>
+                <tr>
+                  <td className="px-3 py-1">
+                    <Kw>IS_NUM(s)</Kw>
+                  </td>
+                  <td className="px-3 py-1">Check if string is numeric (returns BOOLEAN)</td>
+                </tr>
               </tbody>
             </table>
           </div>
@@ -709,8 +905,8 @@ OUTPUT IS_NUM("abc")       // FALSE`}
           {/* ──────────────────────────────────────────────── */}
           <H2 id="files">File Handling</H2>
           <p className="text-sm text-dark-text mb-2">
-            Files are simulated using browser <strong className="text-light-text">localStorage</strong>.
-            Data persists between sessions. You can view and manage files using the folder icon in the editor tab bar.
+            Files are simulated using browser <strong className="text-light-text">localStorage</strong>. Data persists
+            between sessions. You can view and manage files using the folder icon in the editor tab bar.
           </p>
 
           <H3 id="file-ops">File Operations</H3>
@@ -723,13 +919,48 @@ OUTPUT IS_NUM("abc")       // FALSE`}
                 </tr>
               </thead>
               <tbody className="text-dark-text">
-                <tr className="border-b border-border"><td className="px-3 py-1"><Kw>OPENFILE f FOR READ</Kw></td><td className="px-3 py-1">Open file for reading</td></tr>
-                <tr className="border-b border-border"><td className="px-3 py-1"><Kw>OPENFILE f FOR WRITE</Kw></td><td className="px-3 py-1">Open file for writing (overwrites)</td></tr>
-                <tr className="border-b border-border"><td className="px-3 py-1"><Kw>OPENFILE f FOR APPEND</Kw></td><td className="px-3 py-1">Open file for appending</td></tr>
-                <tr className="border-b border-border"><td className="px-3 py-1"><Kw>READFILE f, var</Kw></td><td className="px-3 py-1">Read one line into a variable</td></tr>
-                <tr className="border-b border-border"><td className="px-3 py-1"><Kw>WRITEFILE f, value</Kw></td><td className="px-3 py-1">Write a line to the file</td></tr>
-                <tr className="border-b border-border"><td className="px-3 py-1"><Kw>CLOSEFILE f</Kw></td><td className="px-3 py-1">Close the file</td></tr>
-                <tr><td className="px-3 py-1"><Kw>EOF(f)</Kw></td><td className="px-3 py-1">TRUE if end of file reached</td></tr>
+                <tr className="border-b border-border">
+                  <td className="px-3 py-1">
+                    <Kw>OPENFILE f FOR READ</Kw>
+                  </td>
+                  <td className="px-3 py-1">Open file for reading</td>
+                </tr>
+                <tr className="border-b border-border">
+                  <td className="px-3 py-1">
+                    <Kw>OPENFILE f FOR WRITE</Kw>
+                  </td>
+                  <td className="px-3 py-1">Open file for writing (overwrites)</td>
+                </tr>
+                <tr className="border-b border-border">
+                  <td className="px-3 py-1">
+                    <Kw>OPENFILE f FOR APPEND</Kw>
+                  </td>
+                  <td className="px-3 py-1">Open file for appending</td>
+                </tr>
+                <tr className="border-b border-border">
+                  <td className="px-3 py-1">
+                    <Kw>READFILE f, var</Kw>
+                  </td>
+                  <td className="px-3 py-1">Read one line into a variable</td>
+                </tr>
+                <tr className="border-b border-border">
+                  <td className="px-3 py-1">
+                    <Kw>WRITEFILE f, value</Kw>
+                  </td>
+                  <td className="px-3 py-1">Write a line to the file</td>
+                </tr>
+                <tr className="border-b border-border">
+                  <td className="px-3 py-1">
+                    <Kw>CLOSEFILE f</Kw>
+                  </td>
+                  <td className="px-3 py-1">Close the file</td>
+                </tr>
+                <tr>
+                  <td className="px-3 py-1">
+                    <Kw>EOF(f)</Kw>
+                  </td>
+                  <td className="px-3 py-1">TRUE if end of file reached</td>
+                </tr>
               </tbody>
             </table>
           </div>
@@ -763,9 +994,7 @@ CLOSEFILE "log.txt"`}
           {/*  Common Patterns                                 */}
           {/* ──────────────────────────────────────────────── */}
           <H2 id="patterns">Common Patterns</H2>
-          <p className="text-sm text-dark-text mb-2">
-            These patterns appear frequently in IGCSE exam questions:
-          </p>
+          <p className="text-sm text-dark-text mb-2">These patterns appear frequently in IGCSE exam questions:</p>
 
           <h4 className="text-sm font-medium text-light-text mt-4 mb-1">Totaling</h4>
           <CodeBlock
