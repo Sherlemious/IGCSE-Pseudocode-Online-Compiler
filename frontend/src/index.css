@@ -61,8 +61,15 @@ textarea {
 
 /* Terminal blink cursor */
 @keyframes terminal-blink {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0; }
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0;
+    }
 }
 
 .terminal-cursor {
@@ -88,6 +95,7 @@ kbd {
     -ms-overflow-style: none;
     scrollbar-width: none;
 }
+
 .scrollbar-none::-webkit-scrollbar {
     display: none;
 }
@@ -100,4 +108,41 @@ kbd {
 
 textarea:focus-visible {
     outline: none;
+}
+
+/* CodeMirror Syntax Highlighting - Uses theme-specific colors */
+.cm-editor .ͼ1.cm-keyword {
+    color: var(--color-syntax-keyword);
+    font-weight: 600;
+}
+
+.cm-editor .ͼ2.cm-typeName {
+    color: var(--color-syntax-type);
+    font-weight: 500;
+}
+
+.cm-editor .ͼ3.cm-variableName {
+    color: var(--color-syntax-variable);
+}
+
+.cm-editor .ͼ4.cm-string {
+    color: var(--color-syntax-string);
+}
+
+.cm-editor .ͼ5.cm-number {
+    color: var(--color-syntax-number);
+}
+
+.cm-editor .ͼ6.cm-bool {
+    color: var(--color-syntax-boolean);
+    font-weight: 600;
+}
+
+.cm-editor .ͼ7.cm-operator {
+    color: var(--color-syntax-operator);
+}
+
+.cm-editor .ͼ8.cm-lineComment {
+    color: var(--color-syntax-comment);
+    font-style: italic;
 }

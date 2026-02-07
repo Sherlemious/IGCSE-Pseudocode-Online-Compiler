@@ -2,7 +2,7 @@ import * as Popover from '@radix-ui/react-popover';
 import { Settings, Minus, Plus, Check } from 'lucide-react';
 import { themes, type ThemeId, useTheme } from '../../theme';
 
-const themeOrder: ThemeId[] = ['dark-navy', 'midnight-purple', 'nord', 'monokai', 'light'];
+const themeOrder: ThemeId[] = ['electron', 'midnight-purple', 'nord', 'monokai', 'light'];
 
 export default function SettingsPanel() {
   const { themeId, setTheme, fontSize, setFontSize } = useTheme();
@@ -10,10 +10,7 @@ export default function SettingsPanel() {
   return (
     <Popover.Root>
       <Popover.Trigger asChild>
-        <button
-          className="p-1 rounded hover:bg-white/10 transition duration-200"
-          aria-label="Settings"
-        >
+        <button className="p-1 rounded hover:bg-white/10 transition duration-200" aria-label="Settings">
           <Settings className="h-4 w-4" />
         </button>
       </Popover.Trigger>
@@ -47,15 +44,10 @@ export default function SettingsPanel() {
                       }}
                     >
                       {isActive && (
-                        <Check
-                          className="h-4 w-4"
-                          style={{ color: id === 'light' ? '#1E293B' : '#FFFFFF' }}
-                        />
+                        <Check className="h-4 w-4" style={{ color: id === 'light' ? '#1E293B' : '#FFFFFF' }} />
                       )}
                     </div>
-                    <span className="text-[10px] text-dark-text leading-tight text-center">
-                      {theme.label}
-                    </span>
+                    <span className="text-[10px] text-dark-text leading-tight text-center">{theme.label}</span>
                   </button>
                 );
               })}
@@ -74,9 +66,7 @@ export default function SettingsPanel() {
               >
                 <Minus className="h-4 w-4 text-light-text" />
               </button>
-              <span className="text-light-text font-mono text-sm min-w-[3ch] text-center">
-                {fontSize}px
-              </span>
+              <span className="text-light-text font-mono text-sm min-w-[3ch] text-center">{fontSize}px</span>
               <button
                 onClick={() => setFontSize(fontSize + 1)}
                 disabled={fontSize >= 24}

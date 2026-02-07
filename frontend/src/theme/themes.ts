@@ -1,4 +1,4 @@
-export type ThemeId = 'dark-navy' | 'midnight-purple' | 'nord' | 'monokai' | 'light';
+export type ThemeId = 'electron' | 'midnight-purple' | 'nord' | 'monokai' | 'light';
 
 export interface ThemeColors {
   primary: string;
@@ -20,6 +20,15 @@ export interface ThemeColors {
   success: string;
   'code-bg': string;
   'code-text': string;
+  // Syntax highlighting colors
+  'syntax-keyword': string;
+  'syntax-type': string;
+  'syntax-string': string;
+  'syntax-number': string;
+  'syntax-boolean': string;
+  'syntax-operator': string;
+  'syntax-comment': string;
+  'syntax-variable': string;
 }
 
 export interface Theme {
@@ -30,30 +39,39 @@ export interface Theme {
 }
 
 export const themes: Record<ThemeId, Theme> = {
-  'dark-navy': {
-    id: 'dark-navy',
-    label: 'Dark Navy',
-    swatch: '#0D1B2A',
+  electron: {
+    id: 'electron',
+    label: 'Electron',
+    swatch: '#1E1E1E',
     colors: {
-      primary: '#778DA9',
-      'primary-hover': '#5C7A99',
-      secondary: '#1E293B',
-      accent: '#778DA9',
-      background: '#0D1B2A',
-      surface: '#1E293B',
-      'header-bg': '#778DA9',
-      'header-text': '#F8FAFC',
-      'light-text': '#F8FAFC',
-      'dark-text': '#E0E1DD',
-      border: '#334155',
-      'disabled-bg': '#475569',
-      warning: '#F59E0B',
-      info: '#06B6D4',
-      error: '#EF4444',
-      'error-hover': '#DC2626',
-      success: '#22C55E',
-      'code-bg': '#1E293B',
-      'code-text': '#E2E8F0',
+      primary: '#007ACC',
+      'primary-hover': '#005A9E',
+      secondary: '#252526',
+      accent: '#0098FF',
+      background: '#1E1E1E',
+      surface: '#252526',
+      'header-bg': '#007ACC',
+      'header-text': '#FFFFFF',
+      'light-text': '#D4D4D4',
+      'dark-text': '#CCCCCC',
+      border: '#3E3E42',
+      'disabled-bg': '#3E3E42',
+      warning: '#D7BA7D',
+      info: '#4FC1FF',
+      error: '#F48771',
+      'error-hover': '#E74856',
+      success: '#89D185',
+      'code-bg': '#1E1E1E',
+      'code-text': '#D4D4D4',
+      // VS Code-inspired syntax colors
+      'syntax-keyword': '#569CD6',
+      'syntax-type': '#4EC9B0',
+      'syntax-string': '#CE9178',
+      'syntax-number': '#B5CEA8',
+      'syntax-boolean': '#569CD6',
+      'syntax-operator': '#D4D4D4',
+      'syntax-comment': '#6A9955',
+      'syntax-variable': '#9CDCFE',
     },
   },
   'midnight-purple': {
@@ -80,6 +98,15 @@ export const themes: Record<ThemeId, Theme> = {
       success: '#34D399',
       'code-bg': '#2D1B4E',
       'code-text': '#E9D5FF',
+      // Vibrant purple theme syntax
+      'syntax-keyword': '#C792EA',
+      'syntax-type': '#FFCB6B',
+      'syntax-string': '#C3E88D',
+      'syntax-number': '#F78C6C',
+      'syntax-boolean': '#FF5370',
+      'syntax-operator': '#89DDFF',
+      'syntax-comment': '#7C4DFF',
+      'syntax-variable': '#E9D5FF',
     },
   },
   nord: {
@@ -106,6 +133,15 @@ export const themes: Record<ThemeId, Theme> = {
       success: '#A3BE8C',
       'code-bg': '#3B4252',
       'code-text': '#D8DEE9',
+      // Nord color palette syntax
+      'syntax-keyword': '#81A1C1',
+      'syntax-type': '#8FBCBB',
+      'syntax-string': '#A3BE8C',
+      'syntax-number': '#B48EAD',
+      'syntax-boolean': '#81A1C1',
+      'syntax-operator': '#88C0D0',
+      'syntax-comment': '#616E88',
+      'syntax-variable': '#D8DEE9',
     },
   },
   monokai: {
@@ -132,6 +168,15 @@ export const themes: Record<ThemeId, Theme> = {
       success: '#A6E22E',
       'code-bg': '#3E3D32',
       'code-text': '#F8F8F2',
+      // Classic Monokai syntax
+      'syntax-keyword': '#F92672',
+      'syntax-type': '#66D9EF',
+      'syntax-string': '#E6DB74',
+      'syntax-number': '#AE81FF',
+      'syntax-boolean': '#AE81FF',
+      'syntax-operator': '#F92672',
+      'syntax-comment': '#75715E',
+      'syntax-variable': '#F8F8F2',
     },
   },
   light: {
@@ -158,6 +203,15 @@ export const themes: Record<ThemeId, Theme> = {
       success: '#16A34A',
       'code-bg': '#F1F5F9',
       'code-text': '#334155',
+      // Light theme syntax
+      'syntax-keyword': '#0000FF',
+      'syntax-type': '#267F99',
+      'syntax-string': '#A31515',
+      'syntax-number': '#098658',
+      'syntax-boolean': '#0000FF',
+      'syntax-operator': '#000000',
+      'syntax-comment': '#008000',
+      'syntax-variable': '#001080',
     },
   },
 };
