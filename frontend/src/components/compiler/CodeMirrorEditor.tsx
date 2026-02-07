@@ -188,11 +188,6 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
 
     // Custom keyboard shortcuts
     const customKeymap = keymap.of([
-      ...defaultKeymap,
-      ...historyKeymap,
-      ...searchKeymap,
-      ...completionKeymap,
-      indentWithTab,
       {
         key: 'Ctrl-Enter',
         mac: 'Cmd-Enter',
@@ -215,6 +210,11 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
           return false;
         },
       },
+      indentWithTab,
+      ...defaultKeymap,
+      ...historyKeymap,
+      ...searchKeymap,
+      ...completionKeymap,
     ]);
 
     // Create editor state

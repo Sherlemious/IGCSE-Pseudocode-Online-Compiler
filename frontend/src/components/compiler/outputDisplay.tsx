@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { Terminal, Trash2, ChevronRight, Bug, ChevronDown, Copy, Check } from 'lucide-react';
 import type { OutputEntry, DebugVariable } from '../../interpreter/core/types';
 
@@ -32,6 +32,11 @@ const OutputDisplay: React.FC<OutputDisplayProps> = ({
   const [varsExpanded, setVarsExpanded] = useState(true);
   const [copied, setCopied] = useState(false);
 
+  // Resizable split between variables panel and terminal
+  const [varsPanelHeight, setVarsPanelHeight] = useState(35); // percentage
+  const varsContainerRef = useRef<HTMLDivElement>(null);
+  const varsDragging = useRef(false);
+
   // Auto-scroll to bottom on new entries
   useEffect(() => {
     if (scrollRef.current) {
@@ -45,6 +50,41 @@ const OutputDisplay: React.FC<OutputDisplayProps> = ({
       inputRef.current.focus();
     }
   }, [waitingForInput]);
+
+  // Handle drag for variables panel resize
+  const handleVarsDragStart = useCallback(
+    (e: React.MouseEvent | React.TouchEvent) => {
+      if (!isStepping || !varsExpanded) return;
+      e.preventDefault();
+      varsDragging.current = true;
+
+      const onMove = (ev: MouseEvent | TouchEvent) => {
+        if (!varsDragging.current || !varsContainerRef.current) return;
+        const rect = varsContainerRef.current.getBoundingClientRect();
+        const clientPos = 'touches' in ev ? ev.touches[0] : ev;
+        const pct = ((clientPos.clientY - rect.top) / rect.height) * 100;
+        setVarsPanelHeight(Math.max(15, Math.min(70, pct)));
+      };
+
+      const onEnd = () => {
+        varsDragging.current = false;
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onEnd);
+        document.removeEventListener('touchmove', onMove);
+        document.removeEventListener('touchend', onEnd);
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+      };
+
+      document.body.style.cursor = 'row-resize';
+      document.body.style.userSelect = 'none';
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onEnd);
+      document.addEventListener('touchmove', onMove);
+      document.addEventListener('touchend', onEnd);
+    },
+    [isStepping, varsExpanded]
+  );
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -98,58 +138,68 @@ const OutputDisplay: React.FC<OutputDisplayProps> = ({
     if (!isStepping) return null;
 
     return (
-      <div className="border-b border-border bg-surface/50 shrink-0">
-        <button
-          onClick={() => setVarsExpanded(!varsExpanded)}
-          className="w-full h-8 px-3 flex items-center gap-2 text-xs hover:bg-surface transition-colors"
+      <>
+        <div
+          className="border-b border-border bg-surface/50 shrink-0 flex flex-col overflow-hidden"
+          style={{ height: varsExpanded ? `${varsPanelHeight}%` : 'auto' }}
         >
-          <ChevronDown
-            size={12}
-            className={`text-dark-text transition-transform ${varsExpanded ? '' : '-rotate-90'}`}
-          />
-          <Bug size={12} className="text-warning" />
-          <span className="font-semibold tracking-wider text-dark-text uppercase">Variables</span>
-          <span className="text-dark-text/50">({debugVariables.length})</span>
-        </button>
+          <button
+            onClick={() => setVarsExpanded(!varsExpanded)}
+            className="w-full h-8 px-3 flex items-center gap-2 text-xs hover:bg-surface transition-colors shrink-0"
+          >
+            <ChevronDown
+              size={12}
+              className={`text-dark-text transition-transform ${varsExpanded ? '' : '-rotate-90'}`}
+            />
+            <Bug size={12} className="text-warning" />
+            <span className="font-semibold tracking-wider text-dark-text uppercase">Variables</span>
+            <span className="text-dark-text/50">({debugVariables.length})</span>
+          </button>
 
+          {varsExpanded && (
+            <div
+              className="flex-1 overflow-y-auto px-3 pb-2
+                scrollbar-thin scrollbar-thumb-primary hover:scrollbar-thumb-primary-hover
+                scrollbar-track-background scrollbar-thumb-rounded-full"
+            >
+              {debugVariables.length === 0 ? (
+                <div className="text-xs text-dark-text/50 py-1 italic">No variables declared yet</div>
+              ) : (
+                <table className="w-full text-xs font-mono">
+                  <thead>
+                    <tr className="text-dark-text/50 border-b border-border/30">
+                      <th className="text-left py-1 pr-3 font-normal">Name</th>
+                      <th className="text-left py-1 pr-3 font-normal">Value</th>
+                      <th className="text-left py-1 font-normal">Type</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {debugVariables.map((v) => (
+                      <tr key={v.name} className="border-b border-border/10 hover:bg-surface/50">
+                        <td className="py-1 pr-3 text-light-text">
+                          {v.name}
+                          {v.constant && <span className="text-warning/50 ml-1 text-[9px]">const</span>}
+                        </td>
+                        <td className={`py-1 pr-3 ${typeColor(v.type)}`}>{formatValue(v)}</td>
+                        <td className="py-1 text-dark-text/50 text-[10px]">{v.type}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Drag handle for resizing variables panel */}
         {varsExpanded && (
           <div
-            className="max-h-48 overflow-y-auto px-3 pb-2
-              scrollbar-thin scrollbar-thumb-primary hover:scrollbar-thumb-primary-hover
-              scrollbar-track-background scrollbar-thumb-rounded-full"
-          >
-            {debugVariables.length === 0 ? (
-              <div className="text-xs text-dark-text/50 py-1 italic">No variables declared yet</div>
-            ) : (
-              <table className="w-full text-xs font-mono">
-                <thead>
-                  <tr className="text-dark-text/50 border-b border-border/30">
-                    <th className="text-left py-1 pr-3 font-normal">Name</th>
-                    <th className="text-left py-1 pr-3 font-normal">Value</th>
-                    <th className="text-left py-1 font-normal">Type</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {debugVariables.map((v) => (
-                    <tr key={v.name} className="border-b border-border/10 hover:bg-surface/50">
-                      <td className="py-1 pr-3 text-light-text">
-                        {v.name}
-                        {v.constant && <span className="text-warning/50 ml-1 text-[9px]">const</span>}
-                      </td>
-                      <td className={`py-1 pr-3 ${typeColor(v.type)}`}>
-                        {formatValue(v)}
-                      </td>
-                      <td className="py-1 text-dark-text/50 text-[10px]">
-                        {v.type}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </div>
+            className="shrink-0 h-1 w-full bg-border hover:bg-primary transition-colors cursor-row-resize"
+            onMouseDown={handleVarsDragStart}
+            onTouchStart={handleVarsDragStart}
+          />
         )}
-      </div>
+      </>
     );
   };
 
@@ -158,7 +208,9 @@ const OutputDisplay: React.FC<OutputDisplayProps> = ({
     if (!isRunning && entries.length === 0) {
       return (
         <div className="h-full flex flex-col items-center justify-center gap-4 text-dark-text select-none p-4">
-          <pre className="text-primary/30 text-[10px] sm:text-xs leading-tight font-mono hidden sm:block">{WELCOME_ART}</pre>
+          <pre className="text-primary/30 text-[10px] sm:text-xs leading-tight font-mono hidden sm:block">
+            {WELCOME_ART}
+          </pre>
           <div className="text-center space-y-1">
             <div className="text-sm text-dark-text/70">IGCSE Pseudocode Compiler</div>
             <div className="text-xs text-dark-text/40">
@@ -291,17 +343,20 @@ const OutputDisplay: React.FC<OutputDisplayProps> = ({
         </div>
       </div>
 
-      {/* Variable watch panel (shown during debug) */}
-      {renderVariablePanel()}
+      {/* Content area with variable panel and terminal */}
+      <div ref={varsContainerRef} className="flex-1 min-h-0 flex flex-col overflow-hidden">
+        {/* Variable watch panel (shown during debug) */}
+        {renderVariablePanel()}
 
-      {/* Terminal output */}
-      <div
-        ref={scrollRef}
-        className="flex-1 min-h-0 bg-background overflow-y-auto
-          scrollbar-thin scrollbar-thumb-primary hover:scrollbar-thumb-primary-hover
-          scrollbar-track-background scrollbar-thumb-rounded-full"
-      >
-        {renderContent()}
+        {/* Terminal output */}
+        <div
+          ref={scrollRef}
+          className="flex-1 min-h-0 bg-background overflow-y-auto
+            scrollbar-thin scrollbar-thumb-primary hover:scrollbar-thumb-primary-hover
+            scrollbar-track-background scrollbar-thumb-rounded-full"
+        >
+          {renderContent()}
+        </div>
       </div>
     </div>
   );
