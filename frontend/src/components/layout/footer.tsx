@@ -1,4 +1,5 @@
 import React from 'react';
+import { Circle, Loader } from 'lucide-react';
 import type { CursorPosition } from '../compiler/codeInput';
 
 interface FooterProps {
@@ -13,12 +14,12 @@ const Footer: React.FC<FooterProps> = ({ isRunning = false, cursor, lineCount })
       {/* Left section */}
       <div className="flex items-center gap-3">
         <div className="flex items-center gap-1.5">
-          <span
-            className={`inline-block w-2 h-2 rounded-full transition-colors ${
-              isRunning ? 'bg-header-text animate-pulse' : 'bg-header-text/60'
-            }`}
-          />
-          <span className={isRunning ? 'text-header-text font-semibold' : 'text-header-text/80'}>
+          {isRunning ? (
+            <Loader size={12} className="text-header-text animate-spin" />
+          ) : (
+            <Circle size={10} className="text-header-text fill-header-text" />
+          )}
+          <span className={isRunning ? 'text-header-text font-semibold' : 'text-header-text'}>
             {isRunning ? 'Running' : 'Ready'}
           </span>
         </div>
