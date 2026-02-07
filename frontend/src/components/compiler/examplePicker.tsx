@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Book, Search, X } from 'lucide-react';
+import { Book, Search, X, ChevronRight, FileCode, ArrowRight } from 'lucide-react';
 import { examples, type Example } from '../../data/examples';
 
 const ExamplePicker: React.FC<{ onSelectExample: (code: string) => void }> = ({ onSelectExample }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState('');
   const [selectedExample, setSelectedExample] = useState<Example | null>(null);
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const modalRef = useRef<HTMLDivElement>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
@@ -22,27 +24,61 @@ const ExamplePicker: React.FC<{ onSelectExample: (code: string) => void }> = ({ 
         setIsOpen(false);
       }
     };
-
     if (isOpen) {
       document.addEventListener('mousedown', handleClickOutside);
     }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isOpen]);
+
+  // Auto-focus search when modal opens
+  useEffect(() => {
+    if (isOpen && searchRef.current) {
+      searchRef.current.focus();
+    }
+  }, [isOpen]);
+
+  // Expand all categories when searching
+  useEffect(() => {
+    if (search) {
+      setExpandedCategories(new Set(categories));
+    }
+  }, [search]);
 
   const filteredExamples = examples.filter(
     (ex) =>
-      ex.title.toLowerCase().includes(search.toLowerCase()) || ex.category.toLowerCase().includes(search.toLowerCase())
+      ex.title.toLowerCase().includes(search.toLowerCase()) ||
+      ex.category.toLowerCase().includes(search.toLowerCase()),
   );
 
   const categories = [...new Set(examples.map((ex) => ex.category))];
 
+  const toggleCategory = (cat: string) => {
+    setExpandedCategories((prev) => {
+      const next = new Set(prev);
+      if (next.has(cat)) next.delete(cat);
+      else next.add(cat);
+      return next;
+    });
+  };
+
+  const handleOpen = () => {
+    setSearch('');
+    setSelectedExample(null);
+    setExpandedCategories(new Set([categories[0]]));
+    setIsOpen(true);
+  };
+
+  const handleUse = () => {
+    if (selectedExample) {
+      onSelectExample(selectedExample.code);
+      setIsOpen(false);
+    }
+  };
+
   return (
     <>
       <button
-        onClick={() => setIsOpen(true)}
+        onClick={handleOpen}
         className="flex items-center justify-center w-7 h-7 text-dark-text hover:text-light-text
           hover:bg-background rounded transition-colors"
         title="Browse Examples"
@@ -51,94 +87,143 @@ const ExamplePicker: React.FC<{ onSelectExample: (code: string) => void }> = ({ 
       </button>
 
       {isOpen && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div ref={modalRef} className="bg-background rounded-lg w-full max-w-6xl max-h-[90vh] flex flex-col">
-            {/* Header */}
-            <div className="flex items-center justify-between p-4 border-b-2 border-border">
-              <h2 className="text-xl font-semibold text-primary">Example Code</h2>
-              <button onClick={() => setIsOpen(false)} className="text-dark-text hover:text-primary">
-                <X size={24} />
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-3">
+          <div
+            ref={modalRef}
+            className="bg-background border border-border rounded-md w-full max-w-5xl max-h-[85vh] flex flex-col shadow-intense overflow-hidden"
+          >
+            {/* Header bar */}
+            <div className="h-9 bg-surface border-b border-border flex items-center justify-between px-3 shrink-0">
+              <div className="flex items-center gap-2">
+                <Book className="h-3.5 w-3.5 text-primary" />
+                <span className="text-xs font-semibold tracking-wider text-light-text uppercase">Examples</span>
+                <span className="text-xs text-dark-text">({filteredExamples.length})</span>
+              </div>
+              <button
+                onClick={() => setIsOpen(false)}
+                className="text-dark-text hover:text-light-text p-1 rounded hover:bg-background transition-colors"
+              >
+                <X size={14} />
               </button>
             </div>
 
             <div className="flex-1 flex flex-col md:flex-row min-h-0">
-              {/* Left Panel */}
-              <div className="w-full md:w-72 border-r-2 border-border flex flex-col min-h-0">
+              {/* Left panel — browser */}
+              <div className="w-full md:w-64 border-b md:border-b-0 md:border-r border-border flex flex-col min-h-0 shrink-0">
                 {/* Search */}
-                <div className="p-2 border-b-2 border-border">
+                <div className="p-2 border-b border-border">
                   <div className="relative">
-                    <Search size={18} className="absolute left-2 top-2.5 text-dark-text" />
+                    <Search size={14} className="absolute left-2 top-1/2 -translate-y-1/2 text-dark-text" />
                     <input
+                      ref={searchRef}
                       type="text"
-                      placeholder="Search examples..."
+                      placeholder="Filter examples..."
                       value={search}
                       onChange={(e) => setSearch(e.target.value)}
-                      className="w-full pl-9 pr-4 py-2 bg-background border-2
-                        border-border rounded-md focus:border-primary focus:outline-none"
+                      className="w-full pl-7 pr-3 py-1.5 text-xs bg-background border border-border
+                        rounded focus:border-primary focus:outline-none text-light-text
+                        placeholder:text-dark-text"
                     />
                   </div>
                 </div>
 
-                {/* Examples List */}
+                {/* Tree list */}
                 <div
-                  className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-primary
-                  hover:scrollbar-thumb-primary-hover scrollbar-track-background scrollbar-thumb-rounded-full"
+                  className="flex-1 overflow-y-auto py-1
+                    scrollbar-thin scrollbar-thumb-primary hover:scrollbar-thumb-primary-hover
+                    scrollbar-track-background scrollbar-thumb-rounded-full"
                 >
                   {categories.map((category) => {
                     const categoryExamples = filteredExamples.filter((ex) => ex.category === category);
                     if (categoryExamples.length === 0) return null;
+                    const isExpanded = expandedCategories.has(category) || search.length > 0;
 
                     return (
-                      <div key={category} className="p-2">
-                        <div className="text-primary font-semibold px-2 py-1">{category}</div>
-                        {categoryExamples.map((example) => (
-                          <button
-                            key={example.title}
-                            onClick={() => setSelectedExample(example)}
-                            className={`w-full text-left px-4 py-2 rounded-md transition-colors duration-150
-                              ${
-                                selectedExample?.title === example.title
-                                  ? 'bg-surface text-primary'
-                                  : 'hover:bg-surface'
-                              }`}
-                          >
-                            {example.title}
-                          </button>
-                        ))}
+                      <div key={category}>
+                        <button
+                          onClick={() => toggleCategory(category)}
+                          className="w-full flex items-center gap-1 px-2 py-1 text-xs font-semibold text-dark-text
+                            hover:text-light-text hover:bg-surface/50 transition-colors"
+                        >
+                          <ChevronRight
+                            size={12}
+                            className={`shrink-0 transition-transform duration-150 ${isExpanded ? 'rotate-90' : ''}`}
+                          />
+                          <span className="uppercase tracking-wider">{category}</span>
+                          <span className="text-dark-text/60 font-normal ml-auto">{categoryExamples.length}</span>
+                        </button>
+
+                        {isExpanded && (
+                          <div className="ml-2">
+                            {categoryExamples.map((example) => {
+                              const isSelected = selectedExample?.title === example.title;
+                              return (
+                                <button
+                                  key={example.title}
+                                  onClick={() => setSelectedExample(example)}
+                                  className={`w-full flex items-center gap-1.5 px-3 py-1 text-xs rounded-sm transition-colors
+                                    ${isSelected
+                                      ? 'bg-primary/15 text-primary'
+                                      : 'text-light-text hover:bg-surface'
+                                    }`}
+                                >
+                                  <FileCode size={12} className={`shrink-0 ${isSelected ? 'text-primary' : 'text-dark-text'}`} />
+                                  <span className="truncate">{example.title}</span>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
                       </div>
                     );
                   })}
+
+                  {filteredExamples.length === 0 && (
+                    <div className="px-4 py-6 text-center text-xs text-dark-text">
+                      No examples match "{search}"
+                    </div>
+                  )}
                 </div>
               </div>
 
-              {/* Right Panel */}
-              <div className="flex-1 flex flex-col min-h-0 p-4">
+              {/* Right panel — preview */}
+              <div className="flex-1 flex flex-col min-h-0">
                 {selectedExample ? (
                   <>
-                    <div className="flex justify-between items-center mb-4">
-                      <h3 className="text-lg font-semibold text-primary">{selectedExample.title}</h3>
+                    {/* Preview header */}
+                    <div className="h-9 bg-surface border-b border-border flex items-center justify-between px-3 shrink-0">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <FileCode size={12} className="text-primary shrink-0" />
+                        <span className="text-xs font-mono text-light-text truncate">{selectedExample.title}</span>
+                        <span className="text-xs text-dark-text">— {selectedExample.category}</span>
+                      </div>
                       <button
-                        onClick={() => {
-                          onSelectExample(selectedExample.code);
-                          setIsOpen(false);
-                        }}
-                        className="px-4 py-2 bg-primary text-background rounded-md
-                          hover:bg-primary-hover transition-colors duration-200"
+                        onClick={handleUse}
+                        className="flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded
+                          bg-primary/15 text-primary hover:bg-primary/25 transition-colors shrink-0"
                       >
-                        Use This Example
+                        Load
+                        <ArrowRight size={12} />
                       </button>
                     </div>
+
+                    {/* Code preview */}
                     <pre
-                      className="flex-1 bg-code-bg p-4 rounded-lg overflow-y-auto
-                      scrollbar-thin scrollbar-thumb-primary hover:scrollbar-thumb-primary-hover
-                      scrollbar-track-background scrollbar-thumb-rounded-full"
+                      style={{ fontSize: 'var(--editor-font-size)' }}
+                      className="flex-1 p-4 font-mono text-light-text overflow-auto leading-relaxed
+                        scrollbar-thin scrollbar-thumb-primary hover:scrollbar-thumb-primary-hover
+                        scrollbar-track-background scrollbar-thumb-rounded-full"
                     >
-                      <code className="text-light-text">{selectedExample.code}</code>
+                      <code>{selectedExample.code}</code>
                     </pre>
                   </>
                 ) : (
-                  <div className="flex items-center justify-center h-full text-dark-text">
-                    Select an example to view the code
+                  <div className="flex-1 flex flex-col items-center justify-center gap-3 text-dark-text">
+                    <Book size={32} className="opacity-30" />
+                    <div className="text-sm">Select an example to preview</div>
+                    <div className="text-xs opacity-60">
+                      {examples.length} examples across {categories.length} categories
+                    </div>
                   </div>
                 )}
               </div>
