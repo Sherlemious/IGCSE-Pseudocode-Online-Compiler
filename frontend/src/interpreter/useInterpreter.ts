@@ -12,6 +12,9 @@ export function useInterpreter() {
   const [debugLine, setDebugLine] = useState<number | null>(null);
   const [debugVariables, setDebugVariables] = useState<DebugVariable[]>([]);
 
+  // Breakpoints
+  const [breakpoints, setBreakpoints] = useState<Set<number>>(new Set());
+
   // Error line marker
   const [errorLine, setErrorLine] = useState<number | null>(null);
 
@@ -97,11 +100,18 @@ export function useInterpreter() {
           setDebugLine(line);
           setDebugVariables(variables);
         },
+        onBreakpoint(line: number, variables: DebugVariable[]) {
+          // When breakpoint is hit, enter step mode
+          setIsStepping(true);
+          setDebugLine(line);
+          setDebugVariables(variables);
+        },
       },
       abortController.signal,
     );
 
     interpreter.setStepMode(stepMode);
+    interpreter.setBreakpoints(breakpoints);
     interpreterRef.current = interpreter;
 
     try {
@@ -129,7 +139,7 @@ export function useInterpreter() {
       setIsStepping(false);
       setDebugLine(null);
     }
-  }, []);
+  }, [breakpoints]);
 
   const run = useCallback(async (sourceCode: string) => {
     await startExecution(sourceCode, false);
@@ -183,6 +193,22 @@ export function useInterpreter() {
     setEntries([]);
   }, []);
 
+  const toggleBreakpoint = useCallback((line: number) => {
+    setBreakpoints((prev) => {
+      const next = new Set(prev);
+      if (next.has(line)) {
+        next.delete(line);
+      } else {
+        next.add(line);
+      }
+      return next;
+    });
+  }, []);
+
+  const clearBreakpoints = useCallback(() => {
+    setBreakpoints(new Set());
+  }, []);
+
   return {
     entries,
     isRunning,
@@ -192,6 +218,8 @@ export function useInterpreter() {
     debugLine,
     debugVariables,
     errorLine,
+    // Breakpoints
+    breakpoints,
     // Actions
     run,
     debugRun,
@@ -200,5 +228,7 @@ export function useInterpreter() {
     provideInput,
     stop,
     clearEntries,
+    toggleBreakpoint,
+    clearBreakpoints,
   };
 }

@@ -22,9 +22,28 @@ import { HighlightStyle, syntaxHighlighting } from '@codemirror/language';
 import { tags as t } from '@lezer/highlight';
 
 const readOnlyCompartment = new Compartment();
+const gutterCompartment = new Compartment();
 
 // Define StateEffect for line highlighting
 const setLineHighlight = StateEffect.define<{ debugLine: number | null; errorLine: number | null }>();
+
+// Define StateEffect for breakpoints
+const setBreakpoints = StateEffect.define<Set<number>>();
+
+// Define StateField for breakpoint decorations
+const breakpointField = StateField.define<Set<number>>({
+  create() {
+    return new Set();
+  },
+  update(breakpoints, tr) {
+    for (const e of tr.effects) {
+      if (e.is(setBreakpoints)) {
+        return e.value;
+      }
+    }
+    return breakpoints;
+  },
+});
 
 // Define StateField for line decorations
 const lineHighlightField = StateField.define<DecorationSet>({
@@ -63,6 +82,8 @@ interface CodeMirrorEditorProps {
   readOnly?: boolean;
   debugLine?: number | null;
   errorLine?: number | null;
+  breakpoints?: Set<number>;
+  onBreakpointToggle?: (line: number) => void;
 }
 
 const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
@@ -75,6 +96,8 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
   readOnly = false,
   debugLine = null,
   errorLine = null,
+  breakpoints = new Set(),
+  onBreakpointToggle,
 }) => {
   const editorRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
@@ -85,6 +108,8 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
   const isRunningRef = useRef(isRunning);
   const debugLineRef = useRef(debugLine);
   const errorLineRef = useRef(errorLine);
+  const breakpointsRef = useRef(breakpoints);
+  const onBreakpointToggleRef = useRef(onBreakpointToggle);
 
   // Update refs when props change
   useEffect(() => {
@@ -108,6 +133,45 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
   }, [isRunning]);
 
   useEffect(() => {
+    onBreakpointToggleRef.current = onBreakpointToggle;
+  }, [onBreakpointToggle]);
+
+  useEffect(() => {
+    breakpointsRef.current = breakpoints;
+    
+    if (viewRef.current) {
+      // Update breakpoint state
+      viewRef.current.dispatch({
+        effects: setBreakpoints.of(breakpoints),
+      });
+      
+      // Reconfigure gutter to show updated breakpoints
+      const createGutter = () => lineNumbers({
+        formatNumber: (lineNo) => {
+          if (debugLineRef.current === lineNo) return '▶';
+          if (errorLineRef.current === lineNo) return '⚠';
+          if (breakpoints.has(lineNo)) return '⬤';
+          return lineNo.toString();
+        },
+        domEventHandlers: {
+          click: (view, block) => {
+            const lineNo = view.state.doc.lineAt(block.from).number;
+            if (onBreakpointToggleRef.current && !isRunningRef.current) {
+              onBreakpointToggleRef.current(lineNo);
+              return true;
+            }
+            return false;
+          },
+        },
+      });
+      
+      viewRef.current.dispatch({
+        effects: gutterCompartment.reconfigure([createGutter(), highlightActiveLineGutter()]),
+      });
+    }
+  }, [breakpoints]);
+
+  useEffect(() => {
     debugLineRef.current = debugLine;
     errorLineRef.current = errorLine;
 
@@ -115,20 +179,54 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
       viewRef.current.dispatch({
         effects: setLineHighlight.of({ debugLine, errorLine }),
       });
+      
+      // Reconfigure gutter to show updated debug/error markers
+      const createGutter = () => lineNumbers({
+        formatNumber: (lineNo) => {
+          if (debugLine === lineNo) return '▶';
+          if (errorLine === lineNo) return '⚠';
+          if (breakpointsRef.current.has(lineNo)) return '⬤';
+          return lineNo.toString();
+        },
+        domEventHandlers: {
+          click: (view, block) => {
+            const lineNo = view.state.doc.lineAt(block.from).number;
+            if (onBreakpointToggleRef.current && !isRunningRef.current) {
+              onBreakpointToggleRef.current(lineNo);
+              return true;
+            }
+            return false;
+          },
+        },
+      });
+      
+      viewRef.current.dispatch({
+        effects: gutterCompartment.reconfigure([createGutter(), highlightActiveLineGutter()]),
+      });
     }
   }, [debugLine, errorLine]);
 
   useEffect(() => {
     if (!editorRef.current) return;
 
-    // Custom line number gutter with debug/error markers
-    const lineNumberGutter = lineNumbers({
+    // Helper function to create line number gutter
+    const createGutter = () => lineNumbers({
       formatNumber: (lineNo) => {
         if (debugLineRef.current === lineNo) return '▶';
-        if (errorLineRef.current === lineNo) return '●';
+        if (errorLineRef.current === lineNo) return '⚠';
+        if (breakpointsRef.current.has(lineNo)) return '⬤';
         return lineNo.toString();
       },
-      domEventHandlers: {},
+      domEventHandlers: {
+        click: (view, block) => {
+          const lineNo = view.state.doc.lineAt(block.from).number;
+          if (onBreakpointToggleRef.current && !isRunningRef.current) {
+            onBreakpointToggleRef.current(lineNo);
+            return true;
+          }
+          return false;
+        },
+      },
     });
 
     // Custom theme
@@ -159,6 +257,7 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
         minWidth: '2.5rem',
         textAlign: 'right',
         fontVariantNumeric: 'tabular-nums',
+        cursor: 'pointer',
       },
       '.cm-activeLine': {
         backgroundColor: 'rgba(var(--color-primary-rgb), 0.05)',
@@ -259,8 +358,7 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
     const startState = EditorState.create({
       doc: value,
       extensions: [
-        lineNumberGutter,
-        highlightActiveLineGutter(),
+        gutterCompartment.of([createGutter(), highlightActiveLineGutter()]),
         highlightSpecialChars(),
         history(),
         foldGutter(),
@@ -278,6 +376,7 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
         highlightTheme,
         customTheme,
         lineHighlightField,
+        breakpointField,
         readOnlyCompartment.of(EditorState.readOnly.of(readOnly)),
         EditorView.updateListener.of((update) => {
           if (update.docChanged) {

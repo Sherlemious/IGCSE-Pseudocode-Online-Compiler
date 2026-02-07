@@ -90,6 +90,7 @@ export class Interpreter {
   private fileSystem = new VirtualFileSystem();
   private _stepMode = false;
   private stepResolver: (() => void) | null = null;
+  private _breakpoints = new Set<number>();
 
   constructor(callbacks: InterpreterCallbacks, signal: AbortSignal) {
     this.env = new Environment();
@@ -128,6 +129,10 @@ export class Interpreter {
     }
   }
 
+  setBreakpoints(breakpoints: Set<number>): void {
+    this._breakpoints = new Set(breakpoints);
+  }
+
   step(): void {
     if (this.stepResolver) {
       const resolve = this.stepResolver;
@@ -155,8 +160,22 @@ export class Interpreter {
   }
 
   private async beforeStatement(line: number): Promise<void> {
-    if (!this._stepMode) return;
     this.checkCancelled();
+    
+    // Check if we hit a breakpoint (only when not already in step mode)
+    if (!this._stepMode && this._breakpoints.has(line)) {
+      const variables = this.snapshotVariables();
+      this.callbacks.onBreakpoint?.(line, variables);
+      this._stepMode = true; // Enter step mode
+      await new Promise<void>((resolve) => {
+        this.stepResolver = resolve;
+      });
+      this.checkCancelled();
+      return;
+    }
+    
+    // Normal step mode behavior
+    if (!this._stepMode) return;
     const variables = this.snapshotVariables();
     this.callbacks.onBeforeStep?.(line, variables);
     await new Promise<void>((resolve) => {

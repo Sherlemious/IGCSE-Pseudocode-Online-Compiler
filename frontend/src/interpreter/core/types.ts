@@ -18,6 +18,8 @@ export interface InterpreterCallbacks {
   onError(error: PseudocodeError): void;
   /** Called before each statement in step mode. */
   onBeforeStep?(line: number, variables: DebugVariable[]): void;
+  /** Called when a breakpoint is hit during normal execution. */
+  onBreakpoint?(line: number, variables: DebugVariable[]): void;
 }
 
 export class PseudocodeError extends Error {
