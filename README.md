@@ -1,82 +1,58 @@
-# IGCSE-Pseudocode-Online-Compiler
+# IGCSE Pseudocode Online Compiler
 
-A **Web-based Pseudocode Interpreter** that allows users to write pseudocode, which is then compiled into Python and executed in the browser. The project aims to bridge the gap between the IGCSE Computer Science Pseudocode syntax and actual programming languages.
+A **browser-based pseudocode interpreter** for the Cambridge IGCSE Computer Science (0478) syllabus. Write and run pseudocode directly in the browser with no backend required.
+
 ## Tech Stack
 
-- **Frontend:**
-  - **React** with **TypeScript** for building the user interface.
-  - **Tailwind CSS** for utility-first, responsive styling.
-  - **Vite** for fast and modern development with React.
-  - **Pyodide** for running Python code in the browser.
-
-- **Backend:**
-  - **Django**: A powerful Python framework used to handle the logic of compiling pseudocode into Python. It exposes a simple API for the frontend to interact with.
-  - **Python**: Used for pseudocode-to-Python compilation and for executing Python code.
-
-- **APIs:**
-  - Custom API to compile pseudocode into Python code and return it.
-  - Backend communication via **Fetch**/`Axios` for making HTTP requests from the frontend.
-
-- **Deployment:**
-  - Hosted on **Render** for the backend.
-
----
+- **React 18** with **TypeScript** for the UI
+- **Tailwind CSS** for styling
+- **Vite** for development and builds
+- **antlr4ng v3** for parsing pseudocode via a custom ANTLR4 grammar
 
 ## Features
 
-- **Real-time pseudocode-to-Python compilation**: Converts pseudocode to Python code and runs it in the browser.
-- **Interactive editor**: A user-friendly interface to enter pseudocode and instantly see the output.
-- **Output Display**: Once compiled, the output is displayed beside the editor so users can see the results.
-- **Responsive Design**: The application is fully responsive, ensuring a smooth experience on desktops, tablets, and smartphones.
-
----
+- **Direct interpretation**: Pseudocode is parsed and executed in the browser using an ANTLR4 grammar and a custom tree-walking interpreter. No transpilation step.
+- **Interactive editor**: Write pseudocode and see output instantly.
+- **INPUT support**: Programs that use `INPUT` pause execution and prompt the user interactively.
+- **File handling**: `OPENFILE`, `READFILE`, `WRITEFILE`, and `CLOSEFILE` are simulated using browser localStorage.
+- **Responsive design**: Works on desktops, tablets, and phones.
 
 ## How It Works
 
-1. **User Input:**
-   - The user enters pseudocode into the code editor on the frontend.
-   
-2. **Pseudocode Compilation:**
-   - The frontend sends the pseudocode to the backend via a `POST` request to the `/execution/convert/` endpoint.
-   - The backend compiles the pseudocode into Python code and returns the result.
+1. The user writes pseudocode in the editor.
+2. The ANTLR4 lexer/parser tokenizes and parses the code into a parse tree.
+3. A tree-walking interpreter executes the parse tree directly, evaluating expressions, managing variables/arrays, and handling control flow.
+4. Output is displayed beside the editor. Programs requiring user input pause and show an input prompt.
 
-3. **Python Code Execution:**
-   - The frontend then sends the Python code to a Python interpreter running in the browser (**Pyodide**) for execution.
-   - The output or errors from the execution are returned and displayed to the user in the output section.
+## Supported Language Features
 
----
+See the full [Pseudocode Language Reference](pseudocode.md) for details.
 
-## Features and Functionality
-
-- **Code Input**:
-  - Write pseudocode in a user-friendly editor.
-  - Clear the code with a single click.
-
-- **Compilation**:
-  - The pseudocode is compiled into Python code via a REST API.
-
-- **Execution**:
-  - Run the generated Python code directly in the browser using Pyodide.
-
-- **Responsive Design**:
-  - The app works on various devices, including desktops, tablets, and smartphones.
-
----
+- **Data types**: `INTEGER`, `REAL`, `CHAR`, `STRING`, `BOOLEAN`
+- **Variables & constants**: `DECLARE`, `CONSTANT`
+- **Assignment**: Using `<-` or `=`
+- **Arrays**: 1D and 2D with custom bounds
+- **I/O**: `INPUT`, `OUTPUT`, `PRINT`
+- **Arithmetic**: `+`, `-`, `*`, `/`, `^`, `DIV()`, `MOD()`
+- **Comparison**: `=`, `<>`, `<`, `>`, `<=`, `>=`
+- **Logical**: `AND`, `OR`, `NOT`
+- **Selection**: `IF/THEN/ELSE/ENDIF`, `CASE OF/OTHERWISE/ENDCASE`
+- **Iteration**: `FOR/TO/STEP/NEXT`, `WHILE/DO/ENDWHILE`, `REPEAT/UNTIL`
+- **Subprograms**: `PROCEDURE/ENDPROCEDURE`, `FUNCTION/RETURNS/ENDFUNCTION`, `CALL`, `RETURN`
+- **File handling**: `OPENFILE`, `READFILE`, `WRITEFILE`, `CLOSEFILE` (localStorage-backed)
+- **String functions**: `LENGTH()`, `LCASE()`, `UCASE()`, `SUBSTRING()`
+- **Library routines**: `ROUND()`, `RANDOM()`, `INT()`, `EOF()`
+- **Comments**: `// single line`
 
 ## Installation
-
-To get started with the project locally, follow these steps:
-
-### **Frontend Setup**
 
 1. Clone the repository:
    ```bash
    git clone https://github.com/Sherlemious/IGCSE-Pseudocode-Online-Compiler
-   cd IGCSE-Pseudocode-Online-Compiler
-   cd frontend
+   cd IGCSE-Pseudocode-Online-Compiler/frontend
    ```
 
-2. Install the required dependencies:
+2. Install dependencies:
    ```bash
    npm install
    ```
@@ -86,61 +62,25 @@ To get started with the project locally, follow these steps:
    npm run dev
    ```
 
-4. Open the app in your browser at `http://localhost:5173`.
+4. Open `http://localhost:5173` in your browser.
 
-### **Backend Setup**
+### Regenerating the Parser
 
-1. Navigate to the backend folder:
-   ```bash
-   cd backend
-   ```
+If you modify the ANTLR4 grammar (`src/interpreter/grammar/Pseudocode.g4`), regenerate the parser:
 
-2. Install the required dependencies (if using Django):
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-3. Set up your database (if applicable):
-   ```bash
-   python manage.py migrate
-   ```
-
-4. Run the Django server:
-   ```bash
-   python manage.py runserver
-   ```
-
-5. Open the backend in your browser at `http://localhost:8000`.
-
----
-
-## API Endpoints
-
-- **POST `/execution/convert/`**:
-  - **Request Body**: Pseudocode string.
-  - **Response**: Python code (string).
-  
----
-
-
+```bash
+npm run antlr:generate
+```
 
 ## Contributing
 
-If you'd like to contribute to the project, feel free to submit a pull request with your changes! Please make sure to follow the below guidelines:
+Contributions are welcome. Please:
 
-- Fork the repository.
-- Create a new branch for each feature or bug fix.
-- Write clear commit messages.
-- Make sure tests pass before submitting a pull request.
-
----
+- Fork the repository
+- Create a branch for your feature or fix
+- Write clear commit messages
+- Make sure the project builds before submitting a PR
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
----
-
-Let me know if you need any more changes or additions!
-
-# [Pseudocode Language Documentation](pseudocode.md)
+This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
