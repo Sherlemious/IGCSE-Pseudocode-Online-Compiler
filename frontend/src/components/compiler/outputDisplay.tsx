@@ -50,12 +50,7 @@ const OutputDisplay: React.FC<OutputDisplayProps> = ({
     }
 
     return (
-      <div
-        ref={scrollRef}
-        className="h-full p-4 overflow-auto font-mono text-sm
-          scrollbar-thin scrollbar-thumb-primary hover:scrollbar-thumb-secondary
-          scrollbar-track-background scrollbar-thumb-rounded-full"
-      >
+      <div className="p-4 font-mono text-sm">
         {entries.map((entry, i) => {
           if (entry.kind === 'output') {
             return (
@@ -112,13 +107,16 @@ const OutputDisplay: React.FC<OutputDisplayProps> = ({
   };
 
   return (
-    <div className="flex-1 flex flex-col p-6">
+    <div className="flex-1 min-h-0 flex flex-col p-6">
       <h2 className="text-2xl font-sans font-semibold text-light-text mb-6 mt-2">Output</h2>
 
       <div
+        ref={scrollRef}
         className="flex-1 min-h-0 bg-background
         border-2 border-dark-text rounded-lg
-        overflow-hidden"
+        overflow-y-auto
+        scrollbar-thin scrollbar-thumb-primary hover:scrollbar-thumb-secondary
+        scrollbar-track-background scrollbar-thumb-rounded-full"
       >
         {renderContent()}
       </div>

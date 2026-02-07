@@ -18,11 +18,11 @@ const Home: React.FC = () => {
   };
 
   return (
-    <div className="min-h-full flex flex-col bg-background text-light-text overflow-hidden">
+    <div className="h-full flex flex-col bg-background text-light-text overflow-hidden">
       <div className="p-4 border-b-2 border-dark-text">
         <ExamplePicker onSelectExample={handleExampleSelect} />
       </div>
-      <div className=" flex-1 flex flex-col lg:flex-row">
+      <div className="flex-1 min-h-0 flex flex-col lg:flex-row">
         <CodeInput code={code} onCodeChange={setCode} onRunCode={handleRunCode} isRunning={isRunning} onStop={stop} />
         <OutputDisplay
           entries={entries}
