@@ -20,7 +20,7 @@ A **browser-based pseudocode interpreter** for the Cambridge IGCSE Computer Scie
 ## How It Works
 
 1. The user writes pseudocode in the editor.
-2. The ANTLR4 lexer/parser tokenizes and parses the code into a parse tree.
+2. The ANTLR4 lexer/parser tokenises and parses the code into a parse tree.
 3. A tree-walking interpreter executes the parse tree directly, evaluating expressions, managing variables/arrays, and handling control flow.
 4. Output is displayed beside the editor. Programs requiring user input pause and show an input prompt.
 
@@ -83,4 +83,4 @@ Contributions are welcome. Please:
 
 ## License
 
-This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
+This project may not be redistributed in any way. See [LICENSE](LICENSE) for details.
