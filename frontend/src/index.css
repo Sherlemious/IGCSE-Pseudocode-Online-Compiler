@@ -111,38 +111,38 @@ textarea:focus-visible {
 }
 
 /* CodeMirror Syntax Highlighting - Uses theme-specific colors */
-.cm-editor .ͼ1.cm-keyword {
-    color: var(--color-syntax-keyword);
+.cm-keyword {
+    color: var(--color-syntax-keyword) !important;
     font-weight: 600;
 }
 
-.cm-editor .ͼ2.cm-typeName {
-    color: var(--color-syntax-type);
+.cm-typeName {
+    color: var(--color-syntax-type) !important;
     font-weight: 500;
 }
 
-.cm-editor .ͼ3.cm-variableName {
-    color: var(--color-syntax-variable);
+.cm-variableName {
+    color: var(--color-syntax-variable) !important;
 }
 
-.cm-editor .ͼ4.cm-string {
-    color: var(--color-syntax-string);
+.cm-string {
+    color: var(--color-syntax-string) !important;
 }
 
-.cm-editor .ͼ5.cm-number {
-    color: var(--color-syntax-number);
+.cm-number {
+    color: var(--color-syntax-number) !important;
 }
 
-.cm-editor .ͼ6.cm-bool {
-    color: var(--color-syntax-boolean);
+.cm-bool {
+    color: var(--color-syntax-boolean) !important;
     font-weight: 600;
 }
 
-.cm-editor .ͼ7.cm-operator {
-    color: var(--color-syntax-operator);
+.cm-operator {
+    color: var(--color-syntax-operator) !important;
 }
 
-.cm-editor .ͼ8.cm-lineComment {
-    color: var(--color-syntax-comment);
+.cm-lineComment {
+    color: var(--color-syntax-comment) !important;
     font-style: italic;
 }

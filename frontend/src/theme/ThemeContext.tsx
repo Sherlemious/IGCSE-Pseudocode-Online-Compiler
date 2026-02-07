@@ -12,7 +12,7 @@ const ThemeContext = createContext<ThemeContextValue | null>(null);
 
 const STORAGE_KEY_THEME = 'pseudocode-theme';
 const STORAGE_KEY_FONT_SIZE = 'pseudocode-font-size';
-const DEFAULT_THEME: ThemeId = 'electron';
+const DEFAULT_THEME: ThemeId = 'one-dark-pro';
 const DEFAULT_FONT_SIZE = 14;
 const MIN_FONT_SIZE = 12;
 const MAX_FONT_SIZE = 24;

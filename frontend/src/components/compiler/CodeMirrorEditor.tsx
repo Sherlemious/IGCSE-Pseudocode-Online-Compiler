@@ -1,12 +1,23 @@
 import React, { useEffect, useRef } from 'react';
-import { EditorView, keymap, lineNumbers, highlightActiveLineGutter, highlightSpecialChars, drawSelection, rectangularSelection, crosshairCursor, highlightActiveLine } from '@codemirror/view';
+import {
+  EditorView,
+  keymap,
+  lineNumbers,
+  highlightActiveLineGutter,
+  highlightSpecialChars,
+  drawSelection,
+  rectangularSelection,
+  crosshairCursor,
+  highlightActiveLine,
+} from '@codemirror/view';
 import { EditorState, Compartment } from '@codemirror/state';
 import { defaultKeymap, indentWithTab, history, historyKeymap } from '@codemirror/commands';
 import { bracketMatching, foldGutter, indentOnInput } from '@codemirror/language';
 import { searchKeymap, highlightSelectionMatches } from '@codemirror/search';
 import { autocompletion, completionKeymap } from '@codemirror/autocomplete';
 import { pseudocodeLanguage } from '../../interpreter/pseudocode-lang';
-import { syntaxHighlighting, defaultHighlightStyle } from '@codemirror/language';
+import { HighlightStyle, syntaxHighlighting } from '@codemirror/language';
+import { tags as t } from '@lezer/highlight';
 
 const readOnlyCompartment = new Compartment();
 
@@ -160,8 +171,20 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
       },
     });
 
-    // Syntax highlighting colors
-    const highlightTheme = syntaxHighlighting(defaultHighlightStyle);
+    // Custom syntax highlighting using CSS variables
+    const highlightStyle = HighlightStyle.define([
+      { tag: t.keyword, color: 'var(--color-syntax-keyword)', fontWeight: '600' },
+      { tag: t.typeName, color: 'var(--color-syntax-type)', fontWeight: '500' },
+      { tag: t.variableName, color: 'var(--color-syntax-variable)' },
+      { tag: t.string, color: 'var(--color-syntax-string)' },
+      { tag: t.number, color: 'var(--color-syntax-number)' },
+      { tag: t.bool, color: 'var(--color-syntax-boolean)', fontWeight: '600' },
+      { tag: t.operator, color: 'var(--color-syntax-operator)' },
+      { tag: t.lineComment, color: 'var(--color-syntax-comment)', fontStyle: 'italic' },
+      { tag: t.comment, color: 'var(--color-syntax-comment)', fontStyle: 'italic' },
+    ]);
+
+    const highlightTheme = syntaxHighlighting(highlightStyle);
 
     // Custom keyboard shortcuts
     const customKeymap = keymap.of([

@@ -2,7 +2,7 @@ import * as Popover from '@radix-ui/react-popover';
 import { Settings, Minus, Plus, Check } from 'lucide-react';
 import { themes, type ThemeId, useTheme } from '../../theme';
 
-const themeOrder: ThemeId[] = ['electron', 'midnight-purple', 'nord', 'monokai', 'light'];
+const themeOrder: ThemeId[] = ['one-dark-pro', 'dracula', 'nord', 'monokai', 'github-light'];
 
 export default function SettingsPanel() {
   const { themeId, setTheme, fontSize, setFontSize } = useTheme();
@@ -40,11 +40,11 @@ export default function SettingsPanel() {
                         ${isActive ? 'ring-2 ring-primary ring-offset-2 ring-offset-surface' : 'hover:scale-110'}`}
                       style={{
                         backgroundColor: theme.swatch,
-                        border: id === 'light' ? '2px solid var(--color-border)' : undefined,
+                        border: id === 'github-light' ? '2px solid var(--color-border)' : undefined,
                       }}
                     >
                       {isActive && (
-                        <Check className="h-4 w-4" style={{ color: id === 'light' ? '#1E293B' : '#FFFFFF' }} />
+                        <Check className="h-4 w-4" style={{ color: id === 'github-light' ? '#1E293B' : '#FFFFFF' }} />
                       )}
                     </div>
                     <span className="text-[10px] text-dark-text leading-tight text-center">{theme.label}</span>
