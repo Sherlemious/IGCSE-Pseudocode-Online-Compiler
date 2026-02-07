@@ -69,6 +69,15 @@ kbd {
     white-space: nowrap;
 }
 
+/* Hide scrollbar on tab strip */
+.scrollbar-none {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+    display: none;
+}
+
 /* Subtle focus ring for accessibility */
 *:focus-visible {
     outline: 1px solid var(--color-primary);

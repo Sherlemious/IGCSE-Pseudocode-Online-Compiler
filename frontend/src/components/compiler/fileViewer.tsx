@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { FolderOpen, FileText, Trash2, X, HardDrive, ChevronLeft, ChevronRight } from 'lucide-react';
+import { FolderOpen, FileText, Trash2, X, HardDrive, ChevronLeft, ChevronRight, ExternalLink } from 'lucide-react';
 
 const FILE_PREFIX = 'pseudocode_file_';
 
@@ -8,7 +8,11 @@ interface FileEntry {
   content: string;
 }
 
-const FileViewer: React.FC = () => {
+interface FileViewerProps {
+  onOpenFile?: (fileName: string, content: string) => void;
+}
+
+const FileViewer: React.FC<FileViewerProps> = ({ onOpenFile }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [files, setFiles] = useState<FileEntry[]>([]);
   const [selectedFile, setSelectedFile] = useState<FileEntry | null>(null);
@@ -173,9 +177,26 @@ const FileViewer: React.FC = () => {
               <FileText size={12} className="text-primary shrink-0" />
               <span className="text-xs font-mono text-light-text truncate">{selectedFile.name}</span>
             </div>
-            <span className="text-[10px] text-dark-text shrink-0">
-              {lineCount(selectedFile.content)} lines · {selectedFile.content.length} chars
-            </span>
+            <div className="flex items-center gap-2 shrink-0">
+              <span className="text-[10px] text-dark-text">
+                {lineCount(selectedFile.content)} lines · {selectedFile.content.length} chars
+              </span>
+              {onOpenFile && (
+                <button
+                  onClick={() => {
+                    onOpenFile(selectedFile.name, selectedFile.content);
+                    setIsOpen(false);
+                  }}
+                  className="flex items-center gap-1 px-2 py-0.5 text-[10px] text-primary hover:text-light-text
+                    bg-primary/10 hover:bg-primary/20 rounded transition-colors"
+                  title="Open in editor tab"
+                >
+                  <ExternalLink size={10} />
+                  <span className="hidden sm:inline">Open in Editor</span>
+                  <span className="sm:hidden">Open</span>
+                </button>
+              )}
+            </div>
           </div>
 
           {/* File content */}

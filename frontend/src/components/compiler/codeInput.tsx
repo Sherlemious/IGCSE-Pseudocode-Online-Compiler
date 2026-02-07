@@ -1,7 +1,8 @@
 import React, { useRef, useCallback, useEffect, useState } from 'react';
-import { FileCode, Play, Square, Keyboard } from 'lucide-react';
+import { FileCode, Play, Square, Keyboard, X } from 'lucide-react';
 import ExamplePicker from './examplePicker';
 import FileViewer from './fileViewer';
+import type { EditorTab } from '../../pages/home';
 
 export interface CursorPosition {
   line: number;
@@ -16,6 +17,11 @@ interface CodeInputProps {
   onStop: () => void;
   onSelectExample: (code: string) => void;
   onCursorChange?: (pos: CursorPosition) => void;
+  tabs: EditorTab[];
+  activeTabId: string;
+  onTabSwitch: (tabId: string) => void;
+  onCloseTab: (tabId: string) => void;
+  onOpenFile: (fileName: string, content: string) => void;
 }
 
 const CodeInput: React.FC<CodeInputProps> = ({
@@ -26,9 +32,15 @@ const CodeInput: React.FC<CodeInputProps> = ({
   onStop,
   onSelectExample,
   onCursorChange,
+  tabs,
+  activeTabId,
+  onTabSwitch,
+  onCloseTab,
+  onOpenFile,
 }) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const gutterRef = useRef<HTMLDivElement>(null);
+  const tabsContainerRef = useRef<HTMLDivElement>(null);
   const [lineCount, setLineCount] = useState(1);
   const [activeLine, setActiveLine] = useState(1);
 
@@ -88,6 +100,26 @@ const CodeInput: React.FC<CodeInputProps> = ({
     [code, isRunning, onCodeChange, onRunCode, onStop],
   );
 
+  // Handle middle-click to close tab
+  const handleTabMouseDown = useCallback(
+    (e: React.MouseEvent, tabId: string) => {
+      if (e.button === 1 && tabId !== 'main') {
+        e.preventDefault();
+        onCloseTab(tabId);
+      }
+    },
+    [onCloseTab],
+  );
+
+  // Scroll active tab into view
+  useEffect(() => {
+    if (!tabsContainerRef.current) return;
+    const activeEl = tabsContainerRef.current.querySelector('[data-active-tab="true"]');
+    if (activeEl) {
+      activeEl.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+    }
+  }, [activeTabId]);
+
   // Render line numbers
   const renderLineNumbers = () => {
     const lines = [];
@@ -104,23 +136,57 @@ const CodeInput: React.FC<CodeInputProps> = ({
   return (
     <div className="flex-1 min-h-0 flex flex-col">
       {/* Tab bar */}
-      <div className="h-9 bg-surface border-b border-border flex items-center justify-between px-1 shrink-0">
-        {/* Left: file tab + tools */}
-        <div className="flex items-center min-w-0">
-          {/* Active file tab */}
-          <div className="flex items-center gap-1.5 px-3 h-9 border-t-2 border-t-primary bg-background text-sm text-light-text shrink-0">
-            <FileCode className="h-3.5 w-3.5 text-primary" />
-            <span className="font-mono text-xs">main.pseudo</span>
+      <div className="h-9 bg-surface border-b border-border flex items-center justify-between shrink-0">
+        {/* Left: tabs + tools (scrollable) */}
+        <div className="flex items-center min-w-0 flex-1 overflow-hidden">
+          {/* Tabs container */}
+          <div
+            ref={tabsContainerRef}
+            className="flex items-center min-w-0 overflow-x-auto scrollbar-none"
+          >
+            {tabs.map((tab) => {
+              const isActive = tab.id === activeTabId;
+              return (
+                <button
+                  key={tab.id}
+                  data-active-tab={isActive}
+                  className={`group flex items-center gap-1.5 px-3 h-9 text-xs shrink-0 border-r border-border/50 transition-colors
+                    ${isActive
+                      ? 'bg-background text-light-text border-t-2 border-t-primary'
+                      : 'bg-surface text-dark-text hover:text-light-text hover:bg-surface/80 border-t-2 border-t-transparent'
+                    }`}
+                  onClick={() => onTabSwitch(tab.id)}
+                  onMouseDown={(e) => handleTabMouseDown(e, tab.id)}
+                  title={tab.name}
+                >
+                  <FileCode className={`h-3 w-3 shrink-0 ${isActive ? 'text-primary' : 'text-dark-text/60'}`} />
+                  <span className="font-mono truncate max-w-[120px]">{tab.name}</span>
+                  {tab.id !== 'main' && (
+                    <span
+                      className={`ml-0.5 rounded-sm p-0.5 shrink-0 transition-colors
+                        ${isActive ? 'hover:bg-primary/20' : 'opacity-0 group-hover:opacity-100 hover:bg-primary/20'}`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onCloseTab(tab.id);
+                      }}
+                    >
+                      <X size={10} />
+                    </span>
+                  )}
+                </button>
+              );
+            })}
           </div>
+
           {/* Tool buttons */}
-          <div className="flex items-center gap-1 ml-2">
+          <div className="flex items-center gap-0.5 ml-1 px-1 shrink-0">
             <ExamplePicker onSelectExample={onSelectExample} />
-            <FileViewer />
+            <FileViewer onOpenFile={onOpenFile} />
           </div>
         </div>
 
-        {/* Right: run/stop + shortcut hint */}
-        <div className="flex items-center gap-1 shrink-0">
+        {/* Right: run/stop */}
+        <div className="flex items-center gap-1 shrink-0 px-1">
           {isRunning && (
             <button
               onClick={onStop}

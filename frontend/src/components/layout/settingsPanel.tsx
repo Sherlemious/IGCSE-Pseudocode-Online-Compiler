@@ -11,10 +11,10 @@ export default function SettingsPanel() {
     <Popover.Root>
       <Popover.Trigger asChild>
         <button
-          className="p-2 rounded-lg hover:opacity-80 transition duration-200"
+          className="p-1 rounded hover:bg-white/10 transition duration-200"
           aria-label="Settings"
         >
-          <Settings className="h-5 w-5" />
+          <Settings className="h-4 w-4" />
         </button>
       </Popover.Trigger>
 
