@@ -10,7 +10,7 @@ interface CodeInputProps {
 
 const CodeInput: React.FC<CodeInputProps> = ({ code, onCodeChange, onRunCode, isRunning, onStop }) => {
   return (
-    <div className="flex-1 min-h-0 flex flex-col p-6 border-r border-dark-text">
+    <div className="flex-1 min-h-0 flex flex-col p-6 border-r border-border">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-2xl font-sans font-semibold text-light-text">Pseudocode Editor</h2>
         <div className="flex gap-2">
@@ -18,7 +18,7 @@ const CodeInput: React.FC<CodeInputProps> = ({ code, onCodeChange, onRunCode, is
             <button
               onClick={onStop}
               className="px-6 py-3 rounded-lg font-medium transition-all duration-300
-                bg-error hover:bg-red-600 text-light-text shadow-cool hover:shadow-intense"
+                bg-error hover:bg-error-hover text-light-text shadow-cool hover:shadow-intense"
             >
               Stop
             </button>
@@ -28,7 +28,7 @@ const CodeInput: React.FC<CodeInputProps> = ({ code, onCodeChange, onRunCode, is
             disabled={isRunning}
             className={`px-6 py-3 rounded-lg font-medium transition-all duration-300
               ${
-                isRunning ? 'bg-dark-text cursor-not-allowed' : 'bg-primary hover:bg-secondary'
+                isRunning ? 'bg-disabled-bg cursor-not-allowed' : 'bg-primary hover:bg-primary-hover'
               } text-light-text shadow-cool hover:shadow-intense`}
           >
             {isRunning ? 'Running...' : 'Run Code'}
@@ -40,13 +40,14 @@ const CodeInput: React.FC<CodeInputProps> = ({ code, onCodeChange, onRunCode, is
         <textarea
           value={code}
           onChange={(e) => onCodeChange(e.target.value)}
-          className="w-full h-full p-6 font-mono text-base
+          style={{ fontSize: 'var(--editor-font-size)' }}
+          className="w-full h-full p-6 font-mono
             bg-background
             text-light-text
-            border-2 border-dark-text
+            border-2 border-border
             rounded-lg resize-none
             focus:ring-2 focus:ring-primary focus:outline-none
-            scrollbar-thin scrollbar-thumb-primary hover:scrollbar-thumb-secondary
+            scrollbar-thin scrollbar-thumb-primary hover:scrollbar-thumb-primary-hover
             scrollbar-track-background scrollbar-thumb-rounded-full"
           placeholder="Enter your pseudocode here..."
         />

@@ -19,7 +19,7 @@ const Home: React.FC = () => {
 
   return (
     <div className="h-full flex flex-col bg-background text-light-text overflow-hidden">
-      <div className="p-4 border-b-2 border-dark-text">
+      <div className="p-4 border-b-2 border-border">
         <ExamplePicker onSelectExample={handleExampleSelect} />
       </div>
       <div className="flex-1 min-h-0 flex flex-col lg:flex-row">

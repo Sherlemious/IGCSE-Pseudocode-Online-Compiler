@@ -1,35 +1,31 @@
 module.exports = {
-  darkMode: 'class',
   content: ['./index.html', './src/**/*.{js,jsx,ts,tsx}'],
   theme: {
     extend: {
       colors: {
-        // Main Theme Colors
-        primary: '#778DA9',
-        secondary: '#1E293B',
-        accent: '#778DA9',
-
-        // Background Colors
-        background: '#0D1B2A',
-        surface: '#1E293B',
-
-        // Text Colors
-        'light-text': '#F8FAFC',
-        'dark-text': '#E0E1DD',
-
-        // Status Colors
-        warning: '#F59E0B', // Warm amber for warnings
-        info: '#06B6D4', // Cyan for information
-        error: '#EF4444', // Red for errors
-        success: '#22C55E', // Green for success
-
-        // Code Block Colors
-        'code-bg': '#1E293B', // Darker blue for code blocks
-        'code-text': '#E2E8F0', // Lighter gray for code text
+        primary: 'var(--color-primary)',
+        'primary-hover': 'var(--color-primary-hover)',
+        secondary: 'var(--color-secondary)',
+        accent: 'var(--color-accent)',
+        background: 'var(--color-background)',
+        surface: 'var(--color-surface)',
+        'header-bg': 'var(--color-header-bg)',
+        'header-text': 'var(--color-header-text)',
+        'light-text': 'var(--color-light-text)',
+        'dark-text': 'var(--color-dark-text)',
+        border: 'var(--color-border)',
+        'disabled-bg': 'var(--color-disabled-bg)',
+        warning: 'var(--color-warning)',
+        info: 'var(--color-info)',
+        error: 'var(--color-error)',
+        'error-hover': 'var(--color-error-hover)',
+        success: 'var(--color-success)',
+        'code-bg': 'var(--color-code-bg)',
+        'code-text': 'var(--color-code-text)',
       },
       fontFamily: {
-        sans: ['Inter', 'Roboto', 'Arial', 'sans-serif'],
-        mono: ['Fira Code', 'Courier New', 'monospace'],
+        sans: ['"Inter Variable"', 'Inter', 'Roboto', 'Arial', 'sans-serif'],
+        mono: ['"Fira Code Variable"', 'Fira Code', 'Courier New', 'monospace'],
       },
       spacing: {
         128: '32rem',

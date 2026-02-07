@@ -113,9 +113,9 @@ const OutputDisplay: React.FC<OutputDisplayProps> = ({
       <div
         ref={scrollRef}
         className="flex-1 min-h-0 bg-background
-        border-2 border-dark-text rounded-lg
+        border-2 border-border rounded-lg
         overflow-y-auto
-        scrollbar-thin scrollbar-thumb-primary hover:scrollbar-thumb-secondary
+        scrollbar-thin scrollbar-thumb-primary hover:scrollbar-thumb-primary-hover
         scrollbar-track-background scrollbar-thumb-rounded-full"
       >
         {renderContent()}

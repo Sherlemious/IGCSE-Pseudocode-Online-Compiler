@@ -13,14 +13,14 @@ const CodeBlock = ({ code }: { code: string }) => {
   return (
     <div className="relative group">
       <pre
-        className="bg-gray-800 p-4 rounded-lg font-mono text-light-text overflow-x-auto scrollbar-thin scrollbar-thumb-primary hover:scrollbar-thumb-secondary
+        className="bg-code-bg p-4 rounded-lg font-mono text-light-text overflow-x-auto scrollbar-thin scrollbar-thumb-primary hover:scrollbar-thumb-primary-hover
             scrollbar-track-background scrollbar-thumb-rounded-full"
       >
         <code>{code}</code>
       </pre>
       <button
         onClick={copyToClipboard}
-        className="absolute top-2 right-2 p-2 rounded-md bg-background hover:bg-gray-700
+        className="absolute top-2 right-2 p-2 rounded-md bg-background hover:bg-surface
                  transition-colors duration-200 opacity-0 group-hover:opacity-100"
         aria-label="Copy code"
       >
@@ -31,13 +31,13 @@ const CodeBlock = ({ code }: { code: string }) => {
 };
 
 const InlineCode = ({ children }: { children: React.ReactNode }) => (
-  <code className="bg-gray-800 px-1 py-0.5 rounded font-mono text-primary">{children}</code>
+  <code className="bg-code-bg px-1 py-0.5 rounded font-mono text-primary">{children}</code>
 );
 
 const Documentation = () => {
   return (
     <main
-      className="flex-1 h-full overflow-y-auto bg-background scrollbar-thin scrollbar-thumb-primary hover:scrollbar-thumb-secondary
+      className="flex-1 h-full overflow-y-auto bg-background scrollbar-thin scrollbar-thumb-primary hover:scrollbar-thumb-primary-hover
             scrollbar-track-background scrollbar-thumb-rounded-full"
     >
       <div className="max-w-4xl mx-auto p-6 space-y-8">

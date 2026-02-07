@@ -43,8 +43,8 @@ const ExamplePicker: React.FC<{ onSelectExample: (code: string) => void }> = ({ 
     <>
       <button
         onClick={() => setIsOpen(true)}
-        className="flex items-center gap-2 px-4 py-2 bg-background 
-    border-2 border-dark-text rounded-lg hover:border-primary
+        className="flex items-center gap-2 px-4 py-2 bg-background
+    border-2 border-border rounded-lg hover:border-primary
     transition-all duration-200"
       >
         <Book size={18} className="text-primary" />
@@ -55,7 +55,7 @@ const ExamplePicker: React.FC<{ onSelectExample: (code: string) => void }> = ({ 
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div ref={modalRef} className="bg-background rounded-lg w-full max-w-6xl max-h-[90vh] flex flex-col">
             {/* Header */}
-            <div className="flex items-center justify-between p-4 border-b-2 border-dark-text">
+            <div className="flex items-center justify-between p-4 border-b-2 border-border">
               <h2 className="text-xl font-semibold text-primary">Example Code</h2>
               <button onClick={() => setIsOpen(false)} className="text-dark-text hover:text-primary">
                 <X size={24} />
@@ -64,9 +64,9 @@ const ExamplePicker: React.FC<{ onSelectExample: (code: string) => void }> = ({ 
 
             <div className="flex-1 flex flex-col md:flex-row min-h-0">
               {/* Left Panel */}
-              <div className="w-full md:w-72 border-r-2 border-dark-text flex flex-col min-h-0">
+              <div className="w-full md:w-72 border-r-2 border-border flex flex-col min-h-0">
                 {/* Search */}
-                <div className="p-2 border-b-2 border-dark-text">
+                <div className="p-2 border-b-2 border-border">
                   <div className="relative">
                     <Search size={18} className="absolute left-2 top-2.5 text-dark-text" />
                     <input
@@ -74,16 +74,16 @@ const ExamplePicker: React.FC<{ onSelectExample: (code: string) => void }> = ({ 
                       placeholder="Search examples..."
                       value={search}
                       onChange={(e) => setSearch(e.target.value)}
-                      className="w-full pl-9 pr-4 py-2 bg-background border-2 
-                        border-dark-text rounded-md focus:border-primary focus:outline-none"
+                      className="w-full pl-9 pr-4 py-2 bg-background border-2
+                        border-border rounded-md focus:border-primary focus:outline-none"
                     />
                   </div>
                 </div>
 
                 {/* Examples List */}
                 <div
-                  className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-primary 
-                  hover:scrollbar-thumb-secondary scrollbar-track-background scrollbar-thumb-rounded-full"
+                  className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-primary
+                  hover:scrollbar-thumb-primary-hover scrollbar-track-background scrollbar-thumb-rounded-full"
                 >
                   {categories.map((category) => {
                     const categoryExamples = filteredExamples.filter((ex) => ex.category === category);
@@ -99,8 +99,8 @@ const ExamplePicker: React.FC<{ onSelectExample: (code: string) => void }> = ({ 
                             className={`w-full text-left px-4 py-2 rounded-md transition-colors duration-150
                               ${
                                 selectedExample?.title === example.title
-                                  ? 'bg-dark-bg text-primary'
-                                  : 'hover:bg-dark-bg'
+                                  ? 'bg-surface text-primary'
+                                  : 'hover:bg-surface'
                               }`}
                           >
                             {example.title}
@@ -123,15 +123,15 @@ const ExamplePicker: React.FC<{ onSelectExample: (code: string) => void }> = ({ 
                           onSelectExample(selectedExample.code);
                           setIsOpen(false);
                         }}
-                        className="px-4 py-2 bg-primary text-background rounded-md 
-                          hover:bg-secondary transition-colors duration-200"
+                        className="px-4 py-2 bg-primary text-background rounded-md
+                          hover:bg-primary-hover transition-colors duration-200"
                       >
                         Use This Example
                       </button>
                     </div>
                     <pre
-                      className="flex-1 bg-gray-800 p-4 rounded-lg overflow-y-auto
-                      scrollbar-thin scrollbar-thumb-primary hover:scrollbar-thumb-secondary
+                      className="flex-1 bg-code-bg p-4 rounded-lg overflow-y-auto
+                      scrollbar-thin scrollbar-thumb-primary hover:scrollbar-thumb-primary-hover
                       scrollbar-track-background scrollbar-thumb-rounded-full"
                     >
                       <code className="text-light-text">{selectedExample.code}</code>
