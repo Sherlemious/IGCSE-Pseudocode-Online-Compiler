@@ -4,24 +4,36 @@ interface CodeInputProps {
   code: string;
   onCodeChange: (code: string) => void;
   onRunCode: () => void;
-  isLoading: boolean;
+  isRunning: boolean;
+  onStop: () => void;
 }
 
-const CodeInput: React.FC<CodeInputProps> = ({ code, onCodeChange, onRunCode, isLoading }) => {
+const CodeInput: React.FC<CodeInputProps> = ({ code, onCodeChange, onRunCode, isRunning, onStop }) => {
   return (
-    <div className="min-h-full flex-1 flex flex-col p-6 border-r border-dark-text">
+    <div className="flex-1 min-h-0 flex flex-col p-6 border-r border-dark-text">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-2xl font-sans font-semibold text-light-text">Pseudocode Editor</h2>
-        <button
-          onClick={onRunCode}
-          disabled={isLoading}
-          className={`px-6 py-3 rounded-lg font-medium transition-all duration-300
-            ${
-              isLoading ? 'bg-dark-text cursor-not-allowed' : 'bg-primary hover:bg-secondary'
-            } text-light-text shadow-cool hover:shadow-intense`}
-        >
-          {isLoading ? 'Running...' : 'Run Code'}
-        </button>
+        <div className="flex gap-2">
+          {isRunning && (
+            <button
+              onClick={onStop}
+              className="px-6 py-3 rounded-lg font-medium transition-all duration-300
+                bg-error hover:bg-red-600 text-light-text shadow-cool hover:shadow-intense"
+            >
+              Stop
+            </button>
+          )}
+          <button
+            onClick={onRunCode}
+            disabled={isRunning}
+            className={`px-6 py-3 rounded-lg font-medium transition-all duration-300
+              ${
+                isRunning ? 'bg-dark-text cursor-not-allowed' : 'bg-primary hover:bg-secondary'
+              } text-light-text shadow-cool hover:shadow-intense`}
+          >
+            {isRunning ? 'Running...' : 'Run Code'}
+          </button>
+        </div>
       </div>
 
       <div className="flex-1 min-h-0">

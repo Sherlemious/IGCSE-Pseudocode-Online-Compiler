@@ -203,3 +203,5 @@ frontend/.env.production
 
 # .env
 *key.json*
+
+.claude
