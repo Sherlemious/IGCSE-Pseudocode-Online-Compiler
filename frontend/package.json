@@ -7,14 +7,14 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "antlr:generate": "antlr4ng -Dlanguage=TypeScript -o src/interpreter/generated -visitor -Xexact-output-dir src/interpreter/grammar/Pseudocode.g4"
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",
     "@radix-ui/react-dialog": "^1.1.5",
-    "axios": "^1.7.9",
+    "antlr4ng": "^3.0.16",
     "lucide-react": "^0.473.0",
-    "pyodide": "^0.27.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-hook-form": "^7.54.2",
@@ -30,6 +30,7 @@
     "@types/react": "^18.3.18",
     "@types/react-dom": "^18.3.5",
     "@vitejs/plugin-react": "^4.3.4",
+    "antlr4ng-cli": "^2.0.0",
     "autoprefixer": "^10.4.20",
     "eslint": "^9.17.0",
     "eslint-plugin-react-hooks": "^5.0.0",

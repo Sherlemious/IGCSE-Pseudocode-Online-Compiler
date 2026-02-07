@@ -1,58 +1,112 @@
-import React from 'react';
+import React, { useRef, useEffect, useState } from 'react';
+import type { OutputEntry } from '../../interpreter/core/types';
 
 interface OutputDisplayProps {
-  output: string | null;
-  error: string | null;
-  isLoading: boolean;
+  entries: OutputEntry[];
+  isRunning: boolean;
+  waitingForInput: boolean;
+  onInputSubmit: (value: string) => void;
 }
 
-const OutputDisplay: React.FC<OutputDisplayProps> = ({ output, error, isLoading }) => {
-  const renderOutput = () => {
-    if (isLoading) {
-      return (
-        <div
-          className="h-full p-6 overflow-auto
-          scrollbar-thin scrollbar-thumb-primary hover:scrollbar-thumb-secondary
-          scrollbar-track-background scrollbar-thumb-rounded-full"
-        >
-          <div className="flex items-center justify-center h-full">
-            <div className="animate-pulse text-primary text-lg">Compiling and running code...</div>
-          </div>
-        </div>
-      );
-    }
+const OutputDisplay: React.FC<OutputDisplayProps> = ({
+  entries,
+  isRunning,
+  waitingForInput,
+  onInputSubmit,
+}) => {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [inputValue, setInputValue] = useState('');
 
-    if (error) {
-      return (
-        <div
-          className="h-full p-6 overflow-auto
-          scrollbar-thin scrollbar-thumb-primary hover:scrollbar-thumb-secondary
-          scrollbar-track-background scrollbar-thumb-rounded-full"
-        >
-          <div className="text-warning font-mono whitespace-pre-wrap">{error}</div>
-        </div>
-      );
+  // Auto-scroll to bottom on new entries
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
+  }, [entries, waitingForInput]);
 
-    if (output) {
+  // Auto-focus input field
+  useEffect(() => {
+    if (waitingForInput && inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [waitingForInput]);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (waitingForInput) {
+      onInputSubmit(inputValue);
+      setInputValue('');
+    }
+  };
+
+  const renderContent = () => {
+    if (!isRunning && entries.length === 0) {
       return (
-        <textarea
-          value={output}
-          className="w-full h-full p-6 font-mono text-base
-            bg-background
-            text-light-text
-            border-2 border-dark-text
-            rounded-lg resize-none
-            focus:ring-2 focus:ring-primary focus:outline-none
-            scrollbar-thin scrollbar-thumb-primary hover:scrollbar-thumb-secondary
-            scrollbar-track-background scrollbar-thumb-rounded-full"
-        />
+        <div className="text-dark-text text-center h-full flex items-center justify-center">
+          Run your code to see the output here
+        </div>
       );
     }
 
     return (
-      <div className="text-dark-text text-center h-full flex items-center justify-center">
-        Run your code to see the output here
+      <div
+        ref={scrollRef}
+        className="h-full p-4 overflow-auto font-mono text-sm
+          scrollbar-thin scrollbar-thumb-primary hover:scrollbar-thumb-secondary
+          scrollbar-track-background scrollbar-thumb-rounded-full"
+      >
+        {entries.map((entry, i) => {
+          if (entry.kind === 'output') {
+            return (
+              <div key={i} className="text-light-text whitespace-pre-wrap">
+                {entry.text}
+              </div>
+            );
+          }
+
+          if (entry.kind === 'error') {
+            return (
+              <div key={i} className="text-warning whitespace-pre-wrap">
+                {entry.text}
+              </div>
+            );
+          }
+
+          if (entry.kind === 'input') {
+            if (entry.submitted) {
+              return (
+                <div key={i} className="text-info whitespace-pre-wrap">
+                  <span className="text-dark-text">[{entry.variableName}]: </span>
+                  {entry.value}
+                </div>
+              );
+            }
+
+            // Active input (last unsubmitted)
+            return (
+              <form key={i} onSubmit={handleSubmit} className="flex items-center gap-2 my-1">
+                <span className="text-dark-text">[{entry.variableName}]:</span>
+                <input
+                  ref={inputRef}
+                  type="text"
+                  value={inputValue}
+                  onChange={(e) => setInputValue(e.target.value)}
+                  className="flex-1 bg-transparent border-b border-primary
+                    text-info outline-none font-mono text-sm py-1 px-1
+                    focus:border-info"
+                  autoFocus
+                />
+              </form>
+            );
+          }
+
+          return null;
+        })}
+
+        {isRunning && !waitingForInput && entries.length === 0 && (
+          <div className="animate-pulse text-primary">Running...</div>
+        )}
       </div>
     );
   };
@@ -66,7 +120,7 @@ const OutputDisplay: React.FC<OutputDisplayProps> = ({ output, error, isLoading 
         border-2 border-dark-text rounded-lg
         overflow-hidden"
       >
-        {renderOutput()}
+        {renderContent()}
       </div>
     </div>
   );
