@@ -1,4 +1,6 @@
 import React from 'react';
+import ExamplePicker from './examplePicker';
+import FileViewer from './fileViewer';
 
 interface CodeInputProps {
   code: string;
@@ -6,14 +8,17 @@ interface CodeInputProps {
   onRunCode: () => void;
   isRunning: boolean;
   onStop: () => void;
+  onSelectExample: (code: string) => void;
 }
 
-const CodeInput: React.FC<CodeInputProps> = ({ code, onCodeChange, onRunCode, isRunning, onStop }) => {
+const CodeInput: React.FC<CodeInputProps> = ({ code, onCodeChange, onRunCode, isRunning, onStop, onSelectExample }) => {
   return (
     <div className="flex-1 min-h-0 flex flex-col p-6 border-r border-border">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-2xl font-sans font-semibold text-light-text">Pseudocode Editor</h2>
-        <div className="flex gap-2">
+        <div className="flex items-center gap-2">
+          <ExamplePicker onSelectExample={onSelectExample} />
+          <FileViewer />
           {isRunning && (
             <button
               onClick={onStop}

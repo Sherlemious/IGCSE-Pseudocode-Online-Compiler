@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import CodeInput from '../components/compiler/codeInput';
 import OutputDisplay from '../components/compiler/outputDisplay';
-import ExamplePicker from '../components/compiler/examplePicker';
 import { useInterpreter } from '../interpreter/useInterpreter';
 
 const Home: React.FC = () => {
@@ -19,11 +18,15 @@ const Home: React.FC = () => {
 
   return (
     <div className="h-full flex flex-col bg-background text-light-text overflow-hidden">
-      <div className="p-4 border-b-2 border-border">
-        <ExamplePicker onSelectExample={handleExampleSelect} />
-      </div>
       <div className="flex-1 min-h-0 flex flex-col lg:flex-row">
-        <CodeInput code={code} onCodeChange={setCode} onRunCode={handleRunCode} isRunning={isRunning} onStop={stop} />
+        <CodeInput
+          code={code}
+          onCodeChange={setCode}
+          onRunCode={handleRunCode}
+          isRunning={isRunning}
+          onStop={stop}
+          onSelectExample={handleExampleSelect}
+        />
         <OutputDisplay
           entries={entries}
           isRunning={isRunning}

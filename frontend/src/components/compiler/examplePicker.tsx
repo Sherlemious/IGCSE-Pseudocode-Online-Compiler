@@ -43,11 +43,12 @@ const ExamplePicker: React.FC<{ onSelectExample: (code: string) => void }> = ({ 
     <>
       <button
         onClick={() => setIsOpen(true)}
-        className="flex items-center gap-2 px-4 py-2 bg-background
-    border-2 border-border rounded-lg hover:border-primary
-    transition-all duration-200"
+        className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-background
+          border-2 border-border rounded-lg hover:border-primary
+          transition-all duration-200"
+        title="Browse Examples"
       >
-        <Book size={18} className="text-primary" />
+        <Book size={16} className="text-primary" />
         <span className="font-medium">Examples</span>
       </button>
 
