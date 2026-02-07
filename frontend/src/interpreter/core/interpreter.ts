@@ -161,7 +161,7 @@ export class Interpreter {
 
   private async beforeStatement(line: number): Promise<void> {
     this.checkCancelled();
-    
+
     // Check if we hit a breakpoint (only when not already in step mode)
     if (!this._stepMode && this._breakpoints.has(line)) {
       const variables = this.snapshotVariables();
@@ -173,7 +173,7 @@ export class Interpreter {
       this.checkCancelled();
       return;
     }
-    
+
     // Normal step mode behavior
     if (!this._stepMode) return;
     const variables = this.snapshotVariables();
@@ -265,8 +265,11 @@ export class Interpreter {
         const l2 = toNumber(await this.evalExpr(exprs[2]));
         const u2 = toNumber(await this.evalExpr(exprs[3]));
         const arr = new PseudocodeArray(
-          [{ lower: l1, upper: u1 }, { lower: l2, upper: u2 }],
-          dataTypeText,
+          [
+            { lower: l1, upper: u1 },
+            { lower: l2, upper: u2 },
+          ],
+          dataTypeText
         );
         this.env.declare(name, arr);
       } else {
@@ -593,7 +596,8 @@ export class Interpreter {
       const right = await this.evalExpr(ctx.expr(1)!);
       const result = Math.pow(toNumber(left), toNumber(right));
       return Number.isInteger(result) && left.type === 'INTEGER' && right.type === 'INTEGER'
-        ? mkInteger(result) : mkReal(result);
+        ? mkInteger(result)
+        : mkReal(result);
     }
 
     if (ctx instanceof MulDivExprContext) {
@@ -605,7 +609,7 @@ export class Interpreter {
       switch (op.toUpperCase()) {
         case '*': {
           const res = l * r;
-          return (left.type === 'INTEGER' && right.type === 'INTEGER') ? mkInteger(res) : mkReal(res);
+          return left.type === 'INTEGER' && right.type === 'INTEGER' ? mkInteger(res) : mkReal(res);
         }
         case '/': {
           if (r === 0) throw new RuntimeError('Division by zero', ctx.start?.line);
@@ -629,7 +633,7 @@ export class Interpreter {
       const l = toNumber(left);
       const r = toNumber(right);
       const result = op === '+' ? l + r : l - r;
-      return (left.type === 'INTEGER' && right.type === 'INTEGER') ? mkInteger(result) : mkReal(result);
+      return left.type === 'INTEGER' && right.type === 'INTEGER' ? mkInteger(result) : mkReal(result);
     }
 
     if (ctx instanceof ConcatExprContext) {
@@ -647,23 +651,35 @@ export class Interpreter {
         const l = toNumber(left);
         const r = toNumber(right);
         switch (op) {
-          case '=': return mkBoolean(l === r);
-          case '<>': return mkBoolean(l !== r);
-          case '<': return mkBoolean(l < r);
-          case '>': return mkBoolean(l > r);
-          case '<=': return mkBoolean(l <= r);
-          case '>=': return mkBoolean(l >= r);
+          case '=':
+            return mkBoolean(l === r);
+          case '<>':
+            return mkBoolean(l !== r);
+          case '<':
+            return mkBoolean(l < r);
+          case '>':
+            return mkBoolean(l > r);
+          case '<=':
+            return mkBoolean(l <= r);
+          case '>=':
+            return mkBoolean(l >= r);
         }
       } else {
         const l = toString(left);
         const r = toString(right);
         switch (op) {
-          case '=': return mkBoolean(l === r);
-          case '<>': return mkBoolean(l !== r);
-          case '<': return mkBoolean(l < r);
-          case '>': return mkBoolean(l > r);
-          case '<=': return mkBoolean(l <= r);
-          case '>=': return mkBoolean(l >= r);
+          case '=':
+            return mkBoolean(l === r);
+          case '<>':
+            return mkBoolean(l !== r);
+          case '<':
+            return mkBoolean(l < r);
+          case '>':
+            return mkBoolean(l > r);
+          case '<=':
+            return mkBoolean(l <= r);
+          case '>=':
+            return mkBoolean(l >= r);
         }
       }
     }

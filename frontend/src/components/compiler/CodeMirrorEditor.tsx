@@ -138,33 +138,34 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
 
   useEffect(() => {
     breakpointsRef.current = breakpoints;
-    
+
     if (viewRef.current) {
       // Update breakpoint state
       viewRef.current.dispatch({
         effects: setBreakpoints.of(breakpoints),
       });
-      
+
       // Reconfigure gutter to show updated breakpoints
-      const createGutter = () => lineNumbers({
-        formatNumber: (lineNo) => {
-          if (debugLineRef.current === lineNo) return '▶';
-          if (errorLineRef.current === lineNo) return '⚠';
-          if (breakpoints.has(lineNo)) return '⬤';
-          return lineNo.toString();
-        },
-        domEventHandlers: {
-          click: (view, block) => {
-            const lineNo = view.state.doc.lineAt(block.from).number;
-            if (onBreakpointToggleRef.current && !isRunningRef.current) {
-              onBreakpointToggleRef.current(lineNo);
-              return true;
-            }
-            return false;
+      const createGutter = () =>
+        lineNumbers({
+          formatNumber: (lineNo) => {
+            if (debugLineRef.current === lineNo) return '▶';
+            if (errorLineRef.current === lineNo) return '⚠';
+            if (breakpoints.has(lineNo)) return '⬤';
+            return lineNo.toString();
           },
-        },
-      });
-      
+          domEventHandlers: {
+            click: (view, block) => {
+              const lineNo = view.state.doc.lineAt(block.from).number;
+              if (onBreakpointToggleRef.current && !isRunningRef.current) {
+                onBreakpointToggleRef.current(lineNo);
+                return true;
+              }
+              return false;
+            },
+          },
+        });
+
       viewRef.current.dispatch({
         effects: gutterCompartment.reconfigure([createGutter(), highlightActiveLineGutter()]),
       });
@@ -179,12 +180,43 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
       viewRef.current.dispatch({
         effects: setLineHighlight.of({ debugLine, errorLine }),
       });
-      
+
       // Reconfigure gutter to show updated debug/error markers
-      const createGutter = () => lineNumbers({
+      const createGutter = () =>
+        lineNumbers({
+          formatNumber: (lineNo) => {
+            if (debugLine === lineNo) return '▶';
+            if (errorLine === lineNo) return '⚠';
+            if (breakpointsRef.current.has(lineNo)) return '⬤';
+            return lineNo.toString();
+          },
+          domEventHandlers: {
+            click: (view, block) => {
+              const lineNo = view.state.doc.lineAt(block.from).number;
+              if (onBreakpointToggleRef.current && !isRunningRef.current) {
+                onBreakpointToggleRef.current(lineNo);
+                return true;
+              }
+              return false;
+            },
+          },
+        });
+
+      viewRef.current.dispatch({
+        effects: gutterCompartment.reconfigure([createGutter(), highlightActiveLineGutter()]),
+      });
+    }
+  }, [debugLine, errorLine]);
+
+  useEffect(() => {
+    if (!editorRef.current) return;
+
+    // Helper function to create line number gutter
+    const createGutter = () =>
+      lineNumbers({
         formatNumber: (lineNo) => {
-          if (debugLine === lineNo) return '▶';
-          if (errorLine === lineNo) return '⚠';
+          if (debugLineRef.current === lineNo) return '▶';
+          if (errorLineRef.current === lineNo) return '⚠';
           if (breakpointsRef.current.has(lineNo)) return '⬤';
           return lineNo.toString();
         },
@@ -199,35 +231,6 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
           },
         },
       });
-      
-      viewRef.current.dispatch({
-        effects: gutterCompartment.reconfigure([createGutter(), highlightActiveLineGutter()]),
-      });
-    }
-  }, [debugLine, errorLine]);
-
-  useEffect(() => {
-    if (!editorRef.current) return;
-
-    // Helper function to create line number gutter
-    const createGutter = () => lineNumbers({
-      formatNumber: (lineNo) => {
-        if (debugLineRef.current === lineNo) return '▶';
-        if (errorLineRef.current === lineNo) return '⚠';
-        if (breakpointsRef.current.has(lineNo)) return '⬤';
-        return lineNo.toString();
-      },
-      domEventHandlers: {
-        click: (view, block) => {
-          const lineNo = view.state.doc.lineAt(block.from).number;
-          if (onBreakpointToggleRef.current && !isRunningRef.current) {
-            onBreakpointToggleRef.current(lineNo);
-            return true;
-          }
-          return false;
-        },
-      },
-    });
 
     // Custom theme
     const customTheme = EditorView.theme({
