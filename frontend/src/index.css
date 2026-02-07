@@ -61,8 +61,15 @@ textarea {
 
 /* Terminal blink cursor */
 @keyframes terminal-blink {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0; }
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0;
+    }
 }
 
 .terminal-cursor {
@@ -88,6 +95,7 @@ kbd {
     -ms-overflow-style: none;
     scrollbar-width: none;
 }
+
 .scrollbar-none::-webkit-scrollbar {
     display: none;
 }

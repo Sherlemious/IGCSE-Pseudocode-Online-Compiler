@@ -1,7 +1,20 @@
 import React, { useRef, useCallback, useEffect, useState } from 'react';
-import { FileCode, Play, Square, Keyboard, X, Bug, SkipForward, FastForward, Download, Share2, Check } from 'lucide-react';
+import {
+  FileCode,
+  Play,
+  Square,
+  Keyboard,
+  X,
+  Bug,
+  SkipForward,
+  FastForward,
+  Download,
+  Share2,
+  Check,
+} from 'lucide-react';
 import ExamplePicker from './examplePicker';
 import FileViewer from './fileViewer';
+import CodeMirrorEditor from './CodeMirrorEditor';
 import type { EditorTab } from '../../pages/home';
 
 export interface CursorPosition {
@@ -50,66 +63,15 @@ const CodeInput: React.FC<CodeInputProps> = ({
   onCloseTab,
   onOpenFile,
 }) => {
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const gutterRef = useRef<HTMLDivElement>(null);
   const tabsContainerRef = useRef<HTMLDivElement>(null);
-  const [lineCount, setLineCount] = useState(1);
-  const [activeLine, setActiveLine] = useState(1);
   const [shareStatus, setShareStatus] = useState<'idle' | 'copied'>('idle');
 
-  // Sync line count
-  useEffect(() => {
-    const count = code.split('\n').length;
-    setLineCount(count);
-  }, [code]);
-
-  // Sync gutter scroll with textarea scroll
-  const handleScroll = useCallback(() => {
-    if (textareaRef.current && gutterRef.current) {
-      gutterRef.current.scrollTop = textareaRef.current.scrollTop;
-    }
-  }, []);
-
-  // Track cursor position
-  const updateCursor = useCallback(() => {
-    const ta = textareaRef.current;
-    if (!ta) return;
-    const pos = ta.selectionStart;
-    const textBefore = ta.value.substring(0, pos);
-    const line = textBefore.split('\n').length;
-    const lastNewline = textBefore.lastIndexOf('\n');
-    const col = pos - lastNewline;
-    setActiveLine(line);
-    onCursorChange?.({ line, col });
-  }, [onCursorChange]);
-
-  // Keyboard shortcuts
-  const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-      // Ctrl/Cmd + Enter → Run
-      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
-        e.preventDefault();
-        if (!isRunning) onRunCode();
-      }
-      // Ctrl/Cmd + Shift + K → Stop
-      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'K') {
-        e.preventDefault();
-        if (isRunning) onStop();
-      }
-      // Tab → insert 4 spaces
-      if (e.key === 'Tab') {
-        e.preventDefault();
-        const ta = e.currentTarget;
-        const start = ta.selectionStart;
-        const end = ta.selectionEnd;
-        const newValue = code.substring(0, start) + '    ' + code.substring(end);
-        onCodeChange(newValue);
-        requestAnimationFrame(() => {
-          ta.selectionStart = ta.selectionEnd = start + 4;
-        });
-      }
+  // Handle cursor position changes from CodeMirror
+  const handleCursorChange = useCallback(
+    (line: number, col: number) => {
+      onCursorChange?.({ line, col });
     },
-    [code, isRunning, onCodeChange, onRunCode, onStop],
+    [onCursorChange]
   );
 
   // Handle middle-click to close tab
@@ -120,7 +82,7 @@ const CodeInput: React.FC<CodeInputProps> = ({
         onCloseTab(tabId);
       }
     },
-    [onCloseTab],
+    [onCloseTab]
   );
 
   // Scroll active tab into view
@@ -131,23 +93,6 @@ const CodeInput: React.FC<CodeInputProps> = ({
       activeEl.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
     }
   }, [activeTabId]);
-
-  // Scroll debug line into view in the textarea
-  useEffect(() => {
-    if (debugLine === null || !textareaRef.current) return;
-    const ta = textareaRef.current;
-    const lineHeight = parseFloat(getComputedStyle(ta).lineHeight) || 20;
-    const targetScroll = (debugLine - 1) * lineHeight;
-    const viewTop = ta.scrollTop;
-    const viewBottom = viewTop + ta.clientHeight;
-    if (targetScroll < viewTop || targetScroll + lineHeight > viewBottom) {
-      ta.scrollTop = targetScroll - ta.clientHeight / 3;
-      // Sync gutter
-      if (gutterRef.current) {
-        gutterRef.current.scrollTop = ta.scrollTop;
-      }
-    }
-  }, [debugLine]);
 
   const handleDownload = useCallback(() => {
     const blob = new Blob([code], { type: 'text/plain' });
@@ -169,27 +114,6 @@ const CodeInput: React.FC<CodeInputProps> = ({
     });
   }, [code]);
 
-  // Render line numbers
-  const renderLineNumbers = () => {
-    const lines = [];
-    for (let i = 1; i <= Math.max(lineCount, 1); i++) {
-      const isDebugLine = debugLine === i;
-      const isErrorLine = errorLine === i;
-      const isActive = i === activeLine && !isStepping;
-      let className = '';
-      if (isDebugLine) className = 'debug-line';
-      else if (isErrorLine) className = 'error-line';
-      else if (isActive) className = 'active';
-
-      let content: React.ReactNode = i;
-      if (isDebugLine) content = '\u25B6';
-      else if (isErrorLine) content = '\u25CF';
-
-      lines.push(<span key={i} className={className}>{content}</span>);
-    }
-    return lines;
-  };
-
   return (
     <div className="flex-1 min-h-0 flex flex-col">
       {/* Tab bar */}
@@ -197,10 +121,7 @@ const CodeInput: React.FC<CodeInputProps> = ({
         {/* Left: tabs + tools (scrollable) */}
         <div className="flex items-center min-w-0 flex-1 overflow-hidden">
           {/* Tabs container */}
-          <div
-            ref={tabsContainerRef}
-            className="flex items-center min-w-0 overflow-x-auto scrollbar-none"
-          >
+          <div ref={tabsContainerRef} className="flex items-center min-w-0 overflow-x-auto scrollbar-none">
             {tabs.map((tab) => {
               const isActive = tab.id === activeTabId;
               return (
@@ -208,9 +129,10 @@ const CodeInput: React.FC<CodeInputProps> = ({
                   key={tab.id}
                   data-active-tab={isActive}
                   className={`group flex items-center gap-1.5 px-3 h-9 text-xs shrink-0 border-r border-border/50 transition-colors
-                    ${isActive
-                      ? 'bg-background text-light-text border-t-2 border-t-primary'
-                      : 'bg-surface text-dark-text hover:text-light-text hover:bg-surface/80 border-t-2 border-t-transparent'
+                    ${
+                      isActive
+                        ? 'bg-background text-light-text border-t-2 border-t-primary'
+                        : 'bg-surface text-dark-text hover:text-light-text hover:bg-surface/80 border-t-2 border-t-transparent'
                     }`}
                   onClick={() => onTabSwitch(tab.id)}
                   onMouseDown={(e) => handleTabMouseDown(e, tab.id)}
@@ -319,76 +241,28 @@ const CodeInput: React.FC<CodeInputProps> = ({
         </div>
       </div>
 
-      {/* Editor area with line numbers */}
+      {/* Editor area */}
       <div className="flex-1 min-h-0 flex relative">
-        {/* Line number gutter */}
-        <div
-          ref={gutterRef}
-          className="line-numbers shrink-0 bg-surface/50 border-r border-border overflow-hidden
-            py-4 pr-3 pl-2 font-mono select-none"
-          style={{ fontSize: 'var(--editor-font-size)', lineHeight: '1.5' }}
-        >
-          {renderLineNumbers()}
-        </div>
-
-        {/* Textarea */}
-        <textarea
-          ref={textareaRef}
+        <CodeMirrorEditor
           value={code}
-          onChange={(e) => onCodeChange(e.target.value)}
-          onScroll={handleScroll}
-          onKeyDown={handleKeyDown}
-          onKeyUp={updateCursor}
-          onClick={updateCursor}
-          onFocus={updateCursor}
+          onChange={onCodeChange}
+          onCursorChange={handleCursorChange}
+          onRun={onRunCode}
+          onStop={onStop}
+          isRunning={isRunning}
           readOnly={isStepping}
-          style={{ fontSize: 'var(--editor-font-size)', lineHeight: '1.5' }}
-          className={`flex-1 min-w-0 p-4 pl-3 font-mono
-            bg-background
-            text-light-text
-            border-0 resize-none
-            focus:ring-0 focus:outline-none
-            scrollbar-thin scrollbar-thumb-primary hover:scrollbar-thumb-primary-hover
-            scrollbar-track-background scrollbar-thumb-rounded-full
-            ${isStepping ? 'cursor-default' : ''}`}
-          placeholder="// Start typing pseudocode here..."
-          spellCheck={false}
-          autoComplete="off"
-          autoCorrect="off"
-          autoCapitalize="off"
-          data-gramm="false"
+          debugLine={debugLine}
+          errorLine={errorLine}
         />
-
-        {/* Debug line highlight overlay */}
-        {debugLine !== null && textareaRef.current && (
-          <div
-            className="absolute left-0 right-0 pointer-events-none bg-warning/10 border-l-2 border-warning"
-            style={{
-              top: `calc(1rem + ${(debugLine - 1) * 1.5}em - ${textareaRef.current.scrollTop}px)`,
-              height: '1.5em',
-              fontSize: 'var(--editor-font-size)',
-            }}
-          />
-        )}
-
-        {/* Error line highlight overlay */}
-        {errorLine != null && !debugLine && textareaRef.current && (
-          <div
-            className="absolute left-0 right-0 pointer-events-none bg-error/10 border-l-2 border-error"
-            style={{
-              top: `calc(1rem + ${(errorLine - 1) * 1.5}em - ${textareaRef.current.scrollTop}px)`,
-              height: '1.5em',
-              fontSize: 'var(--editor-font-size)',
-            }}
-          />
-        )}
 
         {/* Empty state hint */}
         {code.length === 0 && !isRunning && (
           <div className="absolute bottom-4 left-0 right-0 flex justify-center pointer-events-none">
             <div className="flex items-center gap-1.5 text-xs text-dark-text/40">
               <Keyboard size={12} />
-              <span>Press <kbd>Ctrl+Enter</kbd> to run</span>
+              <span>
+                Press <kbd>Ctrl+Enter</kbd> to run
+              </span>
             </div>
           </div>
         )}

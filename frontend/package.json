@@ -14,8 +14,16 @@
     "antlr:generate": "antlr4ng -Dlanguage=TypeScript -o src/interpreter/generated -visitor -Xexact-output-dir src/interpreter/grammar/Pseudocode.g4"
   },
   "dependencies": {
+    "@codemirror/autocomplete": "^6.20.0",
+    "@codemirror/commands": "^6.10.2",
+    "@codemirror/language": "^6.12.1",
+    "@codemirror/search": "^6.6.0",
+    "@codemirror/state": "^6.5.4",
+    "@codemirror/view": "^6.39.12",
     "@fontsource-variable/fira-code": "^5.2.7",
     "@fontsource-variable/inter": "^5.2.8",
+    "@lezer/highlight": "^1.2.3",
+    "@lezer/lr": "^1.4.8",
     "@radix-ui/react-popover": "^1.1.15",
     "antlr4ng": "^3.0.16",
     "lucide-react": "^0.473.0",

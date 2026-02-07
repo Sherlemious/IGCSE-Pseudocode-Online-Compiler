@@ -12,7 +12,7 @@ const ThemeContext = createContext<ThemeContextValue | null>(null);
 
 const STORAGE_KEY_THEME = 'pseudocode-theme';
 const STORAGE_KEY_FONT_SIZE = 'pseudocode-font-size';
-const DEFAULT_THEME: ThemeId = 'dark-navy';
+const DEFAULT_THEME: ThemeId = 'one-dark-pro';
 const DEFAULT_FONT_SIZE = 14;
 const MIN_FONT_SIZE = 12;
 const MAX_FONT_SIZE = 24;
@@ -23,6 +23,22 @@ function applyTheme(themeId: ThemeId) {
   for (const [key, value] of Object.entries(theme.colors)) {
     root.style.setProperty(`--color-${key}`, value);
   }
+
+  // Add RGB versions for transparent backgrounds in CodeMirror
+  const hexToRgb = (hex: string) => {
+    // Expand shorthand form (e.g. "03F") to full form (e.g. "0033FF")
+    const shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
+    hex = hex.replace(shorthandRegex, (m, r, g, b) => {
+      return r + r + g + g + b + b;
+    });
+
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result ? `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}` : '0, 0, 0';
+  };
+
+  root.style.setProperty('--color-primary-rgb', hexToRgb(theme.colors.primary));
+  root.style.setProperty('--color-warning-rgb', hexToRgb(theme.colors.warning));
+  root.style.setProperty('--color-error-rgb', hexToRgb(theme.colors.error));
 }
 
 function applyFontSize(size: number) {
@@ -67,11 +83,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     setFontSizeState(clamped);
   };
 
-  return (
-    <ThemeContext.Provider value={{ themeId, setTheme, fontSize, setFontSize }}>
-      {children}
-    </ThemeContext.Provider>
-  );
+  return <ThemeContext.Provider value={{ themeId, setTheme, fontSize, setFontSize }}>{children}</ThemeContext.Provider>;
 }
 
 export function useTheme() {
