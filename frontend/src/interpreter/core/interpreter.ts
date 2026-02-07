@@ -483,7 +483,7 @@ export class Interpreter {
     if (ctx instanceof MulDivExprContext) {
       const left = await this.evalExpr(ctx.expr(0)!);
       const right = await this.evalExpr(ctx.expr(1)!);
-      const op = ctx.op!.text!;
+      const op = ctx._op!.text!;
       const l = toNumber(left);
       const r = toNumber(right);
       switch (op.toUpperCase()) {
@@ -509,7 +509,7 @@ export class Interpreter {
     if (ctx instanceof AddSubExprContext) {
       const left = await this.evalExpr(ctx.expr(0)!);
       const right = await this.evalExpr(ctx.expr(1)!);
-      const op = ctx.op!.text!;
+      const op = ctx._op!.text!;
       const l = toNumber(left);
       const r = toNumber(right);
       const result = op === '+' ? l + r : l - r;
@@ -525,7 +525,7 @@ export class Interpreter {
     if (ctx instanceof ComparisonExprContext) {
       const left = await this.evalExpr(ctx.expr(0)!);
       const right = await this.evalExpr(ctx.expr(1)!);
-      const op = ctx.op!.text!;
+      const op = ctx._op!.text!;
 
       if (isNumeric(left) && isNumeric(right)) {
         const l = toNumber(left);
