@@ -129,5 +129,9 @@ export function useInterpreter() {
     setWaitingForInput(false);
   }, []);
 
-  return { entries, isRunning, waitingForInput, run, provideInput, stop };
+  const clearEntries = useCallback(() => {
+    setEntries([]);
+  }, []);
+
+  return { entries, isRunning, waitingForInput, run, provideInput, stop, clearEntries };
 }

@@ -68,13 +68,11 @@ const FileViewer: React.FC = () => {
     <>
       <button
         onClick={handleOpen}
-        className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-background
-          border-2 border-border rounded-lg hover:border-primary
-          transition-all duration-200"
+        className="flex items-center justify-center w-7 h-7 text-dark-text hover:text-light-text
+          hover:bg-background rounded transition-colors"
         title="View Files"
       >
-        <FolderOpen size={16} className="text-primary" />
-        <span className="font-medium">Files</span>
+        <FolderOpen size={15} />
       </button>
 
       {isOpen && (

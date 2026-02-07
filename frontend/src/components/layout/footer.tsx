@@ -1,11 +1,17 @@
 import React from 'react';
 
-const Footer: React.FC = () => {
+interface FooterProps {
+  isRunning?: boolean;
+}
+
+const Footer: React.FC<FooterProps> = ({ isRunning = false }) => {
   return (
-    <footer className="h-12 bg-background border-t border-border">
-      <div className="max-w-144 mx-auto h-full px-6 flex items-center justify-center">
-        <p className="text-sm text-dark-text">© {new Date().getFullYear()} Abdelrahman Mohammed</p>
+    <footer className="h-7 bg-header-bg border-t border-border px-3 flex items-center justify-between text-xs font-mono shrink-0">
+      <div className="flex items-center gap-2">
+        <span className={`inline-block w-2 h-2 rounded-full ${isRunning ? 'bg-warning animate-pulse' : 'bg-success'}`} />
+        <span className="text-dark-text">{isRunning ? 'Running' : 'Ready'}</span>
       </div>
+      <span className="text-dark-text">&copy; {new Date().getFullYear()} Abdelrahman Mohammed</span>
     </footer>
   );
 };

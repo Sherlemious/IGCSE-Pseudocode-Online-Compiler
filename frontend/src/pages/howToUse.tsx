@@ -1,5 +1,9 @@
-import { useState } from 'react';
-import { Copy, Check } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Copy, Check, ChevronRight, List, X } from 'lucide-react';
+
+/* ────────────────────────────────────────────────────────── */
+/*  Reusable components                                       */
+/* ────────────────────────────────────────────────────────── */
 
 const CodeBlock = ({ code }: { code: string }) => {
   const [copied, setCopied] = useState(false);
@@ -11,137 +15,361 @@ const CodeBlock = ({ code }: { code: string }) => {
   };
 
   return (
-    <div className="relative group">
+    <div className="relative group my-2">
       <pre
-        className="bg-code-bg p-4 rounded-lg font-mono text-light-text overflow-x-auto scrollbar-thin scrollbar-thumb-primary hover:scrollbar-thumb-primary-hover
-            scrollbar-track-background scrollbar-thumb-rounded-full"
+        style={{ fontSize: 'var(--editor-font-size)' }}
+        className="bg-code-bg p-3 rounded font-mono text-light-text overflow-x-auto
+          scrollbar-thin scrollbar-thumb-primary hover:scrollbar-thumb-primary-hover
+          scrollbar-track-background scrollbar-thumb-rounded-full leading-relaxed"
       >
         <code>{code}</code>
       </pre>
       <button
         onClick={copyToClipboard}
-        className="absolute top-2 right-2 p-2 rounded-md bg-background hover:bg-surface
+        className="absolute top-1.5 right-1.5 p-1.5 rounded bg-background/80 hover:bg-surface
                  transition-colors duration-200 opacity-0 group-hover:opacity-100"
         aria-label="Copy code"
       >
-        {copied ? <Check className="h-4 w-4 text-accent" /> : <Copy className="h-4 w-4 text-light-text" />}
+        {copied ? <Check className="h-3.5 w-3.5 text-success" /> : <Copy className="h-3.5 w-3.5 text-dark-text" />}
       </button>
     </div>
   );
 };
 
-const InlineCode = ({ children }: { children: React.ReactNode }) => (
-  <code className="bg-code-bg px-1 py-0.5 rounded font-mono text-primary">{children}</code>
+const Kw = ({ children }: { children: React.ReactNode }) => (
+  <code className="bg-code-bg px-1 py-0.5 rounded font-mono text-primary text-[0.9em]">{children}</code>
 );
 
+/* ────────────────────────────────────────────────────────── */
+/*  Table of contents data                                    */
+/* ────────────────────────────────────────────────────────── */
+
+interface TocEntry {
+  id: string;
+  label: string;
+  children?: { id: string; label: string }[];
+}
+
+const toc: TocEntry[] = [
+  { id: 'general', label: 'General Syntax' },
+  {
+    id: 'variables',
+    label: 'Variables & Types',
+    children: [
+      { id: 'declaring', label: 'Declaring Variables' },
+      { id: 'constants', label: 'Constants' },
+      { id: 'data-types', label: 'Data Types' },
+    ],
+  },
+  {
+    id: 'io',
+    label: 'Input / Output',
+    children: [
+      { id: 'output', label: 'OUTPUT' },
+      { id: 'input', label: 'INPUT' },
+    ],
+  },
+  {
+    id: 'arrays',
+    label: 'Arrays',
+    children: [
+      { id: 'arrays-1d', label: '1D Arrays' },
+      { id: 'arrays-2d', label: '2D Arrays' },
+    ],
+  },
+  {
+    id: 'operators',
+    label: 'Operators',
+    children: [
+      { id: 'arithmetic', label: 'Arithmetic' },
+      { id: 'comparison', label: 'Comparison' },
+      { id: 'logical', label: 'Logical' },
+      { id: 'concatenation', label: 'String Concatenation' },
+    ],
+  },
+  {
+    id: 'selection',
+    label: 'Selection',
+    children: [
+      { id: 'if', label: 'IF / ELSE / ELSEIF' },
+      { id: 'case', label: 'CASE / OTHERWISE' },
+    ],
+  },
+  {
+    id: 'iteration',
+    label: 'Iteration',
+    children: [
+      { id: 'for', label: 'FOR Loop' },
+      { id: 'while', label: 'WHILE Loop' },
+      { id: 'repeat', label: 'REPEAT Loop' },
+    ],
+  },
+  {
+    id: 'subroutines',
+    label: 'Procedures & Functions',
+    children: [
+      { id: 'procedures', label: 'Procedures' },
+      { id: 'functions', label: 'Functions' },
+    ],
+  },
+  {
+    id: 'builtins',
+    label: 'Built-in Functions',
+    children: [
+      { id: 'string-functions', label: 'String Functions' },
+      { id: 'math-functions', label: 'Math Functions' },
+      { id: 'type-conversion', label: 'Type Conversion' },
+    ],
+  },
+  {
+    id: 'files',
+    label: 'File Handling',
+    children: [
+      { id: 'file-ops', label: 'File Operations' },
+      { id: 'file-write', label: 'Writing Files' },
+      { id: 'file-read', label: 'Reading Files' },
+    ],
+  },
+  { id: 'patterns', label: 'Common Patterns' },
+];
+
+/* ────────────────────────────────────────────────────────── */
+/*  Main Documentation component                              */
+/* ────────────────────────────────────────────────────────── */
+
 const Documentation = () => {
+  const [activeId, setActiveId] = useState('general');
+  const [tocOpen, setTocOpen] = useState(false);
+  const contentRef = useRef<HTMLDivElement>(null);
+
+  // Intersection observer for active section tracking
+  useEffect(() => {
+    const container = contentRef.current;
+    if (!container) return;
+
+    const headings = container.querySelectorAll('[data-section]');
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            setActiveId(entry.target.getAttribute('data-section') || '');
+          }
+        }
+      },
+      { root: container, rootMargin: '-10% 0px -80% 0px', threshold: 0 },
+    );
+
+    headings.forEach((h) => observer.observe(h));
+    return () => observer.disconnect();
+  }, []);
+
+  const scrollTo = (id: string) => {
+    const el = contentRef.current?.querySelector(`[data-section="${id}"]`);
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    setTocOpen(false);
+  };
+
+  /* ── Sidebar TOC renderer ─────────────────────────────── */
+  const renderToc = () => (
+    <nav className="text-sm select-none">
+      {toc.map((entry) => {
+        const isActive = activeId === entry.id || entry.children?.some((c) => c.id === activeId);
+        return (
+          <div key={entry.id}>
+            <button
+              onClick={() => scrollTo(entry.id)}
+              className={`w-full text-left px-3 py-1 rounded transition-colors truncate
+                ${isActive ? 'text-primary font-medium bg-surface' : 'text-dark-text hover:text-light-text hover:bg-surface/50'}`}
+            >
+              {entry.label}
+            </button>
+            {entry.children && (
+              <div className="ml-3 border-l border-border">
+                {entry.children.map((child) => (
+                  <button
+                    key={child.id}
+                    onClick={() => scrollTo(child.id)}
+                    className={`w-full text-left px-3 py-0.5 text-xs rounded transition-colors truncate flex items-center gap-1
+                      ${activeId === child.id ? 'text-primary' : 'text-dark-text hover:text-light-text'}`}
+                  >
+                    <ChevronRight className="h-3 w-3 shrink-0 opacity-50" />
+                    {child.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </nav>
+  );
+
+  /* ── Section heading helper ────────────────────────────── */
+  const H2 = ({ id, children }: { id: string; children: React.ReactNode }) => (
+    <h2 data-section={id} className="text-lg font-semibold text-light-text pt-6 pb-2 border-b border-border scroll-mt-4">
+      {children}
+    </h2>
+  );
+
+  const H3 = ({ id, children }: { id: string; children: React.ReactNode }) => (
+    <h3 data-section={id} className="text-base font-medium text-light-text pt-4 pb-1 scroll-mt-4">
+      {children}
+    </h3>
+  );
+
   return (
-    <main
-      className="flex-1 h-full overflow-y-auto bg-background scrollbar-thin scrollbar-thumb-primary hover:scrollbar-thumb-primary-hover
-            scrollbar-track-background scrollbar-thumb-rounded-full"
-    >
-      <div className="max-w-4xl mx-auto p-6 space-y-8">
-        <h1 className="text-3xl font-bold text-light-text">IGCSE Pseudocode Language Documentation</h1>
+    <div className="flex h-full overflow-hidden bg-background">
+      {/* ── Mobile TOC toggle ────────────────────────────── */}
+      <button
+        onClick={() => setTocOpen(!tocOpen)}
+        className="lg:hidden fixed bottom-10 right-4 z-40 p-2.5 rounded-full bg-primary text-light-text shadow-intense"
+        aria-label="Table of contents"
+      >
+        {tocOpen ? <X className="h-5 w-5" /> : <List className="h-5 w-5" />}
+      </button>
 
-        <p className="text-dark-text">
-          Welcome to the documentation for the IGCSE Pseudocode compiler. This guide covers all supported
-          syntax based on the Cambridge IGCSE Computer Science (0478) syllabus.
-        </p>
+      {/* ── Mobile TOC overlay ───────────────────────────── */}
+      {tocOpen && (
+        <div className="lg:hidden fixed inset-0 z-30 bg-black/50" onClick={() => setTocOpen(false)}>
+          <div
+            className="absolute left-0 top-0 bottom-0 w-64 bg-surface border-r border-border p-3 overflow-y-auto
+              scrollbar-thin scrollbar-thumb-primary scrollbar-track-background scrollbar-thumb-rounded-full"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="text-xs font-semibold uppercase tracking-wider text-dark-text mb-3 px-3">
+              Contents
+            </div>
+            {renderToc()}
+          </div>
+        </div>
+      )}
 
-        {/* General Syntax */}
-        <section className="space-y-4">
-          <h2 className="text-2xl font-semibold text-light-text">General Syntax Rules</h2>
-          <ul className="list-disc pl-6 text-dark-text space-y-2">
-            <li>
-              Comments are written using double forward slashes (<InlineCode>//</InlineCode>)
-            </li>
-            <li>Keywords are case-insensitive (<InlineCode>IF</InlineCode>, <InlineCode>if</InlineCode>, and <InlineCode>If</InlineCode> are all valid)</li>
-            <li>Indentation is recommended for readability but not enforced</li>
-            <li>
-              Assignment uses <InlineCode>{'<-'}</InlineCode> (preferred) or <InlineCode>=</InlineCode>
-            </li>
-          </ul>
-        </section>
+      {/* ── Desktop sidebar ──────────────────────────────── */}
+      <aside
+        className="hidden lg:block w-56 shrink-0 border-r border-border bg-surface overflow-y-auto p-2
+          scrollbar-thin scrollbar-thumb-primary scrollbar-track-background scrollbar-thumb-rounded-full"
+      >
+        <div className="text-xs font-semibold uppercase tracking-wider text-dark-text mb-2 px-3 pt-2">
+          Contents
+        </div>
+        {renderToc()}
+      </aside>
 
-        {/* Data Types & Variables */}
-        <section className="space-y-6">
-          <h2 className="text-2xl font-semibold text-light-text">Variables, Constants & Data Types</h2>
-
-          <div className="space-y-4">
-            <h3 className="text-xl font-medium text-light-text">Declaring Variables</h3>
-            <p className="text-dark-text">
-              Use <InlineCode>DECLARE</InlineCode> to declare variables with a data type:
+      {/* ── Main content ─────────────────────────────────── */}
+      <div
+        ref={contentRef}
+        className="flex-1 overflow-y-auto px-6 pb-12
+          scrollbar-thin scrollbar-thumb-primary hover:scrollbar-thumb-primary-hover
+          scrollbar-track-background scrollbar-thumb-rounded-full"
+      >
+        <div className="max-w-3xl mx-auto">
+          {/* Title */}
+          <div className="pt-6 pb-4">
+            <h1 className="text-xl font-bold text-light-text">IGCSE Pseudocode Reference</h1>
+            <p className="text-sm text-dark-text mt-1">
+              Complete language reference for the Cambridge IGCSE (0478) pseudocode syntax supported by this compiler.
             </p>
-            <CodeBlock
-              code={`DECLARE Counter : INTEGER
+          </div>
+
+          {/* ──────────────────────────────────────────────── */}
+          {/*  General Syntax                                  */}
+          {/* ──────────────────────────────────────────────── */}
+          <H2 id="general">General Syntax Rules</H2>
+          <ul className="list-disc pl-5 text-dark-text space-y-1 text-sm">
+            <li>Comments use <Kw>{'//'}</Kw> — everything after is ignored until end of line</li>
+            <li>Keywords are <strong className="text-light-text">case-insensitive</strong> — <Kw>IF</Kw>, <Kw>if</Kw>, and <Kw>If</Kw> all work</li>
+            <li>Indentation is recommended but not enforced</li>
+            <li>Assignment uses <Kw>{'<-'}</Kw> (preferred) or <Kw>=</Kw></li>
+            <li>Each statement goes on its own line</li>
+          </ul>
+
+          {/* ──────────────────────────────────────────────── */}
+          {/*  Variables & Types                               */}
+          {/* ──────────────────────────────────────────────── */}
+          <H2 id="variables">Variables, Constants & Data Types</H2>
+
+          <H3 id="declaring">Declaring Variables</H3>
+          <p className="text-sm text-dark-text mb-2">
+            Use <Kw>DECLARE</Kw> followed by the variable name, a colon, and the data type:
+          </p>
+          <CodeBlock
+            code={`DECLARE Counter : INTEGER
 DECLARE TotalToPay : REAL
 DECLARE GameOver : BOOLEAN
 DECLARE StudentName : STRING
 DECLARE Initial : CHAR`}
-            />
-          </div>
+          />
 
-          <div className="space-y-4">
-            <h3 className="text-xl font-medium text-light-text">Constants</h3>
-            <p className="text-dark-text">
-              Use <InlineCode>CONSTANT</InlineCode> to declare values that do not change:
-            </p>
-            <CodeBlock
-              code={`CONSTANT HourlyRate <- 6.50
+          <H3 id="constants">Constants</H3>
+          <p className="text-sm text-dark-text mb-2">
+            Use <Kw>CONSTANT</Kw> for values that never change during execution:
+          </p>
+          <CodeBlock
+            code={`CONSTANT HourlyRate <- 6.50
 CONSTANT MaxSize <- 100
 CONSTANT DefaultText <- "N/A"`}
-            />
+          />
+
+          <H3 id="data-types">Data Types</H3>
+          <div className="overflow-x-auto my-2">
+            <table className="w-full text-sm border border-border rounded">
+              <thead>
+                <tr className="bg-surface text-left">
+                  <th className="px-3 py-1.5 border-b border-border text-light-text font-medium">Type</th>
+                  <th className="px-3 py-1.5 border-b border-border text-light-text font-medium">Description</th>
+                  <th className="px-3 py-1.5 border-b border-border text-light-text font-medium">Example</th>
+                </tr>
+              </thead>
+              <tbody className="text-dark-text">
+                <tr className="border-b border-border"><td className="px-3 py-1"><Kw>INTEGER</Kw></td><td className="px-3 py-1">Whole numbers</td><td className="px-3 py-1 font-mono">5, -3, 0</td></tr>
+                <tr className="border-b border-border"><td className="px-3 py-1"><Kw>REAL</Kw></td><td className="px-3 py-1">Decimal numbers</td><td className="px-3 py-1 font-mono">4.7, 0.3</td></tr>
+                <tr className="border-b border-border"><td className="px-3 py-1"><Kw>CHAR</Kw></td><td className="px-3 py-1">Single character (single quotes)</td><td className="px-3 py-1 font-mono">'x', 'A'</td></tr>
+                <tr className="border-b border-border"><td className="px-3 py-1"><Kw>STRING</Kw></td><td className="px-3 py-1">Text (double quotes)</td><td className="px-3 py-1 font-mono">"Hello"</td></tr>
+                <tr><td className="px-3 py-1"><Kw>BOOLEAN</Kw></td><td className="px-3 py-1">Logical value</td><td className="px-3 py-1 font-mono">TRUE, FALSE</td></tr>
+              </tbody>
+            </table>
           </div>
 
-          <div className="space-y-4">
-            <h3 className="text-xl font-medium text-light-text">Data Types</h3>
-            <ul className="list-disc pl-6 text-dark-text space-y-2">
-              <li><InlineCode>INTEGER</InlineCode> - Whole numbers: <InlineCode>5</InlineCode>, <InlineCode>-3</InlineCode></li>
-              <li><InlineCode>REAL</InlineCode> - Decimal numbers: <InlineCode>4.7</InlineCode>, <InlineCode>0.3</InlineCode></li>
-              <li><InlineCode>CHAR</InlineCode> - Single character in single quotes: <InlineCode>'x'</InlineCode></li>
-              <li><InlineCode>STRING</InlineCode> - Text in double quotes: <InlineCode>"Hello"</InlineCode></li>
-              <li><InlineCode>BOOLEAN</InlineCode> - Logical values: <InlineCode>TRUE</InlineCode> or <InlineCode>FALSE</InlineCode></li>
-            </ul>
-          </div>
-        </section>
+          {/* ──────────────────────────────────────────────── */}
+          {/*  Input / Output                                  */}
+          {/* ──────────────────────────────────────────────── */}
+          <H2 id="io">Input and Output</H2>
 
-        {/* Input and Output */}
-        <section className="space-y-6">
-          <h2 className="text-2xl font-semibold text-light-text">Input and Output</h2>
+          <H3 id="output">OUTPUT</H3>
+          <p className="text-sm text-dark-text mb-2">
+            Use <Kw>OUTPUT</Kw> (or <Kw>PRINT</Kw>) to display values. Separate multiple values with commas:
+          </p>
+          <CodeBlock
+            code={`OUTPUT "Hello, World!"
+OUTPUT "You have ", Lives, " lives left"
+OUTPUT "Sum = ", A + B`}
+          />
 
-          <div className="space-y-4">
-            <h3 className="text-xl font-medium text-light-text">Output</h3>
-            <p className="text-dark-text">
-              Use <InlineCode>OUTPUT</InlineCode> (or <InlineCode>PRINT</InlineCode>) to display values. Multiple values are separated by commas:
-            </p>
-            <CodeBlock
-              code={`OUTPUT "Hello, World!"
-OUTPUT "You have ", Lives, " lives left"`}
-            />
-          </div>
-
-          <div className="space-y-4">
-            <h3 className="text-xl font-medium text-light-text">Input</h3>
-            <p className="text-dark-text">
-              Use <InlineCode>INPUT</InlineCode> to read a value from the user:
-            </p>
-            <CodeBlock
-              code={`DECLARE Name : STRING
+          <H3 id="input">INPUT</H3>
+          <p className="text-sm text-dark-text mb-2">
+            Use <Kw>INPUT</Kw> to read a value from the user. The program pauses until the user types a response:
+          </p>
+          <CodeBlock
+            code={`DECLARE Name : STRING
 OUTPUT "Enter your name:"
 INPUT Name
 OUTPUT "Hello, ", Name`}
-            />
-          </div>
-        </section>
+          />
+          <p className="text-xs text-dark-text mt-1 italic">
+            You can also input directly into an array element: <Kw>INPUT Scores[i]</Kw>
+          </p>
 
-        {/* Arrays */}
-        <section className="space-y-6">
-          <h2 className="text-2xl font-semibold text-light-text">Arrays</h2>
+          {/* ──────────────────────────────────────────────── */}
+          {/*  Arrays                                          */}
+          {/* ──────────────────────────────────────────────── */}
+          <H2 id="arrays">Arrays</H2>
 
-          <div className="space-y-4">
-            <h3 className="text-xl font-medium text-light-text">1D Arrays</h3>
-            <CodeBlock
-              code={`DECLARE Names : ARRAY[1:5] OF STRING
+          <H3 id="arrays-1d">1D Arrays</H3>
+          <p className="text-sm text-dark-text mb-2">
+            Declare with <Kw>ARRAY[lower:upper] OF type</Kw>. Indices are inclusive:
+          </p>
+          <CodeBlock
+            code={`DECLARE Names : ARRAY[1:5] OF STRING
 
 Names[1] <- "Alice"
 Names[2] <- "Bob"
@@ -149,91 +377,125 @@ Names[2] <- "Bob"
 FOR i <- 1 TO 5
     OUTPUT Names[i]
 NEXT i`}
-            />
-          </div>
+          />
 
-          <div className="space-y-4">
-            <h3 className="text-xl font-medium text-light-text">2D Arrays</h3>
-            <CodeBlock
-              code={`DECLARE Grid : ARRAY[1:3, 1:3] OF CHAR
+          <H3 id="arrays-2d">2D Arrays</H3>
+          <p className="text-sm text-dark-text mb-2">
+            Declare with two ranges separated by a comma. Access with <Kw>[row, col]</Kw>:
+          </p>
+          <CodeBlock
+            code={`DECLARE Grid : ARRAY[1:3, 1:3] OF CHAR
 
 Grid[1,1] <- 'X'
 Grid[2,2] <- 'O'
 OUTPUT Grid[1,1]`}
-            />
+          />
+
+          {/* ──────────────────────────────────────────────── */}
+          {/*  Operators                                       */}
+          {/* ──────────────────────────────────────────────── */}
+          <H2 id="operators">Operators</H2>
+
+          <H3 id="arithmetic">Arithmetic Operators</H3>
+          <div className="overflow-x-auto my-2">
+            <table className="w-full text-sm border border-border rounded">
+              <thead>
+                <tr className="bg-surface text-left">
+                  <th className="px-3 py-1.5 border-b border-border text-light-text font-medium">Operator</th>
+                  <th className="px-3 py-1.5 border-b border-border text-light-text font-medium">Description</th>
+                  <th className="px-3 py-1.5 border-b border-border text-light-text font-medium">Example</th>
+                </tr>
+              </thead>
+              <tbody className="text-dark-text">
+                <tr className="border-b border-border"><td className="px-3 py-1 font-mono">+</td><td className="px-3 py-1">Addition</td><td className="px-3 py-1 font-mono">5 + 3 → 8</td></tr>
+                <tr className="border-b border-border"><td className="px-3 py-1 font-mono">-</td><td className="px-3 py-1">Subtraction</td><td className="px-3 py-1 font-mono">10 - 4 → 6</td></tr>
+                <tr className="border-b border-border"><td className="px-3 py-1 font-mono">*</td><td className="px-3 py-1">Multiplication</td><td className="px-3 py-1 font-mono">3 * 7 → 21</td></tr>
+                <tr className="border-b border-border"><td className="px-3 py-1 font-mono">/</td><td className="px-3 py-1">Division</td><td className="px-3 py-1 font-mono">10 / 3 → 3.33…</td></tr>
+                <tr className="border-b border-border"><td className="px-3 py-1 font-mono">^</td><td className="px-3 py-1">Power</td><td className="px-3 py-1 font-mono">2 ^ 3 → 8</td></tr>
+                <tr className="border-b border-border"><td className="px-3 py-1"><Kw>DIV</Kw></td><td className="px-3 py-1">Integer division</td><td className="px-3 py-1 font-mono">10 DIV 3 → 3</td></tr>
+                <tr><td className="px-3 py-1"><Kw>MOD</Kw></td><td className="px-3 py-1">Remainder (modulo)</td><td className="px-3 py-1 font-mono">10 MOD 3 → 1</td></tr>
+              </tbody>
+            </table>
           </div>
-        </section>
-
-        {/* Operators */}
-        <section className="space-y-6">
-          <h2 className="text-2xl font-semibold text-light-text">Operators</h2>
-
-          <div className="space-y-4">
-            <h3 className="text-xl font-medium text-light-text">Arithmetic Operators</h3>
-            <ul className="list-disc pl-6 text-dark-text space-y-2">
-              <li><InlineCode>+</InlineCode> Addition</li>
-              <li><InlineCode>-</InlineCode> Subtraction</li>
-              <li><InlineCode>*</InlineCode> Multiplication</li>
-              <li><InlineCode>/</InlineCode> Division</li>
-              <li><InlineCode>^</InlineCode> Power</li>
-              <li><InlineCode>DIV(a, b)</InlineCode> or <InlineCode>a DIV b</InlineCode> - Integer division</li>
-              <li><InlineCode>MOD(a, b)</InlineCode> or <InlineCode>a MOD b</InlineCode> - Remainder</li>
-            </ul>
-            <CodeBlock
-              code={`OUTPUT DIV(10, 3)   // 3
+          <p className="text-xs text-dark-text italic">
+            <Kw>DIV</Kw> and <Kw>MOD</Kw> also work as functions: <Kw>DIV(10, 3)</Kw>, <Kw>MOD(10, 3)</Kw>
+          </p>
+          <CodeBlock
+            code={`OUTPUT DIV(10, 3)   // 3
 OUTPUT MOD(10, 3)   // 1
 OUTPUT 2 ^ 3        // 8`}
-            />
+          />
+
+          <H3 id="comparison">Comparison Operators</H3>
+          <div className="overflow-x-auto my-2">
+            <table className="w-full text-sm border border-border rounded">
+              <thead>
+                <tr className="bg-surface text-left">
+                  <th className="px-3 py-1.5 border-b border-border text-light-text font-medium">Operator</th>
+                  <th className="px-3 py-1.5 border-b border-border text-light-text font-medium">Meaning</th>
+                </tr>
+              </thead>
+              <tbody className="text-dark-text">
+                <tr className="border-b border-border"><td className="px-3 py-1 font-mono">=</td><td className="px-3 py-1">Equal to</td></tr>
+                <tr className="border-b border-border"><td className="px-3 py-1 font-mono">{'<>'}</td><td className="px-3 py-1">Not equal to</td></tr>
+                <tr className="border-b border-border"><td className="px-3 py-1 font-mono">{'>'}</td><td className="px-3 py-1">Greater than</td></tr>
+                <tr className="border-b border-border"><td className="px-3 py-1 font-mono">{'<'}</td><td className="px-3 py-1">Less than</td></tr>
+                <tr className="border-b border-border"><td className="px-3 py-1 font-mono">{'>='}</td><td className="px-3 py-1">Greater than or equal to</td></tr>
+                <tr><td className="px-3 py-1 font-mono">{'<='}</td><td className="px-3 py-1">Less than or equal to</td></tr>
+              </tbody>
+            </table>
           </div>
 
-          <div className="space-y-4">
-            <h3 className="text-xl font-medium text-light-text">Comparison Operators</h3>
-            <ul className="list-disc pl-6 text-dark-text space-y-2">
-              <li><InlineCode>=</InlineCode> Equal to</li>
-              <li><InlineCode>{'<>'}</InlineCode> Not equal to</li>
-              <li><InlineCode>{'>'}</InlineCode> Greater than</li>
-              <li><InlineCode>{'<'}</InlineCode> Less than</li>
-              <li><InlineCode>{'>='}</InlineCode> Greater than or equal to</li>
-              <li><InlineCode>{'<='}</InlineCode> Less than or equal to</li>
-            </ul>
+          <H3 id="logical">Logical Operators</H3>
+          <div className="overflow-x-auto my-2">
+            <table className="w-full text-sm border border-border rounded">
+              <thead>
+                <tr className="bg-surface text-left">
+                  <th className="px-3 py-1.5 border-b border-border text-light-text font-medium">Operator</th>
+                  <th className="px-3 py-1.5 border-b border-border text-light-text font-medium">Description</th>
+                </tr>
+              </thead>
+              <tbody className="text-dark-text">
+                <tr className="border-b border-border"><td className="px-3 py-1"><Kw>AND</Kw></td><td className="px-3 py-1">Both conditions must be true</td></tr>
+                <tr className="border-b border-border"><td className="px-3 py-1"><Kw>OR</Kw></td><td className="px-3 py-1">At least one condition must be true</td></tr>
+                <tr><td className="px-3 py-1"><Kw>NOT</Kw></td><td className="px-3 py-1">Inverts a boolean value</td></tr>
+              </tbody>
+            </table>
           </div>
+          <CodeBlock
+            code={`IF Age >= 18 AND HasID = TRUE THEN
+    OUTPUT "Entry allowed"
+ENDIF
 
-          <div className="space-y-4">
-            <h3 className="text-xl font-medium text-light-text">Logical Operators</h3>
-            <ul className="list-disc pl-6 text-dark-text space-y-2">
-              <li><InlineCode>AND</InlineCode> - Logical AND</li>
-              <li><InlineCode>OR</InlineCode> - Logical OR</li>
-              <li><InlineCode>NOT</InlineCode> - Logical NOT</li>
-            </ul>
-          </div>
+IF NOT Found THEN
+    OUTPUT "Item not found"
+ENDIF`}
+          />
 
-          <div className="space-y-4">
-            <h3 className="text-xl font-medium text-light-text">String Concatenation</h3>
-            <p className="text-dark-text">
-              Use <InlineCode>&</InlineCode> to join strings:
-            </p>
-            <CodeBlock code={`FullName <- FirstName & " " & LastName`} />
-          </div>
-        </section>
+          <H3 id="concatenation">String Concatenation</H3>
+          <p className="text-sm text-dark-text mb-2">
+            Use <Kw>&</Kw> to join strings together:
+          </p>
+          <CodeBlock code={`FullName <- FirstName & " " & LastName
+OUTPUT "Hello " & Name & "!"`} />
 
-        {/* Control Structures */}
-        <section className="space-y-6">
-          <h2 className="text-2xl font-semibold text-light-text">Selection</h2>
+          {/* ──────────────────────────────────────────────── */}
+          {/*  Selection                                       */}
+          {/* ──────────────────────────────────────────────── */}
+          <H2 id="selection">Selection</H2>
 
-          <div className="space-y-4">
-            <h3 className="text-xl font-medium text-light-text">IF Statements</h3>
-            <CodeBlock
-              code={`IF Score >= 50 THEN
+          <H3 id="if">IF / ELSE / ELSEIF</H3>
+          <p className="text-sm text-dark-text mb-2">Basic if-then-else:</p>
+          <CodeBlock
+            code={`IF Score >= 50 THEN
     OUTPUT "Pass"
 ELSE
     OUTPUT "Fail"
 ENDIF`}
-            />
-            <p className="text-dark-text mt-2">
-              Use <InlineCode>ELSEIF</InlineCode> for multiple conditions:
-            </p>
-            <CodeBlock
-              code={`IF Score >= 90 THEN
+          />
+          <p className="text-sm text-dark-text mb-2">Multiple conditions with <Kw>ELSEIF</Kw>:</p>
+          <CodeBlock
+            code={`IF Score >= 90 THEN
     OUTPUT "A"
 ELSEIF Score >= 80 THEN
     OUTPUT "B"
@@ -242,13 +504,14 @@ ELSEIF Score >= 70 THEN
 ELSE
     OUTPUT "F"
 ENDIF`}
-            />
-          </div>
+          />
 
-          <div className="space-y-4">
-            <h3 className="text-xl font-medium text-light-text">CASE Statements</h3>
-            <CodeBlock
-              code={`CASE OF Grade
+          <H3 id="case">CASE / OTHERWISE</H3>
+          <p className="text-sm text-dark-text mb-2">
+            Multi-way selection on a single variable. Use <Kw>OTHERWISE</Kw> as a default:
+          </p>
+          <CodeBlock
+            code={`CASE OF Grade
     'A' :
         OUTPUT "Excellent"
     'B' :
@@ -258,216 +521,294 @@ ENDIF`}
     OTHERWISE:
         OUTPUT "Below average"
 ENDCASE`}
-            />
-          </div>
-        </section>
+          />
 
-        {/* Iteration */}
-        <section className="space-y-6">
-          <h2 className="text-2xl font-semibold text-light-text">Iteration</h2>
+          {/* ──────────────────────────────────────────────── */}
+          {/*  Iteration                                       */}
+          {/* ──────────────────────────────────────────────── */}
+          <H2 id="iteration">Iteration (Loops)</H2>
 
-          <div className="space-y-4">
-            <h3 className="text-xl font-medium text-light-text">FOR Loops</h3>
-            <p className="text-dark-text">Count-controlled loop:</p>
-            <CodeBlock
-              code={`FOR Counter <- 1 TO 10
+          <H3 id="for">FOR Loop</H3>
+          <p className="text-sm text-dark-text mb-2">
+            Count-controlled loop. The counter variable is automatically incremented (or stepped):
+          </p>
+          <CodeBlock
+            code={`FOR Counter <- 1 TO 10
     OUTPUT Counter
-NEXT Counter
-
-// With STEP
-FOR i <- 10 TO 1 STEP -1
+NEXT Counter`}
+          />
+          <p className="text-sm text-dark-text mb-2">
+            Use <Kw>STEP</Kw> to control the increment (including negative values for counting down):
+          </p>
+          <CodeBlock
+            code={`FOR i <- 10 TO 1 STEP -1
     OUTPUT i
-NEXT i`}
-            />
-          </div>
+NEXT i
 
-          <div className="space-y-4">
-            <h3 className="text-xl font-medium text-light-text">WHILE Loops</h3>
-            <p className="text-dark-text">Pre-condition loop (tests condition before each iteration):</p>
-            <CodeBlock
-              code={`DECLARE Number : INTEGER
+FOR i <- 0 TO 20 STEP 2
+    OUTPUT i      // 0, 2, 4, 6, ... 20
+NEXT i`}
+          />
+
+          <H3 id="while">WHILE Loop</H3>
+          <p className="text-sm text-dark-text mb-2">
+            Pre-condition loop — tests the condition <strong className="text-light-text">before</strong> each iteration. May execute zero times:
+          </p>
+          <CodeBlock
+            code={`DECLARE Number : INTEGER
 Number <- 100
 WHILE Number > 9 DO
     Number <- Number - 9
 ENDWHILE
 OUTPUT Number`}
-            />
-          </div>
+          />
+          <p className="text-xs text-dark-text italic">The <Kw>DO</Kw> keyword after the condition is optional.</p>
 
-          <div className="space-y-4">
-            <h3 className="text-xl font-medium text-light-text">REPEAT Loops</h3>
-            <p className="text-dark-text">Post-condition loop (always executes at least once):</p>
-            <CodeBlock
-              code={`DECLARE Password : STRING
+          <H3 id="repeat">REPEAT Loop</H3>
+          <p className="text-sm text-dark-text mb-2">
+            Post-condition loop — always executes <strong className="text-light-text">at least once</strong>, then checks the condition:
+          </p>
+          <CodeBlock
+            code={`DECLARE Password : STRING
 REPEAT
     OUTPUT "Enter the password:"
     INPUT Password
 UNTIL Password = "Secret"`}
-            />
-          </div>
-        </section>
+          />
 
-        {/* Procedures and Functions */}
-        <section className="space-y-6">
-          <h2 className="text-2xl font-semibold text-light-text">Procedures and Functions</h2>
+          {/* ──────────────────────────────────────────────── */}
+          {/*  Procedures & Functions                          */}
+          {/* ──────────────────────────────────────────────── */}
+          <H2 id="subroutines">Procedures and Functions</H2>
 
-          <div className="space-y-4">
-            <h3 className="text-xl font-medium text-light-text">Procedures</h3>
-            <p className="text-dark-text">
-              Procedures perform actions but do not return a value. Call them with <InlineCode>CALL</InlineCode>:
-            </p>
-            <CodeBlock
-              code={`PROCEDURE Greet(Name : STRING)
+          <H3 id="procedures">Procedures</H3>
+          <p className="text-sm text-dark-text mb-2">
+            Procedures perform actions but do not return a value. Invoke with <Kw>CALL</Kw>:
+          </p>
+          <CodeBlock
+            code={`PROCEDURE Greet(Name : STRING)
     OUTPUT "Hello, ", Name, "!"
 ENDPROCEDURE
 
-CALL Greet("Alice")`}
-            />
-          </div>
+CALL Greet("Alice")
+CALL Greet("Bob")`}
+          />
 
-          <div className="space-y-4">
-            <h3 className="text-xl font-medium text-light-text">Functions</h3>
-            <p className="text-dark-text">
-              Functions return a value and are used inside expressions:
-            </p>
-            <CodeBlock
-              code={`FUNCTION Square(N : INTEGER) RETURNS INTEGER
+          <H3 id="functions">Functions</H3>
+          <p className="text-sm text-dark-text mb-2">
+            Functions return a value with <Kw>RETURN</Kw> and can be used inside expressions:
+          </p>
+          <CodeBlock
+            code={`FUNCTION Square(N : INTEGER) RETURNS INTEGER
     RETURN N * N
 ENDFUNCTION
 
-OUTPUT "Result: ", Square(5)`}
-            />
+OUTPUT "5 squared = ", Square(5)
+
+// Functions can call other functions
+FUNCTION Max(A : INTEGER, B : INTEGER) RETURNS INTEGER
+    IF A > B THEN
+        RETURN A
+    ELSE
+        RETURN B
+    ENDIF
+ENDFUNCTION
+
+OUTPUT "Larger: ", Max(10, 25)`}
+          />
+
+          {/* ──────────────────────────────────────────────── */}
+          {/*  Built-in Functions                              */}
+          {/* ──────────────────────────────────────────────── */}
+          <H2 id="builtins">Built-in Functions</H2>
+
+          <H3 id="string-functions">String Functions</H3>
+          <div className="overflow-x-auto my-2">
+            <table className="w-full text-sm border border-border rounded">
+              <thead>
+                <tr className="bg-surface text-left">
+                  <th className="px-3 py-1.5 border-b border-border text-light-text font-medium">Function</th>
+                  <th className="px-3 py-1.5 border-b border-border text-light-text font-medium">Description</th>
+                </tr>
+              </thead>
+              <tbody className="text-dark-text">
+                <tr className="border-b border-border"><td className="px-3 py-1"><Kw>LENGTH(s)</Kw></td><td className="px-3 py-1">Number of characters in a string</td></tr>
+                <tr className="border-b border-border"><td className="px-3 py-1"><Kw>LCASE(s)</Kw></td><td className="px-3 py-1">Convert to lowercase</td></tr>
+                <tr className="border-b border-border"><td className="px-3 py-1"><Kw>UCASE(s)</Kw></td><td className="px-3 py-1">Convert to uppercase</td></tr>
+                <tr className="border-b border-border"><td className="px-3 py-1"><Kw>SUBSTRING(s, start, len)</Kw></td><td className="px-3 py-1">Extract characters (1-based index)</td></tr>
+                <tr className="border-b border-border"><td className="px-3 py-1"><Kw>MID(s, start, len)</Kw></td><td className="px-3 py-1">Same as SUBSTRING (alias)</td></tr>
+                <tr className="border-b border-border"><td className="px-3 py-1"><Kw>LEFT(s, len)</Kw></td><td className="px-3 py-1">Leftmost characters</td></tr>
+                <tr><td className="px-3 py-1"><Kw>RIGHT(s, len)</Kw></td><td className="px-3 py-1">Rightmost characters</td></tr>
+              </tbody>
+            </table>
           </div>
-        </section>
-
-        {/* Built-in Functions */}
-        <section className="space-y-6">
-          <h2 className="text-2xl font-semibold text-light-text">Built-in Functions</h2>
-
-          <div className="space-y-4">
-            <h3 className="text-xl font-medium text-light-text">String Functions</h3>
-            <ul className="list-disc pl-6 text-dark-text space-y-2">
-              <li><InlineCode>LENGTH(s)</InlineCode> - Returns the length of a string</li>
-              <li><InlineCode>LCASE(s)</InlineCode> - Converts to lowercase</li>
-              <li><InlineCode>UCASE(s)</InlineCode> - Converts to uppercase</li>
-              <li><InlineCode>SUBSTRING(s, start, length)</InlineCode> - Extracts a substring (1-based)</li>
-              <li><InlineCode>LEFT(s, length)</InlineCode> - Returns leftmost characters</li>
-              <li><InlineCode>RIGHT(s, length)</InlineCode> - Returns rightmost characters</li>
-            </ul>
-            <CodeBlock
-              code={`OUTPUT LENGTH("Hello")          // 5
+          <CodeBlock
+            code={`OUTPUT LENGTH("Hello")          // 5
 OUTPUT UCASE("Hello")           // HELLO
-OUTPUT SUBSTRING("Hello", 1, 3) // Hel`}
-            />
+OUTPUT LCASE("Hello")           // hello
+OUTPUT SUBSTRING("Hello", 1, 3) // Hel
+OUTPUT MID("Hello", 2, 3)       // ell
+OUTPUT LEFT("Hello", 2)         // He
+OUTPUT RIGHT("Hello", 3)        // llo`}
+          />
+
+          <H3 id="math-functions">Math Functions</H3>
+          <div className="overflow-x-auto my-2">
+            <table className="w-full text-sm border border-border rounded">
+              <thead>
+                <tr className="bg-surface text-left">
+                  <th className="px-3 py-1.5 border-b border-border text-light-text font-medium">Function</th>
+                  <th className="px-3 py-1.5 border-b border-border text-light-text font-medium">Description</th>
+                </tr>
+              </thead>
+              <tbody className="text-dark-text">
+                <tr className="border-b border-border"><td className="px-3 py-1"><Kw>ROUND(n, places)</Kw></td><td className="px-3 py-1">Round to decimal places</td></tr>
+                <tr className="border-b border-border"><td className="px-3 py-1"><Kw>RANDOM()</Kw></td><td className="px-3 py-1">Random number between 0 and 1</td></tr>
+                <tr className="border-b border-border"><td className="px-3 py-1"><Kw>INT(n)</Kw></td><td className="px-3 py-1">Truncate to integer (towards zero)</td></tr>
+                <tr className="border-b border-border"><td className="px-3 py-1"><Kw>DIV(a, b)</Kw></td><td className="px-3 py-1">Integer division</td></tr>
+                <tr><td className="px-3 py-1"><Kw>MOD(a, b)</Kw></td><td className="px-3 py-1">Remainder after division</td></tr>
+              </tbody>
+            </table>
           </div>
+          <CodeBlock
+            code={`OUTPUT ROUND(3.14159, 2)   // 3.14
+OUTPUT INT(7.9)            // 7
+OUTPUT INT(-2.3)           // -2
+OUTPUT INT(RANDOM() * 6)   // Random 0-5`}
+          />
 
-          <div className="space-y-4">
-            <h3 className="text-xl font-medium text-light-text">Math Functions</h3>
-            <ul className="list-disc pl-6 text-dark-text space-y-2">
-              <li><InlineCode>ROUND(n, places)</InlineCode> - Rounds to specified decimal places</li>
-              <li><InlineCode>RANDOM()</InlineCode> - Returns a random number between 0 and 1</li>
-              <li><InlineCode>INT(n)</InlineCode> - Truncates to an integer</li>
-              <li><InlineCode>DIV(a, b)</InlineCode> - Integer division</li>
-              <li><InlineCode>MOD(a, b)</InlineCode> - Remainder</li>
-            </ul>
-            <CodeBlock
-              code={`OUTPUT ROUND(3.14159, 2)  // 3.14
-OUTPUT INT(RANDOM() * 6)  // Random 0-5`}
-            />
+          <H3 id="type-conversion">Type Conversion</H3>
+          <div className="overflow-x-auto my-2">
+            <table className="w-full text-sm border border-border rounded">
+              <thead>
+                <tr className="bg-surface text-left">
+                  <th className="px-3 py-1.5 border-b border-border text-light-text font-medium">Function</th>
+                  <th className="px-3 py-1.5 border-b border-border text-light-text font-medium">Description</th>
+                </tr>
+              </thead>
+              <tbody className="text-dark-text">
+                <tr className="border-b border-border"><td className="px-3 py-1"><Kw>ASC(c)</Kw></td><td className="px-3 py-1">ASCII code of a character</td></tr>
+                <tr className="border-b border-border"><td className="px-3 py-1"><Kw>CHR(n)</Kw></td><td className="px-3 py-1">Character from ASCII code</td></tr>
+                <tr className="border-b border-border"><td className="px-3 py-1"><Kw>NUM_TO_STRING(n)</Kw></td><td className="px-3 py-1">Convert number to string</td></tr>
+                <tr className="border-b border-border"><td className="px-3 py-1"><Kw>STRING_TO_NUM(s)</Kw></td><td className="px-3 py-1">Convert string to number</td></tr>
+                <tr><td className="px-3 py-1"><Kw>IS_NUM(s)</Kw></td><td className="px-3 py-1">Check if string is numeric (returns BOOLEAN)</td></tr>
+              </tbody>
+            </table>
           </div>
+          <CodeBlock
+            code={`OUTPUT ASC('A')            // 65
+OUTPUT CHR(65)             // A
+OUTPUT NUM_TO_STRING(42)   // "42"
+OUTPUT STRING_TO_NUM("99") // 99
+OUTPUT IS_NUM("123")       // TRUE
+OUTPUT IS_NUM("abc")       // FALSE`}
+          />
 
-          <div className="space-y-4">
-            <h3 className="text-xl font-medium text-light-text">Type Conversion</h3>
-            <ul className="list-disc pl-6 text-dark-text space-y-2">
-              <li><InlineCode>ASC(c)</InlineCode> - ASCII code of a character</li>
-              <li><InlineCode>CHR(n)</InlineCode> - Character from ASCII code</li>
-              <li><InlineCode>NUM_TO_STRING(n)</InlineCode> - Number to string</li>
-              <li><InlineCode>STRING_TO_NUM(s)</InlineCode> - String to number</li>
-              <li><InlineCode>IS_NUM(s)</InlineCode> - Checks if string is numeric</li>
-            </ul>
-          </div>
-        </section>
-
-        {/* File Handling */}
-        <section className="space-y-6">
-          <h2 className="text-2xl font-semibold text-light-text">File Handling</h2>
-
-          <p className="text-dark-text">
-            Files are simulated using browser localStorage. Data persists between sessions.
+          {/* ──────────────────────────────────────────────── */}
+          {/*  File Handling                                   */}
+          {/* ──────────────────────────────────────────────── */}
+          <H2 id="files">File Handling</H2>
+          <p className="text-sm text-dark-text mb-2">
+            Files are simulated using browser <strong className="text-light-text">localStorage</strong>.
+            Data persists between sessions. You can view and manage files using the folder icon in the editor tab bar.
           </p>
 
-          <div className="space-y-4">
-            <h3 className="text-xl font-medium text-light-text">File Operations</h3>
-            <ul className="list-disc pl-6 text-dark-text space-y-2">
-              <li><InlineCode>OPENFILE filename FOR READ</InlineCode> - Open for reading</li>
-              <li><InlineCode>OPENFILE filename FOR WRITE</InlineCode> - Open for writing (overwrites existing)</li>
-              <li><InlineCode>OPENFILE filename FOR APPEND</InlineCode> - Open for appending</li>
-              <li><InlineCode>READFILE filename, variable</InlineCode> - Read one line</li>
-              <li><InlineCode>WRITEFILE filename, value</InlineCode> - Write one line</li>
-              <li><InlineCode>CLOSEFILE filename</InlineCode> - Close the file</li>
-              <li><InlineCode>EOF(filename)</InlineCode> - Check if end of file reached</li>
-            </ul>
+          <H3 id="file-ops">File Operations</H3>
+          <div className="overflow-x-auto my-2">
+            <table className="w-full text-sm border border-border rounded">
+              <thead>
+                <tr className="bg-surface text-left">
+                  <th className="px-3 py-1.5 border-b border-border text-light-text font-medium">Statement</th>
+                  <th className="px-3 py-1.5 border-b border-border text-light-text font-medium">Description</th>
+                </tr>
+              </thead>
+              <tbody className="text-dark-text">
+                <tr className="border-b border-border"><td className="px-3 py-1"><Kw>OPENFILE f FOR READ</Kw></td><td className="px-3 py-1">Open file for reading</td></tr>
+                <tr className="border-b border-border"><td className="px-3 py-1"><Kw>OPENFILE f FOR WRITE</Kw></td><td className="px-3 py-1">Open file for writing (overwrites)</td></tr>
+                <tr className="border-b border-border"><td className="px-3 py-1"><Kw>OPENFILE f FOR APPEND</Kw></td><td className="px-3 py-1">Open file for appending</td></tr>
+                <tr className="border-b border-border"><td className="px-3 py-1"><Kw>READFILE f, var</Kw></td><td className="px-3 py-1">Read one line into a variable</td></tr>
+                <tr className="border-b border-border"><td className="px-3 py-1"><Kw>WRITEFILE f, value</Kw></td><td className="px-3 py-1">Write a line to the file</td></tr>
+                <tr className="border-b border-border"><td className="px-3 py-1"><Kw>CLOSEFILE f</Kw></td><td className="px-3 py-1">Close the file</td></tr>
+                <tr><td className="px-3 py-1"><Kw>EOF(f)</Kw></td><td className="px-3 py-1">TRUE if end of file reached</td></tr>
+              </tbody>
+            </table>
           </div>
 
-          <div className="space-y-4">
-            <h3 className="text-xl font-medium text-light-text">Writing to a File</h3>
-            <CodeBlock
-              code={`OPENFILE "scores.txt" FOR WRITE
+          <H3 id="file-write">Writing to a File</H3>
+          <CodeBlock
+            code={`OPENFILE "scores.txt" FOR WRITE
 WRITEFILE "scores.txt", "Alice,95"
 WRITEFILE "scores.txt", "Bob,87"
 CLOSEFILE "scores.txt"`}
-            />
-          </div>
+          />
 
-          <div className="space-y-4">
-            <h3 className="text-xl font-medium text-light-text">Reading from a File</h3>
-            <CodeBlock
-              code={`DECLARE Line : STRING
+          <H3 id="file-read">Reading from a File</H3>
+          <CodeBlock
+            code={`DECLARE Line : STRING
 OPENFILE "scores.txt" FOR READ
 WHILE NOT EOF("scores.txt") DO
     READFILE "scores.txt", Line
     OUTPUT Line
 ENDWHILE
 CLOSEFILE "scores.txt"`}
-            />
-          </div>
-        </section>
+          />
+          <p className="text-sm text-dark-text mt-2">Appending adds lines without overwriting existing content:</p>
+          <CodeBlock
+            code={`OPENFILE "log.txt" FOR APPEND
+WRITEFILE "log.txt", "New entry"
+CLOSEFILE "log.txt"`}
+          />
 
-        {/* Common Patterns */}
-        <section className="space-y-6">
-          <h2 className="text-2xl font-semibold text-light-text">Common Patterns</h2>
+          {/* ──────────────────────────────────────────────── */}
+          {/*  Common Patterns                                 */}
+          {/* ──────────────────────────────────────────────── */}
+          <H2 id="patterns">Common Patterns</H2>
+          <p className="text-sm text-dark-text mb-2">
+            These patterns appear frequently in IGCSE exam questions:
+          </p>
 
-          <div className="space-y-4">
-            <h3 className="text-xl font-medium text-light-text">Totaling</h3>
-            <CodeBlock
-              code={`DECLARE Numbers : ARRAY[1:5] OF INTEGER
+          <h4 className="text-sm font-medium text-light-text mt-4 mb-1">Totaling</h4>
+          <CodeBlock
+            code={`DECLARE Numbers : ARRAY[1:5] OF INTEGER
 DECLARE Total : INTEGER
 Total <- 0
 FOR i <- 1 TO 5
     Total <- Total + Numbers[i]
 NEXT i
 OUTPUT "Total: ", Total`}
-            />
-          </div>
+          />
 
-          <div className="space-y-4">
-            <h3 className="text-xl font-medium text-light-text">Counting</h3>
-            <CodeBlock
-              code={`DECLARE Count : INTEGER
+          <h4 className="text-sm font-medium text-light-text mt-4 mb-1">Counting</h4>
+          <CodeBlock
+            code={`DECLARE Count : INTEGER
 Count <- 0
 FOR i <- 1 TO 100
     IF Numbers[i] > 50 THEN
         Count <- Count + 1
     ENDIF
-NEXT i`}
-            />
-          </div>
+NEXT i
+OUTPUT "Count above 50: ", Count`}
+          />
 
-          <div className="space-y-4">
-            <h3 className="text-xl font-medium text-light-text">Linear Search</h3>
-            <CodeBlock
-              code={`DECLARE Found : BOOLEAN
+          <h4 className="text-sm font-medium text-light-text mt-4 mb-1">Finding Maximum</h4>
+          <CodeBlock
+            code={`DECLARE Max : INTEGER
+Max <- Numbers[1]
+FOR i <- 2 TO 10
+    IF Numbers[i] > Max THEN
+        Max <- Numbers[i]
+    ENDIF
+NEXT i
+OUTPUT "Maximum: ", Max`}
+          />
+
+          <h4 className="text-sm font-medium text-light-text mt-4 mb-1">Linear Search</h4>
+          <CodeBlock
+            code={`DECLARE Found : BOOLEAN
+DECLARE SearchName : STRING
 Found <- FALSE
+OUTPUT "Enter name to search:"
+INPUT SearchName
 DECLARE i : INTEGER
 i <- 1
 WHILE i <= 10 AND NOT Found DO
@@ -476,12 +817,43 @@ WHILE i <= 10 AND NOT Found DO
         OUTPUT "Found at position ", i
     ENDIF
     i <- i + 1
-ENDWHILE`}
-            />
-          </div>
-        </section>
+ENDWHILE
+IF NOT Found THEN
+    OUTPUT "Not found"
+ENDIF`}
+          />
+
+          <h4 className="text-sm font-medium text-light-text mt-4 mb-1">Bubble Sort</h4>
+          <CodeBlock
+            code={`DECLARE Temp : INTEGER
+DECLARE Swapped : BOOLEAN
+REPEAT
+    Swapped <- FALSE
+    FOR i <- 1 TO 9
+        IF Numbers[i] > Numbers[i + 1] THEN
+            Temp <- Numbers[i]
+            Numbers[i] <- Numbers[i + 1]
+            Numbers[i + 1] <- Temp
+            Swapped <- TRUE
+        ENDIF
+    NEXT i
+UNTIL NOT Swapped`}
+          />
+
+          <h4 className="text-sm font-medium text-light-text mt-4 mb-1">Input Validation</h4>
+          <CodeBlock
+            code={`DECLARE Mark : INTEGER
+REPEAT
+    OUTPUT "Enter a mark (0-100):"
+    INPUT Mark
+UNTIL Mark >= 0 AND Mark <= 100
+OUTPUT "Valid mark entered: ", Mark`}
+          />
+
+          <div className="h-8" />
+        </div>
       </div>
-    </main>
+    </div>
   );
 };
 

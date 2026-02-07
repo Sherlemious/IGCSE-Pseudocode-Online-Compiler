@@ -64,7 +64,7 @@ export default function SettingsPanel() {
 
           {/* Font size control */}
           <div>
-            <h3 className="text-sm font-semibold text-light-text mb-3">Editor Font Size</h3>
+            <h3 className="text-sm font-semibold text-light-text mb-3">Font Size</h3>
             <div className="flex items-center justify-between">
               <button
                 onClick={() => setFontSize(fontSize - 1)}

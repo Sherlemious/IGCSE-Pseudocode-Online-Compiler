@@ -1,4 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
+import { Terminal, Trash2 } from 'lucide-react';
 import type { OutputEntry } from '../../interpreter/core/types';
 
 interface OutputDisplayProps {
@@ -6,6 +7,7 @@ interface OutputDisplayProps {
   isRunning: boolean;
   waitingForInput: boolean;
   onInputSubmit: (value: string) => void;
+  onClear: () => void;
 }
 
 const OutputDisplay: React.FC<OutputDisplayProps> = ({
@@ -13,6 +15,7 @@ const OutputDisplay: React.FC<OutputDisplayProps> = ({
   isRunning,
   waitingForInput,
   onInputSubmit,
+  onClear,
 }) => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -43,7 +46,7 @@ const OutputDisplay: React.FC<OutputDisplayProps> = ({
   const renderContent = () => {
     if (!isRunning && entries.length === 0) {
       return (
-        <div className="text-dark-text text-center h-full flex items-center justify-center">
+        <div className="text-dark-text text-center h-full flex items-center justify-center text-sm">
           Run your code to see the output here
         </div>
       );
@@ -107,16 +110,31 @@ const OutputDisplay: React.FC<OutputDisplayProps> = ({
   };
 
   return (
-    <div className="flex-1 min-h-0 flex flex-col p-6">
-      <h2 className="text-2xl font-sans font-semibold text-light-text mb-6 mt-2">Output</h2>
+    <div className="flex-1 min-h-0 flex flex-col">
+      {/* Panel header */}
+      <div className="h-9 bg-surface border-b border-border flex items-center justify-between px-3 shrink-0">
+        <div className="flex items-center gap-2">
+          <Terminal className="h-3.5 w-3.5 text-dark-text" />
+          <span className="text-xs font-semibold tracking-wider text-dark-text uppercase">Output</span>
+          {isRunning && (
+            <span className="inline-block w-2 h-2 rounded-full bg-warning animate-pulse" />
+          )}
+        </div>
+        <button
+          onClick={onClear}
+          className="text-dark-text hover:text-light-text transition-colors p-1 rounded hover:bg-background"
+          title="Clear output"
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+        </button>
+      </div>
 
+      {/* Terminal output */}
       <div
         ref={scrollRef}
-        className="flex-1 min-h-0 bg-background
-        border-2 border-border rounded-lg
-        overflow-y-auto
-        scrollbar-thin scrollbar-thumb-primary hover:scrollbar-thumb-primary-hover
-        scrollbar-track-background scrollbar-thumb-rounded-full"
+        className="flex-1 min-h-0 bg-background overflow-y-auto
+          scrollbar-thin scrollbar-thumb-primary hover:scrollbar-thumb-primary-hover
+          scrollbar-track-background scrollbar-thumb-rounded-full"
       >
         {renderContent()}
       </div>
