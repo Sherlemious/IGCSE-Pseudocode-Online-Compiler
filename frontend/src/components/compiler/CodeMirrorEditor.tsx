@@ -9,8 +9,10 @@ import {
   rectangularSelection,
   crosshairCursor,
   highlightActiveLine,
+  Decoration,
+  DecorationSet,
 } from '@codemirror/view';
-import { EditorState, Compartment } from '@codemirror/state';
+import { EditorState, Compartment, StateField, StateEffect, RangeSetBuilder } from '@codemirror/state';
 import { defaultKeymap, indentWithTab, history, historyKeymap } from '@codemirror/commands';
 import { bracketMatching, foldGutter, indentOnInput } from '@codemirror/language';
 import { searchKeymap, highlightSelectionMatches } from '@codemirror/search';
@@ -20,6 +22,36 @@ import { HighlightStyle, syntaxHighlighting } from '@codemirror/language';
 import { tags as t } from '@lezer/highlight';
 
 const readOnlyCompartment = new Compartment();
+
+// Define StateEffect for line highlighting
+const setLineHighlight = StateEffect.define<{ debugLine: number | null; errorLine: number | null }>();
+
+// Define StateField for line decorations
+const lineHighlightField = StateField.define<DecorationSet>({
+  create() {
+    return Decoration.none;
+  },
+  update(decorations, tr) {
+    decorations = decorations.map(tr.changes);
+    for (const e of tr.effects) {
+      if (e.is(setLineHighlight)) {
+        const { debugLine, errorLine } = e.value;
+        const builder = new RangeSetBuilder<Decoration>();
+        if (debugLine && debugLine <= tr.state.doc.lines) {
+          const line = tr.state.doc.line(debugLine);
+          builder.add(line.from, line.from, Decoration.line({ class: 'cm-line-debug' }));
+        }
+        if (errorLine && errorLine <= tr.state.doc.lines) {
+          const line = tr.state.doc.line(errorLine);
+          builder.add(line.from, line.from, Decoration.line({ class: 'cm-line-error' }));
+        }
+        return builder.finish();
+      }
+    }
+    return decorations;
+  },
+  provide: (f) => EditorView.decorations.from(f),
+});
 
 interface CodeMirrorEditorProps {
   value: string;
@@ -78,6 +110,12 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
   useEffect(() => {
     debugLineRef.current = debugLine;
     errorLineRef.current = errorLine;
+
+    if (viewRef.current) {
+      viewRef.current.dispatch({
+        effects: setLineHighlight.of({ debugLine, errorLine }),
+      });
+    }
   }, [debugLine, errorLine]);
 
   useEffect(() => {
@@ -239,6 +277,7 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
         pseudocodeLanguage(),
         highlightTheme,
         customTheme,
+        lineHighlightField,
         readOnlyCompartment.of(EditorState.readOnly.of(readOnly)),
         EditorView.updateListener.of((update) => {
           if (update.docChanged) {
