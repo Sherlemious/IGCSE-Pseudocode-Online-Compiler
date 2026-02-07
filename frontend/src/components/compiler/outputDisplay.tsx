@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { Terminal, Trash2 } from 'lucide-react';
+import { Terminal, Trash2, ChevronRight } from 'lucide-react';
 import type { OutputEntry } from '../../interpreter/core/types';
 
 interface OutputDisplayProps {
@@ -9,6 +9,11 @@ interface OutputDisplayProps {
   onInputSubmit: (value: string) => void;
   onClear: () => void;
 }
+
+const WELCOME_ART = `  ___  ___  ___ _   _ ___   ___
+ | _ \\/ __|| __| | | |   \\ / _ \\
+ |  _/\\__ \\| _|| |_| | |) | (_) |
+ |_|  |___/|___|\\___/|___/ \\___/`;
 
 const OutputDisplay: React.FC<OutputDisplayProps> = ({
   entries,
@@ -44,29 +49,38 @@ const OutputDisplay: React.FC<OutputDisplayProps> = ({
   };
 
   const renderContent = () => {
+    // Welcome state — no run yet
     if (!isRunning && entries.length === 0) {
       return (
-        <div className="text-dark-text text-center h-full flex items-center justify-center text-sm">
-          Run your code to see the output here
+        <div className="h-full flex flex-col items-center justify-center gap-4 text-dark-text select-none p-4">
+          <pre className="text-primary/30 text-[10px] sm:text-xs leading-tight font-mono hidden sm:block">{WELCOME_ART}</pre>
+          <div className="text-center space-y-1">
+            <div className="text-sm text-dark-text/70">IGCSE Pseudocode Compiler</div>
+            <div className="text-xs text-dark-text/40">
+              Write code on the left, run with <kbd>Ctrl+Enter</kbd>
+            </div>
+          </div>
         </div>
       );
     }
 
     return (
-      <div className="p-4 font-mono text-sm">
+      <div className="p-4 font-mono" style={{ fontSize: 'var(--editor-font-size)' }}>
         {entries.map((entry, i) => {
           if (entry.kind === 'output') {
             return (
-              <div key={i} className="text-light-text whitespace-pre-wrap">
-                {entry.text}
+              <div key={i} className="flex gap-2 whitespace-pre-wrap">
+                <ChevronRight size={14} className="text-primary/40 shrink-0 mt-0.5" />
+                <span className="text-light-text">{entry.text}</span>
               </div>
             );
           }
 
           if (entry.kind === 'error') {
             return (
-              <div key={i} className="text-warning whitespace-pre-wrap">
-                {entry.text}
+              <div key={i} className="flex gap-2 whitespace-pre-wrap py-0.5">
+                <span className="text-error shrink-0 font-bold">!</span>
+                <span className="text-error">{entry.text}</span>
               </div>
             );
           }
@@ -74,9 +88,10 @@ const OutputDisplay: React.FC<OutputDisplayProps> = ({
           if (entry.kind === 'input') {
             if (entry.submitted) {
               return (
-                <div key={i} className="text-info whitespace-pre-wrap">
-                  <span className="text-dark-text">[{entry.variableName}]: </span>
-                  {entry.value}
+                <div key={i} className="flex gap-2 whitespace-pre-wrap">
+                  <span className="text-info/50 shrink-0">&larr;</span>
+                  <span className="text-dark-text/70">{entry.variableName}:</span>
+                  <span className="text-info">{entry.value}</span>
                 </div>
               );
             }
@@ -84,15 +99,17 @@ const OutputDisplay: React.FC<OutputDisplayProps> = ({
             // Active input (last unsubmitted)
             return (
               <form key={i} onSubmit={handleSubmit} className="flex items-center gap-2 my-1">
-                <span className="text-dark-text">[{entry.variableName}]:</span>
+                <span className="text-info terminal-cursor shrink-0">&gt;</span>
+                <span className="text-dark-text/70 shrink-0">{entry.variableName}:</span>
                 <input
                   ref={inputRef}
                   type="text"
                   value={inputValue}
                   onChange={(e) => setInputValue(e.target.value)}
-                  className="flex-1 bg-transparent border-b border-primary
-                    text-info outline-none font-mono text-sm py-1 px-1
+                  className="flex-1 bg-transparent border-b border-primary/50
+                    text-info outline-none font-mono py-0.5 px-0.5
                     focus:border-info"
+                  style={{ fontSize: 'inherit' }}
                   autoFocus
                 />
               </form>
@@ -102,8 +119,20 @@ const OutputDisplay: React.FC<OutputDisplayProps> = ({
           return null;
         })}
 
+        {/* Running indicator */}
         {isRunning && !waitingForInput && entries.length === 0 && (
-          <div className="animate-pulse text-primary">Running...</div>
+          <div className="flex items-center gap-2 text-primary">
+            <span className="inline-block w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+            <span>Executing...</span>
+          </div>
+        )}
+
+        {/* Process exit message */}
+        {!isRunning && entries.length > 0 && (
+          <div className="mt-3 pt-2 border-t border-border/50 text-xs text-dark-text/40 flex items-center gap-1.5">
+            <span className="inline-block w-1.5 h-1.5 rounded-full bg-dark-text/30" />
+            Process exited
+          </div>
         )}
       </div>
     );
@@ -115,15 +144,18 @@ const OutputDisplay: React.FC<OutputDisplayProps> = ({
       <div className="h-9 bg-surface border-b border-border flex items-center justify-between px-3 shrink-0">
         <div className="flex items-center gap-2">
           <Terminal className="h-3.5 w-3.5 text-dark-text" />
-          <span className="text-xs font-semibold tracking-wider text-dark-text uppercase">Output</span>
+          <span className="text-xs font-semibold tracking-wider text-dark-text uppercase">Terminal</span>
           {isRunning && (
-            <span className="inline-block w-2 h-2 rounded-full bg-warning animate-pulse" />
+            <div className="flex items-center gap-1.5">
+              <span className="inline-block w-2 h-2 rounded-full bg-success animate-pulse" />
+              <span className="text-[10px] text-success hidden sm:inline">running</span>
+            </div>
           )}
         </div>
         <button
           onClick={onClear}
           className="text-dark-text hover:text-light-text transition-colors p-1 rounded hover:bg-background"
-          title="Clear output"
+          title="Clear terminal"
         >
           <Trash2 className="h-3.5 w-3.5" />
         </button>

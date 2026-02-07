@@ -6,3 +6,75 @@ html,
 body {
     @apply bg-background text-light-text;
 }
+
+/* IDE selection & caret */
+::selection {
+    background: var(--color-primary);
+    color: var(--color-light-text);
+    opacity: 0.35;
+}
+
+textarea::selection {
+    background: var(--color-primary);
+    color: var(--color-light-text);
+    opacity: 0.3;
+}
+
+textarea {
+    caret-color: var(--color-primary);
+}
+
+/* Line number gutter */
+.line-numbers {
+    counter-reset: line;
+    user-select: none;
+    pointer-events: none;
+}
+
+.line-numbers span {
+    counter-increment: line;
+    display: block;
+    text-align: right;
+    color: var(--color-dark-text);
+    opacity: 0.4;
+    transition: opacity 0.15s;
+}
+
+.line-numbers span.active {
+    opacity: 1;
+    color: var(--color-primary);
+}
+
+/* Terminal blink cursor */
+@keyframes terminal-blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+}
+
+.terminal-cursor {
+    animation: terminal-blink 1s step-end infinite;
+}
+
+/* Kbd hint styling */
+kbd {
+    font-family: inherit;
+    font-size: 0.65rem;
+    padding: 0.1em 0.35em;
+    border-radius: 3px;
+    border: 1px solid var(--color-border);
+    background: var(--color-surface);
+    color: var(--color-dark-text);
+    line-height: 1;
+    vertical-align: middle;
+    white-space: nowrap;
+}
+
+/* Subtle focus ring for accessibility */
+*:focus-visible {
+    outline: 1px solid var(--color-primary);
+    outline-offset: -1px;
+}
+
+textarea:focus-visible {
+    outline: none;
+}
