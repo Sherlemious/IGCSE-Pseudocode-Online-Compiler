@@ -101,3 +101,10 @@ builtins.set('IS_NUM', (args) => {
 export function getBuiltin(name: string): BuiltinFn | undefined {
   return builtins.get(name.toUpperCase());
 }
+
+export function registerFileBuiltins(eof: (filename: string) => boolean): void {
+  builtins.set('EOF', (args) => {
+    if (args.length !== 1) throw new RuntimeError('EOF expects 1 argument (filename)');
+    return mkBoolean(eof(toString(args[0])));
+  });
+}

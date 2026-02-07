@@ -21,6 +21,10 @@ statement
     | functionDeclaration
     | callStatement
     | returnStatement
+    | openFileStatement
+    | readFileStatement
+    | writeFileStatement
+    | closeFileStatement
     ;
 
 // ─── DECLARE / CONSTANT ────────────────────────────────────────────────────
@@ -32,7 +36,7 @@ declareStatement
     ;
 
 constantStatement
-    : CONSTANT IDENTIFIER EQUALS expr
+    : CONSTANT IDENTIFIER (LARROW | EQUALS) expr
     ;
 
 dataType
@@ -94,7 +98,7 @@ caseClause
 // ─── FOR / NEXT ─────────────────────────────────────────────────────────────
 
 forStatement
-    : FOR IDENTIFIER EQUALS expr TO expr (STEP expr)? NEWLINE+ block NEWLINE+ NEXT IDENTIFIER
+    : FOR IDENTIFIER (LARROW | EQUALS) expr TO expr (STEP expr)? NEWLINE+ block NEWLINE+ NEXT IDENTIFIER
     ;
 
 // ─── WHILE / ENDWHILE ──────────────────────────────────────────────────────
@@ -135,6 +139,30 @@ returnStatement
     : RETURN expr
     ;
 
+// ─── FILE HANDLING ─────────────────────────────────────────────────────────
+
+openFileStatement
+    : OPENFILE expr FOR fileMode
+    ;
+
+readFileStatement
+    : READFILE expr COMMA IDENTIFIER
+    ;
+
+writeFileStatement
+    : WRITEFILE expr COMMA expr
+    ;
+
+closeFileStatement
+    : CLOSEFILE expr
+    ;
+
+fileMode
+    : READ_MODE
+    | WRITE_MODE
+    | APPEND_MODE
+    ;
+
 argList
     : expr (COMMA expr)*
     ;
@@ -165,6 +193,8 @@ atom
     | IDENTIFIER LPAREN argList? RPAREN                 # functionCallAtom
     | IDENTIFIER LBRACKET expr RBRACKET                 # arrayAccess1DAtom
     | IDENTIFIER LBRACKET expr COMMA expr RBRACKET      # arrayAccess2DAtom
+    | DIV LPAREN expr COMMA expr RPAREN                 # divFunctionAtom
+    | MOD LPAREN expr COMMA expr RPAREN                 # modFunctionAtom
     | IDENTIFIER                                        # identifierAtom
     | INTEGER_LITERAL                                   # integerAtom
     | REAL_LITERAL                                      # realAtom
@@ -215,6 +245,13 @@ TRUE        : T R U E ;
 FALSE       : F A L S E ;
 MOD         : M O D ;
 DIV         : D I V ;
+OPENFILE    : O P E N F I L E ;
+READFILE    : R E A D F I L E ;
+WRITEFILE   : W R I T E F I L E ;
+CLOSEFILE   : C L O S E F I L E ;
+READ_MODE   : R E A D ;
+WRITE_MODE  : W R I T E ;
+APPEND_MODE : A P P E N D ;
 
 // Data type keywords
 INTEGER_TYPE : I N T E G E R ;

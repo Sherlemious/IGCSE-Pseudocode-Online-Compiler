@@ -16,6 +16,10 @@ import {
   FunctionDeclarationContext,
   CallStatementContext,
   ReturnStatementContext,
+  OpenFileStatementContext,
+  ReadFileStatementContext,
+  WriteFileStatementContext,
+  CloseFileStatementContext,
   BlockContext,
   ExprContext,
   NotExprContext,
@@ -32,6 +36,8 @@ import {
   FunctionCallAtomContext,
   ArrayAccess1DAtomContext,
   ArrayAccess2DAtomContext,
+  DivFunctionAtomContext,
+  ModFunctionAtomContext,
   IdentifierAtomContext,
   IntegerAtomContext,
   RealAtomContext,
@@ -59,7 +65,8 @@ import {
   isNumeric,
   smartParse,
 } from './values';
-import { getBuiltin } from './builtins';
+import { getBuiltin, registerFileBuiltins } from './builtins';
+import { VirtualFileSystem } from './filesystem';
 import { InterpreterCallbacks, RuntimeError, ExecutionCancelledError } from './types';
 
 class ReturnSignal {
@@ -80,11 +87,13 @@ export class Interpreter {
   private functions = new Map<string, CallableDefinition>();
   private inputResolver: ((value: string) => void) | null = null;
   private iterationCount = 0;
+  private fileSystem = new VirtualFileSystem();
 
   constructor(callbacks: InterpreterCallbacks, signal: AbortSignal) {
     this.env = new Environment();
     this.callbacks = callbacks;
     this.signal = signal;
+    registerFileBuiltins((filename) => this.fileSystem.eof(filename));
   }
 
   private checkCancelled(): void {
@@ -162,6 +171,10 @@ export class Interpreter {
     if (ctx.functionDeclaration()) return this.visitFunctionDecl(ctx.functionDeclaration()!);
     if (ctx.callStatement()) return this.visitCall(ctx.callStatement()!);
     if (ctx.returnStatement()) return this.visitReturn(ctx.returnStatement()!);
+    if (ctx.openFileStatement()) return this.visitOpenFile(ctx.openFileStatement()!);
+    if (ctx.readFileStatement()) return this.visitReadFile(ctx.readFileStatement()!);
+    if (ctx.writeFileStatement()) return this.visitWriteFile(ctx.writeFileStatement()!);
+    if (ctx.closeFileStatement()) return this.visitCloseFile(ctx.closeFileStatement()!);
   }
 
   // ─── DECLARE ────────────────────────────────────────────────────
@@ -456,6 +469,37 @@ export class Interpreter {
     throw new ReturnSignal(value);
   }
 
+  // ─── FILE HANDLING ─────────────────────────────────────────────
+
+  private async visitOpenFile(ctx: OpenFileStatementContext): Promise<void> {
+    const filename = toString(await this.evalExpr(ctx.expr()));
+    const modeCtx = ctx.fileMode();
+    let mode: 'READ' | 'WRITE' | 'APPEND';
+    if (modeCtx.READ_MODE()) mode = 'READ';
+    else if (modeCtx.WRITE_MODE()) mode = 'WRITE';
+    else mode = 'APPEND';
+    this.fileSystem.openFile(filename, mode);
+  }
+
+  private async visitReadFile(ctx: ReadFileStatementContext): Promise<void> {
+    const filename = toString(await this.evalExpr(ctx.expr()));
+    const varName = ctx.IDENTIFIER().getText();
+    const line = this.fileSystem.readFile(filename);
+    this.env.set(varName, smartParse(line));
+  }
+
+  private async visitWriteFile(ctx: WriteFileStatementContext): Promise<void> {
+    const exprs = ctx.expr();
+    const filename = toString(await this.evalExpr(exprs[0]));
+    const data = toString(await this.evalExpr(exprs[1]));
+    this.fileSystem.writeFile(filename, data);
+  }
+
+  private async visitCloseFile(ctx: CloseFileStatementContext): Promise<void> {
+    const filename = toString(await this.evalExpr(ctx.expr()));
+    this.fileSystem.closeFile(filename);
+  }
+
   // ─── Expression evaluation ──────────────────────────────────────
 
   private async evalExpr(ctx: ExprContext): Promise<RuntimeValue> {
@@ -646,6 +690,20 @@ export class Interpreter {
       const j = toNumber(await this.evalExpr(ctx.expr(1)!));
       const arr = this.env.getArray(name);
       return arr.get([i, j]);
+    }
+
+    if (ctx instanceof DivFunctionAtomContext) {
+      const l = toNumber(await this.evalExpr(ctx.expr(0)!));
+      const r = toNumber(await this.evalExpr(ctx.expr(1)!));
+      if (r === 0) throw new RuntimeError('Division by zero', ctx.start?.line);
+      return mkInteger(Math.trunc(l / r));
+    }
+
+    if (ctx instanceof ModFunctionAtomContext) {
+      const l = toNumber(await this.evalExpr(ctx.expr(0)!));
+      const r = toNumber(await this.evalExpr(ctx.expr(1)!));
+      if (r === 0) throw new RuntimeError('Division by zero', ctx.start?.line);
+      return mkInteger(((l % r) + r) % r);
     }
 
     throw new RuntimeError('Unknown atom type');

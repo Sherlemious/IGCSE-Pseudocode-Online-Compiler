@@ -24,6 +24,11 @@ import { ParamListContext } from "./PseudocodeParser.js";
 import { ParamContext } from "./PseudocodeParser.js";
 import { CallStatementContext } from "./PseudocodeParser.js";
 import { ReturnStatementContext } from "./PseudocodeParser.js";
+import { OpenFileStatementContext } from "./PseudocodeParser.js";
+import { ReadFileStatementContext } from "./PseudocodeParser.js";
+import { WriteFileStatementContext } from "./PseudocodeParser.js";
+import { CloseFileStatementContext } from "./PseudocodeParser.js";
+import { FileModeContext } from "./PseudocodeParser.js";
 import { ArgListContext } from "./PseudocodeParser.js";
 import { BlockContext } from "./PseudocodeParser.js";
 import { NotExprContext } from "./PseudocodeParser.js";
@@ -40,6 +45,8 @@ import { ParenAtomContext } from "./PseudocodeParser.js";
 import { FunctionCallAtomContext } from "./PseudocodeParser.js";
 import { ArrayAccess1DAtomContext } from "./PseudocodeParser.js";
 import { ArrayAccess2DAtomContext } from "./PseudocodeParser.js";
+import { DivFunctionAtomContext } from "./PseudocodeParser.js";
+import { ModFunctionAtomContext } from "./PseudocodeParser.js";
 import { IdentifierAtomContext } from "./PseudocodeParser.js";
 import { IntegerAtomContext } from "./PseudocodeParser.js";
 import { RealAtomContext } from "./PseudocodeParser.js";
@@ -184,6 +191,36 @@ export class PseudocodeVisitor<Result> extends AbstractParseTreeVisitor<Result> 
      */
     visitReturnStatement?: (ctx: ReturnStatementContext) => Result;
     /**
+     * Visit a parse tree produced by `PseudocodeParser.openFileStatement`.
+     * @param ctx the parse tree
+     * @return the visitor result
+     */
+    visitOpenFileStatement?: (ctx: OpenFileStatementContext) => Result;
+    /**
+     * Visit a parse tree produced by `PseudocodeParser.readFileStatement`.
+     * @param ctx the parse tree
+     * @return the visitor result
+     */
+    visitReadFileStatement?: (ctx: ReadFileStatementContext) => Result;
+    /**
+     * Visit a parse tree produced by `PseudocodeParser.writeFileStatement`.
+     * @param ctx the parse tree
+     * @return the visitor result
+     */
+    visitWriteFileStatement?: (ctx: WriteFileStatementContext) => Result;
+    /**
+     * Visit a parse tree produced by `PseudocodeParser.closeFileStatement`.
+     * @param ctx the parse tree
+     * @return the visitor result
+     */
+    visitCloseFileStatement?: (ctx: CloseFileStatementContext) => Result;
+    /**
+     * Visit a parse tree produced by `PseudocodeParser.fileMode`.
+     * @param ctx the parse tree
+     * @return the visitor result
+     */
+    visitFileMode?: (ctx: FileModeContext) => Result;
+    /**
      * Visit a parse tree produced by `PseudocodeParser.argList`.
      * @param ctx the parse tree
      * @return the visitor result
@@ -293,6 +330,20 @@ export class PseudocodeVisitor<Result> extends AbstractParseTreeVisitor<Result> 
      * @return the visitor result
      */
     visitArrayAccess2DAtom?: (ctx: ArrayAccess2DAtomContext) => Result;
+    /**
+     * Visit a parse tree produced by the `divFunctionAtom`
+     * labeled alternative in `PseudocodeParser.atom`.
+     * @param ctx the parse tree
+     * @return the visitor result
+     */
+    visitDivFunctionAtom?: (ctx: DivFunctionAtomContext) => Result;
+    /**
+     * Visit a parse tree produced by the `modFunctionAtom`
+     * labeled alternative in `PseudocodeParser.atom`.
+     * @param ctx the parse tree
+     * @return the visitor result
+     */
+    visitModFunctionAtom?: (ctx: ModFunctionAtomContext) => Result;
     /**
      * Visit a parse tree produced by the `identifierAtom`
      * labeled alternative in `PseudocodeParser.atom`.
