@@ -21,7 +21,12 @@ const MAIN_TAB: EditorTab = { id: 'main', name: 'main.pseudo', content: '' };
 const Home: React.FC<HomeProps> = ({ onRunningChange, onCursorChange, onLineCountChange }) => {
   const [tabs, setTabs] = useState<EditorTab[]>([MAIN_TAB]);
   const [activeTabId, setActiveTabId] = useState('main');
-  const { entries, isRunning, waitingForInput, run, provideInput, stop, clearEntries } = useInterpreter();
+  const {
+    entries, isRunning, waitingForInput,
+    isStepping, debugLine, debugVariables,
+    run, debugRun, step, continueExecution,
+    provideInput, stop, clearEntries,
+  } = useInterpreter();
 
   const activeTab = tabs.find((t) => t.id === activeTabId) ?? tabs[0];
 
@@ -48,7 +53,6 @@ const Home: React.FC<HomeProps> = ({ onRunningChange, onCursorChange, onLineCoun
 
   const handleExampleSelect = useCallback(
     (exampleCode: string) => {
-      // Load examples into the main tab and switch to it
       setTabs((prev) => prev.map((t) => (t.id === 'main' ? { ...t, content: exampleCode } : t)));
       setActiveTabId('main');
     },
@@ -60,7 +64,6 @@ const Home: React.FC<HomeProps> = ({ onRunningChange, onCursorChange, onLineCoun
     setTabs((prev) => {
       const existing = prev.find((t) => t.id === tabId);
       if (existing) {
-        // Update content in case the file changed
         return prev.map((t) => (t.id === tabId ? { ...t, content } : t));
       }
       return [...prev, { id: tabId, name: fileName, content }];
@@ -70,10 +73,9 @@ const Home: React.FC<HomeProps> = ({ onRunningChange, onCursorChange, onLineCoun
 
   const handleCloseTab = useCallback(
     (tabId: string) => {
-      if (tabId === 'main') return; // can't close main
+      if (tabId === 'main') return;
       setTabs((prev) => {
         const newTabs = prev.filter((t) => t.id !== tabId);
-        // If closing the active tab, switch to previous tab or main
         if (tabId === activeTabId) {
           const closedIndex = prev.findIndex((t) => t.id === tabId);
           const newActive = newTabs[Math.min(closedIndex, newTabs.length - 1)] ?? newTabs[0];
@@ -94,6 +96,11 @@ const Home: React.FC<HomeProps> = ({ onRunningChange, onCursorChange, onLineCoun
     await run(activeTab.content);
   };
 
+  const handleDebugCode = async () => {
+    if (!activeTab.content.trim()) return;
+    await debugRun(activeTab.content);
+  };
+
   return (
     <div className="h-full flex flex-col bg-background text-light-text overflow-hidden">
       <div className="flex-1 min-h-0 flex flex-col lg:flex-row">
@@ -102,7 +109,12 @@ const Home: React.FC<HomeProps> = ({ onRunningChange, onCursorChange, onLineCoun
             code={activeTab.content}
             onCodeChange={handleCodeChange}
             onRunCode={handleRunCode}
+            onDebugCode={handleDebugCode}
             isRunning={isRunning}
+            isStepping={isStepping}
+            debugLine={debugLine}
+            onStep={step}
+            onContinue={continueExecution}
             onStop={stop}
             onSelectExample={handleExampleSelect}
             onCursorChange={onCursorChange}
@@ -120,6 +132,8 @@ const Home: React.FC<HomeProps> = ({ onRunningChange, onCursorChange, onLineCoun
             waitingForInput={waitingForInput}
             onInputSubmit={provideInput}
             onClear={clearEntries}
+            isStepping={isStepping}
+            debugVariables={debugVariables}
           />
         </div>
       </div>

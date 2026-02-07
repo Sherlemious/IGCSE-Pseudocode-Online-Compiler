@@ -1,16 +1,21 @@
 import { useState, useRef, useCallback } from 'react';
 import { Interpreter, parse, PseudocodeError } from './index';
-import type { OutputEntry } from './core/types';
+import type { OutputEntry, DebugVariable } from './core/types';
 
 export function useInterpreter() {
   const [entries, setEntries] = useState<OutputEntry[]>([]);
   const [isRunning, setIsRunning] = useState(false);
   const [waitingForInput, setWaitingForInput] = useState(false);
 
+  // Debug state
+  const [isStepping, setIsStepping] = useState(false);
+  const [debugLine, setDebugLine] = useState<number | null>(null);
+  const [debugVariables, setDebugVariables] = useState<DebugVariable[]>([]);
+
   const interpreterRef = useRef<Interpreter | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
-  const run = useCallback(async (sourceCode: string) => {
+  const startExecution = useCallback(async (sourceCode: string, stepMode: boolean) => {
     // Clean up any previous run
     if (abortRef.current) {
       abortRef.current.abort();
@@ -19,6 +24,9 @@ export function useInterpreter() {
     setEntries([]);
     setIsRunning(true);
     setWaitingForInput(false);
+    setIsStepping(stepMode);
+    setDebugLine(null);
+    setDebugVariables([]);
 
     const abortController = new AbortController();
     abortRef.current = abortController;
@@ -34,12 +42,14 @@ export function useInterpreter() {
         })),
       );
       setIsRunning(false);
+      setIsStepping(false);
       return;
     }
 
     if (!tree) {
       setEntries([{ kind: 'error', text: 'Failed to parse pseudocode' }]);
       setIsRunning(false);
+      setIsStepping(false);
       return;
     }
 
@@ -61,6 +71,8 @@ export function useInterpreter() {
         onComplete() {
           setIsRunning(false);
           setWaitingForInput(false);
+          setIsStepping(false);
+          setDebugLine(null);
         },
         onError(error: PseudocodeError) {
           setEntries((prev) => [
@@ -73,10 +85,15 @@ export function useInterpreter() {
             },
           ]);
         },
+        onBeforeStep(line: number, variables: DebugVariable[]) {
+          setDebugLine(line);
+          setDebugVariables(variables);
+        },
       },
       abortController.signal,
     );
 
+    interpreter.setStepMode(stepMode);
     interpreterRef.current = interpreter;
 
     try {
@@ -100,7 +117,28 @@ export function useInterpreter() {
       }
       setIsRunning(false);
       setWaitingForInput(false);
+      setIsStepping(false);
+      setDebugLine(null);
     }
+  }, []);
+
+  const run = useCallback(async (sourceCode: string) => {
+    await startExecution(sourceCode, false);
+  }, [startExecution]);
+
+  const debugRun = useCallback(async (sourceCode: string) => {
+    await startExecution(sourceCode, true);
+  }, [startExecution]);
+
+  const step = useCallback(() => {
+    interpreterRef.current?.step();
+  }, []);
+
+  const continueExecution = useCallback(() => {
+    setIsStepping(false);
+    setDebugLine(null);
+    setDebugVariables([]);
+    interpreterRef.current?.setStepMode(false);
   }, []);
 
   const provideInput = useCallback((value: string) => {
@@ -127,11 +165,30 @@ export function useInterpreter() {
     }
     setIsRunning(false);
     setWaitingForInput(false);
+    setIsStepping(false);
+    setDebugLine(null);
+    setDebugVariables([]);
   }, []);
 
   const clearEntries = useCallback(() => {
     setEntries([]);
   }, []);
 
-  return { entries, isRunning, waitingForInput, run, provideInput, stop, clearEntries };
+  return {
+    entries,
+    isRunning,
+    waitingForInput,
+    // Debug
+    isStepping,
+    debugLine,
+    debugVariables,
+    // Actions
+    run,
+    debugRun,
+    step,
+    continueExecution,
+    provideInput,
+    stop,
+    clearEntries,
+  };
 }

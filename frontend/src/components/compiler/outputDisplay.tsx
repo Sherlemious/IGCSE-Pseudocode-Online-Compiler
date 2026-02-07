@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { Terminal, Trash2, ChevronRight } from 'lucide-react';
-import type { OutputEntry } from '../../interpreter/core/types';
+import { Terminal, Trash2, ChevronRight, Bug, ChevronDown } from 'lucide-react';
+import type { OutputEntry, DebugVariable } from '../../interpreter/core/types';
 
 interface OutputDisplayProps {
   entries: OutputEntry[];
@@ -8,6 +8,8 @@ interface OutputDisplayProps {
   waitingForInput: boolean;
   onInputSubmit: (value: string) => void;
   onClear: () => void;
+  isStepping?: boolean;
+  debugVariables?: DebugVariable[];
 }
 
 const WELCOME_ART = `  ___  ___  ___ _   _ ___   ___
@@ -21,10 +23,13 @@ const OutputDisplay: React.FC<OutputDisplayProps> = ({
   waitingForInput,
   onInputSubmit,
   onClear,
+  isStepping = false,
+  debugVariables = [],
 }) => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const [inputValue, setInputValue] = useState('');
+  const [varsExpanded, setVarsExpanded] = useState(true);
 
   // Auto-scroll to bottom on new entries
   useEffect(() => {
@@ -46,6 +51,89 @@ const OutputDisplay: React.FC<OutputDisplayProps> = ({
       onInputSubmit(inputValue);
       setInputValue('');
     }
+  };
+
+  const formatValue = (v: DebugVariable) => {
+    if (v.type === 'STRING') return `"${v.value}"`;
+    if (v.type === 'CHAR') return `'${v.value}'`;
+    return v.value;
+  };
+
+  const typeColor = (type: string) => {
+    switch (type) {
+      case 'INTEGER':
+      case 'REAL':
+        return 'text-info';
+      case 'STRING':
+      case 'CHAR':
+        return 'text-success';
+      case 'BOOLEAN':
+        return 'text-warning';
+      case 'ARRAY':
+        return 'text-primary';
+      default:
+        return 'text-dark-text';
+    }
+  };
+
+  /* ── Variable watch panel ──────────────────────────────── */
+  const renderVariablePanel = () => {
+    if (!isStepping) return null;
+
+    return (
+      <div className="border-b border-border bg-surface/50 shrink-0">
+        <button
+          onClick={() => setVarsExpanded(!varsExpanded)}
+          className="w-full h-8 px-3 flex items-center gap-2 text-xs hover:bg-surface transition-colors"
+        >
+          <ChevronDown
+            size={12}
+            className={`text-dark-text transition-transform ${varsExpanded ? '' : '-rotate-90'}`}
+          />
+          <Bug size={12} className="text-warning" />
+          <span className="font-semibold tracking-wider text-dark-text uppercase">Variables</span>
+          <span className="text-dark-text/50">({debugVariables.length})</span>
+        </button>
+
+        {varsExpanded && (
+          <div
+            className="max-h-48 overflow-y-auto px-3 pb-2
+              scrollbar-thin scrollbar-thumb-primary hover:scrollbar-thumb-primary-hover
+              scrollbar-track-background scrollbar-thumb-rounded-full"
+          >
+            {debugVariables.length === 0 ? (
+              <div className="text-xs text-dark-text/50 py-1 italic">No variables declared yet</div>
+            ) : (
+              <table className="w-full text-xs font-mono">
+                <thead>
+                  <tr className="text-dark-text/50 border-b border-border/30">
+                    <th className="text-left py-1 pr-3 font-normal">Name</th>
+                    <th className="text-left py-1 pr-3 font-normal">Value</th>
+                    <th className="text-left py-1 font-normal">Type</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {debugVariables.map((v) => (
+                    <tr key={v.name} className="border-b border-border/10 hover:bg-surface/50">
+                      <td className="py-1 pr-3 text-light-text">
+                        {v.name}
+                        {v.constant && <span className="text-warning/50 ml-1 text-[9px]">const</span>}
+                      </td>
+                      <td className={`py-1 pr-3 ${typeColor(v.type)}`}>
+                        {formatValue(v)}
+                      </td>
+                      <td className="py-1 text-dark-text/50 text-[10px]">
+                        {v.type}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        )}
+      </div>
+    );
   };
 
   const renderContent = () => {
@@ -119,8 +207,16 @@ const OutputDisplay: React.FC<OutputDisplayProps> = ({
           return null;
         })}
 
+        {/* Stepping indicator */}
+        {isStepping && entries.length === 0 && (
+          <div className="flex items-center gap-2 text-warning">
+            <Bug size={14} />
+            <span>Debugging — use Step or Continue</span>
+          </div>
+        )}
+
         {/* Running indicator */}
-        {isRunning && !waitingForInput && entries.length === 0 && (
+        {isRunning && !isStepping && !waitingForInput && entries.length === 0 && (
           <div className="flex items-center gap-2 text-primary">
             <span className="inline-block w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
             <span>Executing...</span>
@@ -145,7 +241,13 @@ const OutputDisplay: React.FC<OutputDisplayProps> = ({
         <div className="flex items-center gap-2">
           <Terminal className="h-3.5 w-3.5 text-dark-text" />
           <span className="text-xs font-semibold tracking-wider text-dark-text uppercase">Terminal</span>
-          {isRunning && (
+          {isStepping && (
+            <div className="flex items-center gap-1.5">
+              <Bug size={12} className="text-warning" />
+              <span className="text-[10px] text-warning hidden sm:inline">debugging</span>
+            </div>
+          )}
+          {isRunning && !isStepping && (
             <div className="flex items-center gap-1.5">
               <span className="inline-block w-2 h-2 rounded-full bg-success animate-pulse" />
               <span className="text-[10px] text-success hidden sm:inline">running</span>
@@ -160,6 +262,9 @@ const OutputDisplay: React.FC<OutputDisplayProps> = ({
           <Trash2 className="h-3.5 w-3.5" />
         </button>
       </div>
+
+      {/* Variable watch panel (shown during debug) */}
+      {renderVariablePanel()}
 
       {/* Terminal output */}
       <div

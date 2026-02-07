@@ -1,5 +1,5 @@
 import React, { useRef, useCallback, useEffect, useState } from 'react';
-import { FileCode, Play, Square, Keyboard, X } from 'lucide-react';
+import { FileCode, Play, Square, Keyboard, X, Bug, SkipForward, FastForward } from 'lucide-react';
 import ExamplePicker from './examplePicker';
 import FileViewer from './fileViewer';
 import type { EditorTab } from '../../pages/home';
@@ -13,7 +13,12 @@ interface CodeInputProps {
   code: string;
   onCodeChange: (code: string) => void;
   onRunCode: () => void;
+  onDebugCode: () => void;
   isRunning: boolean;
+  isStepping: boolean;
+  debugLine: number | null;
+  onStep: () => void;
+  onContinue: () => void;
   onStop: () => void;
   onSelectExample: (code: string) => void;
   onCursorChange?: (pos: CursorPosition) => void;
@@ -28,7 +33,12 @@ const CodeInput: React.FC<CodeInputProps> = ({
   code,
   onCodeChange,
   onRunCode,
+  onDebugCode,
   isRunning,
+  isStepping,
+  debugLine,
+  onStep,
+  onContinue,
   onStop,
   onSelectExample,
   onCursorChange,
@@ -91,7 +101,6 @@ const CodeInput: React.FC<CodeInputProps> = ({
         const end = ta.selectionEnd;
         const newValue = code.substring(0, start) + '    ' + code.substring(end);
         onCodeChange(newValue);
-        // Restore cursor position after React re-render
         requestAnimationFrame(() => {
           ta.selectionStart = ta.selectionEnd = start + 4;
         });
@@ -120,13 +129,35 @@ const CodeInput: React.FC<CodeInputProps> = ({
     }
   }, [activeTabId]);
 
+  // Scroll debug line into view in the textarea
+  useEffect(() => {
+    if (debugLine === null || !textareaRef.current) return;
+    const ta = textareaRef.current;
+    const lineHeight = parseFloat(getComputedStyle(ta).lineHeight) || 20;
+    const targetScroll = (debugLine - 1) * lineHeight;
+    const viewTop = ta.scrollTop;
+    const viewBottom = viewTop + ta.clientHeight;
+    if (targetScroll < viewTop || targetScroll + lineHeight > viewBottom) {
+      ta.scrollTop = targetScroll - ta.clientHeight / 3;
+      // Sync gutter
+      if (gutterRef.current) {
+        gutterRef.current.scrollTop = ta.scrollTop;
+      }
+    }
+  }, [debugLine]);
+
   // Render line numbers
   const renderLineNumbers = () => {
     const lines = [];
     for (let i = 1; i <= Math.max(lineCount, 1); i++) {
+      const isDebugLine = debugLine === i;
+      const isActive = i === activeLine && !isStepping;
       lines.push(
-        <span key={i} className={i === activeLine ? 'active' : ''}>
-          {i}
+        <span
+          key={i}
+          className={`${isActive ? 'active' : ''} ${isDebugLine ? 'debug-line' : ''}`}
+        >
+          {isDebugLine ? '\u25B6' : i}
         </span>,
       );
     }
@@ -185,8 +216,31 @@ const CodeInput: React.FC<CodeInputProps> = ({
           </div>
         </div>
 
-        {/* Right: run/stop */}
-        <div className="flex items-center gap-1 shrink-0 px-1">
+        {/* Right: debug/run controls */}
+        <div className="flex items-center gap-0.5 shrink-0 px-1">
+          {/* Debug step controls — shown when stepping */}
+          {isStepping && (
+            <>
+              <button
+                onClick={onStep}
+                className="flex items-center gap-1 px-2 py-1 text-xs text-info hover:bg-info/10 rounded transition-colors"
+                title="Step Over (next statement)"
+              >
+                <SkipForward className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Step</span>
+              </button>
+              <button
+                onClick={onContinue}
+                className="flex items-center gap-1 px-2 py-1 text-xs text-success hover:bg-success/10 rounded transition-colors"
+                title="Continue execution"
+              >
+                <FastForward className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Continue</span>
+              </button>
+            </>
+          )}
+
+          {/* Stop button — shown when running */}
           {isRunning && (
             <button
               onClick={onStop}
@@ -197,17 +251,29 @@ const CodeInput: React.FC<CodeInputProps> = ({
               <span className="hidden sm:inline">Stop</span>
             </button>
           )}
-          <button
-            onClick={onRunCode}
-            disabled={isRunning}
-            className={`flex items-center gap-1 px-2 py-1 text-xs rounded transition-colors
-              ${isRunning ? 'text-dark-text cursor-not-allowed' : 'text-success hover:bg-success/10'}`}
-            title="Run Code (Ctrl+Enter)"
-          >
-            <Play className="h-3.5 w-3.5" />
-            <span className="hidden sm:inline">{isRunning ? 'Running...' : 'Run'}</span>
-            <kbd className="hidden lg:inline ml-1">Ctrl+Enter</kbd>
-          </button>
+
+          {/* Run + Debug buttons — shown when not running */}
+          {!isRunning && (
+            <>
+              <button
+                onClick={onDebugCode}
+                className="flex items-center gap-1 px-2 py-1 text-xs text-warning hover:bg-warning/10 rounded transition-colors"
+                title="Debug (step through code)"
+              >
+                <Bug className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Debug</span>
+              </button>
+              <button
+                onClick={onRunCode}
+                className="flex items-center gap-1 px-2 py-1 text-xs text-success hover:bg-success/10 rounded transition-colors"
+                title="Run Code (Ctrl+Enter)"
+              >
+                <Play className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Run</span>
+                <kbd className="hidden lg:inline ml-1">Ctrl+Enter</kbd>
+              </button>
+            </>
+          )}
         </div>
       </div>
 
@@ -233,14 +299,16 @@ const CodeInput: React.FC<CodeInputProps> = ({
           onKeyUp={updateCursor}
           onClick={updateCursor}
           onFocus={updateCursor}
+          readOnly={isStepping}
           style={{ fontSize: 'var(--editor-font-size)', lineHeight: '1.5' }}
-          className="flex-1 min-w-0 p-4 pl-3 font-mono
+          className={`flex-1 min-w-0 p-4 pl-3 font-mono
             bg-background
             text-light-text
             border-0 resize-none
             focus:ring-0 focus:outline-none
             scrollbar-thin scrollbar-thumb-primary hover:scrollbar-thumb-primary-hover
-            scrollbar-track-background scrollbar-thumb-rounded-full"
+            scrollbar-track-background scrollbar-thumb-rounded-full
+            ${isStepping ? 'cursor-default' : ''}`}
           placeholder="// Start typing pseudocode here..."
           spellCheck={false}
           autoComplete="off"
@@ -249,8 +317,20 @@ const CodeInput: React.FC<CodeInputProps> = ({
           data-gramm="false"
         />
 
+        {/* Debug line highlight overlay */}
+        {debugLine !== null && textareaRef.current && (
+          <div
+            className="absolute left-0 right-0 pointer-events-none bg-warning/10 border-l-2 border-warning"
+            style={{
+              top: `calc(1rem + ${(debugLine - 1) * 1.5}em - ${textareaRef.current.scrollTop}px)`,
+              height: '1.5em',
+              fontSize: 'var(--editor-font-size)',
+            }}
+          />
+        )}
+
         {/* Empty state hint */}
-        {code.length === 0 && (
+        {code.length === 0 && !isRunning && (
           <div className="absolute bottom-4 left-0 right-0 flex justify-center pointer-events-none">
             <div className="flex items-center gap-1.5 text-xs text-dark-text/40">
               <Keyboard size={12} />

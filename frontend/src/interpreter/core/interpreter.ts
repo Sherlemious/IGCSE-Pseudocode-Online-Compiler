@@ -67,7 +67,7 @@ import {
 } from './values';
 import { getBuiltin, registerFileBuiltins } from './builtins';
 import { VirtualFileSystem } from './filesystem';
-import { InterpreterCallbacks, RuntimeError, ExecutionCancelledError } from './types';
+import { InterpreterCallbacks, RuntimeError, ExecutionCancelledError, DebugVariable } from './types';
 
 class ReturnSignal {
   constructor(public value: RuntimeValue) {}
@@ -88,6 +88,8 @@ export class Interpreter {
   private inputResolver: ((value: string) => void) | null = null;
   private iterationCount = 0;
   private fileSystem = new VirtualFileSystem();
+  private _stepMode = false;
+  private stepResolver: (() => void) | null = null;
 
   constructor(callbacks: InterpreterCallbacks, signal: AbortSignal) {
     this.env = new Environment();
@@ -114,6 +116,53 @@ export class Interpreter {
       this.inputResolver = null;
       resolve(value);
     }
+  }
+
+  setStepMode(enabled: boolean): void {
+    this._stepMode = enabled;
+    // If disabling step mode while paused, resume execution
+    if (!enabled && this.stepResolver) {
+      const resolve = this.stepResolver;
+      this.stepResolver = null;
+      resolve();
+    }
+  }
+
+  step(): void {
+    if (this.stepResolver) {
+      const resolve = this.stepResolver;
+      this.stepResolver = null;
+      resolve();
+    }
+  }
+
+  private snapshotVariables(): DebugVariable[] {
+    const vars: DebugVariable[] = [];
+    for (const [name, entry] of this.env.getAllVariables()) {
+      if (entry.value instanceof PseudocodeArray) {
+        vars.push({ name, value: 'Array', type: 'ARRAY', constant: entry.constant });
+      } else {
+        vars.push({
+          name,
+          value: toString(entry.value),
+          type: entry.value.type,
+          constant: entry.constant,
+        });
+      }
+    }
+    vars.sort((a, b) => a.name.localeCompare(b.name));
+    return vars;
+  }
+
+  private async beforeStatement(line: number): Promise<void> {
+    if (!this._stepMode) return;
+    this.checkCancelled();
+    const variables = this.snapshotVariables();
+    this.callbacks.onBeforeStep?.(line, variables);
+    await new Promise<void>((resolve) => {
+      this.stepResolver = resolve;
+    });
+    this.checkCancelled();
   }
 
   private async requestInput(variableName: string): Promise<string> {
@@ -157,6 +206,10 @@ export class Interpreter {
 
   private async visitStatement(ctx: StatementContext): Promise<void> {
     this.checkCancelled();
+    const line = ctx.start?.line;
+    if (line !== undefined) {
+      await this.beforeStatement(line);
+    }
     if (ctx.declareStatement()) return this.visitDeclare(ctx.declareStatement()!);
     if (ctx.constantStatement()) return this.visitConstant(ctx.constantStatement()!);
     if (ctx.assignmentStatement()) return this.visitAssignment(ctx.assignmentStatement()!);

@@ -3,12 +3,21 @@ export type OutputEntry =
   | { kind: 'input'; variableName: string; value: string; submitted: boolean }
   | { kind: 'error'; text: string };
 
+export interface DebugVariable {
+  name: string;
+  value: string;
+  type: string;
+  constant: boolean;
+}
+
 export interface InterpreterCallbacks {
   onOutput(text: string): void;
   onInputRequest(variableName: string): void;
   onInputComplete(): void;
   onComplete(): void;
   onError(error: PseudocodeError): void;
+  /** Called before each statement in step mode. */
+  onBeforeStep?(line: number, variables: DebugVariable[]): void;
 }
 
 export class PseudocodeError extends Error {

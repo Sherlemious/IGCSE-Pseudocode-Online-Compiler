@@ -62,4 +62,18 @@ export class Environment {
     if (val instanceof PseudocodeArray) return val;
     throw new RuntimeError(`'${name}' is not an array`);
   }
+
+  /** Collect all variables from current scope chain (child overrides parent). */
+  getAllVariables(): Map<string, { value: RuntimeValue | PseudocodeArray; constant: boolean }> {
+    const result = new Map<string, { value: RuntimeValue | PseudocodeArray; constant: boolean }>();
+    if (this.parent) {
+      for (const [k, v] of this.parent.getAllVariables()) {
+        result.set(k, v);
+      }
+    }
+    for (const [k, v] of this.variables) {
+      result.set(k, { value: v.value, constant: v.constant });
+    }
+    return result;
+  }
 }

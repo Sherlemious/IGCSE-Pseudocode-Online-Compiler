@@ -15,10 +15,10 @@ const Footer: React.FC<FooterProps> = ({ isRunning = false, cursor, lineCount })
         <div className="flex items-center gap-1.5">
           <span
             className={`inline-block w-2 h-2 rounded-full transition-colors ${
-              isRunning ? 'bg-success animate-pulse' : 'bg-success/70'
+              isRunning ? 'bg-header-text animate-pulse' : 'bg-header-text/60'
             }`}
           />
-          <span className={isRunning ? 'text-success font-semibold' : 'text-header-text/80'}>
+          <span className={isRunning ? 'text-header-text font-semibold' : 'text-header-text/80'}>
             {isRunning ? 'Running' : 'Ready'}
           </span>
         </div>
