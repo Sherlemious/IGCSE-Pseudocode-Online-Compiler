@@ -1,5 +1,5 @@
 import React, { useRef, useCallback, useEffect, useState } from 'react';
-import { FileCode, Play, Square, Keyboard, X, Bug, SkipForward, FastForward } from 'lucide-react';
+import { FileCode, Play, Square, Keyboard, X, Bug, SkipForward, FastForward, Download, Share2, Check } from 'lucide-react';
 import ExamplePicker from './examplePicker';
 import FileViewer from './fileViewer';
 import type { EditorTab } from '../../pages/home';
@@ -17,6 +17,7 @@ interface CodeInputProps {
   isRunning: boolean;
   isStepping: boolean;
   debugLine: number | null;
+  errorLine?: number | null;
   onStep: () => void;
   onContinue: () => void;
   onStop: () => void;
@@ -37,6 +38,7 @@ const CodeInput: React.FC<CodeInputProps> = ({
   isRunning,
   isStepping,
   debugLine,
+  errorLine,
   onStep,
   onContinue,
   onStop,
@@ -53,6 +55,7 @@ const CodeInput: React.FC<CodeInputProps> = ({
   const tabsContainerRef = useRef<HTMLDivElement>(null);
   const [lineCount, setLineCount] = useState(1);
   const [activeLine, setActiveLine] = useState(1);
+  const [shareStatus, setShareStatus] = useState<'idle' | 'copied'>('idle');
 
   // Sync line count
   useEffect(() => {
@@ -146,20 +149,43 @@ const CodeInput: React.FC<CodeInputProps> = ({
     }
   }, [debugLine]);
 
+  const handleDownload = useCallback(() => {
+    const blob = new Blob([code], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    const activeT = tabs.find((t) => t.id === activeTabId);
+    a.download = activeT?.name ?? 'code.pseudo';
+    a.click();
+    URL.revokeObjectURL(url);
+  }, [code, tabs, activeTabId]);
+
+  const handleShare = useCallback(() => {
+    const encoded = btoa(encodeURIComponent(code));
+    const url = `${window.location.origin}${window.location.pathname}?code=${encoded}`;
+    navigator.clipboard.writeText(url).then(() => {
+      setShareStatus('copied');
+      setTimeout(() => setShareStatus('idle'), 2000);
+    });
+  }, [code]);
+
   // Render line numbers
   const renderLineNumbers = () => {
     const lines = [];
     for (let i = 1; i <= Math.max(lineCount, 1); i++) {
       const isDebugLine = debugLine === i;
+      const isErrorLine = errorLine === i;
       const isActive = i === activeLine && !isStepping;
-      lines.push(
-        <span
-          key={i}
-          className={`${isActive ? 'active' : ''} ${isDebugLine ? 'debug-line' : ''}`}
-        >
-          {isDebugLine ? '\u25B6' : i}
-        </span>,
-      );
+      let className = '';
+      if (isDebugLine) className = 'debug-line';
+      else if (isErrorLine) className = 'error-line';
+      else if (isActive) className = 'active';
+
+      let content: React.ReactNode = i;
+      if (isDebugLine) content = '\u25B6';
+      else if (isErrorLine) content = '\u25CF';
+
+      lines.push(<span key={i} className={className}>{content}</span>);
     }
     return lines;
   };
@@ -213,6 +239,22 @@ const CodeInput: React.FC<CodeInputProps> = ({
           <div className="flex items-center gap-0.5 ml-1 px-1 shrink-0">
             <ExamplePicker onSelectExample={onSelectExample} />
             <FileViewer onOpenFile={onOpenFile} />
+            <button
+              onClick={handleDownload}
+              className="flex items-center justify-center w-7 h-7 text-dark-text hover:text-light-text
+                hover:bg-background rounded transition-colors"
+              title="Download code"
+            >
+              <Download size={14} />
+            </button>
+            <button
+              onClick={handleShare}
+              className="flex items-center justify-center w-7 h-7 text-dark-text hover:text-light-text
+                hover:bg-background rounded transition-colors"
+              title="Copy share link"
+            >
+              {shareStatus === 'copied' ? <Check size={14} className="text-success" /> : <Share2 size={14} />}
+            </button>
           </div>
         </div>
 
@@ -323,6 +365,18 @@ const CodeInput: React.FC<CodeInputProps> = ({
             className="absolute left-0 right-0 pointer-events-none bg-warning/10 border-l-2 border-warning"
             style={{
               top: `calc(1rem + ${(debugLine - 1) * 1.5}em - ${textareaRef.current.scrollTop}px)`,
+              height: '1.5em',
+              fontSize: 'var(--editor-font-size)',
+            }}
+          />
+        )}
+
+        {/* Error line highlight overlay */}
+        {errorLine != null && !debugLine && textareaRef.current && (
+          <div
+            className="absolute left-0 right-0 pointer-events-none bg-error/10 border-l-2 border-error"
+            style={{
+              top: `calc(1rem + ${(errorLine - 1) * 1.5}em - ${textareaRef.current.scrollTop}px)`,
               height: '1.5em',
               fontSize: 'var(--editor-font-size)',
             }}

@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { Terminal, Trash2, ChevronRight, Bug, ChevronDown } from 'lucide-react';
+import { Terminal, Trash2, ChevronRight, Bug, ChevronDown, Copy, Check } from 'lucide-react';
 import type { OutputEntry, DebugVariable } from '../../interpreter/core/types';
 
 interface OutputDisplayProps {
@@ -30,6 +30,7 @@ const OutputDisplay: React.FC<OutputDisplayProps> = ({
   const inputRef = useRef<HTMLInputElement>(null);
   const [inputValue, setInputValue] = useState('');
   const [varsExpanded, setVarsExpanded] = useState(true);
+  const [copied, setCopied] = useState(false);
 
   // Auto-scroll to bottom on new entries
   useEffect(() => {
@@ -51,6 +52,22 @@ const OutputDisplay: React.FC<OutputDisplayProps> = ({
       onInputSubmit(inputValue);
       setInputValue('');
     }
+  };
+
+  const handleCopyOutput = () => {
+    const text = entries
+      .map((e) => {
+        if (e.kind === 'output') return e.text;
+        if (e.kind === 'error') return `[ERROR] ${e.text}`;
+        if (e.kind === 'input' && e.submitted) return `[INPUT] ${e.variableName}: ${e.value}`;
+        return '';
+      })
+      .filter(Boolean)
+      .join('\n');
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    });
   };
 
   const formatValue = (v: DebugVariable) => {
@@ -254,13 +271,24 @@ const OutputDisplay: React.FC<OutputDisplayProps> = ({
             </div>
           )}
         </div>
-        <button
-          onClick={onClear}
-          className="text-dark-text hover:text-light-text transition-colors p-1 rounded hover:bg-background"
-          title="Clear terminal"
-        >
-          <Trash2 className="h-3.5 w-3.5" />
-        </button>
+        <div className="flex items-center gap-0.5">
+          {entries.length > 0 && (
+            <button
+              onClick={handleCopyOutput}
+              className="text-dark-text hover:text-light-text transition-colors p-1 rounded hover:bg-background"
+              title="Copy output"
+            >
+              {copied ? <Check className="h-3.5 w-3.5 text-success" /> : <Copy className="h-3.5 w-3.5" />}
+            </button>
+          )}
+          <button
+            onClick={onClear}
+            className="text-dark-text hover:text-light-text transition-colors p-1 rounded hover:bg-background"
+            title="Clear terminal"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </button>
+        </div>
       </div>
 
       {/* Variable watch panel (shown during debug) */}

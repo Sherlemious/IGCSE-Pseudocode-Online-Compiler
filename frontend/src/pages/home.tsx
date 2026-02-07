@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import CodeInput from '../components/compiler/codeInput';
 import type { CursorPosition } from '../components/compiler/codeInput';
 import OutputDisplay from '../components/compiler/outputDisplay';
@@ -16,33 +16,113 @@ interface HomeProps {
   onLineCountChange?: (count: number) => void;
 }
 
-const MAIN_TAB: EditorTab = { id: 'main', name: 'main.pseudo', content: '' };
+const AUTOSAVE_KEY = 'pseudocode_autosave';
+const AUTOSAVE_DELAY = 500; // ms
+
+function loadInitialCode(): string {
+  // Check URL for shared code first
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const shared = params.get('code');
+    if (shared) {
+      // Clean URL without reloading
+      window.history.replaceState({}, '', window.location.pathname);
+      return decodeURIComponent(atob(shared));
+    }
+  } catch { /* invalid shared code — ignore */ }
+
+  // Fall back to auto-saved code
+  try {
+    return localStorage.getItem(AUTOSAVE_KEY) ?? '';
+  } catch {
+    return '';
+  }
+}
 
 const Home: React.FC<HomeProps> = ({ onRunningChange, onCursorChange, onLineCountChange }) => {
-  const [tabs, setTabs] = useState<EditorTab[]>([MAIN_TAB]);
+  const savedCode = useRef(loadInitialCode());
+  const [tabs, setTabs] = useState<EditorTab[]>([
+    { id: 'main', name: 'main.pseudo', content: savedCode.current },
+  ]);
   const [activeTabId, setActiveTabId] = useState('main');
   const {
     entries, isRunning, waitingForInput,
     isStepping, debugLine, debugVariables,
+    errorLine,
     run, debugRun, step, continueExecution,
     provideInput, stop, clearEntries,
   } = useInterpreter();
 
   const activeTab = tabs.find((t) => t.id === activeTabId) ?? tabs[0];
 
-  // Propagate running state to parent (for status bar)
-  const prevRunning = React.useRef(false);
-  React.useEffect(() => {
+  // ── Auto-save main tab with debounce ─────────────────────
+  const saveTimer = useRef<ReturnType<typeof setTimeout>>();
+  useEffect(() => {
+    const mainTab = tabs.find((t) => t.id === 'main');
+    if (!mainTab) return;
+    clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(() => {
+      try {
+        localStorage.setItem(AUTOSAVE_KEY, mainTab.content);
+      } catch { /* quota exceeded — ignore */ }
+    }, AUTOSAVE_DELAY);
+    return () => clearTimeout(saveTimer.current);
+  }, [tabs]);
+
+  // ── Propagate running state to parent (for status bar) ───
+  const prevRunning = useRef(false);
+  useEffect(() => {
     if (prevRunning.current !== isRunning) {
       prevRunning.current = isRunning;
       onRunningChange?.(isRunning);
     }
   }, [isRunning, onRunningChange]);
 
-  // Update line count when active tab changes
-  React.useEffect(() => {
+  // ── Update line count when active tab changes ────────────
+  useEffect(() => {
     onLineCountChange?.(activeTab.content.split('\n').length);
   }, [activeTab.content, onLineCountChange]);
+
+  // ── Resizable split pane ─────────────────────────────────
+  const [splitPercent, setSplitPercent] = useState(50);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const dragging = useRef(false);
+
+  const handleDragStart = useCallback((e: React.MouseEvent | React.TouchEvent) => {
+    e.preventDefault();
+    dragging.current = true;
+
+    const onMove = (ev: MouseEvent | TouchEvent) => {
+      if (!dragging.current || !containerRef.current) return;
+      const rect = containerRef.current.getBoundingClientRect();
+      const isLg = window.innerWidth >= 1024; // lg breakpoint
+      const clientPos = 'touches' in ev ? ev.touches[0] : ev;
+      let pct: number;
+      if (isLg) {
+        pct = ((clientPos.clientX - rect.left) / rect.width) * 100;
+      } else {
+        pct = ((clientPos.clientY - rect.top) / rect.height) * 100;
+      }
+      setSplitPercent(Math.max(20, Math.min(80, pct)));
+    };
+
+    const onEnd = () => {
+      dragging.current = false;
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onEnd);
+      document.removeEventListener('touchmove', onMove);
+      document.removeEventListener('touchend', onEnd);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+
+    document.body.style.cursor = window.innerWidth >= 1024 ? 'col-resize' : 'row-resize';
+    document.body.style.userSelect = 'none';
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onEnd);
+    document.addEventListener('touchmove', onMove);
+    document.addEventListener('touchend', onEnd);
+  }, []);
 
   const handleCodeChange = useCallback(
     (newCode: string) => {
@@ -103,8 +183,15 @@ const Home: React.FC<HomeProps> = ({ onRunningChange, onCursorChange, onLineCoun
 
   return (
     <div className="h-full flex flex-col bg-background text-light-text overflow-hidden">
-      <div className="flex-1 min-h-0 flex flex-col lg:flex-row">
-        <div className="flex-1 min-h-0 flex flex-col lg:border-r lg:border-border">
+      <div
+        ref={containerRef}
+        className="flex-1 min-h-0 flex flex-col lg:flex-row"
+      >
+        {/* Editor pane */}
+        <div
+          className="min-h-0 flex flex-col overflow-hidden"
+          style={{ flex: `0 0 ${splitPercent}%` }}
+        >
           <CodeInput
             code={activeTab.content}
             onCodeChange={handleCodeChange}
@@ -113,6 +200,7 @@ const Home: React.FC<HomeProps> = ({ onRunningChange, onCursorChange, onLineCoun
             isRunning={isRunning}
             isStepping={isStepping}
             debugLine={debugLine}
+            errorLine={errorLine}
             onStep={step}
             onContinue={continueExecution}
             onStop={stop}
@@ -125,7 +213,18 @@ const Home: React.FC<HomeProps> = ({ onRunningChange, onCursorChange, onLineCoun
             onOpenFile={handleOpenFile}
           />
         </div>
-        <div className="flex-1 min-h-0 flex flex-col border-t lg:border-t-0 border-border">
+
+        {/* Drag handle */}
+        <div
+          className="shrink-0 bg-border hover:bg-primary transition-colors
+            lg:w-1 lg:cursor-col-resize lg:h-auto
+            w-auto h-1 cursor-row-resize"
+          onMouseDown={handleDragStart}
+          onTouchStart={handleDragStart}
+        />
+
+        {/* Terminal pane */}
+        <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
           <OutputDisplay
             entries={entries}
             isRunning={isRunning}

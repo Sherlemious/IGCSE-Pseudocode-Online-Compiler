@@ -52,6 +52,13 @@ textarea {
     line-height: 2.15;
 }
 
+.line-numbers span.error-line {
+    opacity: 1;
+    color: var(--color-error);
+    font-size: 0.7em;
+    line-height: 2.15;
+}
+
 /* Terminal blink cursor */
 @keyframes terminal-blink {
     0%, 100% { opacity: 1; }

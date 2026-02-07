@@ -12,6 +12,9 @@ export function useInterpreter() {
   const [debugLine, setDebugLine] = useState<number | null>(null);
   const [debugVariables, setDebugVariables] = useState<DebugVariable[]>([]);
 
+  // Error line marker
+  const [errorLine, setErrorLine] = useState<number | null>(null);
+
   const interpreterRef = useRef<Interpreter | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
@@ -27,6 +30,7 @@ export function useInterpreter() {
     setIsStepping(stepMode);
     setDebugLine(null);
     setDebugVariables([]);
+    setErrorLine(null);
 
     const abortController = new AbortController();
     abortRef.current = abortController;
@@ -41,6 +45,9 @@ export function useInterpreter() {
           text: `Line ${e.line ?? '?'}:${e.column ?? '?'} — ${e.message}`,
         })),
       );
+      // Mark first error line
+      const firstLine = errors.find((e) => e.line != null)?.line;
+      if (firstLine != null) setErrorLine(firstLine);
       setIsRunning(false);
       setIsStepping(false);
       return;
@@ -75,6 +82,7 @@ export function useInterpreter() {
           setDebugLine(null);
         },
         onError(error: PseudocodeError) {
+          if (error.line != null) setErrorLine(error.line);
           setEntries((prev) => [
             ...prev,
             {
@@ -100,6 +108,7 @@ export function useInterpreter() {
       await interpreter.execute(tree);
     } catch (e) {
       if (e instanceof PseudocodeError) {
+        if (e.line != null) setErrorLine(e.line);
         setEntries((prev) => [
           ...prev,
           {
@@ -182,6 +191,7 @@ export function useInterpreter() {
     isStepping,
     debugLine,
     debugVariables,
+    errorLine,
     // Actions
     run,
     debugRun,
