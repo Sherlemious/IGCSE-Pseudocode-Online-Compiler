@@ -301,7 +301,9 @@ export class Interpreter {
 
     if (ctx.LBRACKET()) {
       // Array element assignment
-      const arr = this.env.getArray(name);
+      // Auto-create array with 1-indexed bounds if it doesn't exist
+      const dimensions = exprs.length === 3 ? 2 : 1;
+      const arr = this.env.getOrCreateArray(name, dimensions as 1 | 2);
       if (exprs.length === 3) {
         // 2D: arr[i, j] = expr
         const i = toNumber(await this.evalExpr(exprs[0]));
@@ -331,7 +333,8 @@ export class Interpreter {
 
     if (ctx.LBRACKET()) {
       const idx = toNumber(await this.evalExpr(ctx.expr()!));
-      const arr = this.env.getArray(name);
+      // Auto-create array with 1-indexed bounds if it doesn't exist
+      const arr = this.env.getOrCreateArray(name, 1);
       arr.set([idx], value);
     } else {
       this.env.set(name, value);
@@ -768,7 +771,8 @@ export class Interpreter {
     if (ctx instanceof ArrayAccess1DAtomContext) {
       const name = ctx.IDENTIFIER().getText();
       const idx = toNumber(await this.evalExpr(ctx.expr()));
-      const arr = this.env.getArray(name);
+      // Auto-create array with 1-indexed bounds if it doesn't exist
+      const arr = this.env.getOrCreateArray(name, 1);
       return arr.get([idx]);
     }
 
@@ -776,7 +780,8 @@ export class Interpreter {
       const name = ctx.IDENTIFIER().getText();
       const i = toNumber(await this.evalExpr(ctx.expr(0)!));
       const j = toNumber(await this.evalExpr(ctx.expr(1)!));
-      const arr = this.env.getArray(name);
+      // Auto-create array with 1-indexed bounds if it doesn't exist
+      const arr = this.env.getOrCreateArray(name, 2);
       return arr.get([i, j]);
     }
 

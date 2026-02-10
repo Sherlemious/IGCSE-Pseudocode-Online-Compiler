@@ -63,6 +63,30 @@ export class Environment {
     throw new RuntimeError(`'${name}' is not an array`);
   }
 
+  /**
+   * Get an array, or auto-create it with 1-indexed bounds if it doesn't exist.
+   * @param name The array variable name
+   * @param dimensions The number of dimensions (1 or 2)
+   * @param defaultType The default element type (defaults to 'INTEGER')
+   */
+  getOrCreateArray(name: string, dimensions: 1 | 2, defaultType: string = 'INTEGER'): PseudocodeArray {
+    // Check if variable exists
+    if (this.has(name)) {
+      const val = this.get(name);
+      if (val instanceof PseudocodeArray) return val;
+      throw new RuntimeError(`'${name}' is not an array`);
+    }
+
+    // Auto-create array with 1-indexed bounds [1:10000]
+    const bounds = dimensions === 1
+      ? [{ lower: 1, upper: 10000 }]
+      : [{ lower: 1, upper: 10000 }, { lower: 1, upper: 10000 }];
+    
+    const arr = new PseudocodeArray(bounds, defaultType);
+    this.declare(name, arr);
+    return arr;
+  }
+
   /** Collect all variables from current scope chain (child overrides parent). */
   getAllVariables(): Map<string, { value: RuntimeValue | PseudocodeArray; constant: boolean }> {
     const result = new Map<string, { value: RuntimeValue | PseudocodeArray; constant: boolean }>();
