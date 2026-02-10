@@ -1,0 +1,12 @@
+# Robots.txt for IGCSE Pseudocode Compiler
+
+User-agent: *
+Allow: /
+Disallow: /dist/
+Disallow: /node_modules/
+
+# Sitemaps
+Sitemap: https://pseudocode-compiler.sherlemious.com/sitemap.xml
+
+# Crawl rate
+Crawl-delay: 10

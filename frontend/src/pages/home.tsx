@@ -3,6 +3,7 @@ import CodeInput from '../components/compiler/codeInput';
 import type { CursorPosition } from '../components/compiler/codeInput';
 import OutputDisplay from '../components/compiler/outputDisplay';
 import { useInterpreter } from '../interpreter/useInterpreter';
+import { SEO } from '../components/layout/SEO';
 
 export interface EditorTab {
   id: string;
@@ -29,7 +30,9 @@ function loadInitialCode(): string {
       window.history.replaceState({}, '', window.location.pathname);
       return decodeURIComponent(atob(shared));
     }
-  } catch { /* invalid shared code — ignore */ }
+  } catch {
+    /* invalid shared code — ignore */
+  }
 
   // Fall back to auto-saved code
   try {
@@ -41,16 +44,23 @@ function loadInitialCode(): string {
 
 const Home: React.FC<HomeProps> = ({ onRunningChange, onCursorChange, onLineCountChange }) => {
   const savedCode = useRef(loadInitialCode());
-  const [tabs, setTabs] = useState<EditorTab[]>([
-    { id: 'main', name: 'main.pseudo', content: savedCode.current },
-  ]);
+  const [tabs, setTabs] = useState<EditorTab[]>([{ id: 'main', name: 'main.pseudo', content: savedCode.current }]);
   const [activeTabId, setActiveTabId] = useState('main');
   const {
-    entries, isRunning, waitingForInput,
-    isStepping, debugLine, debugVariables,
+    entries,
+    isRunning,
+    waitingForInput,
+    isStepping,
+    debugLine,
+    debugVariables,
     errorLine,
-    run, debugRun, step, continueExecution,
-    provideInput, stop, clearEntries,
+    run,
+    debugRun,
+    step,
+    continueExecution,
+    provideInput,
+    stop,
+    clearEntries,
   } = useInterpreter();
 
   const activeTab = tabs.find((t) => t.id === activeTabId) ?? tabs[0];
@@ -64,7 +74,9 @@ const Home: React.FC<HomeProps> = ({ onRunningChange, onCursorChange, onLineCoun
     saveTimer.current = setTimeout(() => {
       try {
         localStorage.setItem(AUTOSAVE_KEY, mainTab.content);
-      } catch { /* quota exceeded — ignore */ }
+      } catch {
+        /* quota exceeded — ignore */
+      }
     }, AUTOSAVE_DELAY);
     return () => clearTimeout(saveTimer.current);
   }, [tabs]);
@@ -128,16 +140,13 @@ const Home: React.FC<HomeProps> = ({ onRunningChange, onCursorChange, onLineCoun
     (newCode: string) => {
       setTabs((prev) => prev.map((t) => (t.id === activeTabId ? { ...t, content: newCode } : t)));
     },
-    [activeTabId],
+    [activeTabId]
   );
 
-  const handleExampleSelect = useCallback(
-    (exampleCode: string) => {
-      setTabs((prev) => prev.map((t) => (t.id === 'main' ? { ...t, content: exampleCode } : t)));
-      setActiveTabId('main');
-    },
-    [],
-  );
+  const handleExampleSelect = useCallback((exampleCode: string) => {
+    setTabs((prev) => prev.map((t) => (t.id === 'main' ? { ...t, content: exampleCode } : t)));
+    setActiveTabId('main');
+  }, []);
 
   const handleOpenFile = useCallback((fileName: string, content: string) => {
     const tabId = `file:${fileName}`;
@@ -164,7 +173,7 @@ const Home: React.FC<HomeProps> = ({ onRunningChange, onCursorChange, onLineCoun
         return newTabs;
       });
     },
-    [activeTabId],
+    [activeTabId]
   );
 
   const handleTabSwitch = useCallback((tabId: string) => {
@@ -183,15 +192,15 @@ const Home: React.FC<HomeProps> = ({ onRunningChange, onCursorChange, onLineCoun
 
   return (
     <div className="h-full flex flex-col bg-background text-light-text overflow-hidden">
-      <div
-        ref={containerRef}
-        className="flex-1 min-h-0 flex flex-col lg:flex-row"
-      >
+      <SEO
+        title="Compiler"
+        description="Write and run IGCSE pseudocode online. Free browser-based compiler for Cambridge Computer Science 0478 syllabus."
+        keywords="pseudocode compiler, IGCSE, write pseudocode, run pseudocode, test pseudocode"
+        canonical="https://pseudocode-compiler.sherlemious.com/"
+      />
+      <div ref={containerRef} className="flex-1 min-h-0 flex flex-col lg:flex-row">
         {/* Editor pane */}
-        <div
-          className="min-h-0 flex flex-col overflow-hidden"
-          style={{ flex: `0 0 ${splitPercent}%` }}
-        >
+        <div className="min-h-0 flex flex-col overflow-hidden" style={{ flex: `0 0 ${splitPercent}%` }}>
           <CodeInput
             code={activeTab.content}
             onCodeChange={handleCodeChange}
