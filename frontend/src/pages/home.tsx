@@ -3,6 +3,7 @@ import CodeInput from '../components/compiler/codeInput';
 import type { CursorPosition } from '../components/compiler/codeInput';
 import OutputDisplay from '../components/compiler/outputDisplay';
 import { useInterpreter } from '../interpreter/useInterpreter';
+import { SEO } from '../components/layout/SEO';
 
 export interface EditorTab {
   id: string;
@@ -194,6 +195,12 @@ const Home: React.FC<HomeProps> = ({ onRunningChange, onCursorChange, onLineCoun
 
   return (
     <div className="h-full flex flex-col bg-background text-light-text overflow-hidden">
+      <SEO
+        title="Compiler"
+        description="Write and run IGCSE pseudocode online. Free browser-based compiler for Cambridge Computer Science 0478 syllabus."
+        keywords="pseudocode compiler, IGCSE, write pseudocode, run pseudocode, test pseudocode"
+        canonical="https://pseudocode-compiler.sherlemious.com/"
+      />
       <div ref={containerRef} className="flex-1 min-h-0 flex flex-col lg:flex-row">
         {/* Editor pane */}
         <div className="min-h-0 flex flex-col overflow-hidden" style={{ flex: `0 0 ${splitPercent}%` }}>

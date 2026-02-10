@@ -1,5 +1,6 @@
 import { StreamLanguage, LanguageSupport } from '@codemirror/language';
 import { StreamParser } from '@codemirror/language';
+import { tags } from '@lezer/highlight';
 
 // Create a simple parser for pseudocode
 // This is a fallback approach using StreamLanguage API
@@ -147,6 +148,17 @@ const pseudocodeParser: StreamParser<PseudocodeState> = {
     inChar: state.inChar,
     inComment: state.inComment,
   }),
+  tokenTable: {
+    keyword: tags.keyword,
+    typeName: tags.typeName,
+    variableName: tags.variableName,
+    string: tags.string,
+    number: tags.number,
+    bool: tags.bool,
+    operator: tags.operator,
+    lineComment: tags.lineComment,
+    comment: tags.comment,
+  },
 };
 
 export const pseudocode = StreamLanguage.define(pseudocodeParser);

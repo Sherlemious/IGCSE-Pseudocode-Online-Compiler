@@ -1,0 +1,22 @@
+{
+  "name": "IGCSE Pseudocode Compiler",
+  "short_name": "IGCSE Pseudocode",
+  "description": "Free online pseudocode compiler for Cambridge IGCSE Computer Science (0478)",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#3b82f6",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["education", "developer tools"],
+  "lang": "en-US",
+  "dir": "ltr",
+  "scope": "/"
+}

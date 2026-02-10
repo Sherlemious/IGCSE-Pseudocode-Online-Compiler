@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Copy, Check, ChevronRight, List, X } from 'lucide-react';
+import { SEO } from '../components/layout/SEO';
 
 /* ────────────────────────────────────────────────────────── */
 /*  Reusable components                                       */
@@ -224,6 +225,12 @@ const Documentation = () => {
 
   return (
     <div className="flex h-full overflow-hidden bg-background">
+      <SEO
+        title="How to Use"
+        description="Complete guide to IGCSE pseudocode syntax and features. Learn variables, arrays, loops, procedures, functions, and file handling for Cambridge Computer Science 0478."
+        keywords="IGCSE pseudocode tutorial, pseudocode syntax, pseudocode guide, learn pseudocode, IGCSE 0478 documentation"
+        canonical="https://pseudocode-compiler.sherlemious.com/how-to-use"
+      />
       {/* ── Mobile TOC toggle ────────────────────────────── */}
       <button
         onClick={() => setTocOpen(!tocOpen)}
