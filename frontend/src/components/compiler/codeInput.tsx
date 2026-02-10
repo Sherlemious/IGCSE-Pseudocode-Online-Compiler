@@ -41,6 +41,8 @@ interface CodeInputProps {
   onTabSwitch: (tabId: string) => void;
   onCloseTab: (tabId: string) => void;
   onOpenFile: (fileName: string, content: string) => void;
+  breakpoints?: Set<number>;
+  onBreakpointToggle?: (line: number) => void;
 }
 
 const CodeInput: React.FC<CodeInputProps> = ({
@@ -62,6 +64,8 @@ const CodeInput: React.FC<CodeInputProps> = ({
   onTabSwitch,
   onCloseTab,
   onOpenFile,
+  breakpoints,
+  onBreakpointToggle,
 }) => {
   const tabsContainerRef = useRef<HTMLDivElement>(null);
   const [shareStatus, setShareStatus] = useState<'idle' | 'copied'>('idle');
@@ -253,6 +257,8 @@ const CodeInput: React.FC<CodeInputProps> = ({
           readOnly={isStepping}
           debugLine={debugLine}
           errorLine={errorLine}
+          breakpoints={breakpoints}
+          onBreakpointToggle={onBreakpointToggle}
         />
 
         {/* Empty state hint */}

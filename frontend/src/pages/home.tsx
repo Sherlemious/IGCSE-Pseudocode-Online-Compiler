@@ -54,6 +54,7 @@ const Home: React.FC<HomeProps> = ({ onRunningChange, onCursorChange, onLineCoun
     debugLine,
     debugVariables,
     errorLine,
+    breakpoints,
     run,
     debugRun,
     step,
@@ -61,6 +62,8 @@ const Home: React.FC<HomeProps> = ({ onRunningChange, onCursorChange, onLineCoun
     provideInput,
     stop,
     clearEntries,
+    toggleBreakpoint,
+    clearBreakpoints,
   } = useInterpreter();
 
   const activeTab = tabs.find((t) => t.id === activeTabId) ?? tabs[0];
@@ -220,6 +223,8 @@ const Home: React.FC<HomeProps> = ({ onRunningChange, onCursorChange, onLineCoun
             onTabSwitch={handleTabSwitch}
             onCloseTab={handleCloseTab}
             onOpenFile={handleOpenFile}
+            breakpoints={breakpoints}
+            onBreakpointToggle={toggleBreakpoint}
           />
         </div>
 

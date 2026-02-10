@@ -18,13 +18,15 @@ export interface InterpreterCallbacks {
   onError(error: PseudocodeError): void;
   /** Called before each statement in step mode. */
   onBeforeStep?(line: number, variables: DebugVariable[]): void;
+  /** Called when a breakpoint is hit during normal execution. */
+  onBreakpoint?(line: number, variables: DebugVariable[]): void;
 }
 
 export class PseudocodeError extends Error {
   constructor(
     message: string,
     public line?: number,
-    public column?: number,
+    public column?: number
   ) {
     super(message);
     this.name = 'PseudocodeError';
