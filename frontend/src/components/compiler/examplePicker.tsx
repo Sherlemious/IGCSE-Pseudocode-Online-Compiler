@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Book, Search, X, ChevronRight, ChevronLeft, FileCode, ArrowRight } from 'lucide-react';
 import { examples, type Example } from '../../data/examples';
 
@@ -38,19 +38,19 @@ const ExamplePicker: React.FC<{ onSelectExample: (code: string) => void }> = ({ 
     }
   }, [isOpen]);
 
+  const categories = useMemo(() => [...new Set(examples.map((ex) => ex.category))], []);
+
   useEffect(() => {
     if (search) {
       setExpandedCategories(new Set(categories));
     }
-  }, [search]);
+  }, [search, categories]);
 
   const filteredExamples = examples.filter(
     (ex) =>
       ex.title.toLowerCase().includes(search.toLowerCase()) ||
       ex.category.toLowerCase().includes(search.toLowerCase()),
   );
-
-  const categories = [...new Set(examples.map((ex) => ex.category))];
 
   const toggleCategory = (cat: string) => {
     setExpandedCategories((prev) => {
@@ -142,7 +142,7 @@ const ExamplePicker: React.FC<{ onSelectExample: (code: string) => void }> = ({ 
                           }`}
                       >
                         <FileCode size={12} className={`shrink-0 ${isSelected ? 'text-primary' : 'text-dark-text'}`} />
-                        <span className="truncate text-left">{example.title}</span>
+                        <span className="truncate text-left flex-1 min-w-0">{example.title}</span>
                         {/* Mobile: show a chevron hint */}
                         <ChevronRight size={12} className="shrink-0 text-dark-text/40 ml-auto md:hidden" />
                       </button>
@@ -170,7 +170,7 @@ const ExamplePicker: React.FC<{ onSelectExample: (code: string) => void }> = ({ 
         <>
           {/* Preview header */}
           <div className="h-9 bg-surface border-b border-border flex items-center justify-between px-3 shrink-0">
-            <div className="flex items-center gap-1.5 min-w-0">
+            <div className="flex items-center gap-1.5 min-w-0 flex-1">
               {/* Mobile back button */}
               <button
                 onClick={() => setMobileView('list')}
@@ -179,8 +179,8 @@ const ExamplePicker: React.FC<{ onSelectExample: (code: string) => void }> = ({ 
                 <ChevronLeft size={14} />
               </button>
               <FileCode size={12} className="text-primary shrink-0" />
-              <span className="text-xs font-mono text-light-text truncate">{selectedExample.title}</span>
-              <span className="text-xs text-dark-text hidden sm:inline">— {selectedExample.category}</span>
+              <span className="text-xs font-mono text-light-text truncate flex-1 min-w-0">{selectedExample.title}</span>
+              <span className="text-xs text-dark-text hidden sm:inline shrink-0">— {selectedExample.category}</span>
             </div>
             <button
               onClick={handleUse}
@@ -230,7 +230,7 @@ const ExamplePicker: React.FC<{ onSelectExample: (code: string) => void }> = ({ 
           <div
             ref={modalRef}
             className="bg-background border-0 md:border border-border md:rounded-md
-              w-full h-full md:h-auto md:max-w-5xl md:max-h-[85vh]
+              w-full h-[100dvh] md:h-auto md:max-w-5xl md:max-h-[85vh]
               flex flex-col shadow-intense overflow-hidden"
           >
             {/* Header bar */}
