@@ -20,6 +20,27 @@ export function useInterpreter() {
 
   const interpreterRef = useRef<Interpreter | null>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const outputBuffer = useRef<string[]>([]);
+  const flushTimeout = useRef<number | null>(null);
+
+  const flushOutput = useCallback(() => {
+    if (outputBuffer.current.length > 0) {
+      const newEntries = outputBuffer.current.map((text) => ({ kind: 'output' as const, text }));
+      setEntries((prev) => [...prev, ...newEntries]);
+      outputBuffer.current = [];
+    }
+    flushTimeout.current = null;
+  }, []);
+
+  const flushOutputSync = useCallback(() => {
+    if (outputBuffer.current.length > 0) {
+      if (flushTimeout.current !== null) {
+        cancelAnimationFrame(flushTimeout.current);
+        flushTimeout.current = null;
+      }
+      flushOutput();
+    }
+  }, [flushOutput]);
 
   const startExecution = useCallback(
     async (sourceCode: string, stepMode: boolean) => {
@@ -27,6 +48,11 @@ export function useInterpreter() {
       if (abortRef.current) {
         abortRef.current.abort();
       }
+      if (flushTimeout.current !== null) {
+        cancelAnimationFrame(flushTimeout.current);
+        flushTimeout.current = null;
+      }
+      outputBuffer.current = [];
 
       setEntries([]);
       setIsRunning(true);
@@ -67,9 +93,14 @@ export function useInterpreter() {
       const interpreter = new Interpreter(
         {
           onOutput(text: string) {
-            setEntries((prev) => [...prev, { kind: 'output', text }]);
+            outputBuffer.current.push(text);
+            if (flushTimeout.current === null) {
+              flushTimeout.current = requestAnimationFrame(flushOutput);
+            }
           },
           onInputRequest(variableName: string) {
+            // Flush any pending output before requesting input
+            flushOutputSync();
             setWaitingForInput(true);
             setEntries((prev) => [...prev, { kind: 'input', variableName, value: '', submitted: false }]);
           },
@@ -77,12 +108,15 @@ export function useInterpreter() {
             setWaitingForInput(false);
           },
           onComplete() {
+            // Flush any remaining output
+            flushOutputSync();
             setIsRunning(false);
             setWaitingForInput(false);
             setIsStepping(false);
             setDebugLine(null);
           },
           onError(error: PseudocodeError) {
+            flushOutputSync();
             if (error.line != null) setErrorLine(error.line);
             setEntries((prev) => [
               ...prev,
@@ -115,6 +149,8 @@ export function useInterpreter() {
       try {
         await interpreter.execute(tree);
       } catch (e) {
+        flushOutputSync();
+
         if (e instanceof PseudocodeError) {
           if (e.line != null) setErrorLine(e.line);
           setEntries((prev) => [
@@ -183,6 +219,11 @@ export function useInterpreter() {
       abortRef.current.abort();
       abortRef.current = null;
     }
+    if (flushTimeout.current !== null) {
+      cancelAnimationFrame(flushTimeout.current);
+      flushTimeout.current = null;
+    }
+    outputBuffer.current = [];
     setIsRunning(false);
     setWaitingForInput(false);
     setIsStepping(false);
@@ -191,6 +232,11 @@ export function useInterpreter() {
   }, []);
 
   const clearEntries = useCallback(() => {
+    if (flushTimeout.current !== null) {
+      cancelAnimationFrame(flushTimeout.current);
+      flushTimeout.current = null;
+    }
+    outputBuffer.current = [];
     setEntries([]);
   }, []);
 
