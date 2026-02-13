@@ -118,6 +118,8 @@ const CodeInput: React.FC<CodeInputProps> = ({
     });
   }, [code]);
 
+  const activeTabName = tabs.find((t) => t.id === activeTabId)?.name || 'main.pseudo';
+
   return (
     <div className="flex-1 min-h-0 flex flex-col">
       {/* Tab bar */}
@@ -259,6 +261,7 @@ const CodeInput: React.FC<CodeInputProps> = ({
           errorLine={errorLine}
           breakpoints={breakpoints}
           onBreakpointToggle={onBreakpointToggle}
+          ariaLabel={`Code Editor for ${activeTabName}`}
         />
 
         {/* Empty state hint */}

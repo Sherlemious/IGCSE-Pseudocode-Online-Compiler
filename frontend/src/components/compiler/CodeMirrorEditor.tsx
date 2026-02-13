@@ -23,6 +23,7 @@ import { tags as t } from '@lezer/highlight';
 
 const readOnlyCompartment = new Compartment();
 const gutterCompartment = new Compartment();
+const ariaLabelCompartment = new Compartment();
 
 // Define StateEffect for line highlighting
 const setLineHighlight = StateEffect.define<{ debugLine: number | null; errorLine: number | null }>();
@@ -84,6 +85,7 @@ interface CodeMirrorEditorProps {
   errorLine?: number | null;
   breakpoints?: Set<number>;
   onBreakpointToggle?: (line: number) => void;
+  ariaLabel?: string;
 }
 
 const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
@@ -98,6 +100,7 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
   errorLine = null,
   breakpoints = new Set(),
   onBreakpointToggle,
+  ariaLabel,
 }) => {
   const editorRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
@@ -324,6 +327,7 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
     const startState = EditorState.create({
       doc: value,
       extensions: [
+        ariaLabelCompartment.of(EditorView.contentAttributes.of({ 'aria-label': ariaLabel || 'Code Editor' })),
         gutterCompartment.of([createGutter(), highlightActiveLineGutter()]),
         highlightSpecialChars(),
         history(),
@@ -395,6 +399,14 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
       effects: readOnlyCompartment.reconfigure(EditorState.readOnly.of(readOnly)),
     });
   }, [readOnly]);
+
+  // Update aria-label
+  useEffect(() => {
+    if (!viewRef.current) return;
+    viewRef.current.dispatch({
+      effects: ariaLabelCompartment.reconfigure(EditorView.contentAttributes.of({ 'aria-label': ariaLabel || 'Code Editor' })),
+    });
+  }, [ariaLabel]);
 
   // Scroll debug line into view
   useEffect(() => {
