@@ -4,6 +4,7 @@ import Home from './pages/home';
 import HowToUse from './pages/howToUse';
 import Header from './components/layout/header';
 import Footer from './components/layout/footer';
+import { Toaster } from 'sonner';
 import type { CursorPosition } from './components/compiler/codeInput';
 
 const App: React.FC = () => {
@@ -43,6 +44,7 @@ const App: React.FC = () => {
           </Routes>
         </main>
         <Footer isRunning={isRunning} cursor={cursor} lineCount={lineCount} />
+        <Toaster richColors position="top-center" theme="dark" />
       </div>
     </Router>
   );

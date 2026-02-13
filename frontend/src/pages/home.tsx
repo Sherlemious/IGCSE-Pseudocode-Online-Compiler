@@ -4,6 +4,7 @@ import type { CursorPosition } from '../components/compiler/codeInput';
 import OutputDisplay from '../components/compiler/outputDisplay';
 import { useInterpreter } from '../interpreter/useInterpreter';
 import { SEO } from '../components/layout/SEO';
+import { toast } from 'sonner';
 
 export interface EditorTab {
   id: string;
@@ -81,7 +82,7 @@ const Home: React.FC<HomeProps> = ({ onRunningChange, onCursorChange, onLineCoun
             localStorage.setItem(FILE_PREFIX + tab.name, tab.content);
           }
         } catch {
-          /* quota exceeded — ignore */
+          toast.error('Autosave failed: Storage full?');
         }
       });
     }, AUTOSAVE_DELAY);

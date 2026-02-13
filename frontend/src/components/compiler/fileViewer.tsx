@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { FolderOpen, FileText, Trash2, X, HardDrive, ChevronLeft, ChevronRight, ExternalLink, Plus, Check } from 'lucide-react';
+import { toast } from 'sonner';
 
 const FILE_PREFIX = 'pseudocode_file_';
 
@@ -57,6 +58,7 @@ const FileViewer: React.FC<FileViewerProps> = ({ onOpenFile }) => {
 
   const handleDelete = (fileName: string) => {
     localStorage.removeItem(FILE_PREFIX + fileName);
+    toast.success(`Deleted ${fileName}`);
     if (selectedFile?.name === fileName) {
       setSelectedFile(null);
       setMobileView('list');
@@ -67,6 +69,7 @@ const FileViewer: React.FC<FileViewerProps> = ({ onOpenFile }) => {
 
   const handleDeleteAll = () => {
     files.forEach((f) => localStorage.removeItem(FILE_PREFIX + f.name));
+    toast.success('All files deleted');
     setSelectedFile(null);
     setConfirmDelete(null);
     setMobileView('list');
@@ -78,19 +81,20 @@ const FileViewer: React.FC<FileViewerProps> = ({ onOpenFile }) => {
     if (!name) return;
 
     if (localStorage.getItem(FILE_PREFIX + name) !== null) {
-      alert(`File '${name}' already exists.`);
+      toast.error(`File '${name}' already exists.`);
       return;
     }
 
     try {
       localStorage.setItem(FILE_PREFIX + name, '');
+      toast.success(`Created ${name}`);
       loadFiles();
       setIsCreating(false);
       // Auto-open
       onOpenFile?.(name, '');
       setIsOpen(false);
     } catch {
-      alert('Failed to create file: Storage full?');
+      toast.error('Failed to create file: Storage full?');
     }
   };
 
