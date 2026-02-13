@@ -32,6 +32,16 @@ export function useInterpreter() {
     flushTimeout.current = null;
   }, []);
 
+  const flushOutputSync = useCallback(() => {
+    if (outputBuffer.current.length > 0) {
+      if (flushTimeout.current !== null) {
+        cancelAnimationFrame(flushTimeout.current);
+        flushTimeout.current = null;
+      }
+      flushOutput();
+    }
+  }, [flushOutput]);
+
   const startExecution = useCallback(
     async (sourceCode: string, stepMode: boolean) => {
       // Clean up any previous run
@@ -90,13 +100,7 @@ export function useInterpreter() {
           },
           onInputRequest(variableName: string) {
             // Flush any pending output before requesting input
-            if (outputBuffer.current.length > 0) {
-              if (flushTimeout.current !== null) {
-                cancelAnimationFrame(flushTimeout.current);
-                flushTimeout.current = null;
-              }
-              flushOutput();
-            }
+            flushOutputSync();
             setWaitingForInput(true);
             setEntries((prev) => [...prev, { kind: 'input', variableName, value: '', submitted: false }]);
           },
@@ -105,26 +109,14 @@ export function useInterpreter() {
           },
           onComplete() {
             // Flush any remaining output
-            if (outputBuffer.current.length > 0) {
-              if (flushTimeout.current !== null) {
-                cancelAnimationFrame(flushTimeout.current);
-                flushTimeout.current = null;
-              }
-              flushOutput();
-            }
+            flushOutputSync();
             setIsRunning(false);
             setWaitingForInput(false);
             setIsStepping(false);
             setDebugLine(null);
           },
           onError(error: PseudocodeError) {
-            if (outputBuffer.current.length > 0) {
-              if (flushTimeout.current !== null) {
-                cancelAnimationFrame(flushTimeout.current);
-                flushTimeout.current = null;
-              }
-              flushOutput();
-            }
+            flushOutputSync();
             if (error.line != null) setErrorLine(error.line);
             setEntries((prev) => [
               ...prev,
@@ -157,13 +149,7 @@ export function useInterpreter() {
       try {
         await interpreter.execute(tree);
       } catch (e) {
-        if (outputBuffer.current.length > 0) {
-          if (flushTimeout.current !== null) {
-            cancelAnimationFrame(flushTimeout.current);
-            flushTimeout.current = null;
-          }
-          flushOutput();
-        }
+        flushOutputSync();
 
         if (e instanceof PseudocodeError) {
           if (e.line != null) setErrorLine(e.line);
