@@ -16,6 +16,8 @@ export default defineConfig({
             '@codemirror/search',
             '@codemirror/state',
             '@codemirror/view',
+            '@lezer/highlight',
+            '@lezer/lr',
           ],
           antlr: ['antlr4ng'],
         },
