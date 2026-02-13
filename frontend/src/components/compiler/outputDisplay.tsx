@@ -40,7 +40,11 @@ const OutputDisplay: React.FC<OutputDisplayProps> = ({
   // Auto-scroll to bottom on new entries
   useEffect(() => {
     if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+      requestAnimationFrame(() => {
+        if (scrollRef.current) {
+          scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+        }
+      });
     }
   }, [entries, waitingForInput]);
 
