@@ -6,5 +6,23 @@ export default defineConfig({
   plugins: [react()],
   build: {
     sourcemap: 'hidden',
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom'],
+          codemirror: [
+            '@codemirror/autocomplete',
+            '@codemirror/commands',
+            '@codemirror/language',
+            '@codemirror/search',
+            '@codemirror/state',
+            '@codemirror/view',
+            '@lezer/highlight',
+            '@lezer/lr',
+          ],
+          antlr: ['antlr4ng'],
+        },
+      },
+    },
   },
 })
