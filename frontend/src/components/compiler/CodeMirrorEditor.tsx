@@ -139,6 +139,12 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
     onBreakpointToggleRef.current = onBreakpointToggle;
   }, [onBreakpointToggle]);
 
+  // Helper function to create aria-label attributes
+  const createAriaLabelAttributes = useCallback(
+    (label?: string) => EditorView.contentAttributes.of({ 'aria-label': label || 'Code Editor' }),
+    []
+  );
+
   // Centralized gutter creation logic
   const createGutter = useCallback(
     () =>
@@ -327,7 +333,7 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
     const startState = EditorState.create({
       doc: value,
       extensions: [
-        ariaLabelCompartment.of(EditorView.contentAttributes.of({ 'aria-label': ariaLabel || 'Code Editor' })),
+        ariaLabelCompartment.of(createAriaLabelAttributes(ariaLabel)),
         gutterCompartment.of([createGutter(), highlightActiveLineGutter()]),
         highlightSpecialChars(),
         history(),
@@ -404,9 +410,9 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
   useEffect(() => {
     if (!viewRef.current) return;
     viewRef.current.dispatch({
-      effects: ariaLabelCompartment.reconfigure(EditorView.contentAttributes.of({ 'aria-label': ariaLabel || 'Code Editor' })),
+      effects: ariaLabelCompartment.reconfigure(createAriaLabelAttributes(ariaLabel)),
     });
-  }, [ariaLabel]);
+  }, [ariaLabel, createAriaLabelAttributes]);
 
   // Scroll debug line into view
   useEffect(() => {
