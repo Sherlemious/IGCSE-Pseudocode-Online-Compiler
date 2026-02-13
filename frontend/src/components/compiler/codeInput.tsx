@@ -118,7 +118,8 @@ const CodeInput: React.FC<CodeInputProps> = ({
     });
   }, [code]);
 
-  const activeTabName = tabs.find((t) => t.id === activeTabId)?.name || 'main.pseudo';
+  const activeTab = tabs.find((t) => t.id === activeTabId) ?? tabs[0];
+  const activeTabName = activeTab.name;
 
   return (
     <div className="flex-1 min-h-0 flex flex-col">
