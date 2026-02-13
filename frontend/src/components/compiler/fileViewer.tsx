@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { FolderOpen, FileText, Trash2, X, HardDrive, ChevronLeft, ChevronRight, ExternalLink } from 'lucide-react';
+import { FolderOpen, FileText, Trash2, X, HardDrive, ChevronLeft, ChevronRight, ExternalLink, Plus, Check } from 'lucide-react';
 
 const FILE_PREFIX = 'pseudocode_file_';
 
@@ -19,7 +19,11 @@ const FileViewer: React.FC<FileViewerProps> = ({ onOpenFile }) => {
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   // Mobile: 'list' shows file list, 'detail' shows file content
   const [mobileView, setMobileView] = useState<'list' | 'detail'>('list');
+  const [isCreating, setIsCreating] = useState(false);
+  const [newFileName, setNewFileName] = useState('');
+
   const modalRef = useRef<HTMLDivElement>(null);
+  const newFileInputRef = useRef<HTMLInputElement>(null);
 
   const loadFiles = () => {
     const entries: FileEntry[] = [];
@@ -41,6 +45,7 @@ const FileViewer: React.FC<FileViewerProps> = ({ onOpenFile }) => {
     setSelectedFile(null);
     setConfirmDelete(null);
     setMobileView('list');
+    setIsCreating(false);
     setIsOpen(true);
   };
 
@@ -66,6 +71,27 @@ const FileViewer: React.FC<FileViewerProps> = ({ onOpenFile }) => {
     setConfirmDelete(null);
     setMobileView('list');
     loadFiles();
+  };
+
+  const handleCreateFile = () => {
+    const name = newFileName.trim();
+    if (!name) return;
+
+    if (localStorage.getItem(FILE_PREFIX + name) !== null) {
+      alert(`File '${name}' already exists.`);
+      return;
+    }
+
+    try {
+      localStorage.setItem(FILE_PREFIX + name, '');
+      loadFiles();
+      setIsCreating(false);
+      // Auto-open
+      onOpenFile?.(name, '');
+      setIsOpen(false);
+    } catch {
+      alert('Failed to create file: Storage full?');
+    }
   };
 
   useEffect(() => {
@@ -98,7 +124,40 @@ const FileViewer: React.FC<FileViewerProps> = ({ onOpenFile }) => {
           scrollbar-thin scrollbar-thumb-primary hover:scrollbar-thumb-primary-hover
           scrollbar-track-background scrollbar-thumb-rounded-full"
       >
-        {files.length === 0 ? (
+        {/* New file input */}
+        {isCreating && (
+          <div className="flex items-center gap-1.5 px-2 py-2 md:py-1 mx-1 rounded-sm bg-surface border border-primary/30 mb-1">
+            <FileText size={14} className="text-primary shrink-0" />
+            <input
+              ref={newFileInputRef}
+              type="text"
+              value={newFileName}
+              onChange={(e) => setNewFileName(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleCreateFile();
+                if (e.key === 'Escape') setIsCreating(false);
+              }}
+              placeholder="filename.pseudo"
+              className="flex-1 bg-transparent border-none outline-none text-xs font-mono text-light-text placeholder-dark-text/40 min-w-0"
+            />
+            <button
+              onClick={handleCreateFile}
+              className="text-success hover:bg-success/10 p-0.5 rounded transition-colors"
+              title="Create"
+            >
+              <Check size={12} />
+            </button>
+            <button
+              onClick={() => setIsCreating(false)}
+              className="text-dark-text hover:text-error hover:bg-error/10 p-0.5 rounded transition-colors"
+              title="Cancel"
+            >
+              <X size={12} />
+            </button>
+          </div>
+        )}
+
+        {files.length === 0 && !isCreating ? (
           <div className="flex flex-col items-center justify-center h-full gap-3 px-4 py-8">
             <FolderOpen size={28} className="text-dark-text opacity-30" />
             <div className="text-xs text-dark-text text-center leading-relaxed">
@@ -252,6 +311,13 @@ const FileViewer: React.FC<FileViewerProps> = ({ onOpenFile }) => {
                 {files.length > 0 && (
                   <span className="text-xs text-dark-text">({files.length})</span>
                 )}
+                <button
+                  onClick={() => { setIsCreating(true); setNewFileName(''); setTimeout(() => newFileInputRef.current?.focus(), 50); }}
+                  className="ml-2 text-dark-text hover:text-primary p-0.5 rounded hover:bg-background transition-colors"
+                  title="New File"
+                >
+                  <Plus size={14} />
+                </button>
               </div>
               <div className="flex items-center gap-1">
                 {files.length > 0 && (

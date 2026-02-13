@@ -18,6 +18,7 @@ interface HomeProps {
 }
 
 const AUTOSAVE_KEY = 'pseudocode_autosave';
+const FILE_PREFIX = 'pseudocode_file_';
 const AUTOSAVE_DELAY = 500; // ms
 
 function loadInitialCode(): string {
@@ -63,23 +64,26 @@ const Home: React.FC<HomeProps> = ({ onRunningChange, onCursorChange, onLineCoun
     stop,
     clearEntries,
     toggleBreakpoint,
-    clearBreakpoints,
   } = useInterpreter();
 
   const activeTab = tabs.find((t) => t.id === activeTabId) ?? tabs[0];
 
-  // ── Auto-save main tab with debounce ─────────────────────
+  // ── Auto-save tabs with debounce ─────────────────────────
   const saveTimer = useRef<ReturnType<typeof setTimeout>>();
   useEffect(() => {
-    const mainTab = tabs.find((t) => t.id === 'main');
-    if (!mainTab) return;
     clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(() => {
-      try {
-        localStorage.setItem(AUTOSAVE_KEY, mainTab.content);
-      } catch {
-        /* quota exceeded — ignore */
-      }
+      tabs.forEach((tab) => {
+        try {
+          if (tab.id === 'main') {
+            localStorage.setItem(AUTOSAVE_KEY, tab.content);
+          } else if (tab.id.startsWith('file:')) {
+            localStorage.setItem(FILE_PREFIX + tab.name, tab.content);
+          }
+        } catch {
+          /* quota exceeded — ignore */
+        }
+      });
     }, AUTOSAVE_DELAY);
     return () => clearTimeout(saveTimer.current);
   }, [tabs]);
