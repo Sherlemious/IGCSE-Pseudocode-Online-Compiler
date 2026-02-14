@@ -87,6 +87,7 @@ export class Interpreter {
   private functions = new Map<string, CallableDefinition>();
   private inputResolver: ((value: string) => void) | null = null;
   private iterationCount = 0;
+  private lastYieldTime = performance.now();
   private fileSystem = new VirtualFileSystem();
   private _stepMode = false;
   private stepResolver: (() => void) | null = null;
@@ -105,9 +106,21 @@ export class Interpreter {
 
   private async yieldControl(): Promise<void> {
     this.iterationCount++;
-    if (this.iterationCount % 1000 === 0) {
-      this.checkCancelled();
-      await new Promise<void>((r) => setTimeout(r, 0));
+    // Check time every 100 iterations to minimize performance.now() overhead
+    if (this.iterationCount % 100 === 0) {
+      const now = performance.now();
+      if (now - this.lastYieldTime > 16) {
+        this.checkCancelled();
+        await new Promise<void>((resolve) => {
+          const { port1, port2 } = new MessageChannel();
+          port1.onmessage = () => {
+            port1.close();
+            resolve();
+          };
+          port2.postMessage(null);
+        });
+        this.lastYieldTime = performance.now();
+      }
     }
   }
 
