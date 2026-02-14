@@ -4,6 +4,8 @@ import type { CursorPosition } from '../components/compiler/codeInput';
 import OutputDisplay from '../components/compiler/outputDisplay';
 import { useInterpreter } from '../interpreter/useInterpreter';
 import { SEO } from '../components/layout/SEO';
+import { toast } from 'sonner';
+import { AUTOSAVE_KEY, FILE_PREFIX, AUTOSAVE_DELAY } from '../utils/constants';
 
 export interface EditorTab {
   id: string;
@@ -16,9 +18,6 @@ interface HomeProps {
   onCursorChange?: (pos: CursorPosition) => void;
   onLineCountChange?: (count: number) => void;
 }
-
-const AUTOSAVE_KEY = 'pseudocode_autosave';
-const AUTOSAVE_DELAY = 500; // ms
 
 function loadInitialCode(): string {
   // Check URL for shared code first
@@ -63,23 +62,26 @@ const Home: React.FC<HomeProps> = ({ onRunningChange, onCursorChange, onLineCoun
     stop,
     clearEntries,
     toggleBreakpoint,
-    clearBreakpoints,
   } = useInterpreter();
 
   const activeTab = tabs.find((t) => t.id === activeTabId) ?? tabs[0];
 
-  // ── Auto-save main tab with debounce ─────────────────────
+  // ── Auto-save tabs with debounce ─────────────────────────
   const saveTimer = useRef<ReturnType<typeof setTimeout>>();
   useEffect(() => {
-    const mainTab = tabs.find((t) => t.id === 'main');
-    if (!mainTab) return;
     clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(() => {
-      try {
-        localStorage.setItem(AUTOSAVE_KEY, mainTab.content);
-      } catch {
-        /* quota exceeded — ignore */
-      }
+      tabs.forEach((tab) => {
+        try {
+          if (tab.id === 'main') {
+            localStorage.setItem(AUTOSAVE_KEY, tab.content);
+          } else if (tab.id.startsWith('file:')) {
+            localStorage.setItem(FILE_PREFIX + tab.name, tab.content);
+          }
+        } catch {
+          toast.error('Autosave failed: Storage full?');
+        }
+      });
     }, AUTOSAVE_DELAY);
     return () => clearTimeout(saveTimer.current);
   }, [tabs]);
