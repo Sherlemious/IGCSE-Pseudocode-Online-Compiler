@@ -9,6 +9,8 @@ interface OpenFile {
 }
 
 const STORAGE_PREFIX = 'pseudocode_file_';
+const MAX_FILES = 100;
+const MAX_TOTAL_SIZE = 5 * 1024 * 1024; // 5MB in characters
 
 export class VirtualFileSystem {
   private openFiles = new Map<string, OpenFile>();
@@ -65,10 +67,49 @@ export class VirtualFileSystem {
     if (!file) {
       throw new RuntimeError(`File '${filename}' is not open`);
     }
-    if (file.mode === 'WRITE' || file.mode === 'APPEND') {
-      localStorage.setItem(STORAGE_PREFIX + filename, file.lines.join('\n'));
+
+    try {
+      if (file.mode === 'WRITE' || file.mode === 'APPEND') {
+        const content = file.lines.join('\n');
+        const key = STORAGE_PREFIX + filename;
+
+        let currentFilesCount = 0;
+        let currentTotalSize = 0;
+        let isExistingFile = false;
+
+        for (let i = 0; i < localStorage.length; i++) {
+          const k = localStorage.key(i);
+          if (k && k.startsWith(STORAGE_PREFIX)) {
+            if (k === key) {
+              isExistingFile = true;
+            } else {
+              currentFilesCount++;
+              currentTotalSize += (localStorage.getItem(k) || '').length;
+            }
+          }
+        }
+
+        // Check file count limit (only for new files)
+        if (!isExistingFile && currentFilesCount >= MAX_FILES) {
+          throw new RuntimeError(`Storage quota exceeded: maximum of ${MAX_FILES} files reached`);
+        }
+
+        // Check total size limit
+        if (currentTotalSize + content.length > MAX_TOTAL_SIZE) {
+          throw new RuntimeError(`Storage quota exceeded: maximum total size of 5MB reached`);
+        }
+
+        try {
+          localStorage.setItem(key, content);
+        } catch (e) {
+          throw new RuntimeError(
+            `Failed to save file '${filename}' to storage: ${e instanceof Error ? e.message : 'Storage full'}`
+          );
+        }
+      }
+    } finally {
+      this.openFiles.delete(filename);
     }
-    this.openFiles.delete(filename);
   }
 
   eof(filename: string): boolean {
