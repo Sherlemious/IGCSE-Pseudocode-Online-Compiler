@@ -5,6 +5,7 @@ import OutputDisplay from '../components/compiler/outputDisplay';
 import { useInterpreter } from '../interpreter/useInterpreter';
 import { SEO } from '../components/layout/SEO';
 import { toast } from 'sonner';
+import { AUTOSAVE_KEY, FILE_PREFIX, AUTOSAVE_DELAY } from '../utils/constants';
 
 export interface EditorTab {
   id: string;
@@ -17,10 +18,6 @@ interface HomeProps {
   onCursorChange?: (pos: CursorPosition) => void;
   onLineCountChange?: (count: number) => void;
 }
-
-const AUTOSAVE_KEY = 'pseudocode_autosave';
-const FILE_PREFIX = 'pseudocode_file_';
-const AUTOSAVE_DELAY = 500; // ms
 
 function loadInitialCode(): string {
   // Check URL for shared code first

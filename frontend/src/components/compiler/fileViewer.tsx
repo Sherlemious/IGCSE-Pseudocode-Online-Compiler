@@ -1,8 +1,18 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { FolderOpen, FileText, Trash2, X, HardDrive, ChevronLeft, ChevronRight, ExternalLink, Plus, Check } from 'lucide-react';
+import {
+  FolderOpen,
+  FileText,
+  Trash2,
+  X,
+  HardDrive,
+  ChevronLeft,
+  ChevronRight,
+  ExternalLink,
+  Plus,
+  Check,
+} from 'lucide-react';
 import { toast } from 'sonner';
-
-const FILE_PREFIX = 'pseudocode_file_';
+import { FILE_PREFIX } from '../../utils/constants';
 
 interface FileEntry {
   name: string;
@@ -22,6 +32,7 @@ const FileViewer: React.FC<FileViewerProps> = ({ onOpenFile }) => {
   const [mobileView, setMobileView] = useState<'list' | 'detail'>('list');
   const [isCreating, setIsCreating] = useState(false);
   const [newFileName, setNewFileName] = useState('');
+  const [createFileError, setCreateFileError] = useState<string>('');
 
   const modalRef = useRef<HTMLDivElement>(null);
   const newFileInputRef = useRef<HTMLInputElement>(null);
@@ -47,6 +58,7 @@ const FileViewer: React.FC<FileViewerProps> = ({ onOpenFile }) => {
     setConfirmDelete(null);
     setMobileView('list');
     setIsCreating(false);
+    setCreateFileError('');
     setIsOpen(true);
   };
 
@@ -78,10 +90,13 @@ const FileViewer: React.FC<FileViewerProps> = ({ onOpenFile }) => {
 
   const handleCreateFile = () => {
     const name = newFileName.trim();
-    if (!name) return;
+    if (!name) {
+      setCreateFileError('File name cannot be empty');
+      return;
+    }
 
     if (localStorage.getItem(FILE_PREFIX + name) !== null) {
-      toast.error(`File '${name}' already exists.`);
+      setCreateFileError(`File '${name}' already exists`);
       return;
     }
 
@@ -90,11 +105,13 @@ const FileViewer: React.FC<FileViewerProps> = ({ onOpenFile }) => {
       toast.success(`Created ${name}`);
       loadFiles();
       setIsCreating(false);
+      setCreateFileError('');
+      setNewFileName('');
       // Auto-open
       onOpenFile?.(name, '');
       setIsOpen(false);
     } catch {
-      toast.error('Failed to create file: Storage full?');
+      setCreateFileError('Failed to create file: Storage full?');
     }
   };
 
@@ -118,6 +135,13 @@ const FileViewer: React.FC<FileViewerProps> = ({ onOpenFile }) => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isOpen]);
 
+  // Focus the new file input when creating a file
+  useEffect(() => {
+    if (isCreating) {
+      newFileInputRef.current?.focus();
+    }
+  }, [isCreating]);
+
   const lineCount = (content: string) => content.split('\n').length;
 
   /* ── File list panel ─────────────────────────────────── */
@@ -130,34 +154,52 @@ const FileViewer: React.FC<FileViewerProps> = ({ onOpenFile }) => {
       >
         {/* New file input */}
         {isCreating && (
-          <div className="flex items-center gap-1.5 px-2 py-2 md:py-1 mx-1 rounded-sm bg-surface border border-primary/30 mb-1">
-            <FileText size={14} className="text-primary shrink-0" />
-            <input
-              ref={newFileInputRef}
-              type="text"
-              value={newFileName}
-              onChange={(e) => setNewFileName(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') handleCreateFile();
-                if (e.key === 'Escape') setIsCreating(false);
-              }}
-              placeholder="filename.pseudo"
-              className="flex-1 bg-transparent border-none outline-none text-xs font-mono text-light-text placeholder-dark-text/40 min-w-0"
-            />
-            <button
-              onClick={handleCreateFile}
-              className="text-success hover:bg-success/10 p-0.5 rounded transition-colors"
-              title="Create"
-            >
-              <Check size={12} />
-            </button>
-            <button
-              onClick={() => setIsCreating(false)}
-              className="text-dark-text hover:text-error hover:bg-error/10 p-0.5 rounded transition-colors"
-              title="Cancel"
-            >
-              <X size={12} />
-            </button>
+          <div className="mx-1 mb-1">
+            <div className="flex items-center gap-1.5 px-2 py-2 md:py-1 rounded-sm bg-surface border border-primary/30">
+              <FileText size={14} className="text-primary shrink-0" />
+              <input
+                ref={newFileInputRef}
+                type="text"
+                value={newFileName}
+                onChange={(e) => {
+                  setNewFileName(e.target.value);
+                  if (createFileError) setCreateFileError('');
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleCreateFile();
+                  if (e.key === 'Escape') {
+                    setIsCreating(false);
+                    setCreateFileError('');
+                    setNewFileName('');
+                  }
+                }}
+                placeholder="filename.pseudo"
+                className="flex-1 bg-transparent border-none outline-none text-xs font-mono text-light-text placeholder-dark-text/40 min-w-0"
+              />
+              <button
+                onClick={handleCreateFile}
+                className="text-success hover:bg-success/10 p-0.5 rounded transition-colors"
+                title="Create"
+              >
+                <Check size={12} />
+              </button>
+              <button
+                onClick={() => {
+                  setIsCreating(false);
+                  setCreateFileError('');
+                  setNewFileName('');
+                }}
+                className="text-dark-text hover:text-error hover:bg-error/10 p-0.5 rounded transition-colors"
+                title="Cancel"
+              >
+                <X size={12} />
+              </button>
+            </div>
+            {createFileError && (
+              <div className="mt-1 px-2 py-1 text-[10px] text-error bg-error/10 rounded-sm border border-error/20">
+                {createFileError}
+              </div>
+            )}
           </div>
         )}
 
@@ -165,8 +207,11 @@ const FileViewer: React.FC<FileViewerProps> = ({ onOpenFile }) => {
           <div className="flex flex-col items-center justify-center h-full gap-3 px-4 py-8">
             <FolderOpen size={28} className="text-dark-text opacity-30" />
             <div className="text-xs text-dark-text text-center leading-relaxed">
-              No files yet.<br />
-              Use <code className="bg-code-bg px-1 py-0.5 rounded text-primary text-[0.85em]">OPENFILE</code> / <code className="bg-code-bg px-1 py-0.5 rounded text-primary text-[0.85em]">WRITEFILE</code> in your pseudocode to create files.
+              No files yet.
+              <br />
+              Use <code className="bg-code-bg px-1 py-0.5 rounded text-primary text-[0.85em]">OPENFILE</code> /{' '}
+              <code className="bg-code-bg px-1 py-0.5 rounded text-primary text-[0.85em]">WRITEFILE</code> in your
+              pseudocode to create files.
             </div>
           </div>
         ) : (
@@ -179,13 +224,12 @@ const FileViewer: React.FC<FileViewerProps> = ({ onOpenFile }) => {
                   ${isSelected ? 'bg-primary/15 text-primary' : 'text-light-text hover:bg-surface'}`}
                 onClick={() => handleSelectFile(file)}
               >
-                <FileText size={14} className={`shrink-0 md:w-3 md:h-3 ${isSelected ? 'text-primary' : 'text-dark-text'}`} />
-                <span className="flex-1 text-xs truncate font-mono text-left">
-                  {file.name}
-                </span>
-                <span className="text-[10px] text-dark-text/50 shrink-0 mr-1">
-                  {lineCount(file.content)}L
-                </span>
+                <FileText
+                  size={14}
+                  className={`shrink-0 md:w-3 md:h-3 ${isSelected ? 'text-primary' : 'text-dark-text'}`}
+                />
+                <span className="flex-1 text-xs truncate font-mono text-left">{file.name}</span>
+                <span className="text-[10px] text-dark-text/50 shrink-0 mr-1">{lineCount(file.content)}L</span>
                 {confirmDelete === file.name ? (
                   <div className="flex gap-0.5 shrink-0" onClick={(e) => e.stopPropagation()}>
                     <button
@@ -204,7 +248,10 @@ const FileViewer: React.FC<FileViewerProps> = ({ onOpenFile }) => {
                 ) : (
                   <>
                     <button
-                      onClick={(e) => { e.stopPropagation(); setConfirmDelete(file.name); }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setConfirmDelete(file.name);
+                      }}
                       className="text-dark-text/40 hover:text-error shrink-0 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
                       title="Delete file"
                     >
@@ -312,11 +359,13 @@ const FileViewer: React.FC<FileViewerProps> = ({ onOpenFile }) => {
               <div className="flex items-center gap-2">
                 <HardDrive className="h-3.5 w-3.5 text-primary" />
                 <span className="text-xs font-semibold tracking-wider text-light-text uppercase">Files</span>
-                {files.length > 0 && (
-                  <span className="text-xs text-dark-text">({files.length})</span>
-                )}
+                {files.length > 0 && <span className="text-xs text-dark-text">({files.length})</span>}
                 <button
-                  onClick={() => { setIsCreating(true); setNewFileName(''); setTimeout(() => newFileInputRef.current?.focus(), 50); }}
+                  onClick={() => {
+                    setIsCreating(true);
+                    setNewFileName('');
+                    setCreateFileError('');
+                  }}
                   className="ml-2 text-dark-text hover:text-primary p-0.5 rounded hover:bg-background transition-colors"
                   title="New File"
                 >
@@ -324,8 +373,8 @@ const FileViewer: React.FC<FileViewerProps> = ({ onOpenFile }) => {
                 </button>
               </div>
               <div className="flex items-center gap-1">
-                {files.length > 0 && (
-                  confirmDelete === '__all__' ? (
+                {files.length > 0 &&
+                  (confirmDelete === '__all__' ? (
                     <div className="flex items-center gap-1 mr-1">
                       <span className="text-xs text-dark-text">Delete all?</span>
                       <button
@@ -349,8 +398,7 @@ const FileViewer: React.FC<FileViewerProps> = ({ onOpenFile }) => {
                     >
                       <Trash2 size={13} />
                     </button>
-                  )
-                )}
+                  ))}
                 <button
                   onClick={() => setIsOpen(false)}
                   className="text-dark-text hover:text-light-text p-1 rounded hover:bg-background transition-colors"
@@ -362,9 +410,7 @@ const FileViewer: React.FC<FileViewerProps> = ({ onOpenFile }) => {
 
             {/* Desktop: side-by-side layout */}
             <div className="hidden md:flex flex-1 min-h-0">
-              <div className="w-56 border-r border-border flex flex-col min-h-0 shrink-0">
-                {renderFileList()}
-              </div>
+              <div className="w-56 border-r border-border flex flex-col min-h-0 shrink-0">{renderFileList()}</div>
               {renderFileContent()}
             </div>
 
