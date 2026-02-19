@@ -1,140 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
-import { Copy, Check, ChevronRight, List, X } from 'lucide-react';
+import { ChevronRight, List, X } from 'lucide-react';
 import { SEO } from '../components/layout/SEO';
-
-/* ────────────────────────────────────────────────────────── */
-/*  Reusable components                                       */
-/* ────────────────────────────────────────────────────────── */
-
-const CodeBlock = ({ code }: { code: string }) => {
-  const [copied, setCopied] = useState(false);
-
-  const copyToClipboard = async () => {
-    await navigator.clipboard.writeText(code);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  return (
-    <div className="relative group my-2">
-      <pre
-        style={{ fontSize: 'var(--editor-font-size)' }}
-        className="bg-code-bg border border-border p-3 rounded font-mono text-light-text overflow-x-auto
-          scrollbar-thin scrollbar-thumb-primary hover:scrollbar-thumb-primary-hover
-          scrollbar-track-background scrollbar-thumb-rounded-full leading-relaxed"
-      >
-        <code>{code}</code>
-      </pre>
-      <button
-        onClick={copyToClipboard}
-        className="absolute top-1.5 right-1.5 p-1.5 rounded bg-background/80 hover:bg-surface
-                 transition-colors duration-200 opacity-0 group-hover:opacity-100"
-        aria-label="Copy code"
-      >
-        {copied ? <Check className="h-3.5 w-3.5 text-success" /> : <Copy className="h-3.5 w-3.5 text-dark-text" />}
-      </button>
-    </div>
-  );
-};
-
-const Kw = ({ children }: { children: React.ReactNode }) => (
-  <code className="bg-code-bg border border-border px-1.5 py-0.5 rounded font-mono text-primary text-[0.9em]">
-    {children}
-  </code>
-);
-
-/* ────────────────────────────────────────────────────────── */
-/*  Table of contents data                                    */
-/* ────────────────────────────────────────────────────────── */
-
-interface TocEntry {
-  id: string;
-  label: string;
-  children?: { id: string; label: string }[];
-}
-
-const toc: TocEntry[] = [
-  { id: 'general', label: 'General Syntax' },
-  {
-    id: 'variables',
-    label: 'Variables & Types',
-    children: [
-      { id: 'declaring', label: 'Declaring Variables' },
-      { id: 'constants', label: 'Constants' },
-      { id: 'data-types', label: 'Data Types' },
-    ],
-  },
-  {
-    id: 'io',
-    label: 'Input / Output',
-    children: [
-      { id: 'output', label: 'OUTPUT' },
-      { id: 'input', label: 'INPUT' },
-    ],
-  },
-  {
-    id: 'arrays',
-    label: 'Arrays',
-    children: [
-      { id: 'arrays-1d', label: '1D Arrays' },
-      { id: 'arrays-2d', label: '2D Arrays' },
-    ],
-  },
-  {
-    id: 'operators',
-    label: 'Operators',
-    children: [
-      { id: 'arithmetic', label: 'Arithmetic' },
-      { id: 'comparison', label: 'Comparison' },
-      { id: 'logical', label: 'Logical' },
-      { id: 'concatenation', label: 'String Concatenation' },
-    ],
-  },
-  {
-    id: 'selection',
-    label: 'Selection',
-    children: [
-      { id: 'if', label: 'IF / ELSE / ELSEIF' },
-      { id: 'case', label: 'CASE / OTHERWISE' },
-    ],
-  },
-  {
-    id: 'iteration',
-    label: 'Iteration',
-    children: [
-      { id: 'for', label: 'FOR Loop' },
-      { id: 'while', label: 'WHILE Loop' },
-      { id: 'repeat', label: 'REPEAT Loop' },
-    ],
-  },
-  {
-    id: 'subroutines',
-    label: 'Procedures & Functions',
-    children: [
-      { id: 'procedures', label: 'Procedures' },
-      { id: 'functions', label: 'Functions' },
-    ],
-  },
-  {
-    id: 'builtins',
-    label: 'Built-in Functions',
-    children: [
-      { id: 'string-functions', label: 'String Functions' },
-      { id: 'math-functions', label: 'Math Functions' },
-      { id: 'type-conversion', label: 'Type Conversion' },
-    ],
-  },
-  {
-    id: 'files',
-    label: 'File Handling',
-    children: [
-      { id: 'file-ops', label: 'File Operations' },
-      { id: 'file-write', label: 'Writing Files' },
-      { id: 'file-read', label: 'Reading Files' },
-    ],
-  },
-  { id: 'patterns', label: 'Common Patterns' },
-];
+import CodeBlock from '../components/common/CodeBlock';
+import Kw from '../components/common/Kw';
+import toc from '../data/documentationToc';
 
 /* ────────────────────────────────────────────────────────── */
 /*  Main Documentation component                              */
@@ -142,29 +11,58 @@ const toc: TocEntry[] = [
 
 const Documentation = () => {
   const [activeId, setActiveId] = useState('general');
+  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['general']));
   const [tocOpen, setTocOpen] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
 
-  // Intersection observer for active section tracking
+  // Scroll spy using scroll event for robust tracking
   useEffect(() => {
     const container = contentRef.current;
     if (!container) return;
 
-    const headings = container.querySelectorAll('[data-section]');
-    const observer = new IntersectionObserver(
-      (entries) => {
-        for (const entry of entries) {
-          if (entry.isIntersecting) {
-            setActiveId(entry.target.getAttribute('data-section') || '');
-          }
-        }
-      },
-      { root: container, rootMargin: '-10% 0px -80% 0px', threshold: 0 }
-    );
+    const handleScroll = () => {
+      const headings = Array.from(container.querySelectorAll('[data-section]')) as HTMLElement[];
+      const containerRect = container.getBoundingClientRect();
+      const threshold = containerRect.top + 100;
 
-    headings.forEach((h) => observer.observe(h));
-    return () => observer.disconnect();
+      let currentActive = headings[0]?.getAttribute('data-section') || '';
+
+      for (const h of headings) {
+        const rect = h.getBoundingClientRect();
+        const id = h.getAttribute('data-section');
+
+        if (rect.top <= threshold) {
+            currentActive = id || currentActive;
+        } else {
+            break;
+        }
+      }
+      setActiveId(currentActive);
+    };
+
+    container.addEventListener('scroll', handleScroll, { passive: true });
+    window.addEventListener('resize', handleScroll);
+
+    // Initial check after a small delay to ensure layout
+    setTimeout(handleScroll, 100);
+
+    return () => {
+      container.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('resize', handleScroll);
+    };
   }, []);
+
+  // Auto-expand parent when child is active
+  useEffect(() => {
+    const parent = toc.find((t) => t.children?.some((c) => c.id === activeId));
+    if (parent && !expandedSections.has(parent.id)) {
+      setExpandedSections((prev) => {
+        const next = new Set(prev);
+        next.add(parent.id);
+        return next;
+      });
+    }
+  }, [activeId, expandedSections]);
 
   const scrollTo = (id: string) => {
     const el = contentRef.current?.querySelector(`[data-section="${id}"]`);
@@ -172,30 +70,73 @@ const Documentation = () => {
     setTocOpen(false);
   };
 
+  const toggleSection = (id: string) => {
+    setExpandedSections((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
+
   /* ── Sidebar TOC renderer ─────────────────────────────── */
   const renderToc = () => (
     <nav className="text-sm select-none">
       {toc.map((entry) => {
+        const isExpanded = expandedSections.has(entry.id);
         const isActive = activeId === entry.id || entry.children?.some((c) => c.id === activeId);
+        const hasChildren = entry.children && entry.children.length > 0;
+
         return (
-          <div key={entry.id}>
-            <button
-              onClick={() => scrollTo(entry.id)}
-              className={`w-full text-left px-3 py-1 rounded transition-colors truncate
-                ${isActive ? 'text-primary font-medium bg-surface' : 'text-dark-text hover:text-light-text hover:bg-surface/50'}`}
+          <div key={entry.id} className="mb-1">
+            <div
+              className={`flex items-center w-full rounded transition-colors pr-2
+              ${isActive ? 'bg-surface text-primary font-medium' : 'text-dark-text hover:text-light-text hover:bg-surface/50'}`}
             >
-              {entry.label}
-            </button>
-            {entry.children && (
-              <div className="ml-3 border-l border-border">
-                {entry.children.map((child) => (
+              {hasChildren ? (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleSection(entry.id);
+                  }}
+                  className="p-1.5 hover:bg-black/5 rounded mr-1 flex-shrink-0"
+                  aria-label={isExpanded ? 'Collapse section' : 'Expand section'}
+                >
+                  <ChevronRight
+                    className={`h-3.5 w-3.5 transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`}
+                  />
+                </button>
+              ) : (
+                <span className="w-7 flex-shrink-0" />
+              )}
+
+              <button
+                onClick={() => {
+                  scrollTo(entry.id);
+                  if (hasChildren && !isExpanded) toggleSection(entry.id);
+                }}
+                className="flex-1 text-left py-1.5 truncate"
+              >
+                {entry.label}
+              </button>
+            </div>
+
+            {hasChildren && isExpanded && (
+              <div className="ml-7 border-l border-border mt-1 space-y-0.5">
+                {entry.children!.map((child) => (
                   <button
                     key={child.id}
                     onClick={() => scrollTo(child.id)}
-                    className={`w-full text-left px-3 py-0.5 text-xs rounded transition-colors truncate flex items-center gap-1
-                      ${activeId === child.id ? 'text-primary' : 'text-dark-text hover:text-light-text'}`}
+                    className={`block w-full text-left px-3 py-1 text-xs rounded transition-colors truncate
+                      ${
+                        activeId === child.id
+                          ? 'text-primary font-medium bg-primary/5'
+                          : 'text-dark-text hover:text-light-text hover:bg-surface/50'
+                      }`}
                   >
-                    <ChevronRight className="h-3 w-3 shrink-0 opacity-50" />
                     {child.label}
                   </button>
                 ))}
@@ -231,6 +172,7 @@ const Documentation = () => {
         keywords="IGCSE pseudocode tutorial, pseudocode syntax, pseudocode guide, learn pseudocode, IGCSE 0478 documentation"
         canonical="https://pseudocode-compiler.sherlemious.com/how-to-use"
       />
+
       {/* ── Mobile TOC toggle ────────────────────────────── */}
       <button
         onClick={() => setTocOpen(!tocOpen)}
