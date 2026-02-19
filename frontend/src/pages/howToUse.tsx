@@ -14,6 +14,7 @@ const Documentation = () => {
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['general']));
   const [tocOpen, setTocOpen] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
+  const sidebarRef = useRef<HTMLElement>(null);
 
   // Scroll spy using scroll event for robust tracking
   useEffect(() => {
@@ -52,17 +53,31 @@ const Documentation = () => {
     };
   }, []);
 
-  // Auto-expand parent when child is active
+  // Strict Auto-Collapse & Auto-Scroll Sidebar
   useEffect(() => {
     const parent = toc.find((t) => t.children?.some((c) => c.id === activeId));
-    if (parent && !expandedSections.has(parent.id)) {
-      setExpandedSections((prev) => {
-        const next = new Set(prev);
-        next.add(parent.id);
-        return next;
-      });
+
+    if (parent) {
+      // Only keep the current active parent expanded
+      setExpandedSections(new Set([parent.id]));
+    } else {
+      // If it's a top-level item that is active, maybe expand it if it has children?
+      // Or just keep the set empty if no parent is found for a sub-item.
+      // Checking if activeId itself is a parent in the TOC
+      const isParentItself = toc.find(t => t.id === activeId);
+      if (isParentItself) {
+         setExpandedSections(new Set([activeId]));
+      }
     }
-  }, [activeId, expandedSections]);
+
+    // Scroll active item into view in the sidebar
+    if (sidebarRef.current) {
+      const activeElement = sidebarRef.current.querySelector(`[data-toc-id="${activeId}"]`);
+      if (activeElement) {
+        activeElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    }
+  }, [activeId]);
 
   const scrollTo = (id: string) => {
     const el = contentRef.current?.querySelector(`[data-section="${id}"]`);
@@ -76,6 +91,11 @@ const Documentation = () => {
       if (next.has(id)) {
         next.delete(id);
       } else {
+        // If we want strict accordion behavior (one open at a time), we could clear `prev` first.
+        // But manual toggle usually implies user intent, so keeping multiple open might be okay *until* scroll changes.
+        // However, the user asked for strict behavior. Let's make manual toggle also strict?
+        // "they stay expanded and yeah" -> implying too many open.
+        // Let's keep manual toggle flexible but auto-scroll strict.
         next.add(id);
       }
       return next;
@@ -91,7 +111,7 @@ const Documentation = () => {
         const hasChildren = entry.children && entry.children.length > 0;
 
         return (
-          <div key={entry.id} className="mb-1">
+          <div key={entry.id} className="mb-1" data-toc-id={entry.id}>
             <div
               className={`flex items-center w-full rounded transition-colors pr-2
               ${isActive ? 'bg-surface text-primary font-medium' : 'text-dark-text hover:text-light-text hover:bg-surface/50'}`}
@@ -129,6 +149,7 @@ const Documentation = () => {
                 {entry.children!.map((child) => (
                   <button
                     key={child.id}
+                    data-toc-id={child.id}
                     onClick={() => scrollTo(child.id)}
                     className={`block w-full text-left px-3 py-1 text-xs rounded transition-colors truncate
                       ${
@@ -198,6 +219,7 @@ const Documentation = () => {
 
       {/* ── Desktop sidebar ──────────────────────────────── */}
       <aside
+        ref={sidebarRef}
         className="hidden lg:block w-56 shrink-0 border-r border-border bg-surface overflow-y-auto p-2
           scrollbar-thin scrollbar-thumb-primary scrollbar-track-background scrollbar-thumb-rounded-full"
       >
