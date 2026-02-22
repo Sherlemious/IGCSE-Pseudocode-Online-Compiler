@@ -9,6 +9,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "test": "vitest",
     "lint": "eslint .",
     "preview": "vite preview",
     "antlr:generate": "antlr4ng -Dlanguage=TypeScript -o src/interpreter/generated -visitor -Xexact-output-dir src/interpreter/grammar/Pseudocode.g4"
@@ -48,6 +49,7 @@
     "tailwindcss": "^3.4.17",
     "typescript": "~5.6.2",
     "typescript-eslint": "^8.18.2",
-    "vite": "^6.0.5"
+    "vite": "^6.0.5",
+    "vitest": "^4.0.18"
   }
 }
