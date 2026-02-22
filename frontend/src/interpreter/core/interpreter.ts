@@ -313,22 +313,13 @@ export class Interpreter {
     const exprs = ctx.expr();
 
     if (ctx.LBRACKET()) {
-      // Array element assignment
-      // Auto-create array with 1-indexed bounds if it doesn't exist
       const dimensions = exprs.length === 3 ? 2 : 1;
-      const arr = this.env.getOrCreateArray(name, dimensions as 1 | 2);
-      if (exprs.length === 3) {
-        // 2D: arr[i, j] = expr
-        const i = toNumber(await this.evalExpr(exprs[0]));
-        const j = toNumber(await this.evalExpr(exprs[1]));
-        const value = await this.evalExpr(exprs[2]);
-        arr.set([i, j], value);
-      } else {
-        // 1D: arr[i] = expr
-        const idx = toNumber(await this.evalExpr(exprs[0]));
-        const value = await this.evalExpr(exprs[1]);
-        arr.set([idx], value);
+      const indices: number[] = [];
+      for (let i = 0; i < dimensions; i++) {
+        indices.push(toNumber(await this.evalExpr(exprs[i])));
       }
+      const value = await this.evalExpr(exprs[dimensions]);
+      this.env.getOrCreateArray(name, dimensions as 1 | 2).set(indices, value);
     } else {
       // Simple assignment
       const value = await this.evalExpr(exprs[0]);
@@ -346,9 +337,7 @@ export class Interpreter {
 
     if (ctx.LBRACKET()) {
       const idx = toNumber(await this.evalExpr(ctx.expr()!));
-      // Auto-create array with 1-indexed bounds if it doesn't exist
-      const arr = this.env.getOrCreateArray(name, 1);
-      arr.set([idx], value);
+      this.env.getOrCreateArray(name, 1).set([idx], value);
     } else {
       this.env.set(name, value);
     }
@@ -784,18 +773,14 @@ export class Interpreter {
     if (ctx instanceof ArrayAccess1DAtomContext) {
       const name = ctx.IDENTIFIER().getText();
       const idx = toNumber(await this.evalExpr(ctx.expr()));
-      // Auto-create array with 1-indexed bounds if it doesn't exist
-      const arr = this.env.getOrCreateArray(name, 1);
-      return arr.get([idx]);
+      return this.env.getOrCreateArray(name, 1).get([idx]);
     }
 
     if (ctx instanceof ArrayAccess2DAtomContext) {
       const name = ctx.IDENTIFIER().getText();
       const i = toNumber(await this.evalExpr(ctx.expr(0)!));
       const j = toNumber(await this.evalExpr(ctx.expr(1)!));
-      // Auto-create array with 1-indexed bounds if it doesn't exist
-      const arr = this.env.getOrCreateArray(name, 2);
-      return arr.get([i, j]);
+      return this.env.getOrCreateArray(name, 2).get([i, j]);
     }
 
     if (ctx instanceof DivFunctionAtomContext) {
