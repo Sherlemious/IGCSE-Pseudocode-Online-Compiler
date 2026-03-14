@@ -13,6 +13,7 @@ export const metadata: Metadata = {
     'Write and run IGCSE pseudocode online. Free browser-based compiler for Cambridge Computer Science 0478 syllabus.',
   keywords: ['pseudocode', 'IGCSE', 'compiler', 'Cambridge', 'Computer Science', '0478'],
   authors: [{ name: 'Sherlemious' }],
+  icons: { icon: '/favicon.svg', shortcut: '/favicon.svg' },
   openGraph: {
     type: 'website',
     siteName: 'IGCSE Pseudocode Compiler',
