@@ -41,7 +41,7 @@ export default async function QuestionPage({ params }: Props) {
   return (
     <div className="flex-1 min-h-0 overflow-hidden bg-background text-light-text flex flex-col lg:flex-row">
       {/* Left: Question description */}
-      <div className="lg:w-96 shrink-0 border-r border-border overflow-y-auto p-6">
+      <div className="lg:w-96 shrink-0 border-r border-border overflow-y-auto p-6 scrollbar-thin scrollbar-thumb-primary">
         <h1 className="text-lg font-bold text-light-text mb-2">{question.title}</h1>
         <div className="flex gap-2 mb-4 text-xs">
           <span className="bg-surface px-2 py-0.5 rounded border border-border text-dark-text">

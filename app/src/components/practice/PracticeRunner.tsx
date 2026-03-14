@@ -76,11 +76,13 @@ export default function PracticeRunner({ starterCode, testCases }: Props) {
             {isGrading ? 'Grading…' : 'Run & Grade'}
           </button>
         </div>
-        <CodeMirrorEditor
-          value={code}
-          onChange={setCode}
-          isRunning={isGrading}
-        />
+        <div className="flex-1 min-h-0 overflow-hidden">
+          <CodeMirrorEditor
+            value={code}
+            onChange={setCode}
+            isRunning={isGrading}
+          />
+        </div>
       </div>
 
       {/* Results panel */}
