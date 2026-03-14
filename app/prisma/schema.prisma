@@ -1,0 +1,58 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ── Examples (Phase 2) ──────────────────────────────────────
+model Example {
+  id        String   @id @default(cuid())
+  title     String
+  category  String
+  code      String   @db.Text
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([category])
+}
+
+// ── Practice Questions (Phase 3) ────────────────────────────
+enum Difficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
+model Question {
+  id          String     @id @default(cuid())
+  title       String
+  description String     @db.Text
+  difficulty  Difficulty @default(MEDIUM)
+  year        Int?
+  paper       String?
+  topic       String?
+  starterCode String?    @db.Text
+  testCases   TestCase[]
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@index([topic])
+}
+
+model TestCase {
+  id             String   @id @default(cuid())
+  questionId     String
+  question       Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  inputs         String[]
+  expectedOutput String   @db.Text
+  isHidden       Boolean  @default(false)
+  description    String?
+  sortOrder      Int      @default(0)
+
+  @@index([questionId])
+}
