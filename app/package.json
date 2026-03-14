@@ -1,0 +1,47 @@
+{
+  "name": "app",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "postbuild": "node -e \"if(process.env.DATABASE_URL){require('child_process').execSync('prisma migrate deploy',{stdio:'inherit'})}\"",
+    "start": "next start",
+    "db:migrate": "prisma migrate dev",
+    "db:seed": "tsx prisma/seed.ts",
+    "db:studio": "prisma studio"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  },
+  "dependencies": {
+    "@codemirror/autocomplete": "^6.20.1",
+    "@codemirror/commands": "^6.10.3",
+    "@codemirror/language": "^6.12.2",
+    "@codemirror/search": "^6.6.0",
+    "@codemirror/state": "^6.6.0",
+    "@codemirror/view": "^6.40.0",
+    "@lezer/highlight": "^1.2.3",
+    "@lezer/lr": "^1.4.8",
+    "@prisma/client": "^6.19.2",
+    "@radix-ui/react-popover": "^1.1.15",
+    "@tailwindcss/typography": "^0.5.19",
+    "antlr4ng": "^3.0.16",
+    "lucide-react": "^0.577.0",
+    "next": "16.1.6",
+    "prisma": "^6.19.2",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "sonner": "^2.0.7",
+    "tailwind-scrollbar": "^4.0.2"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "tailwindcss": "^4",
+    "tsx": "^4.21.0",
+    "typescript": "^5"
+  }
+}
