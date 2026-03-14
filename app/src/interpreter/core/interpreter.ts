@@ -115,14 +115,7 @@ export class Interpreter {
       const now = performance.now();
       if (now - this.lastYieldTime > 16) {
         this.checkCancelled();
-        await new Promise<void>((resolve) => {
-          const { port1, port2 } = new MessageChannel();
-          port1.onmessage = () => {
-            port1.close();
-            resolve();
-          };
-          port2.postMessage(null);
-        });
+        await new Promise<void>((resolve) => setTimeout(resolve, 0));
         this.lastYieldTime = performance.now();
       }
     }
