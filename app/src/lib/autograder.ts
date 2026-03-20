@@ -50,6 +50,7 @@ export async function gradeSubmission(
 
   const outputLines: string[] = [];
   let inputIndex = 0;
+  let inputOverflow = false;
   let interpreterRef: Interpreter | null = null;
 
   const fs = new ServerVirtualFileSystem();
@@ -60,6 +61,9 @@ export async function gradeSubmission(
         outputLines.push(text);
       },
       onInputRequest(_varName: string) {
+        if (inputIndex >= inputs.length) {
+          inputOverflow = true;
+        }
         const value = inputs[inputIndex++] ?? '';
         // Schedule for next microtask so inputResolver is set before we call it
         Promise.resolve().then(() => interpreterRef?.provideInput(value));
@@ -114,7 +118,20 @@ export async function gradeSubmission(
   const executionMs = Date.now() - start;
   const actualOutput = outputLines.join('\n');
 
-  // 4. Compare (trim + normalize whitespace)
+  // 4. Warn if code requested more inputs than provided
+  if (inputOverflow) {
+    return {
+      passed: false,
+      actualOutput,
+      error: {
+        kind: 'runtime',
+        message: `Your code requested more inputs than the test provides (expected ${inputs.length}). Check your INPUT statements.`,
+      },
+      executionMs,
+    };
+  }
+
+  // 5. Compare (trim + normalize whitespace)
   const normalize = (s: string) => s.trim().replace(/\r\n/g, '\n').replace(/[ \t]+/g, ' ');
   const passed = normalize(actualOutput) === normalize(expectedOutput);
 

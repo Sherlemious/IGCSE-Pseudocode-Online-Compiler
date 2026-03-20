@@ -892,6 +892,584 @@ OUTPUT Count`,
       { inputs: ['4', '1', '2', '3', '4', '9'],        expectedOutput: '0', description: 'Not found — 0 times',    sortOrder: 3, isHidden: true },
     ],
   },
+
+  // ════════════════════════════════════════════════ NEW EASY (IGCSE-style) ═══
+
+  {
+    title: 'Minimum of Three',
+    description: `Read three integers. Output the smallest of the three.
+
+**Input:** Three integers on separate lines.
+**Output:** The smallest integer.
+
+**Example:**
+\`\`\`
+Input:  3
+        7
+        5
+Output: 3
+\`\`\``,
+    difficulty: 'EASY' as const,
+    topic: 'Selection',
+    starterCode: `DECLARE A : INTEGER
+DECLARE B : INTEGER
+DECLARE C : INTEGER
+
+INPUT A
+INPUT B
+INPUT C
+
+// Find and OUTPUT the minimum value`,
+    testCases: [
+      { inputs: ['3', '7', '5'],    expectedOutput: '3',  description: 'First value smallest',  sortOrder: 0 },
+      { inputs: ['10', '10', '10'], expectedOutput: '10', description: 'All equal',              sortOrder: 1 },
+      { inputs: ['-1', '-5', '-3'], expectedOutput: '-5', description: 'Negative numbers',       sortOrder: 2 },
+      { inputs: ['1', '2', '3'],    expectedOutput: '1',  description: null,                     sortOrder: 3, isHidden: true },
+      { inputs: ['5', '3', '5'],    expectedOutput: '3',  description: null,                     sortOrder: 4, isHidden: true },
+    ],
+  },
+
+  {
+    title: 'Number Classifier',
+    description: `Read an integer. Output \`Positive\`, \`Negative\`, or \`Zero\` depending on its value.
+
+**Input:** A single integer.
+**Output:** \`Positive\`, \`Negative\`, or \`Zero\`.
+
+**Example:**
+\`\`\`
+Input:  -3
+Output: Negative
+\`\`\``,
+    difficulty: 'EASY' as const,
+    topic: 'Selection',
+    starterCode: `DECLARE N : INTEGER
+
+INPUT N
+
+IF N > 0 THEN
+    OUTPUT "Positive"
+ELSEIF N < 0 THEN
+    OUTPUT "Negative"
+ELSE
+    OUTPUT "Zero"
+ENDIF`,
+    testCases: [
+      { inputs: ['5'],   expectedOutput: 'Positive', description: 'Positive number', sortOrder: 0 },
+      { inputs: ['-3'],  expectedOutput: 'Negative', description: 'Negative number', sortOrder: 1 },
+      { inputs: ['0'],   expectedOutput: 'Zero',     description: 'Zero',            sortOrder: 2 },
+      { inputs: ['100'], expectedOutput: 'Positive', description: null,              sortOrder: 3, isHidden: true },
+      { inputs: ['-1'],  expectedOutput: 'Negative', description: null,              sortOrder: 4, isHidden: true },
+    ],
+  },
+
+  {
+    title: 'Celsius to Fahrenheit',
+    description: `Read a temperature in Celsius (integer). Convert it to Fahrenheit using the formula:
+
+**F = C × 9 DIV 5 + 32**
+
+Output the result as an integer.
+
+**Input:** An integer Celsius temperature.
+**Output:** The Fahrenheit equivalent (integer).
+
+**Example:**
+\`\`\`
+Input:  100
+Output: 212
+\`\`\``,
+    difficulty: 'EASY' as const,
+    topic: 'Arithmetic',
+    starterCode: `DECLARE Celsius : INTEGER
+DECLARE Fahrenheit : INTEGER
+
+INPUT Celsius
+
+Fahrenheit <- (Celsius * 9) DIV 5 + 32
+
+OUTPUT Fahrenheit`,
+    testCases: [
+      { inputs: ['0'],   expectedOutput: '32',  description: 'Freezing point',   sortOrder: 0 },
+      { inputs: ['100'], expectedOutput: '212', description: 'Boiling point',    sortOrder: 1 },
+      { inputs: ['20'],  expectedOutput: '68',  description: 'Room temperature', sortOrder: 2 },
+      { inputs: ['-10'], expectedOutput: '14',  description: null,               sortOrder: 3, isHidden: true },
+      { inputs: ['37'],  expectedOutput: '98',  description: null,               sortOrder: 4, isHidden: true },
+    ],
+  },
+
+  // ══════════════════════════════════════════════ NEW MEDIUM (IGCSE-style) ═══
+
+  {
+    title: 'Validated Score Entry',
+    description: `Write a program that repeatedly asks the user to enter a score until a valid score is entered.
+A valid score is an integer in the range **0 to 100 inclusive**.
+Once a valid score is entered, output it.
+
+Use a **REPEAT UNTIL** loop for validation.
+
+**Input:** One or more integers (loop repeats until a value in 0–100 is entered).
+**Output:** The first valid score entered.
+
+**Example:**
+\`\`\`
+Input:  150
+        -5
+        75
+Output: 75
+\`\`\``,
+    difficulty: 'MEDIUM' as const,
+    topic: 'Loops',
+    starterCode: `DECLARE Score : INTEGER
+
+REPEAT
+    INPUT Score
+UNTIL Score >= 0 AND Score <= 100
+
+OUTPUT Score`,
+    testCases: [
+      { inputs: ['75'],          expectedOutput: '75',  description: 'Valid on first attempt',  sortOrder: 0 },
+      { inputs: ['150', '50'],   expectedOutput: '50',  description: 'Invalid then valid',       sortOrder: 1 },
+      { inputs: ['-5', '0'],     expectedOutput: '0',   description: 'Edge: 0 is valid',         sortOrder: 2 },
+      { inputs: ['200', '101', '100'], expectedOutput: '100', description: null,                 sortOrder: 3, isHidden: true },
+      { inputs: ['0'],           expectedOutput: '0',   description: null,                       sortOrder: 4, isHidden: true },
+    ],
+  },
+
+  {
+    title: 'Sum Until Zero',
+    description: `Read a series of positive integers from the user. Stop when the user enters **0**.
+Output the total of all numbers entered (not counting the 0).
+If the first number entered is 0, output 0.
+
+Use a **WHILE** loop.
+
+**Input:** A sequence of integers ending with 0.
+**Output:** The sum of all non-zero entries.
+
+**Example:**
+\`\`\`
+Input:  5
+        10
+        3
+        0
+Output: 18
+\`\`\``,
+    difficulty: 'MEDIUM' as const,
+    topic: 'Loops',
+    starterCode: `DECLARE Total : INTEGER
+DECLARE N : INTEGER
+
+Total <- 0
+INPUT N
+
+WHILE N <> 0 DO
+    Total <- Total + N
+    INPUT N
+ENDWHILE
+
+OUTPUT Total`,
+    testCases: [
+      { inputs: ['5', '10', '3', '0'],        expectedOutput: '18', description: 'Basic sum',             sortOrder: 0 },
+      { inputs: ['0'],                         expectedOutput: '0',  description: 'Immediate zero',        sortOrder: 1 },
+      { inputs: ['7', '0'],                    expectedOutput: '7',  description: 'Single number',         sortOrder: 2 },
+      { inputs: ['100', '200', '300', '0'],    expectedOutput: '600', description: null,                  sortOrder: 3, isHidden: true },
+      { inputs: ['1', '2', '3', '4', '5', '0'], expectedOutput: '15', description: null,                 sortOrder: 4, isHidden: true },
+    ],
+  },
+
+  {
+    title: 'Count Numbers in Range',
+    description: `Read an integer N (1 ≤ N ≤ 10), then read N integers.
+Count how many of the integers are in the range **10 to 20 inclusive**. Output the count.
+
+**Input:** N on the first line, then N integers one per line.
+**Output:** The count of numbers in the range 10–20.
+
+**Example:**
+\`\`\`
+Input:  5
+        5
+        15
+        20
+        25
+        10
+Output: 3
+\`\`\``,
+    difficulty: 'MEDIUM' as const,
+    topic: 'Loops',
+    starterCode: `DECLARE N : INTEGER
+DECLARE i : INTEGER
+DECLARE Num : INTEGER
+DECLARE Count : INTEGER
+
+INPUT N
+
+Count <- 0
+FOR i <- 1 TO N
+    INPUT Num
+    IF Num >= 10 AND Num <= 20 THEN
+        Count <- Count + 1
+    ENDIF
+NEXT i
+
+OUTPUT Count`,
+    testCases: [
+      { inputs: ['5', '5', '15', '20', '25', '10'],       expectedOutput: '3', description: 'Three in range',    sortOrder: 0 },
+      { inputs: ['3', '1', '2', '3'],                      expectedOutput: '0', description: 'None in range',     sortOrder: 1 },
+      { inputs: ['4', '10', '20', '15', '5'],              expectedOutput: '3', description: 'Three in range',    sortOrder: 2 },
+      { inputs: ['5', '10', '10', '10', '10', '10'],       expectedOutput: '5', description: null,                sortOrder: 3, isHidden: true },
+      { inputs: ['1', '9'],                                 expectedOutput: '0', description: null,                sortOrder: 4, isHidden: true },
+    ],
+  },
+
+  {
+    title: 'Username Validator',
+    description: `Read a username string. Output \`Valid\` if the username length is between **6 and 12 characters inclusive**, otherwise output \`Invalid\`.
+
+**Input:** A single string.
+**Output:** \`Valid\` or \`Invalid\`.
+
+**Example:**
+\`\`\`
+Input:  student1
+Output: Valid
+\`\`\``,
+    difficulty: 'MEDIUM' as const,
+    topic: 'String Processing',
+    starterCode: `DECLARE Username : STRING
+DECLARE Len : INTEGER
+
+INPUT Username
+
+Len <- LENGTH(Username)
+
+IF Len >= 6 AND Len <= 12 THEN
+    OUTPUT "Valid"
+ELSE
+    OUTPUT "Invalid"
+ENDIF`,
+    testCases: [
+      { inputs: ['student1'],           expectedOutput: 'Valid',   description: '8 chars — valid',      sortOrder: 0 },
+      { inputs: ['hello'],              expectedOutput: 'Invalid', description: '5 chars — too short',  sortOrder: 1 },
+      { inputs: ['averylongusername'],  expectedOutput: 'Invalid', description: '17 chars — too long',  sortOrder: 2 },
+      { inputs: ['abcdef'],             expectedOutput: 'Valid',   description: null,                   sortOrder: 3, isHidden: true },
+      { inputs: ['abcdefghijkl'],       expectedOutput: 'Valid',   description: null,                   sortOrder: 4, isHidden: true },
+    ],
+  },
+
+  {
+    title: 'Capitalise First Letter',
+    description: `Read a word. Output it with the **first letter in uppercase** and all remaining letters in lowercase.
+
+**Input:** A single word.
+**Output:** The word with first letter capitalised.
+
+**Example:**
+\`\`\`
+Input:  hello
+Output: Hello
+\`\`\``,
+    difficulty: 'MEDIUM' as const,
+    topic: 'String Processing',
+    starterCode: `DECLARE Word : STRING
+DECLARE Result : STRING
+
+INPUT Word
+
+Result <- UCASE(SUBSTRING(Word, 1, 1)) & LCASE(SUBSTRING(Word, 2, LENGTH(Word) - 1))
+
+OUTPUT Result`,
+    testCases: [
+      { inputs: ['hello'],   expectedOutput: 'Hello',  description: 'Lowercase input',  sortOrder: 0 },
+      { inputs: ['WORLD'],   expectedOutput: 'World',  description: 'Uppercase input',  sortOrder: 1 },
+      { inputs: ['pYTHON'],  expectedOutput: 'Python', description: 'Mixed case',       sortOrder: 2 },
+      { inputs: ['z'],       expectedOutput: 'Z',      description: null,               sortOrder: 3, isHidden: true },
+      { inputs: ['aBC'],     expectedOutput: 'Abc',    description: null,               sortOrder: 4, isHidden: true },
+    ],
+  },
+
+  {
+    title: 'Count Above Average',
+    description: `Read an integer N (1 ≤ N ≤ 10), then read N integers into an array.
+Compute the integer average (sum DIV N).
+Count and output how many values are **strictly greater than** the average.
+
+**Input:** N on the first line, then N integers one per line.
+**Output:** The count of values above the integer average.
+
+**Example:**
+\`\`\`
+Input:  5
+        10
+        20
+        30
+        40
+        50
+Output: 2
+\`\`\`
+*(sum = 150, average = 30, values above 30: 40, 50 → count = 2)*`,
+    difficulty: 'MEDIUM' as const,
+    topic: 'Arrays',
+    starterCode: `DECLARE N : INTEGER
+DECLARE i : INTEGER
+DECLARE Sum : INTEGER
+DECLARE Avg : INTEGER
+DECLARE Count : INTEGER
+DECLARE Numbers : ARRAY[1:10] OF INTEGER
+
+INPUT N
+
+Sum <- 0
+FOR i <- 1 TO N
+    INPUT Numbers[i]
+    Sum <- Sum + Numbers[i]
+NEXT i
+
+Avg <- Sum DIV N
+
+Count <- 0
+FOR i <- 1 TO N
+    IF Numbers[i] > Avg THEN
+        Count <- Count + 1
+    ENDIF
+NEXT i
+
+OUTPUT Count`,
+    testCases: [
+      { inputs: ['5', '10', '20', '30', '40', '50'], expectedOutput: '2', description: 'Average = 30',         sortOrder: 0 },
+      { inputs: ['4', '1', '2', '3', '4'],           expectedOutput: '2', description: 'Average = 2 (int div)', sortOrder: 1 },
+      { inputs: ['3', '5', '5', '5'],                expectedOutput: '0', description: 'All equal',             sortOrder: 2 },
+      { inputs: ['4', '5', '10', '15', '20'],        expectedOutput: '2', description: null,                    sortOrder: 3, isHidden: true },
+      { inputs: ['1', '7'],                           expectedOutput: '0', description: null,                    sortOrder: 4, isHidden: true },
+    ],
+  },
+
+  // ════════════════════════════════════════════════ NEW HARD (IGCSE-style) ═══
+
+  {
+    title: 'Leap Year Checker',
+    description: `Read a year. Output \`Leap Year\` if it is a leap year, or \`Not a Leap Year\` otherwise.
+
+**Rules:**
+- Divisible by 400 → Leap Year
+- Divisible by 100 (but not 400) → Not a Leap Year
+- Divisible by 4 (but not 100) → Leap Year
+- Otherwise → Not a Leap Year
+
+**Input:** A positive integer year.
+**Output:** \`Leap Year\` or \`Not a Leap Year\`.
+
+**Example:**
+\`\`\`
+Input:  2024
+Output: Leap Year
+\`\`\``,
+    difficulty: 'HARD' as const,
+    topic: 'Selection',
+    starterCode: `DECLARE Year : INTEGER
+
+INPUT Year
+
+IF MOD(Year, 400) = 0 THEN
+    OUTPUT "Leap Year"
+ELSEIF MOD(Year, 100) = 0 THEN
+    OUTPUT "Not a Leap Year"
+ELSEIF MOD(Year, 4) = 0 THEN
+    OUTPUT "Leap Year"
+ELSE
+    OUTPUT "Not a Leap Year"
+ENDIF`,
+    testCases: [
+      { inputs: ['2000'], expectedOutput: 'Leap Year',     description: 'Divisible by 400',       sortOrder: 0 },
+      { inputs: ['1900'], expectedOutput: 'Not a Leap Year', description: 'Div by 100, not 400',  sortOrder: 1 },
+      { inputs: ['2024'], expectedOutput: 'Leap Year',     description: 'Divisible by 4',         sortOrder: 2 },
+      { inputs: ['2023'], expectedOutput: 'Not a Leap Year', description: 'Not divisible by 4',   sortOrder: 3 },
+      { inputs: ['1600'], expectedOutput: 'Leap Year',     description: null,                     sortOrder: 4, isHidden: true },
+      { inputs: ['2100'], expectedOutput: 'Not a Leap Year', description: null,                   sortOrder: 5, isHidden: true },
+    ],
+  },
+
+  {
+    title: 'Selection Sort',
+    description: `Read an integer N (1 ≤ N ≤ 8), then read N integers. Sort them in **ascending** order using selection sort and output them one per line.
+
+**Selection Sort:** For each position i from 1 to N-1, find the minimum value in positions i to N, then swap it into position i.
+
+**Input:** N on the first line, then N integers one per line.
+**Output:** The sorted integers in ascending order, one per line.
+
+**Example:**
+\`\`\`
+Input:  5
+        64
+        25
+        12
+        22
+        11
+Output: 11
+        12
+        22
+        25
+        64
+\`\`\``,
+    difficulty: 'HARD' as const,
+    topic: 'Algorithms',
+    starterCode: `DECLARE N : INTEGER
+DECLARE i : INTEGER
+DECLARE j : INTEGER
+DECLARE MinIdx : INTEGER
+DECLARE Temp : INTEGER
+DECLARE Numbers : ARRAY[1:8] OF INTEGER
+
+INPUT N
+FOR i <- 1 TO N
+    INPUT Numbers[i]
+NEXT i
+
+// Selection sort
+FOR i <- 1 TO N - 1
+    MinIdx <- i
+    FOR j <- i + 1 TO N
+        IF Numbers[j] < Numbers[MinIdx] THEN
+            MinIdx <- j
+        ENDIF
+    NEXT j
+    IF MinIdx <> i THEN
+        Temp <- Numbers[i]
+        Numbers[i] <- Numbers[MinIdx]
+        Numbers[MinIdx] <- Temp
+    ENDIF
+NEXT i
+
+FOR i <- 1 TO N
+    OUTPUT Numbers[i]
+NEXT i`,
+    testCases: [
+      { inputs: ['5', '64', '25', '12', '22', '11'], expectedOutput: '11\n12\n22\n25\n64', description: 'Unsorted 5 numbers',  sortOrder: 0 },
+      { inputs: ['3', '3', '1', '2'],               expectedOutput: '1\n2\n3',            description: '3 numbers',           sortOrder: 1 },
+      { inputs: ['4', '5', '4', '3', '2'],          expectedOutput: '2\n3\n4\n5',         description: null,                  sortOrder: 2, isHidden: true },
+      { inputs: ['5', '1', '2', '3', '4', '5'],    expectedOutput: '1\n2\n3\n4\n5',      description: null,                  sortOrder: 3, isHidden: true },
+    ],
+  },
+
+  {
+    title: 'Password Strength Checker',
+    description: `Read a password string. Output \`Strong\` if it meets **both** of the following criteria:
+
+1. At least **8 characters** long
+2. Contains at least **one digit** (0–9)
+
+Otherwise output \`Weak\`.
+
+**Input:** A single string (the password).
+**Output:** \`Strong\` or \`Weak\`.
+
+**Example:**
+\`\`\`
+Input:  hello123
+Output: Strong
+\`\`\``,
+    difficulty: 'HARD' as const,
+    topic: 'String Processing',
+    starterCode: `DECLARE Password : STRING
+DECLARE i : INTEGER
+DECLARE Ch : STRING
+DECLARE HasDigit : BOOLEAN
+DECLARE Len : INTEGER
+
+INPUT Password
+
+Len <- LENGTH(Password)
+HasDigit <- FALSE
+
+FOR i <- 1 TO Len
+    Ch <- SUBSTRING(Password, i, 1)
+    IF Ch >= "0" AND Ch <= "9" THEN
+        HasDigit <- TRUE
+    ENDIF
+NEXT i
+
+IF Len >= 8 AND HasDigit = TRUE THEN
+    OUTPUT "Strong"
+ELSE
+    OUTPUT "Weak"
+ENDIF`,
+    testCases: [
+      { inputs: ['hello123'],  expectedOutput: 'Strong', description: '8 chars with digit',    sortOrder: 0 },
+      { inputs: ['abc123'],    expectedOutput: 'Weak',   description: 'Too short',             sortOrder: 1 },
+      { inputs: ['abcdefgh'],  expectedOutput: 'Weak',   description: '8 chars, no digit',     sortOrder: 2 },
+      { inputs: ['password1'], expectedOutput: 'Strong', description: null,                    sortOrder: 3, isHidden: true },
+      { inputs: ['12345678'],  expectedOutput: 'Strong', description: null,                    sortOrder: 4, isHidden: true },
+      { inputs: ['short'],     expectedOutput: 'Weak',   description: null,                    sortOrder: 5, isHidden: true },
+    ],
+  },
+
+  {
+    title: '2D Array Row Sums',
+    description: `Read a 3×3 matrix of integers, entered row by row (9 values in total). For each row, output the sum of that row's three values, one sum per line.
+
+**Input:** 9 integers in row-major order (3 values per row, 3 rows).
+**Output:** Three integers — the sum of row 1, row 2, and row 3.
+
+**Example:**
+\`\`\`
+Input:  1 2 3     (row 1)
+        4 5 6     (row 2)
+        7 8 9     (row 3)
+Output: 6
+        15
+        24
+\`\`\`
+*(Enter all 9 values one per line)*`,
+    difficulty: 'HARD' as const,
+    topic: 'Arrays',
+    starterCode: `DECLARE Grid : ARRAY[1:3, 1:3] OF INTEGER
+DECLARE Row : INTEGER
+DECLARE Col : INTEGER
+DECLARE RowSum : INTEGER
+
+FOR Row <- 1 TO 3
+    FOR Col <- 1 TO 3
+        INPUT Grid[Row, Col]
+    NEXT Col
+NEXT Row
+
+FOR Row <- 1 TO 3
+    RowSum <- 0
+    FOR Col <- 1 TO 3
+        RowSum <- RowSum + Grid[Row, Col]
+    NEXT Col
+    OUTPUT RowSum
+NEXT Row`,
+    testCases: [
+      {
+        inputs: ['1', '2', '3', '4', '5', '6', '7', '8', '9'],
+        expectedOutput: '6\n15\n24',
+        description: '1–9 matrix',
+        sortOrder: 0,
+      },
+      {
+        inputs: ['10', '20', '30', '0', '0', '0', '5', '5', '5'],
+        expectedOutput: '60\n0\n15',
+        description: 'Mixed rows',
+        sortOrder: 1,
+      },
+      {
+        inputs: ['1', '1', '1', '2', '2', '2', '3', '3', '3'],
+        expectedOutput: '3\n6\n9',
+        description: 'Uniform rows',
+        sortOrder: 2,
+      },
+      {
+        inputs: ['0', '0', '0', '0', '0', '0', '0', '0', '0'],
+        expectedOutput: '0\n0\n0',
+        description: null,
+        sortOrder: 3,
+        isHidden: true,
+      },
+    ],
+  },
 ];
 
 // ─── Main seed function ────────────────────────────────────────────────────────

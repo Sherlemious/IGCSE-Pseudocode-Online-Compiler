@@ -2,8 +2,10 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Menu, X, Braces, BookOpen, Github, ExternalLink, Keyboard } from 'lucide-react';
+import { usePathname } from 'next/navigation';
+import { Menu, X, Braces, BookOpen, Github, ExternalLink, Keyboard, GraduationCap, Clock, BarChart3 } from 'lucide-react';
 import SettingsPanel from './settingsPanel';
+import UserMenu from '../auth/UserMenu';
 
 const SHORTCUTS = [
   { keys: 'Ctrl + Enter', desc: 'Run code' },
@@ -16,6 +18,10 @@ const SHORTCUTS = [
 const Header: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [showShortcuts, setShowShortcuts] = useState(false);
+  const pathname = usePathname();
+  const isPractice = pathname === '/practice' || pathname.startsWith('/practice/');
+  const isExam = pathname === '/exam' || pathname.startsWith('/exam/');
+  const isAnalytics = pathname === '/analytics';
 
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
@@ -51,6 +57,33 @@ const Header: React.FC = () => {
                 <BookOpen size={13} />
                 Docs
               </Link>
+              <Link
+                href="/practice"
+                className={`flex items-center gap-1 px-2 py-1 rounded hover:text-header-text hover:bg-white/10 transition duration-200 ${
+                  isPractice ? 'text-primary' : 'text-header-text/70'
+                }`}
+              >
+                <GraduationCap size={13} />
+                Practice
+              </Link>
+              <Link
+                href="/exam"
+                className={`flex items-center gap-1 px-2 py-1 rounded hover:text-header-text hover:bg-white/10 transition duration-200 ${
+                  isExam ? 'text-primary' : 'text-header-text/70'
+                }`}
+              >
+                <Clock size={13} />
+                Exam
+              </Link>
+              <Link
+                href="/analytics"
+                className={`flex items-center gap-1 px-2 py-1 rounded hover:text-header-text hover:bg-white/10 transition duration-200 ${
+                  isAnalytics ? 'text-primary' : 'text-header-text/70'
+                }`}
+              >
+                <BarChart3 size={13} />
+                Analytics
+              </Link>
               <a
                 href="https://github.com/Sherlemious/IGCSE-Pseudocode-Online-Compiler"
                 className="flex items-center gap-1 px-2 py-1 rounded text-header-text/70 hover:text-header-text hover:bg-white/10 transition duration-200"
@@ -78,6 +111,7 @@ const Header: React.FC = () => {
                 <Keyboard size={14} />
               </button>
               <SettingsPanel />
+              <UserMenu />
             </nav>
 
             {/* Mobile */}
@@ -90,6 +124,7 @@ const Header: React.FC = () => {
                 <Keyboard size={14} />
               </button>
               <SettingsPanel />
+              <UserMenu />
               <button
                 className="p-1 rounded hover:bg-white/10 transition duration-200"
                 onClick={() => setIsMenuOpen(!isMenuOpen)}
@@ -110,6 +145,36 @@ const Header: React.FC = () => {
               >
                 <BookOpen size={14} />
                 Docs
+              </Link>
+              <Link
+                href="/practice"
+                className={`flex items-center gap-2 hover:text-header-text transition duration-200 py-1.5 px-1 rounded hover:bg-white/10 ${
+                  isPractice ? 'text-primary' : 'text-header-text/70'
+                }`}
+                onClick={() => setIsMenuOpen(false)}
+              >
+                <GraduationCap size={14} />
+                Practice
+              </Link>
+              <Link
+                href="/exam"
+                className={`flex items-center gap-2 hover:text-header-text transition duration-200 py-1.5 px-1 rounded hover:bg-white/10 ${
+                  isExam ? 'text-primary' : 'text-header-text/70'
+                }`}
+                onClick={() => setIsMenuOpen(false)}
+              >
+                <Clock size={14} />
+                Exam
+              </Link>
+              <Link
+                href="/analytics"
+                className={`flex items-center gap-2 hover:text-header-text transition duration-200 py-1.5 px-1 rounded hover:bg-white/10 ${
+                  isAnalytics ? 'text-primary' : 'text-header-text/70'
+                }`}
+                onClick={() => setIsMenuOpen(false)}
+              >
+                <BarChart3 size={14} />
+                Analytics
               </Link>
               <a
                 href="https://github.com/Sherlemious/IGCSE-Pseudocode-Online-Compiler"

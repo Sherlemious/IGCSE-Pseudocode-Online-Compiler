@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import { ThemeProvider } from '../theme/ThemeContext';
+import SessionWrapper from '../components/auth/SessionWrapper';
 import Header from '../components/layout/header';
 import { Toaster } from 'sonner';
 
@@ -24,11 +25,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" suppressHydrationWarning>
       <body className="h-screen flex flex-col overflow-hidden">
-        <ThemeProvider>
-          <Header />
-          <main className="flex-1 min-h-0 flex flex-col overflow-hidden">{children}</main>
-          <Toaster position="top-center" theme="dark" richColors />
-        </ThemeProvider>
+        <SessionWrapper>
+          <ThemeProvider>
+            <Header />
+            <main className="flex-1 min-h-0 flex flex-col overflow-hidden">{children}</main>
+            <Toaster position="top-center" theme="dark" richColors />
+          </ThemeProvider>
+        </SessionWrapper>
       </body>
     </html>
   );
