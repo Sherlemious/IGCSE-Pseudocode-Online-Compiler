@@ -11,6 +11,23 @@ import toc from '../../data/documentationToc';
 /*  Main Documentation component                              */
 /* ────────────────────────────────────────────────────────── */
 
+type HeadingProps = {
+  id: string;
+  children: React.ReactNode;
+};
+
+const H2 = ({ id, children }: HeadingProps) => (
+  <h2 data-section={id} className="text-lg font-semibold text-light-text pt-6 pb-2 border-b border-border scroll-mt-4">
+    {children}
+  </h2>
+);
+
+const H3 = ({ id, children }: HeadingProps) => (
+  <h3 data-section={id} className="text-base font-medium text-light-text pt-4 pb-1 scroll-mt-4">
+    {children}
+  </h3>
+);
+
 const DocsPage = () => {
   const [activeId, setActiveId] = useState('general');
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['general']));
@@ -35,9 +52,9 @@ const DocsPage = () => {
         const id = h.getAttribute('data-section');
 
         if (rect.top <= threshold) {
-            currentActive = id || currentActive;
+          currentActive = id || currentActive;
         } else {
-            break;
+          break;
         }
       }
       setActiveId(currentActive);
@@ -66,9 +83,9 @@ const DocsPage = () => {
       // If it's a top-level item that is active, maybe expand it if it has children?
       // Or just keep the set empty if no parent is found for a sub-item.
       // Checking if activeId itself is a parent in the TOC
-      const isParentItself = toc.find(t => t.id === activeId);
+      const isParentItself = toc.find((t) => t.id === activeId);
       if (isParentItself) {
-         setExpandedSections(new Set([activeId]));
+        setExpandedSections(new Set([activeId]));
       }
     }
 
@@ -169,22 +186,6 @@ const DocsPage = () => {
         );
       })}
     </nav>
-  );
-
-  /* ── Section heading helper ────────────────────────────── */
-  const H2 = ({ id, children }: { id: string; children: React.ReactNode }) => (
-    <h2
-      data-section={id}
-      className="text-lg font-semibold text-light-text pt-6 pb-2 border-b border-border scroll-mt-4"
-    >
-      {children}
-    </h2>
-  );
-
-  const H3 = ({ id, children }: { id: string; children: React.ReactNode }) => (
-    <h3 data-section={id} className="text-base font-medium text-light-text pt-4 pb-1 scroll-mt-4">
-      {children}
-    </h3>
   );
 
   return (
@@ -314,14 +315,14 @@ CONSTANT DefaultText <- "N/A"`}
                     <Kw>CHAR</Kw>
                   </td>
                   <td className="px-3 py-1">Single character (single quotes)</td>
-                  <td className="px-3 py-1 font-mono">'x', 'A'</td>
+                  <td className="px-3 py-1 font-mono">&apos;x&apos;, &apos;A&apos;</td>
                 </tr>
                 <tr className="border-b border-border">
                   <td className="px-3 py-1">
                     <Kw>STRING</Kw>
                   </td>
                   <td className="px-3 py-1">Text (double quotes)</td>
-                  <td className="px-3 py-1 font-mono">"Hello"</td>
+                  <td className="px-3 py-1 font-mono">&quot;Hello&quot;</td>
                 </tr>
                 <tr>
                   <td className="px-3 py-1">

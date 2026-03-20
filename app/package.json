@@ -6,6 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "postbuild": "node -e \"if(process.env.DATABASE_URL){require('child_process').execSync('prisma migrate deploy',{stdio:'inherit'})}\"",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
     "start": "next start",
     "db:migrate": "prisma migrate dev",
     "db:seed": "tsx prisma/seed.ts",
@@ -44,6 +46,8 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "eslint": "^9.38.0",
+    "eslint-config-next": "^16.1.6",
     "tailwindcss": "^4",
     "tsx": "^4.21.0",
     "typescript": "^5"

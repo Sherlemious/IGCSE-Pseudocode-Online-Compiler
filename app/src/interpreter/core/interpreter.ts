@@ -6,7 +6,6 @@ import {
   AssignmentStatementContext,
   InputStatementContext,
   OutputStatementContext,
-  ExprListContext,
   IfStatementContext,
   CaseStatementContext,
   ForStatementContext,
@@ -46,8 +45,6 @@ import {
   TrueAtomContext,
   FalseAtomContext,
 } from '../generated/PseudocodeParser';
-
-import { PseudocodeLexer } from '../generated/PseudocodeLexer';
 
 import { Environment } from './environment';
 import { PseudocodeArray } from './arrays';

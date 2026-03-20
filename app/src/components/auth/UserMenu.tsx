@@ -2,6 +2,7 @@
 
 import { useSession, signIn, signOut } from 'next-auth/react';
 import { useState, useRef, useEffect } from 'react';
+import Image from 'next/image';
 import { LogIn, LogOut, User, Crown } from 'lucide-react';
 
 export default function UserMenu() {
@@ -44,9 +45,11 @@ export default function UserMenu() {
         title={session.user.name ?? 'Account'}
       >
         {session.user.image ? (
-          <img
+          <Image
             src={session.user.image}
             alt=""
+            width={24}
+            height={24}
             className="w-6 h-6 rounded-full border border-header-text/20"
             referrerPolicy="no-referrer"
           />
