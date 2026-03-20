@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { Loader2, AlertCircle } from 'lucide-react';
+import { Loader2, AlertCircle, ArrowRight } from 'lucide-react';
 
 interface AuthFormProps {
   mode: 'signin' | 'signup';
@@ -38,7 +38,6 @@ export default function AuthForm({ mode }: AuthFormProps) {
         }
       }
 
-      // Sign in with credentials (works for both sign-up and sign-in)
       const result = await signIn('credentials', {
         email,
         password,
@@ -60,33 +59,33 @@ export default function AuthForm({ mode }: AuthFormProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-3.5">
       {error && (
-        <div className="flex items-center gap-2 text-xs text-error bg-error/10 border border-error/20 rounded-lg px-3 py-2">
-          <AlertCircle size={14} className="shrink-0" />
-          {error}
+        <div className="flex items-start gap-2.5 text-xs text-error bg-error/8 border border-error/15 rounded-lg px-3.5 py-2.5 animate-scale-in">
+          <AlertCircle size={14} className="shrink-0 mt-0.5" />
+          <span>{error}</span>
         </div>
       )}
 
       {mode === 'signup' && (
-        <div>
-          <label htmlFor="name" className="block text-xs font-medium text-dark-text mb-1">
-            Name <span className="text-dark-text/50">(optional)</span>
+        <div className="group">
+          <label htmlFor="name" className="mono-label text-dark-text mb-1.5 block">
+            Name <span className="text-dark-text/40 normal-case tracking-normal">(optional)</span>
           </label>
           <input
             id="name"
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="w-full px-3 py-2 rounded-lg bg-surface border border-border text-light-text text-sm
-              placeholder:text-dark-text/40 focus:outline-none focus:border-primary/60 transition-colors"
+            className="w-full px-3.5 py-2.5 rounded-lg bg-background border border-border text-light-text text-sm
+              placeholder:text-dark-text/30 focus:outline-none input-glow transition-all duration-200"
             placeholder="Your name"
           />
         </div>
       )}
 
       <div>
-        <label htmlFor="email" className="block text-xs font-medium text-dark-text mb-1">
+        <label htmlFor="email" className="mono-label text-dark-text mb-1.5 block">
           Email
         </label>
         <input
@@ -95,15 +94,15 @@ export default function AuthForm({ mode }: AuthFormProps) {
           required
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="w-full px-3 py-2 rounded-lg bg-surface border border-border text-light-text text-sm
-            placeholder:text-dark-text/40 focus:outline-none focus:border-primary/60 transition-colors"
+          className="w-full px-3.5 py-2.5 rounded-lg bg-background border border-border text-light-text text-sm
+            placeholder:text-dark-text/30 focus:outline-none input-glow transition-all duration-200"
           placeholder="you@example.com"
         />
       </div>
 
       <div>
-        <label htmlFor="password" className="block text-xs font-medium text-dark-text mb-1">
-          Password {mode === 'signup' && <span className="text-dark-text/50">(min 8 characters)</span>}
+        <label htmlFor="password" className="mono-label text-dark-text mb-1.5 block">
+          Password {mode === 'signup' && <span className="text-dark-text/40 normal-case tracking-normal">(min 8 chars)</span>}
         </label>
         <input
           id="password"
@@ -112,8 +111,8 @@ export default function AuthForm({ mode }: AuthFormProps) {
           minLength={mode === 'signup' ? 8 : undefined}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="w-full px-3 py-2 rounded-lg bg-surface border border-border text-light-text text-sm
-            placeholder:text-dark-text/40 focus:outline-none focus:border-primary/60 transition-colors"
+          className="w-full px-3.5 py-2.5 rounded-lg bg-background border border-border text-light-text text-sm
+            placeholder:text-dark-text/30 focus:outline-none input-glow transition-all duration-200"
           placeholder="••••••••"
         />
       </div>
@@ -121,12 +120,19 @@ export default function AuthForm({ mode }: AuthFormProps) {
       <button
         type="submit"
         disabled={loading}
-        className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg
-          bg-primary/15 text-primary text-sm font-medium
-          hover:bg-primary/25 transition-colors disabled:opacity-50"
+        className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg mt-1
+          bg-primary text-background text-sm font-semibold
+          hover:opacity-90 active:scale-[0.98] transition-all duration-200 disabled:opacity-50
+          shadow-[0_0_16px_-4px_rgba(var(--color-primary-rgb),0.4)]"
       >
-        {loading && <Loader2 size={14} className="animate-spin" />}
-        {mode === 'signin' ? 'Sign in' : 'Create account'}
+        {loading ? (
+          <Loader2 size={15} className="animate-spin" />
+        ) : (
+          <>
+            {mode === 'signin' ? 'Sign in' : 'Create account'}
+            <ArrowRight size={14} />
+          </>
+        )}
       </button>
     </form>
   );

@@ -2,6 +2,19 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 ## Getting Started
 
+Create your local environment file before starting the app:
+
+```bash
+cp .env.example .env.local
+```
+
+Set at least `AUTH_SECRET` in `.env.local`.
+You can generate one with:
+
+```bash
+openssl rand -base64 32
+```
+
 First, run the development server:
 
 ```bash

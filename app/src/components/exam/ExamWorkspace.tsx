@@ -83,7 +83,6 @@ export default function ExamWorkspace({ examId, questions, timeLimitMin, started
     clearEntries,
   } = useInterpreter();
 
-  // Auto-save code to server
   const saveCode = useCallback(async (qId: string, c: string) => {
     try {
       await fetch(`/api/exam/${examId}/save`, {
@@ -101,7 +100,6 @@ export default function ExamWorkspace({ examId, questions, timeLimitMin, started
     saveTimerRef.current = setTimeout(() => saveCode(qId, newCode), 2000);
   }, [question.questionId, saveCode]);
 
-  // Run code
   const handleRun = useCallback(() => {
     if (isRunning) { interpreterStop(); return; }
     clearEntries();
@@ -109,13 +107,10 @@ export default function ExamWorkspace({ examId, questions, timeLimitMin, started
     interpreterRun(code);
   }, [isRunning, code, interpreterRun, interpreterStop, clearEntries]);
 
-  // Grade current question
   const handleGrade = useCallback(async () => {
     if (grading) return;
     setGrading(true);
     if (isRunning) interpreterStop();
-
-    // Save first
     await saveCode(question.questionId, code);
 
     try {
@@ -137,12 +132,9 @@ export default function ExamWorkspace({ examId, questions, timeLimitMin, started
     setGrading(false);
   }, [grading, isRunning, interpreterStop, saveCode, question.questionId, code, examId]);
 
-  // Submit exam
   const handleSubmit = useCallback(async (timedOut = false) => {
     if (submitting) return;
     setSubmitting(true);
-
-    // Save current code
     await saveCode(question.questionId, code);
 
     try {
@@ -161,7 +153,6 @@ export default function ExamWorkspace({ examId, questions, timeLimitMin, started
     handleSubmit(true);
   }, [handleSubmit]);
 
-  // Ctrl+Enter to run
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
@@ -174,7 +165,6 @@ export default function ExamWorkspace({ examId, questions, timeLimitMin, started
     return () => window.removeEventListener('keydown', handleKey);
   }, [handleRun, handleGrade]);
 
-  // Navigate questions
   const goPrev = () => { if (currentIndex > 0) setCurrentIndex(currentIndex - 1); };
   const goNext = () => { if (currentIndex < questions.length - 1) setCurrentIndex(currentIndex + 1); };
 
@@ -182,46 +172,45 @@ export default function ExamWorkspace({ examId, questions, timeLimitMin, started
 
   return (
     <div className="flex-1 min-h-0 overflow-hidden bg-background flex flex-col">
-      {/* Top bar: timer, question nav, submit */}
-      <div className="h-10 border-b border-border bg-surface flex items-center justify-between px-3 shrink-0">
+      {/* Top bar */}
+      <div className="h-11 border-b border-border bg-surface flex items-center justify-between px-3 shrink-0">
         <div className="flex items-center gap-3">
           <ExamTimer startedAt={startedAt} timeLimitMin={timeLimitMin} onTimeUp={handleTimeUp} />
           <div className="w-px h-5 bg-border" />
           <div className="flex items-center gap-1">
-            <button
-              onClick={goPrev}
-              disabled={currentIndex === 0}
-              className="p-1 rounded hover:bg-background transition-colors disabled:opacity-30"
-            >
+            <button onClick={goPrev} disabled={currentIndex === 0}
+              className="p-1 rounded hover:bg-background transition-colors disabled:opacity-20">
               <ChevronLeft size={14} />
             </button>
-            <span className="text-xs text-light-text font-medium min-w-[60px] text-center">
-              Q{currentIndex + 1} / {questions.length}
+            <span className="text-xs text-light-text font-mono font-medium min-w-[60px] text-center tabular-nums">
+              Q{currentIndex + 1}/{questions.length}
             </span>
-            <button
-              onClick={goNext}
-              disabled={currentIndex === questions.length - 1}
-              className="p-1 rounded hover:bg-background transition-colors disabled:opacity-30"
-            >
+            <button onClick={goNext} disabled={currentIndex === questions.length - 1}
+              className="p-1 rounded hover:bg-background transition-colors disabled:opacity-20">
               <ChevronRight size={14} />
             </button>
           </div>
         </div>
 
         {/* Question dots */}
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 max-w-[50%] overflow-x-auto scrollbar-none">
           {questions.map((q, i) => {
             const r = gradeResults[q.questionId];
             const isActive = i === currentIndex;
+            const allPassed = r?.graded && r.passCount === r.totalTests;
+            const partial = r?.graded && !allPassed;
             return (
               <button
                 key={q.questionId}
                 onClick={() => setCurrentIndex(i)}
-                className={`w-6 h-6 rounded text-[10px] font-medium transition-colors ${
-                  isActive ? 'bg-primary text-white' :
-                  r?.graded && r.passCount === r.totalTests ? 'bg-success/20 text-success border border-success/30' :
-                  r?.graded ? 'bg-warning/20 text-warning border border-warning/30' :
-                  'bg-background text-dark-text border border-border'
+                className={`w-7 h-7 rounded-md text-[10px] font-mono font-bold shrink-0 transition-all duration-200 ${
+                  isActive
+                    ? 'bg-primary text-background shadow-[0_0_12px_-2px_rgba(var(--color-primary-rgb),0.5)]'
+                    : allPassed
+                    ? 'bg-success/15 text-success border border-success/30'
+                    : partial
+                    ? 'bg-warning/15 text-warning border border-warning/30'
+                    : 'bg-background text-dark-text border border-border hover:border-primary/30'
                 }`}
                 title={q.title}
               >
@@ -234,23 +223,25 @@ export default function ExamWorkspace({ examId, questions, timeLimitMin, started
         <button
           onClick={() => handleSubmit(false)}
           disabled={submitting}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary/15 text-primary text-xs font-medium
-            hover:bg-primary/25 transition-colors disabled:opacity-50"
+          className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg
+            bg-primary text-background text-xs font-semibold
+            hover:opacity-90 active:scale-[0.97] transition-all duration-200 disabled:opacity-50
+            shadow-[0_0_12px_-2px_rgba(var(--color-primary-rgb),0.3)]"
         >
           {submitting ? <Loader2 size={12} className="animate-spin" /> : <Send size={12} />}
-          Submit Exam
+          Submit
         </button>
       </div>
 
-      {/* Main content: question + editor + output */}
+      {/* Main content */}
       <div className="flex-1 min-h-0 flex flex-col lg:flex-row">
         {/* Left: question description */}
-        <div className="lg:w-80 shrink-0 border-r border-border overflow-y-auto p-4 scrollbar-thin scrollbar-thumb-primary">
-          <h2 className="text-sm font-bold text-light-text mb-1">{question.title}</h2>
-          <span className={`inline-block text-[10px] px-1.5 py-0.5 rounded border mb-3 ${
-            question.difficulty === 'EASY' ? 'text-success border-success/30 bg-success/10' :
-            question.difficulty === 'MEDIUM' ? 'text-warning border-warning/30 bg-warning/10' :
-            'text-error border-error/30 bg-error/10'
+        <div className="lg:w-80 shrink-0 border-r border-border overflow-y-auto p-5 scrollbar-thin scrollbar-thumb-primary">
+          <h2 className="text-sm font-bold text-light-text mb-1.5">{question.title}</h2>
+          <span className={`inline-block text-[10px] font-mono font-semibold px-2 py-0.5 rounded-md border mb-3 ${
+            question.difficulty === 'EASY' ? 'text-success border-success/30 bg-success/8' :
+            question.difficulty === 'MEDIUM' ? 'text-warning border-warning/30 bg-warning/8' :
+            'text-error border-error/30 bg-error/8'
           }`}>
             {question.difficulty}
           </span>
@@ -259,19 +250,21 @@ export default function ExamWorkspace({ examId, questions, timeLimitMin, started
           </div>
 
           {question.testCases.length > 0 && (
-            <div className="mt-4">
-              <h3 className="text-xs font-semibold text-light-text mb-2">Sample Test Cases</h3>
+            <div className="mt-5">
+              <h3 className="mono-label text-dark-text mb-2">Sample Tests</h3>
               <div className="space-y-2">
                 {question.testCases.map((tc, i) => (
-                  <div key={tc.id} className="bg-background rounded border border-border p-2 text-[11px] font-mono">
-                    <div className="text-dark-text mb-1">Test {i + 1}{tc.description ? `: ${tc.description}` : ''}</div>
+                  <div key={tc.id} className="bg-background rounded-lg border border-border p-2.5 text-[11px] font-mono">
+                    <div className="text-dark-text/60 mb-1 text-[10px]">
+                      #{i + 1}{tc.description ? ` — ${tc.description}` : ''}
+                    </div>
                     {tc.inputs.length > 0 && (
                       <div className="mb-0.5">
-                        <span className="text-info">Inputs: </span>{tc.inputs.join(', ')}
+                        <span className="text-info">in: </span>{tc.inputs.join(', ')}
                       </div>
                     )}
                     <div>
-                      <span className="text-success">Expected: </span>
+                      <span className="text-success">out: </span>
                       <span className="whitespace-pre-wrap">{tc.expectedOutput}</span>
                     </div>
                   </div>
@@ -287,7 +280,7 @@ export default function ExamWorkspace({ examId, questions, timeLimitMin, started
           <div className="h-9 border-b border-border bg-surface flex items-center gap-1.5 px-2 shrink-0">
             <button
               onClick={handleRun}
-              className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors ${
+              className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium transition-all duration-200 ${
                 isRunning
                   ? 'bg-error/15 text-error hover:bg-error/25'
                   : 'bg-success/15 text-success hover:bg-success/25'
@@ -299,27 +292,27 @@ export default function ExamWorkspace({ examId, questions, timeLimitMin, started
             <button
               onClick={handleGrade}
               disabled={grading || isRunning}
-              className="flex items-center gap-1 px-2 py-1 rounded text-xs font-medium
-                bg-primary/15 text-primary hover:bg-primary/25 transition-colors disabled:opacity-50"
+              className="flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium
+                bg-primary/15 text-primary hover:bg-primary/25 transition-all duration-200 disabled:opacity-40"
             >
               {grading ? <Loader2 size={11} className="animate-spin" /> : <ClipboardCheck size={11} />}
               Grade
             </button>
             <button
               onClick={() => handleCodeChange(question.starterCode)}
-              className="flex items-center gap-1 px-2 py-1 rounded text-xs
-                text-dark-text hover:text-light-text hover:bg-background transition-colors"
+              className="flex items-center gap-1 px-2 py-1 rounded-md text-xs
+                text-dark-text hover:text-light-text hover:bg-background transition-all duration-200"
             >
               <RotateCcw size={11} />
               Reset
             </button>
 
             {result?.graded && (
-              <div className="ml-auto flex items-center gap-1 text-xs font-medium">
+              <div className="ml-auto flex items-center gap-1.5 text-xs font-mono font-semibold">
                 {result.passCount === result.totalTests ? (
-                  <CheckCircle size={12} className="text-success" />
+                  <CheckCircle size={13} className="text-success" />
                 ) : (
-                  <XCircle size={12} className="text-error" />
+                  <XCircle size={13} className="text-error" />
                 )}
                 <span className={result.passCount === result.totalTests ? 'text-success' : 'text-warning'}>
                   {result.passCount}/{result.totalTests}
@@ -335,30 +328,24 @@ export default function ExamWorkspace({ examId, questions, timeLimitMin, started
 
           {/* Output panel */}
           <div className="border-t border-border flex flex-col" style={{ flex: '0 0 35%', minHeight: '120px' }}>
-            {/* Tabs */}
             <div className="h-8 border-b border-border bg-surface flex items-center gap-0.5 px-2 shrink-0">
-              <button
-                onClick={() => setActiveTab('terminal')}
-                className={`flex items-center gap-1 px-2 py-1 rounded text-[11px] font-medium transition-colors ${
-                  activeTab === 'terminal' ? 'bg-background text-light-text' : 'text-dark-text hover:text-light-text'
-                }`}
-              >
-                <Terminal size={11} />
-                Terminal
-              </button>
-              <button
-                onClick={() => setActiveTab('results')}
-                className={`flex items-center gap-1 px-2 py-1 rounded text-[11px] font-medium transition-colors ${
-                  activeTab === 'results' ? 'bg-background text-light-text' : 'text-dark-text hover:text-light-text'
-                }`}
-              >
-                <ClipboardCheck size={11} />
-                Results
-              </button>
+              {(['terminal', 'results'] as const).map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => setActiveTab(tab)}
+                  className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-medium transition-all duration-200 ${
+                    activeTab === tab
+                      ? 'bg-background text-light-text shadow-sm'
+                      : 'text-dark-text hover:text-light-text'
+                  }`}
+                >
+                  {tab === 'terminal' ? <Terminal size={11} /> : <ClipboardCheck size={11} />}
+                  {tab === 'terminal' ? 'Terminal' : 'Results'}
+                </button>
+              ))}
             </div>
 
-            {/* Content */}
-            <div className="flex-1 overflow-y-auto p-2 font-mono text-xs scrollbar-thin scrollbar-thumb-primary">
+            <div className="flex-1 overflow-y-auto p-2.5 font-mono text-xs scrollbar-thin scrollbar-thumb-primary">
               {activeTab === 'terminal' ? (
                 <div className="space-y-0.5">
                   {entries.map((entry: OutputEntry, i: number) => (
@@ -381,30 +368,35 @@ export default function ExamWorkspace({ examId, questions, timeLimitMin, started
                       }}
                       className="flex items-center gap-1 mt-1"
                     >
-                      <span className="text-info">{'>'}</span>
+                      <span className="text-info terminal-cursor">{'>'}</span>
                       <input
                         name="input"
                         autoFocus
-                        className="flex-1 bg-transparent text-light-text outline-none"
+                        className="flex-1 bg-transparent text-light-text outline-none caret-primary"
                         autoComplete="off"
                       />
                     </form>
                   )}
+                  {entries.length === 0 && !waitingForInput && (
+                    <div className="text-dark-text/40 text-center py-6">
+                      Press <kbd>Ctrl+Enter</kbd> to run
+                    </div>
+                  )}
                 </div>
               ) : (
-                <div className="space-y-1">
+                <div>
                   {!result?.graded ? (
-                    <div className="text-dark-text text-center py-4">
-                      Click &quot;Grade&quot; to test your solution
+                    <div className="text-dark-text/40 text-center py-6">
+                      Press <kbd>Ctrl+Shift+Enter</kbd> to grade
                     </div>
                   ) : (
-                    <div className="text-center py-2">
-                      <span className={`text-lg font-bold ${
+                    <div className="text-center py-3 animate-scale-in">
+                      <span className={`text-2xl font-bold font-mono ${
                         result.passCount === result.totalTests ? 'text-success' : 'text-warning'
                       }`}>
                         {result.passCount}/{result.totalTests}
                       </span>
-                      <span className="text-dark-text text-[11px] ml-1">tests passed</span>
+                      <div className="mono-label text-dark-text mt-1">tests passed</div>
                     </div>
                   )}
                 </div>

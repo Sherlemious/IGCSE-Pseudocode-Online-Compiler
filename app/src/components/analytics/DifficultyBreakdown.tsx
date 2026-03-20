@@ -2,41 +2,48 @@ interface Props {
   data: Record<string, { attempted: number; solved: number }>;
 }
 
-const COLORS: Record<string, { bar: string; label: string }> = {
-  EASY: { bar: 'bg-success', label: 'text-success' },
-  MEDIUM: { bar: 'bg-warning', label: 'text-warning' },
-  HARD: { bar: 'bg-error', label: 'text-error' },
-};
+const DIFFS = [
+  { key: 'EASY', label: 'Easy', color: 'var(--color-success)', textClass: 'text-success' },
+  { key: 'MEDIUM', label: 'Medium', color: 'var(--color-warning)', textClass: 'text-warning' },
+  { key: 'HARD', label: 'Hard', color: 'var(--color-error)', textClass: 'text-error' },
+] as const;
 
 export default function DifficultyBreakdown({ data }: Props) {
   const maxAttempted = Math.max(...Object.values(data).map((d) => d.attempted), 1);
 
   return (
-    <div className="bg-surface border border-border rounded-lg p-4">
-      <h3 className="text-xs font-semibold text-light-text mb-4 uppercase tracking-wider">By Difficulty</h3>
-      <div className="space-y-4">
-        {(['EASY', 'MEDIUM', 'HARD'] as const).map((diff) => {
-          const d = data[diff] || { attempted: 0, solved: 0 };
+    <div className="bg-surface rounded-xl border border-border p-5 animate-fade-in-up" style={{ animationDelay: '120ms' }}>
+      <h3 className="mono-label text-dark-text mb-5">By Difficulty</h3>
+      <div className="space-y-5">
+        {DIFFS.map(({ key, label, color, textClass }) => {
+          const d = data[key] || { attempted: 0, solved: 0 };
           const pct = d.attempted > 0 ? Math.round((d.solved / d.attempted) * 100) : 0;
           const barWidth = d.attempted > 0 ? (d.attempted / maxAttempted) * 100 : 0;
           const solvedWidth = d.solved > 0 ? (d.solved / maxAttempted) * 100 : 0;
 
           return (
-            <div key={diff}>
-              <div className="flex items-center justify-between mb-1">
-                <span className={`text-xs font-medium ${COLORS[diff].label}`}>{diff}</span>
-                <span className="text-[10px] text-dark-text">
-                  {d.solved}/{d.attempted} solved ({pct}%)
+            <div key={key}>
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full" style={{ backgroundColor: color }} />
+                  <span className={`text-xs font-semibold ${textClass}`}>{label}</span>
+                </div>
+                <span className="text-[10px] text-dark-text font-mono tabular-nums">
+                  {d.solved}/{d.attempted} <span className="text-dark-text/40">({pct}%)</span>
                 </span>
               </div>
-              <div className="h-3 bg-background rounded-full overflow-hidden relative">
+              <div className="h-2 bg-background rounded-full overflow-hidden relative">
                 <div
-                  className={`absolute inset-y-0 left-0 ${COLORS[diff].bar} opacity-20 rounded-full transition-all duration-500`}
-                  style={{ width: `${barWidth}%` }}
+                  className="absolute inset-y-0 left-0 rounded-full opacity-15 transition-all duration-700 ease-out"
+                  style={{ width: `${barWidth}%`, backgroundColor: color }}
                 />
                 <div
-                  className={`absolute inset-y-0 left-0 ${COLORS[diff].bar} rounded-full transition-all duration-500`}
-                  style={{ width: `${solvedWidth}%` }}
+                  className="absolute inset-y-0 left-0 rounded-full transition-all duration-700 ease-out"
+                  style={{
+                    width: `${solvedWidth}%`,
+                    backgroundColor: color,
+                    boxShadow: solvedWidth > 0 ? `0 0 8px -2px ${color}` : 'none',
+                  }}
                 />
               </div>
             </div>

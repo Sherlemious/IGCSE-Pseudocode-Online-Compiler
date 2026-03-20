@@ -16,7 +16,6 @@ export default async function AnalyticsPage() {
   if (!session) redirect('/auth/signin');
   const userId = session.user.id;
 
-  // Fetch all data in parallel
   const [progressData, examData, totalQuestions] = await Promise.all([
     prisma.progress.findMany({
       where: { userId },
@@ -44,13 +43,11 @@ export default async function AnalyticsPage() {
     prisma.question.count(),
   ]);
 
-  // Summary stats
   const totalAttempted = progressData.length;
   const totalSolved = progressData.filter((p) => p.status === 'SOLVED').length;
   const totalAttempts = progressData.reduce((s, p) => s + p.attempts, 0);
   const examsCompleted = examData.filter((e) => e.status !== 'IN_PROGRESS').length;
 
-  // Difficulty breakdown
   const difficultyMap: Record<string, { attempted: number; solved: number }> = {
     EASY: { attempted: 0, solved: 0 },
     MEDIUM: { attempted: 0, solved: 0 },
@@ -62,7 +59,6 @@ export default async function AnalyticsPage() {
     if (p.status === 'SOLVED') difficultyMap[d].solved++;
   });
 
-  // Topic breakdown
   const topicMap: Record<string, { attempted: number; solved: number }> = {};
   progressData.forEach((p) => {
     const t = p.question.topic || 'Uncategorized';
@@ -71,7 +67,6 @@ export default async function AnalyticsPage() {
     if (p.status === 'SOLVED') topicMap[t].solved++;
   });
 
-  // Recent activity (last 10)
   const recentActivity = progressData.slice(0, 10).map((p) => ({
     questionTitle: p.question.title,
     difficulty: p.question.difficulty,
@@ -83,15 +78,23 @@ export default async function AnalyticsPage() {
   }));
 
   return (
-    <div className="flex-1 overflow-y-auto bg-background p-6">
-      <div className="max-w-4xl mx-auto">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center">
+    <div className="flex-1 overflow-y-auto bg-background p-6 relative">
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background: 'radial-gradient(ellipse 80% 30% at 50% 0%, rgba(var(--color-primary-rgb), 0.04) 0%, transparent 50%)',
+        }}
+      />
+
+      <div className="max-w-4xl mx-auto relative">
+        {/* Header */}
+        <div className="flex items-center gap-4 mb-8 animate-fade-in-up">
+          <div className="w-12 h-12 rounded-2xl bg-surface border border-border flex items-center justify-center animate-glow-pulse">
             <BarChart3 className="h-5 w-5 text-primary" />
           </div>
           <div>
-            <h1 className="text-lg font-bold text-light-text">Analytics</h1>
-            <p className="text-xs text-dark-text">Your practice and exam performance</p>
+            <h1 className="text-xl font-bold text-light-text tracking-tight">Analytics</h1>
+            <p className="text-xs text-dark-text mt-0.5">Your practice and exam performance</p>
           </div>
         </div>
 
@@ -103,7 +106,7 @@ export default async function AnalyticsPage() {
           examsCompleted={examsCompleted}
         />
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
           <DifficultyBreakdown data={difficultyMap} />
           <TopicBreakdown data={topicMap} />
         </div>
