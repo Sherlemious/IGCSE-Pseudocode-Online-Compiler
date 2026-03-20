@@ -50,14 +50,10 @@ export default async function PracticePage({ searchParams }: PageProps) {
   }
 
   // Distinct topics (sorted)
-  const topics = Array.from(
-    new Set(questions.map((q) => q.topic).filter(Boolean) as string[]),
-  ).sort();
+  const topics = Array.from(new Set(questions.map((q) => q.topic).filter(Boolean) as string[])).sort();
 
   // Filter by topic
-  const filtered = activeTopic
-    ? questions.filter((q) => q.topic === activeTopic)
-    : questions;
+  const filtered = activeTopic ? questions.filter((q) => q.topic === activeTopic) : questions;
 
   // Group by difficulty
   const grouped = DIFFICULTIES.reduce(
@@ -65,7 +61,7 @@ export default async function PracticePage({ searchParams }: PageProps) {
       acc[d] = filtered.filter((q) => q.difficulty === d);
       return acc;
     },
-    {} as Record<string, typeof filtered>,
+    {} as Record<string, typeof filtered>
   );
 
   // Stats
@@ -87,7 +83,8 @@ export default async function PracticePage({ searchParams }: PageProps) {
           {session && totalQuestions > 0 && (
             <div className="shrink-0 text-right">
               <div className="text-2xl font-bold text-light-text">
-                {totalSolved}<span className="text-dark-text text-base font-normal">/{totalQuestions}</span>
+                {totalSolved}
+                <span className="text-dark-text text-base font-normal">/{totalQuestions}</span>
               </div>
               <div className="text-[10px] text-dark-text uppercase tracking-wider">solved</div>
               {totalSolved > 0 && (
@@ -107,8 +104,8 @@ export default async function PracticePage({ searchParams }: PageProps) {
           <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-warning/20 bg-warning/5 text-xs text-warning mb-4">
             <Crown size={13} className="shrink-0" />
             <span>
-              Free plan — easy questions are fully available.{' '}
-              <strong>Upgrade to Premium</strong> to unlock medium and hard questions.
+              Free plan — easy questions are fully available. <strong>Upgrade to Premium</strong> to unlock medium and
+              hard questions.
             </span>
           </div>
         )}
@@ -171,9 +168,7 @@ export default async function PracticePage({ searchParams }: PageProps) {
               return (
                 <div key={d}>
                   <div className="flex items-center gap-2 mb-3">
-                    <span className={`text-xs font-bold tracking-wider ${DIFFICULTY_COLOR[d]}`}>
-                      {d}
-                    </span>
+                    <span className={`text-xs font-bold tracking-wider ${DIFFICULTY_COLOR[d]}`}>{d}</span>
                     <span className="text-xs text-dark-text">({qs.length})</span>
                     {isLocked && (
                       <span className="flex items-center gap-1 text-[10px] text-warning/70">
@@ -188,18 +183,8 @@ export default async function PracticePage({ searchParams }: PageProps) {
                       const meta = [q.topic, q.year, q.paper].filter(Boolean).join(' \u00b7 ');
                       const progress = progressMap.get(q.id);
                       const solved = progress?.status === 'SOLVED';
-
-                      return (
-                        <Link
-                          key={q.id}
-                          href={isLocked ? '#' : `/practice/${q.id}`}
-                          className={`flex items-center justify-between p-4 rounded-lg border transition-colors ${
-                            isLocked
-                              ? 'border-border bg-surface/50 opacity-60 cursor-not-allowed'
-                              : 'border-border bg-surface hover:border-primary/50 hover:bg-surface/80'
-                          }`}
-                          onClick={isLocked ? (e) => e.preventDefault() : undefined}
-                        >
+                      const cardContent = (
+                        <>
                           <div className="flex items-center gap-3 min-w-0">
                             {/* Progress indicator */}
                             {isLocked ? (
@@ -207,16 +192,17 @@ export default async function PracticePage({ searchParams }: PageProps) {
                             ) : solved ? (
                               <CheckCircle className="h-4 w-4 text-success shrink-0" />
                             ) : progress ? (
-                              <div className="h-4 w-4 rounded-full border-2 border-warning shrink-0" title="Attempted" />
+                              <div
+                                className="h-4 w-4 rounded-full border-2 border-warning shrink-0"
+                                title="Attempted"
+                              />
                             ) : (
                               <div className="h-4 w-4 rounded-full border-2 border-border shrink-0" />
                             )}
 
                             <div className="min-w-0">
                               <div className="font-medium text-light-text truncate">{q.title}</div>
-                              {meta && (
-                                <div className="text-xs text-dark-text mt-0.5">{meta}</div>
-                              )}
+                              {meta && <div className="text-xs text-dark-text mt-0.5">{meta}</div>}
                             </div>
                           </div>
 
@@ -232,6 +218,24 @@ export default async function PracticePage({ searchParams }: PageProps) {
                               {q.difficulty}
                             </span>
                           </div>
+                        </>
+                      );
+
+                      return isLocked ? (
+                        <div
+                          key={q.id}
+                          className="flex items-center justify-between p-4 rounded-lg border border-border bg-surface/50 opacity-60 cursor-not-allowed"
+                          aria-disabled="true"
+                        >
+                          {cardContent}
+                        </div>
+                      ) : (
+                        <Link
+                          key={q.id}
+                          href={`/practice/${q.id}`}
+                          className="flex items-center justify-between p-4 rounded-lg border border-border bg-surface transition-colors hover:border-primary/50 hover:bg-surface/80"
+                        >
+                          {cardContent}
                         </Link>
                       );
                     })}
