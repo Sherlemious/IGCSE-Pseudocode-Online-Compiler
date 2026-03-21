@@ -1,4 +1,5 @@
-import { Trophy, Clock, AlertTriangle } from 'lucide-react';
+import { Trophy, Clock, AlertTriangle, Circle } from 'lucide-react';
+import Link from 'next/link';
 
 interface ExamItem {
   id: string;
@@ -20,17 +21,20 @@ interface Props {
 export default function ExamHistory({ exams }: Props) {
   if (exams.length === 0) {
     return (
-      <div className="bg-surface border border-border rounded-lg p-4">
-        <h3 className="text-xs font-semibold text-light-text mb-4 uppercase tracking-wider">Exam History</h3>
-        <p className="text-xs text-dark-text text-center py-4">No exams taken yet</p>
+      <div className="bg-surface rounded-xl border border-border p-5 animate-fade-in-up" style={{ animationDelay: '300ms' }}>
+        <h3 className="mono-label text-dark-text mb-5">Exam History</h3>
+        <div className="text-center py-8">
+          <Circle size={20} className="text-dark-text/20 mx-auto mb-2" />
+          <p className="text-xs text-dark-text/50">No exams taken yet</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="bg-surface border border-border rounded-lg p-4">
-      <h3 className="text-xs font-semibold text-light-text mb-3 uppercase tracking-wider">Exam History</h3>
-      <div className="space-y-2">
+    <div className="bg-surface rounded-xl border border-border p-5 animate-fade-in-up" style={{ animationDelay: '300ms' }}>
+      <h3 className="mono-label text-dark-text mb-4">Exam History</h3>
+      <div className="space-y-0.5">
         {exams.map((exam) => {
           const pct = exam.totalTests && exam.totalTests > 0
             ? Math.round(((exam.score ?? 0) / exam.totalTests) * 100)
@@ -39,42 +43,58 @@ export default function ExamHistory({ exams }: Props) {
             ? new Date(exam.completedAt).getTime() - new Date(exam.startedAt).getTime()
             : null;
           const durationMin = durationMs ? Math.ceil(durationMs / 60000) : null;
+          const timedOut = exam.status === 'TIMED_OUT';
 
           return (
-            <div key={exam.id} className="flex items-center justify-between py-1.5 border-b border-border/30 last:border-0">
-              <div className="flex items-center gap-2">
-                {exam.status === 'TIMED_OUT' ? (
-                  <AlertTriangle size={12} className="text-error shrink-0" />
+            <Link
+              key={exam.id}
+              href={`/exam/${exam.id}/results`}
+              className="flex items-center gap-3 py-2 border-b border-border/20 last:border-0
+                hover:bg-background/50 -mx-2 px-2 rounded-lg transition-colors group"
+            >
+              <div className={`w-5 h-5 rounded-md flex items-center justify-center shrink-0 ${
+                timedOut ? 'bg-error/15' : 'bg-warning/15'
+              }`}>
+                {timedOut ? (
+                  <AlertTriangle size={11} className="text-error" />
                 ) : (
-                  <Trophy size={12} className="text-warning shrink-0" />
+                  <Trophy size={11} className="text-warning" />
                 )}
-                <div>
-                  <div className="text-xs text-light-text">
-                    {exam.questionCount}Q · {exam.timeLimitMin}min
-                    {exam.topic && ` · ${exam.topic}`}
-                  </div>
-                  <div className="text-[10px] text-dark-text">
-                    {new Date(exam.startedAt).toLocaleDateString()}
-                    {durationMin !== null && ` · ${durationMin} min`}
-                  </div>
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-xs text-light-text">
+                  {exam.questionCount}Q &middot; {exam.timeLimitMin}min
+                  {exam.topic && <span className="text-dark-text"> &middot; {exam.topic}</span>}
+                </div>
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <span className="text-[10px] text-dark-text/50 font-mono">
+                    {new Date(exam.startedAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
+                  </span>
+                  {durationMin !== null && (
+                    <>
+                      <span className="text-border text-[10px]">&middot;</span>
+                      <span className="text-[10px] text-dark-text/50 font-mono flex items-center gap-0.5">
+                        <Clock size={8} />
+                        {durationMin}m
+                      </span>
+                    </>
+                  )}
                 </div>
               </div>
-              <div className="text-right shrink-0 ml-2">
+              <div className="text-right shrink-0">
                 {pct !== null ? (
-                  <>
-                    <div className={`text-xs font-bold ${pct >= 70 ? 'text-success' : pct >= 40 ? 'text-warning' : 'text-error'}`}>
-                      {pct}%
-                    </div>
-                    <div className="text-[9px] text-dark-text flex items-center gap-0.5 justify-end">
-                      <Clock size={8} />
-                      {exam.score}/{exam.totalTests}
-                    </div>
-                  </>
+                  <div className={`text-sm font-mono font-bold tabular-nums ${
+                    pct >= 70 ? 'text-success' : pct >= 40 ? 'text-warning' : 'text-error'
+                  }`}>
+                    {pct}%
+                  </div>
                 ) : (
-                  <span className="text-[10px] text-dark-text">{exam.status.replace('_', ' ')}</span>
+                  <span className="text-[10px] text-dark-text font-mono">
+                    {exam.status.replace('_', ' ').toLowerCase()}
+                  </span>
                 )}
               </div>
-            </div>
+            </Link>
           );
         })}
       </div>
