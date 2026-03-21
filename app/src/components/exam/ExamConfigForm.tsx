@@ -69,7 +69,9 @@ export default function ExamConfigForm({ topics, isPremium }: Props) {
           >
             <option value="">All topics</option>
             {topics.map((t) => (
-              <option key={t} value={t}>{t}</option>
+              <option key={t} value={t}>
+                {t}
+              </option>
             ))}
           </select>
         </div>
@@ -116,7 +118,9 @@ export default function ExamConfigForm({ topics, isPremium }: Props) {
               className="w-full px-3.5 py-2.5 rounded-lg bg-background border border-border text-light-text text-sm font-mono
                 focus:outline-none input-glow transition-all duration-200 pr-12"
             />
-            <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[10px] text-dark-text/50 font-mono">min</span>
+            <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[10px] text-dark-text/50 font-mono">
+              min
+            </span>
           </div>
         </div>
       </div>
@@ -125,7 +129,7 @@ export default function ExamConfigForm({ topics, isPremium }: Props) {
         onClick={handleStart}
         disabled={loading}
         className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg
-          bg-primary text-background text-sm font-semibold
+          bg-primary text-on-primary text-sm font-semibold
           hover:opacity-90 active:scale-[0.98] transition-all duration-200 disabled:opacity-50
           shadow-[0_0_20px_-4px_rgba(var(--color-primary-rgb),0.4)]"
       >

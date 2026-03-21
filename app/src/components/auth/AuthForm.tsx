@@ -45,7 +45,9 @@ export default function AuthForm({ mode }: AuthFormProps) {
       });
 
       if (result?.error) {
-        setError(mode === 'signin' ? 'Invalid email or password' : 'Account created but sign in failed. Try signing in.');
+        setError(
+          mode === 'signin' ? 'Invalid email or password' : 'Account created but sign in failed. Try signing in.'
+        );
         setLoading(false);
         return;
       }
@@ -102,7 +104,8 @@ export default function AuthForm({ mode }: AuthFormProps) {
 
       <div>
         <label htmlFor="password" className="mono-label text-dark-text mb-1.5 block">
-          Password {mode === 'signup' && <span className="text-dark-text/40 normal-case tracking-normal">(min 8 chars)</span>}
+          Password{' '}
+          {mode === 'signup' && <span className="text-dark-text/40 normal-case tracking-normal">(min 8 chars)</span>}
         </label>
         <input
           id="password"
@@ -121,7 +124,7 @@ export default function AuthForm({ mode }: AuthFormProps) {
         type="submit"
         disabled={loading}
         className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg mt-1
-          bg-primary text-background text-sm font-semibold
+          bg-primary text-on-primary text-sm font-semibold
           hover:opacity-90 active:scale-[0.98] transition-all duration-200 disabled:opacity-50
           shadow-[0_0_16px_-4px_rgba(var(--color-primary-rgb),0.4)]"
       >

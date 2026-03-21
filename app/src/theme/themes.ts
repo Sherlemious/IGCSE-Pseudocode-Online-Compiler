@@ -3,6 +3,7 @@ export type ThemeId = 'one-dark-pro' | 'dracula' | 'nord' | 'monokai' | 'github-
 export interface ThemeColors {
   primary: string;
   'primary-hover': string;
+  'on-primary': string;
   secondary: string;
   accent: string;
   background: string;
@@ -46,6 +47,7 @@ export const themes: Record<ThemeId, Theme> = {
     colors: {
       primary: '#61AFEF',
       'primary-hover': '#528BCC',
+      'on-primary': '#111318',
       secondary: '#21252B',
       accent: '#61AFEF',
       background: '#282C34',
@@ -53,7 +55,7 @@ export const themes: Record<ThemeId, Theme> = {
       'header-bg': '#21252B',
       'header-text': '#ABB2BF',
       'light-text': '#ABB2BF',
-      'dark-text': '#828997',
+      'dark-text': '#8A93A6',
       border: '#181A1F',
       'disabled-bg': '#2C313A',
       warning: '#E5C07B',
@@ -81,6 +83,7 @@ export const themes: Record<ThemeId, Theme> = {
     colors: {
       primary: '#BD93F9',
       'primary-hover': '#9D79D6',
+      'on-primary': '#111318',
       secondary: '#21222C',
       accent: '#FF79C6',
       background: '#282A36',
@@ -88,7 +91,7 @@ export const themes: Record<ThemeId, Theme> = {
       'header-bg': '#44475A',
       'header-text': '#F8F8F2',
       'light-text': '#F8F8F2',
-      'dark-text': '#6272A4',
+      'dark-text': '#8A93A6',
       border: '#21222C',
       'disabled-bg': '#44475A',
       warning: '#F1FA8C',
@@ -116,11 +119,12 @@ export const themes: Record<ThemeId, Theme> = {
     colors: {
       primary: '#88C0D0',
       'primary-hover': '#6BAEBF',
+      'on-primary': '#111318',
       secondary: '#3B4252',
       accent: '#81A1C1',
       background: '#2E3440',
       surface: '#3B4252',
-      'header-bg': '#5E81AC',
+      'header-bg': '#4C566A',
       'header-text': '#ECEFF4',
       'light-text': '#ECEFF4',
       'dark-text': '#D8DEE9',
@@ -151,6 +155,7 @@ export const themes: Record<ThemeId, Theme> = {
     colors: {
       primary: '#F9A825',
       'primary-hover': '#F57F17',
+      'on-primary': '#1B1B17',
       secondary: '#3E3D32',
       accent: '#A6E22E',
       background: '#272822',
@@ -186,6 +191,7 @@ export const themes: Record<ThemeId, Theme> = {
     colors: {
       primary: '#0969DA',
       'primary-hover': '#0550AE',
+      'on-primary': '#FFFFFF',
       secondary: '#F6F8FA',
       accent: '#0969DA',
       background: '#FFFFFF',

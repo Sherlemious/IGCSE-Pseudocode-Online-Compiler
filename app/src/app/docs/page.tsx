@@ -193,7 +193,7 @@ const DocsPage = () => {
       {/* ── Mobile TOC toggle ────────────────────────────── */}
       <button
         onClick={() => setTocOpen(!tocOpen)}
-        className="lg:hidden fixed bottom-10 right-4 z-40 p-2.5 rounded-full bg-primary text-light-text shadow-intense"
+        className="lg:hidden fixed bottom-10 right-4 z-40 p-2.5 rounded-full bg-primary text-on-primary shadow-intense"
         aria-label="Table of contents"
       >
         {tocOpen ? <X className="h-5 w-5" /> : <List className="h-5 w-5" />}

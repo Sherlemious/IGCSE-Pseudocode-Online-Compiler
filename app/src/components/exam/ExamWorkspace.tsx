@@ -57,12 +57,18 @@ export default function ExamWorkspace({ examId, questions, timeLimitMin, started
   const [currentIndex, setCurrentIndex] = useState(0);
   const [codes, setCodes] = useState<Record<string, string>>(() => {
     const map: Record<string, string> = {};
-    questions.forEach((q) => { map[q.questionId] = q.savedCode || q.starterCode; });
+    questions.forEach((q) => {
+      map[q.questionId] = q.savedCode || q.starterCode;
+    });
     return map;
   });
-  const [gradeResults, setGradeResults] = useState<Record<string, { passCount: number; totalTests: number; graded: boolean }>>(() => {
+  const [gradeResults, setGradeResults] = useState<
+    Record<string, { passCount: number; totalTests: number; graded: boolean }>
+  >(() => {
     const map: Record<string, { passCount: number; totalTests: number; graded: boolean }> = {};
-    questions.forEach((q) => { map[q.questionId] = { passCount: q.passCount, totalTests: q.totalTests, graded: q.graded }; });
+    questions.forEach((q) => {
+      map[q.questionId] = { passCount: q.passCount, totalTests: q.totalTests, graded: q.graded };
+    });
     return map;
   });
   const [activeTab, setActiveTab] = useState<'terminal' | 'results'>('terminal');
@@ -83,25 +89,36 @@ export default function ExamWorkspace({ examId, questions, timeLimitMin, started
     clearEntries,
   } = useInterpreter();
 
-  const saveCode = useCallback(async (qId: string, c: string) => {
-    try {
-      await fetch(`/api/exam/${examId}/save`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ questionId: qId, code: c }),
-      });
-    } catch { /* silent */ }
-  }, [examId]);
+  const saveCode = useCallback(
+    async (qId: string, c: string) => {
+      try {
+        await fetch(`/api/exam/${examId}/save`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ questionId: qId, code: c }),
+        });
+      } catch {
+        /* silent */
+      }
+    },
+    [examId]
+  );
 
-  const handleCodeChange = useCallback((newCode: string) => {
-    const qId = question.questionId;
-    setCodes((prev) => ({ ...prev, [qId]: newCode }));
-    clearTimeout(saveTimerRef.current);
-    saveTimerRef.current = setTimeout(() => saveCode(qId, newCode), 2000);
-  }, [question.questionId, saveCode]);
+  const handleCodeChange = useCallback(
+    (newCode: string) => {
+      const qId = question.questionId;
+      setCodes((prev) => ({ ...prev, [qId]: newCode }));
+      clearTimeout(saveTimerRef.current);
+      saveTimerRef.current = setTimeout(() => saveCode(qId, newCode), 2000);
+    },
+    [question.questionId, saveCode]
+  );
 
   const handleRun = useCallback(() => {
-    if (isRunning) { interpreterStop(); return; }
+    if (isRunning) {
+      interpreterStop();
+      return;
+    }
     clearEntries();
     setActiveTab('terminal');
     interpreterRun(code);
@@ -128,26 +145,31 @@ export default function ExamWorkspace({ examId, questions, timeLimitMin, started
         }));
         setActiveTab('results');
       }
-    } catch { /* silent */ }
+    } catch {
+      /* silent */
+    }
     setGrading(false);
   }, [grading, isRunning, interpreterStop, saveCode, question.questionId, code, examId]);
 
-  const handleSubmit = useCallback(async (timedOut = false) => {
-    if (submitting) return;
-    setSubmitting(true);
-    await saveCode(question.questionId, code);
+  const handleSubmit = useCallback(
+    async (timedOut = false) => {
+      if (submitting) return;
+      setSubmitting(true);
+      await saveCode(question.questionId, code);
 
-    try {
-      await fetch(`/api/exam/${examId}/submit`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ timedOut }),
-      });
-      router.push(`/exam/${examId}/results`);
-    } catch {
-      setSubmitting(false);
-    }
-  }, [submitting, saveCode, question.questionId, code, examId, router]);
+      try {
+        await fetch(`/api/exam/${examId}/submit`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ timedOut }),
+        });
+        router.push(`/exam/${examId}/results`);
+      } catch {
+        setSubmitting(false);
+      }
+    },
+    [submitting, saveCode, question.questionId, code, examId, router]
+  );
 
   const handleTimeUp = useCallback(() => {
     handleSubmit(true);
@@ -165,8 +187,12 @@ export default function ExamWorkspace({ examId, questions, timeLimitMin, started
     return () => window.removeEventListener('keydown', handleKey);
   }, [handleRun, handleGrade]);
 
-  const goPrev = () => { if (currentIndex > 0) setCurrentIndex(currentIndex - 1); };
-  const goNext = () => { if (currentIndex < questions.length - 1) setCurrentIndex(currentIndex + 1); };
+  const goPrev = () => {
+    if (currentIndex > 0) setCurrentIndex(currentIndex - 1);
+  };
+  const goNext = () => {
+    if (currentIndex < questions.length - 1) setCurrentIndex(currentIndex + 1);
+  };
 
   const result = gradeResults[question.questionId];
 
@@ -178,15 +204,21 @@ export default function ExamWorkspace({ examId, questions, timeLimitMin, started
           <ExamTimer startedAt={startedAt} timeLimitMin={timeLimitMin} onTimeUp={handleTimeUp} />
           <div className="w-px h-5 bg-border" />
           <div className="flex items-center gap-1">
-            <button onClick={goPrev} disabled={currentIndex === 0}
-              className="p-1 rounded hover:bg-background transition-colors disabled:opacity-20">
+            <button
+              onClick={goPrev}
+              disabled={currentIndex === 0}
+              className="p-1 rounded hover:bg-background transition-colors disabled:opacity-20"
+            >
               <ChevronLeft size={14} />
             </button>
             <span className="text-xs text-light-text font-mono font-medium min-w-[60px] text-center tabular-nums">
               Q{currentIndex + 1}/{questions.length}
             </span>
-            <button onClick={goNext} disabled={currentIndex === questions.length - 1}
-              className="p-1 rounded hover:bg-background transition-colors disabled:opacity-20">
+            <button
+              onClick={goNext}
+              disabled={currentIndex === questions.length - 1}
+              className="p-1 rounded hover:bg-background transition-colors disabled:opacity-20"
+            >
               <ChevronRight size={14} />
             </button>
           </div>
@@ -205,12 +237,12 @@ export default function ExamWorkspace({ examId, questions, timeLimitMin, started
                 onClick={() => setCurrentIndex(i)}
                 className={`w-7 h-7 rounded-md text-[10px] font-mono font-bold shrink-0 transition-all duration-200 ${
                   isActive
-                    ? 'bg-primary text-background shadow-[0_0_12px_-2px_rgba(var(--color-primary-rgb),0.5)]'
+                    ? 'bg-primary text-on-primary shadow-[0_0_12px_-2px_rgba(var(--color-primary-rgb),0.5)]'
                     : allPassed
-                    ? 'bg-success/15 text-success border border-success/30'
-                    : partial
-                    ? 'bg-warning/15 text-warning border border-warning/30'
-                    : 'bg-background text-dark-text border border-border hover:border-primary/30'
+                      ? 'bg-success/15 text-success border border-success/30'
+                      : partial
+                        ? 'bg-warning/15 text-warning border border-warning/30'
+                        : 'bg-background text-dark-text border border-border hover:border-primary/30'
                 }`}
                 title={q.title}
               >
@@ -224,7 +256,7 @@ export default function ExamWorkspace({ examId, questions, timeLimitMin, started
           onClick={() => handleSubmit(false)}
           disabled={submitting}
           className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg
-            bg-primary text-background text-xs font-semibold
+            bg-primary text-on-primary text-xs font-semibold
             hover:opacity-90 active:scale-[0.97] transition-all duration-200 disabled:opacity-50
             shadow-[0_0_12px_-2px_rgba(var(--color-primary-rgb),0.3)]"
         >
@@ -238,29 +270,36 @@ export default function ExamWorkspace({ examId, questions, timeLimitMin, started
         {/* Left: question description */}
         <div className="lg:w-80 shrink-0 border-r border-border overflow-y-auto p-5 scrollbar-thin scrollbar-thumb-primary">
           <h2 className="text-sm font-bold text-light-text mb-1.5">{question.title}</h2>
-          <span className={`inline-block text-[10px] font-mono font-semibold px-2 py-0.5 rounded-md border mb-3 ${
-            question.difficulty === 'EASY' ? 'text-success border-success/30 bg-success/8' :
-            question.difficulty === 'MEDIUM' ? 'text-warning border-warning/30 bg-warning/8' :
-            'text-error border-error/30 bg-error/8'
-          }`}>
+          <span
+            className={`inline-block text-[10px] font-mono font-semibold px-2 py-0.5 rounded-md border mb-3 ${
+              question.difficulty === 'EASY'
+                ? 'text-success border-success/30 bg-success/8'
+                : question.difficulty === 'MEDIUM'
+                  ? 'text-warning border-warning/30 bg-warning/8'
+                  : 'text-error border-error/30 bg-error/8'
+            }`}
+          >
             {question.difficulty}
           </span>
-          <div className="text-xs text-light-text/80 whitespace-pre-wrap leading-relaxed">
-            {question.description}
-          </div>
+          <div className="text-xs text-light-text/80 whitespace-pre-wrap leading-relaxed">{question.description}</div>
 
           {question.testCases.length > 0 && (
             <div className="mt-5">
               <h3 className="mono-label text-dark-text mb-2">Sample Tests</h3>
               <div className="space-y-2">
                 {question.testCases.map((tc, i) => (
-                  <div key={tc.id} className="bg-background rounded-lg border border-border p-2.5 text-[11px] font-mono">
+                  <div
+                    key={tc.id}
+                    className="bg-background rounded-lg border border-border p-2.5 text-[11px] font-mono"
+                  >
                     <div className="text-dark-text/60 mb-1 text-[10px]">
-                      #{i + 1}{tc.description ? ` — ${tc.description}` : ''}
+                      #{i + 1}
+                      {tc.description ? ` — ${tc.description}` : ''}
                     </div>
                     {tc.inputs.length > 0 && (
                       <div className="mb-0.5">
-                        <span className="text-info">in: </span>{tc.inputs.join(', ')}
+                        <span className="text-info">in: </span>
+                        {tc.inputs.join(', ')}
                       </div>
                     )}
                     <div>
@@ -349,11 +388,12 @@ export default function ExamWorkspace({ examId, questions, timeLimitMin, started
               {activeTab === 'terminal' ? (
                 <div className="space-y-0.5">
                   {entries.map((entry: OutputEntry, i: number) => (
-                    <div key={i} className={
-                      entry.kind === 'error' ? 'text-error' :
-                      entry.kind === 'input' ? 'text-info' :
-                      'text-light-text'
-                    }>
+                    <div
+                      key={i}
+                      className={
+                        entry.kind === 'error' ? 'text-error' : entry.kind === 'input' ? 'text-info' : 'text-light-text'
+                      }
+                    >
                       {entry.kind === 'input' ? `> ${entry.value}` : entry.text}
                     </div>
                   ))}
@@ -391,9 +431,11 @@ export default function ExamWorkspace({ examId, questions, timeLimitMin, started
                     </div>
                   ) : (
                     <div className="text-center py-3 animate-scale-in">
-                      <span className={`text-2xl font-bold font-mono ${
-                        result.passCount === result.totalTests ? 'text-success' : 'text-warning'
-                      }`}>
+                      <span
+                        className={`text-2xl font-bold font-mono ${
+                          result.passCount === result.totalTests ? 'text-success' : 'text-warning'
+                        }`}
+                      >
                         {result.passCount}/{result.totalTests}
                       </span>
                       <div className="mono-label text-dark-text mt-1">tests passed</div>

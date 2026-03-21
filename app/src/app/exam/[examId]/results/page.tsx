@@ -48,14 +48,16 @@ export default async function ExamResultsPage({ params }: Props) {
   const ringCircumference = 2 * Math.PI * ringRadius;
   const ringOffset = ringCircumference * (1 - percentage / 100);
 
-  const scoreColor = percentage >= 70 ? 'var(--color-success)' : percentage >= 40 ? 'var(--color-warning)' : 'var(--color-error)';
+  const scoreColor =
+    percentage >= 70 ? 'var(--color-success)' : percentage >= 40 ? 'var(--color-warning)' : 'var(--color-error)';
 
   return (
     <div className="flex-1 overflow-y-auto bg-background bg-dot-grid p-6 relative">
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
-          background: 'radial-gradient(ellipse 60% 40% at 50% 20%, rgba(var(--color-primary-rgb), 0.06) 0%, transparent 60%)',
+          background:
+            'radial-gradient(ellipse 60% 40% at 50% 20%, rgba(var(--color-primary-rgb), 0.06) 0%, transparent 60%)',
         }}
       />
 
@@ -138,20 +140,29 @@ export default async function ExamResultsPage({ params }: Props) {
                   key={a.id}
                   className="bg-surface border border-border rounded-lg px-4 py-3 flex items-center gap-3"
                 >
-                  <span className={`w-7 h-7 rounded-md flex items-center justify-center text-[10px] font-mono font-bold shrink-0 ${
-                    allPassed ? 'bg-success/15 text-success border border-success/25' :
-                    a.graded ? 'bg-warning/15 text-warning border border-warning/25' :
-                    'bg-background text-dark-text border border-border'
-                  }`}>
+                  <span
+                    className={`w-7 h-7 rounded-md flex items-center justify-center text-[10px] font-mono font-bold shrink-0 ${
+                      allPassed
+                        ? 'bg-success/15 text-success border border-success/25'
+                        : a.graded
+                          ? 'bg-warning/15 text-warning border border-warning/25'
+                          : 'bg-background text-dark-text border border-border'
+                    }`}
+                  >
                     {i + 1}
                   </span>
                   <div className="flex-1 min-w-0">
                     <div className="text-xs font-medium text-light-text truncate">{a.question.title}</div>
                     <div className="flex items-center gap-2 mt-1">
-                      <span className={`text-[10px] font-mono ${
-                        a.question.difficulty === 'EASY' ? 'text-success' :
-                        a.question.difficulty === 'MEDIUM' ? 'text-warning' : 'text-error'
-                      }`}>
+                      <span
+                        className={`text-[10px] font-mono ${
+                          a.question.difficulty === 'EASY'
+                            ? 'text-success'
+                            : a.question.difficulty === 'MEDIUM'
+                              ? 'text-warning'
+                              : 'text-error'
+                        }`}
+                      >
                         {a.question.difficulty}
                       </span>
                       {a.graded && (
@@ -193,7 +204,7 @@ export default async function ExamResultsPage({ params }: Props) {
         <Link
           href="/exam"
           className="flex items-center justify-center gap-2 px-4 py-3 rounded-lg
-            bg-primary text-background text-sm font-semibold
+            bg-primary text-on-primary text-sm font-semibold
             hover:opacity-90 active:scale-[0.98] transition-all duration-200
             shadow-[0_0_20px_-4px_rgba(var(--color-primary-rgb),0.4)]
             animate-fade-in-up"
