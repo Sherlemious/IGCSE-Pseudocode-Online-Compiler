@@ -16,7 +16,7 @@ const ExamplePicker: React.FC<{ onSelectExample: (code: string) => void }> = ({ 
   // Fetch from API (with fallback to static data)
   useEffect(() => {
     fetch('/api/examples')
-      .then((res) => res.ok ? res.json() : null)
+      .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (data?.categories) {
           const flat: Example[] = data.categories.flatMap(
@@ -26,7 +26,9 @@ const ExamplePicker: React.FC<{ onSelectExample: (code: string) => void }> = ({ 
           if (flat.length > 0) setExamples(flat);
         }
       })
-      .catch(() => { /* keep static fallback */ });
+      .catch(() => {
+        /* keep static fallback */
+      });
   }, []);
   const modalRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
@@ -67,8 +69,7 @@ const ExamplePicker: React.FC<{ onSelectExample: (code: string) => void }> = ({ 
 
   const filteredExamples = examples.filter(
     (ex) =>
-      ex.title.toLowerCase().includes(search.toLowerCase()) ||
-      ex.category.toLowerCase().includes(search.toLowerCase()),
+      ex.title.toLowerCase().includes(search.toLowerCase()) || ex.category.toLowerCase().includes(search.toLowerCase())
   );
 
   const toggleCategory = (cat: string) => {
@@ -155,10 +156,7 @@ const ExamplePicker: React.FC<{ onSelectExample: (code: string) => void }> = ({ 
                         key={example.title}
                         onClick={() => handleSelectExample(example)}
                         className={`w-full flex items-center gap-1.5 px-3 py-1.5 md:py-1 text-xs rounded-sm transition-colors
-                          ${isSelected
-                            ? 'bg-primary/15 text-primary'
-                            : 'text-light-text hover:bg-surface'
-                          }`}
+                          ${isSelected ? 'bg-primary/15 text-primary' : 'text-light-text hover:bg-surface'}`}
                       >
                         <FileCode size={12} className={`shrink-0 ${isSelected ? 'text-primary' : 'text-dark-text'}`} />
                         <span className="truncate text-left">{example.title}</span>
@@ -174,9 +172,7 @@ const ExamplePicker: React.FC<{ onSelectExample: (code: string) => void }> = ({ 
         })}
 
         {filteredExamples.length === 0 && (
-          <div className="px-4 py-6 text-center text-xs text-dark-text">
-            No examples match &ldquo;{search}&rdquo;
-          </div>
+          <div className="px-4 py-6 text-center text-xs text-dark-text">No examples match &ldquo;{search}&rdquo;</div>
         )}
       </div>
     </div>
@@ -270,9 +266,7 @@ const ExamplePicker: React.FC<{ onSelectExample: (code: string) => void }> = ({ 
             {/* Desktop: side-by-side layout */}
             <div className="hidden md:flex flex-1 min-h-0">
               {/* Left panel */}
-              <div className="w-64 border-r border-border flex flex-col min-h-0 shrink-0">
-                {renderBrowser()}
-              </div>
+              <div className="w-64 border-r border-border flex flex-col min-h-0 shrink-0">{renderBrowser()}</div>
               {/* Right panel */}
               {renderPreview()}
             </div>
