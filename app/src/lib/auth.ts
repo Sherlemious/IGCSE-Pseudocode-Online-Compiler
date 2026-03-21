@@ -1,9 +1,6 @@
 import NextAuth from 'next-auth';
 import Google from 'next-auth/providers/google';
-import GitHub from 'next-auth/providers/github';
-import Credentials from 'next-auth/providers/credentials';
 import { PrismaAdapter } from '@auth/prisma-adapter';
-import bcrypt from 'bcryptjs';
 import { prisma } from './prisma';
 
 const authSecret =
@@ -17,28 +14,15 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   secret: authSecret,
   session: { strategy: 'jwt' },
   providers: [
-    Google,
-    GitHub,
-    Credentials({
-      name: 'Email',
-      credentials: {
-        email: { label: 'Email', type: 'email' },
-        password: { label: 'Password', type: 'password' },
-      },
-      async authorize(credentials) {
-        const email = credentials?.email as string | undefined;
-        const password = credentials?.password as string | undefined;
-        if (!email || !password) return null;
-
-        const user = await prisma.user.findUnique({ where: { email } });
-        if (!user?.password) return null;
-
-        const valid = await bcrypt.compare(password, user.password);
-        if (!valid) return null;
-
-        return { id: user.id, name: user.name, email: user.email, image: user.image, plan: user.plan };
-      },
+    Google({
+      // Allows Google login to attach to an existing user with the same email.
+      // This avoids OAuthAccountNotLinked loops when users first signed up with email/password.
+      allowDangerousEmailAccountLinking: true,
     }),
+    // GitHub({
+    //   clientId: process.env.AUTH_GITHUB_ID!,
+    //   clientSecret: process.env.AUTH_GITHUB_SECRET!,
+    // }),
   ],
   pages: {
     signIn: '/auth/signin',

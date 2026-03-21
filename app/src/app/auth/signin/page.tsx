@@ -1,9 +1,8 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import { auth, signIn } from '@/lib/auth';
-import { Braces, Terminal } from 'lucide-react';
-import AuthForm from '@/components/auth/AuthForm';
+import { auth } from '@/lib/auth';
+import { Braces } from 'lucide-react';
 
 export const metadata: Metadata = { title: 'Sign In' };
 
@@ -40,18 +39,12 @@ export default async function SignInPage() {
           >
             {/* OAuth providers */}
             <div className="space-y-2.5 stagger-children">
-              <form
-                action={async () => {
-                  'use server';
-                  await signIn('google', { redirectTo: '/practice' });
-                }}
-              >
-                <button
-                  type="submit"
-                  className="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg
+              <Link
+                href="/api/auth/signin/google?callbackUrl=%2Fpractice"
+                className="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg
                   bg-background border border-border text-light-text text-sm font-medium
                   hover:border-primary/40 hover:bg-background/80 transition-all duration-200 group"
-                >
+              >
                   <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24">
                     <path
                       fill="#4285F4"
@@ -73,10 +66,9 @@ export default async function SignInPage() {
                   <span className="group-hover:translate-x-0.5 transition-transform duration-200">
                     Continue with Google
                   </span>
-                </button>
-              </form>
+              </Link>
 
-              <form
+              {/* <form
                 action={async () => {
                   'use server';
                   await signIn('github', { redirectTo: '/practice' });
@@ -95,24 +87,8 @@ export default async function SignInPage() {
                     Continue with GitHub
                   </span>
                 </button>
-              </form>
+              </form> */}
             </div>
-
-            {/* Divider */}
-            <div className="relative my-6">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-border" />
-              </div>
-              <div className="relative flex justify-center">
-                <span className="bg-surface px-3 mono-label text-dark-text/50 flex items-center gap-1.5">
-                  <Terminal size={10} />
-                  or use email
-                </span>
-              </div>
-            </div>
-
-            {/* Email/password form */}
-            <AuthForm mode="signin" />
           </div>
 
           <p className="text-xs text-dark-text/60 text-center mt-5">
