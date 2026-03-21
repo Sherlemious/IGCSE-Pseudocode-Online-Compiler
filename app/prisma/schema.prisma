@@ -1,0 +1,210 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ── Auth (NextAuth.js v5) ──────────────────────────────────
+
+enum Plan {
+  FREE
+  PREMIUM
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  password      String?   @db.Text
+  plan          Plan      @default(FREE)
+
+  accounts     Account[]
+  sessions     Session[]
+  progress     Progress[]
+  examAttempts ExamAttempt[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model VerificationToken {
+  identifier String
+  token      String
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ── Examples (Phase 2) ──────────────────────────────────────
+
+model Example {
+  id        String   @id @default(cuid())
+  title     String
+  category  String
+  code      String   @db.Text
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([category])
+}
+
+// ── Practice Questions (Phase 3) ────────────────────────────
+
+enum Difficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
+model Question {
+  id          String     @id @default(cuid())
+  title       String
+  description String     @db.Text
+  difficulty  Difficulty @default(MEDIUM)
+  year        Int?
+  paper       String?
+  topic       String?
+  starterCode String?    @db.Text
+
+  testCases   TestCase[]
+  progress    Progress[]
+  examAnswers ExamAnswer[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([topic])
+}
+
+model TestCase {
+  id             String   @id @default(cuid())
+  questionId     String
+  question       Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  inputs         String[]
+  expectedOutput String   @db.Text
+  isHidden       Boolean  @default(false)
+  description    String?
+  sortOrder      Int      @default(0)
+
+  @@index([questionId])
+}
+
+// ── Progress Tracking ───────────────────────────────────────
+
+enum ProgressStatus {
+  ATTEMPTED
+  SOLVED
+}
+
+model Progress {
+  id         String         @id @default(cuid())
+  userId     String
+  questionId String
+  status     ProgressStatus @default(ATTEMPTED)
+  bestScore  Int            @default(0) // best passCount
+  totalTests Int            @default(0)
+  attempts   Int            @default(0)
+  lastCode   String?        @db.Text
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, questionId])
+  @@index([userId])
+  @@index([questionId])
+}
+
+// ── Exam Simulation ─────────────────────────────────────────
+
+enum ExamStatus {
+  IN_PROGRESS
+  COMPLETED
+  TIMED_OUT
+}
+
+model ExamAttempt {
+  id            String      @id @default(cuid())
+  userId        String
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  topic         String?
+  difficulty    Difficulty?
+  questionCount Int
+  timeLimitMin  Int
+
+  status      ExamStatus @default(IN_PROGRESS)
+  score       Int?
+  totalTests  Int?
+
+  startedAt   DateTime @default(now())
+  completedAt DateTime?
+
+  answers ExamAnswer[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([userId, status])
+}
+
+model ExamAnswer {
+  id            String      @id @default(cuid())
+  examAttemptId String
+  examAttempt   ExamAttempt @relation(fields: [examAttemptId], references: [id], onDelete: Cascade)
+  questionId    String
+  question      Question    @relation(fields: [questionId], references: [id])
+
+  code       String?  @db.Text
+  passCount  Int      @default(0)
+  totalTests Int      @default(0)
+  graded     Boolean  @default(false)
+  sortOrder  Int      @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([examAttemptId, questionId])
+  @@index([examAttemptId])
+}
