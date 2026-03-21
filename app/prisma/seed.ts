@@ -2231,6 +2231,9 @@ async function main() {
 
   // ── Questions ─────────────────────────────────────────────────────────────
   console.log('Seeding practice questions...');
+  await prisma.examAnswer.deleteMany();
+  await prisma.examAttempt.deleteMany();
+  await prisma.progress.deleteMany();
   await prisma.testCase.deleteMany();
   await prisma.question.deleteMany();
 
