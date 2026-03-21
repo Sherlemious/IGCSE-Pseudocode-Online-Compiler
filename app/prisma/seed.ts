@@ -2230,29 +2230,42 @@ async function main() {
   console.log(`  ✓ ${exampleData.length} examples`);
 
   // ── Questions ─────────────────────────────────────────────────────────────
+  // Upsert by title so existing question IDs (and all linked Progress /
+  // ExamAnswer / ExamAttempt records) are preserved.
   console.log('Seeding practice questions...');
-  await prisma.examAnswer.deleteMany();
-  await prisma.examAttempt.deleteMany();
-  await prisma.progress.deleteMany();
-  await prisma.testCase.deleteMany();
-  await prisma.question.deleteMany();
+
+  const testCaseData = (tc: { inputs: string[]; expectedOutput: string; description: string | null; isHidden?: boolean; sortOrder: number }) => ({
+    inputs: tc.inputs,
+    expectedOutput: tc.expectedOutput,
+    description: tc.description ?? null,
+    isHidden: tc.isHidden ?? false,
+    sortOrder: tc.sortOrder,
+  });
 
   for (const [idx, q] of questions.entries()) {
     const { testCases, ...questionData } = q;
-    await prisma.question.create({
-      data: {
-        ...questionData,
-        testCases: {
-          create: testCases.map((tc) => ({
-            inputs: tc.inputs,
-            expectedOutput: tc.expectedOutput,
-            description: tc.description ?? null,
-            isHidden: tc.isHidden ?? false,
-            sortOrder: tc.sortOrder,
-          })),
+
+    const existing = await prisma.question.findFirst({ where: { title: q.title } });
+
+    if (existing) {
+      // Update question fields and refresh test cases
+      await prisma.testCase.deleteMany({ where: { questionId: existing.id } });
+      await prisma.question.update({
+        where: { id: existing.id },
+        data: {
+          ...questionData,
+          testCases: { create: testCases.map(testCaseData) },
         },
-      },
-    });
+      });
+    } else {
+      await prisma.question.create({
+        data: {
+          ...questionData,
+          testCases: { create: testCases.map(testCaseData) },
+        },
+      });
+    }
+
     process.stdout.write(`  ✓ [${idx + 1}/${questions.length}] ${q.title}\n`);
   }
 

@@ -82,18 +82,36 @@ export default async function QuestionPage({ params }: Props) {
           Practice
         </Link>
         <h1 className="text-lg font-bold text-light-text mb-2">{question.title}</h1>
+
+        {/* Paper reference line — only shown when structured paper data exists */}
+        {(question.year || question.session || question.variant || question.questionNumber || question.part) && (
+          <div className="flex items-center gap-1.5 font-mono text-[10px] text-dark-text mb-3">
+            {question.year && <span>{question.year}</span>}
+            {question.session && <><span className="text-border">/</span><span>{question.session}</span></>}
+            {question.variant && <><span className="text-border">·</span><span>Variant {question.variant}</span></>}
+            {question.questionNumber && <><span className="text-border">·</span><span>Q{question.questionNumber}{question.part ? `(${question.part})` : ''}</span></>}
+            {question.marks && <><span className="text-border">·</span><span className="text-warning">[{question.marks} marks]</span></>}
+          </div>
+        )}
+
         <div className="flex flex-wrap gap-2 mb-4 text-xs">
-          <span className="bg-surface px-2 py-0.5 rounded border border-border text-dark-text">
+          <span className={`px-2 py-0.5 rounded border font-medium ${
+            question.difficulty === 'EASY'
+              ? 'bg-success/10 border-success/25 text-success'
+              : question.difficulty === 'MEDIUM'
+                ? 'bg-warning/10 border-warning/25 text-warning'
+                : 'bg-error/10 border-error/25 text-error'
+          }`}>
             {question.difficulty}
           </span>
-          {question.year && (
-            <span className="bg-surface px-2 py-0.5 rounded border border-border text-dark-text">{question.year}</span>
-          )}
-          {question.paper && (
-            <span className="bg-surface px-2 py-0.5 rounded border border-border text-dark-text">{question.paper}</span>
-          )}
           {question.topic && (
             <span className="bg-surface px-2 py-0.5 rounded border border-border text-dark-text">{question.topic}</span>
+          )}
+          {question.paper && !question.year && (
+            <span className="bg-surface px-2 py-0.5 rounded border border-border text-dark-text font-mono">{question.paper}</span>
+          )}
+          {question.marks && !question.year && (
+            <span className="bg-surface px-2 py-0.5 rounded border border-border text-dark-text">{question.marks} marks</span>
           )}
         </div>
         <div className="text-sm text-light-text/85 leading-relaxed">

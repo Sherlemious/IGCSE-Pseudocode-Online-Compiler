@@ -99,9 +99,14 @@ model Question {
   title       String
   description String     @db.Text
   difficulty  Difficulty @default(MEDIUM)
-  year        Int?
-  paper       String?
-  topic       String?
+  year           Int?
+  session        String?   // "May/June" | "Oct/Nov" | "Feb/Mar"
+  variant        Int?      // 1, 2, 3
+  paper          String?   // legacy freeform, e.g. "P12"
+  questionNumber Int?
+  part           String?   // "a", "b", "(i)", "(ii)"
+  marks          Int?
+  topic          String?
   starterCode String?    @db.Text
 
   hints               String[]

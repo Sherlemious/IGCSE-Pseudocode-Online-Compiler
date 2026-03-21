@@ -190,7 +190,17 @@ export default async function PracticePage({ searchParams }: PageProps) {
                   </div>
                   <div className="space-y-2">
                     {qs.map((q) => {
-                      const meta = [q.topic, q.year, q.paper].filter(Boolean).join(' \u00b7 ');
+                      // Build a compact reference string from structured fields
+                      const paperRef = q.year
+                        ? [
+                            q.year,
+                            q.session,
+                            q.variant ? `V${q.variant}` : null,
+                            q.questionNumber ? `Q${q.questionNumber}${q.part ? `(${q.part})` : ''}` : null,
+                            q.marks ? `[${q.marks}m]` : null,
+                          ].filter(Boolean).join(' ')
+                        : q.paper ?? null;
+                      const meta = [q.topic, paperRef].filter(Boolean).join(' \u00b7 ');
                       const progress = progressMap.get(q.id);
                       const solved = progress?.status === 'SOLVED';
                       const cardContent = (
@@ -262,7 +272,11 @@ export default async function PracticePage({ searchParams }: PageProps) {
 
 async function fetchQuestions() {
   return prisma.question.findMany({
-    select: { id: true, title: true, difficulty: true, topic: true, year: true, paper: true },
-    orderBy: { title: 'asc' },
+    select: {
+      id: true, title: true, difficulty: true, topic: true,
+      year: true, session: true, variant: true, paper: true,
+      questionNumber: true, part: true, marks: true,
+    },
+    orderBy: [{ year: 'desc' }, { title: 'asc' }],
   });
 }
