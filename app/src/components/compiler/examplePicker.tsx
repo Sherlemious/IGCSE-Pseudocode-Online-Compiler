@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Book, Search, X, ChevronRight, ChevronLeft, FileCode, ArrowRight } from 'lucide-react';
 import { examples as staticExamples, type Example } from '../../data/examples';
 
@@ -57,19 +57,19 @@ const ExamplePicker: React.FC<{ onSelectExample: (code: string) => void }> = ({ 
     }
   }, [isOpen]);
 
+  const categories = useMemo(() => [...new Set(examples.map((ex) => ex.category))], [examples]);
+
   useEffect(() => {
     if (search) {
       setExpandedCategories(new Set(categories));
     }
-  }, [search]);
+  }, [search, categories]);
 
   const filteredExamples = examples.filter(
     (ex) =>
       ex.title.toLowerCase().includes(search.toLowerCase()) ||
       ex.category.toLowerCase().includes(search.toLowerCase()),
   );
-
-  const categories = [...new Set(examples.map((ex) => ex.category))];
 
   const toggleCategory = (cat: string) => {
     setExpandedCategories((prev) => {

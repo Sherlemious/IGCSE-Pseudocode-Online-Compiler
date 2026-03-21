@@ -39,9 +39,10 @@ export default function ExamTimer({ startedAt, timeLimitMin, onTimeUp }: Props) 
   const isCritical = remaining < 60 * 1000;
   const progress = remaining / totalMs;
 
-  const timeStr = hours > 0
-    ? `${hours}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
-    : `${minutes}:${String(seconds).padStart(2, '0')}`;
+  const timeStr =
+    hours > 0
+      ? `${hours}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
+      : `${minutes}:${String(seconds).padStart(2, '0')}`;
 
   // SVG ring
   const size = 28;
@@ -55,14 +56,7 @@ export default function ExamTimer({ startedAt, timeLimitMin, onTimeUp }: Props) 
   return (
     <div className={`flex items-center gap-2 ${isCritical ? 'animate-pulse' : ''}`}>
       <svg width={size} height={size} className="-rotate-90">
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          fill="none"
-          stroke="var(--color-border)"
-          strokeWidth={stroke}
-        />
+        <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="var(--color-border)" strokeWidth={stroke} />
         <circle
           cx={size / 2}
           cy={size / 2}
@@ -76,10 +70,7 @@ export default function ExamTimer({ startedAt, timeLimitMin, onTimeUp }: Props) 
           style={{ transition: 'stroke-dashoffset 1s linear, stroke 0.3s' }}
         />
       </svg>
-      <span
-        className="text-sm font-mono font-semibold tabular-nums"
-        style={{ color }}
-      >
+      <span className="text-sm font-mono font-semibold tabular-nums" style={{ color }}>
         {timeStr}
       </span>
     </div>
