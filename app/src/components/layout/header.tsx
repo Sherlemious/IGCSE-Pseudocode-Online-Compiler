@@ -3,12 +3,12 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { siGithub } from 'simple-icons/icons';
 import {
   Menu,
   X,
   Braces,
   BookOpen,
-  Github,
   ExternalLink,
   Keyboard,
   GraduationCap,
@@ -26,6 +26,12 @@ const SHORTCUTS = [
   { keys: 'Ctrl + S', desc: 'Auto-saved' },
   { keys: 'Esc', desc: 'Close modals' },
 ];
+
+const SimpleGithubIcon: React.FC<{ size: number; className?: string }> = ({ size, className }) => (
+  <svg viewBox="0 0 24 24" width={size} height={size} aria-hidden="true" focusable="false" className={className}>
+    <path fill="currentColor" d={siGithub.path} />
+  </svg>
+);
 
 const Header: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -119,7 +125,7 @@ const Header: React.FC = () => {
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                <Github size={13} />
+                <SimpleGithubIcon size={13} />
                 GitHub
               </a>
               <a
@@ -214,7 +220,7 @@ const Header: React.FC = () => {
                 rel="noopener noreferrer"
                 onClick={() => setIsMenuOpen(false)}
               >
-                <Github size={14} />
+                <SimpleGithubIcon size={14} />
                 GitHub Repository
               </a>
               <a
