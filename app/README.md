@@ -15,6 +15,31 @@ You can generate one with:
 openssl rand -base64 32
 ```
 
+For OAuth providers (Google/GitHub), also set `AUTH_URL` to your app origin:
+
+```bash
+# local
+AUTH_URL="http://localhost:3000"
+
+# production example
+AUTH_URL="https://pseudocode-compiler.sherlemious.com"
+```
+
+### Google OAuth redirect URI setup
+
+If you see `redirect_uri_mismatch`, add the exact callback URL in Google Cloud Console:
+
+- `https://pseudocode-compiler.sherlemious.com/api/auth/callback/google`
+
+You should usually also add local development:
+
+- `http://localhost:3000/api/auth/callback/google`
+
+And ensure Authorized JavaScript origins include:
+
+- `https://pseudocode-compiler.sherlemious.com`
+- `http://localhost:3000`
+
 First, run the development server:
 
 ```bash
