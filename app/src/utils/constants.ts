@@ -10,3 +10,6 @@ export const FILE_PREFIX = 'pseudocode_file_';
 
 /** Autosave delay in milliseconds */
 export const AUTOSAVE_DELAY = 500;
+
+/** Key for onboarding completion */
+export const ONBOARDING_KEY = 'pseudocode_has_onboarded';

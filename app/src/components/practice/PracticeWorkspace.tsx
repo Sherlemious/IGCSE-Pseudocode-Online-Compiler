@@ -21,6 +21,8 @@ import {
   ClipboardCheck,
   Trash2,
   EyeOff,
+  Lightbulb,
+  BookOpen,
 } from 'lucide-react';
 
 /* ── Types ──────────────────────────────────────────────── */
@@ -599,6 +601,18 @@ export default function PracticeWorkspace({ questionId, starterCode, savedCode }
         }`}>
           <div className="text-lg font-bold">{passCount}/{totalCount}</div>
           <div className="text-xs">{allPassed ? 'All tests passed!' : 'Some tests failed'}</div>
+          {!allPassed && (
+            <div className="text-[10px] text-dark-text mt-1.5 flex items-center justify-center gap-1">
+              <Lightbulb size={10} className="text-warning" />
+              Stuck? Check the <strong className="text-light-text">Hints</strong> in the sidebar.
+            </div>
+          )}
+          {allPassed && (
+            <div className="text-[10px] text-dark-text mt-1.5 flex items-center justify-center gap-1">
+              <BookOpen size={10} className="text-primary" />
+              Compare with the <strong className="text-light-text">Model Solution</strong> in the sidebar.
+            </div>
+          )}
         </div>
 
         {/* Individual results */}

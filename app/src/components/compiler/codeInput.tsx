@@ -239,6 +239,7 @@ const CodeInput: React.FC<CodeInputProps> = ({
                 onClick={onRunCode}
                 className="flex items-center gap-1 px-2 py-1 text-xs text-success hover:bg-success/10 rounded transition-colors"
                 title="Run Code (Ctrl+Enter)"
+                data-tour="run-button"
               >
                 <Play className="h-3.5 w-3.5" />
                 <span className="hidden sm:inline">Run</span>
@@ -250,7 +251,7 @@ const CodeInput: React.FC<CodeInputProps> = ({
       </div>
 
       {/* Editor area */}
-      <div className="flex-1 min-h-0 flex relative">
+      <div className="flex-1 min-h-0 flex relative" data-tour="editor">
         <CodeMirrorEditor
           value={code}
           onChange={onCodeChange}

@@ -93,6 +93,7 @@ const Header: React.FC = () => {
             <nav className="hidden md:flex items-center gap-1 text-xs">
               <Link
                 href="/docs"
+                data-tour="docs-link"
                 className={`flex items-center gap-1 px-2 py-1 rounded hover:text-header-text hover:bg-white/10 transition duration-200 ${
                   isDocs ? 'text-primary' : 'text-header-text/70'
                 }`}
@@ -102,6 +103,7 @@ const Header: React.FC = () => {
               </Link>
               <Link
                 href="/practice"
+                data-tour="practice-link"
                 className={`flex items-center gap-1 px-2 py-1 rounded hover:text-header-text hover:bg-white/10 transition duration-200 ${
                   isPractice ? 'text-primary' : 'text-header-text/70'
                 }`}

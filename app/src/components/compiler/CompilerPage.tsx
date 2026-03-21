@@ -4,6 +4,7 @@ import React, { useState, useCallback, useEffect, useRef } from 'react';
 import CodeInput, { type EditorTab, type CursorPosition } from './codeInput';
 import OutputDisplay from './outputDisplay';
 import Footer from '../layout/footer';
+import OnboardingTour from '../onboarding/OnboardingTour';
 import { useInterpreter } from '../../interpreter/useInterpreter';
 import { toast } from 'sonner';
 import { AUTOSAVE_KEY, FILE_PREFIX, AUTOSAVE_DELAY } from '../../utils/constants';
@@ -240,6 +241,7 @@ const CompilerPage: React.FC = () => {
         </div>
       </div>
       <Footer isRunning={isRunning} cursor={cursor} lineCount={lineCount} />
+      <OnboardingTour />
     </div>
   );
 };

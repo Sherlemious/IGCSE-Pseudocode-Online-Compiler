@@ -8,6 +8,8 @@ import { prisma } from '../../../lib/prisma';
 import { auth } from '../../../lib/auth';
 import { PREMIUM_GATING_ENABLED } from '../../../lib/featureFlags';
 import PracticeWorkspace from '../../../components/practice/PracticeWorkspace';
+import HintsPanel from '../../../components/practice/HintsPanel';
+import SolutionPanel from '../../../components/practice/SolutionPanel';
 
 interface Props {
   params: Promise<{ questionId: string }>;
@@ -52,13 +54,17 @@ export default async function QuestionPage({ params }: Props) {
 
   // Load saved code for authenticated users
   let savedCode: string | null = null;
+  let progressStatus: string | null = null;
+  let progressAttempts = 0;
   if (session?.user?.id) {
     try {
       const progress = await prisma.progress.findUnique({
         where: { userId_questionId: { userId: session.user.id, questionId } },
-        select: { lastCode: true },
+        select: { lastCode: true, status: true, attempts: true },
       });
       savedCode = progress?.lastCode ?? null;
+      progressStatus = progress?.status ?? null;
+      progressAttempts = progress?.attempts ?? 0;
     } catch {
       /* ignore */
     }
@@ -178,6 +184,14 @@ export default async function QuestionPage({ params }: Props) {
             </div>
           </div>
         )}
+
+        {/* Hints & Solution panels */}
+        <HintsPanel questionId={question.id} />
+        <SolutionPanel
+          questionId={question.id}
+          isSolved={progressStatus === 'SOLVED'}
+          attemptCount={progressAttempts}
+        />
       </div>
 
       {/* Right: Workspace or locked state */}

@@ -367,3 +367,22 @@ textarea:focus-visible {
 .scrollbar-thumb-rounded-full::-webkit-scrollbar-thumb {
   border-radius: 9999px;
 }
+
+/* ── Onboarding tour spotlight ─────────────────────────── */
+@keyframes spotlight-ring {
+  0%,
+  100% {
+    box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb), 0.3),
+      0 0 0 9999px rgba(0, 0, 0, 0.6);
+  }
+
+  50% {
+    box-shadow: 0 0 0 5px rgba(var(--color-primary-rgb), 0.5),
+      0 0 0 9999px rgba(0, 0, 0, 0.6);
+  }
+}
+
+.tour-spotlight {
+  animation: spotlight-ring 2s ease-in-out infinite;
+  border-radius: 8px;
+}

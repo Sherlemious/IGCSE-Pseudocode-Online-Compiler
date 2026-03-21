@@ -104,6 +104,10 @@ model Question {
   topic       String?
   starterCode String?    @db.Text
 
+  hints               String[]
+  solution            String?    @db.Text
+  solutionExplanation String?    @db.Text
+
   testCases   TestCase[]
   progress    Progress[]
   examAnswers ExamAnswer[]
