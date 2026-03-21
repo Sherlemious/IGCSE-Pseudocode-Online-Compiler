@@ -47,24 +47,16 @@ export async function POST(request: NextRequest, { params }: Props) {
   // Access control: MEDIUM/HARD require sign-in + premium
   if (question.difficulty !== 'EASY') {
     if (!session?.user) {
-      return NextResponse.json(
-        { error: 'Sign in to grade medium and hard questions.' },
-        { status: 401 },
-      );
+      return NextResponse.json({ error: 'Sign in to grade medium and hard questions.' }, { status: 401 });
     }
     if (session.user.plan !== 'PREMIUM') {
-      return NextResponse.json(
-        { error: 'Premium plan required for medium and hard questions.' },
-        { status: 403 },
-      );
+      return NextResponse.json({ error: 'Premium plan required for medium and hard questions.' }, { status: 403 });
     }
   }
 
   // Grade all test cases in parallel
   const settled = await Promise.allSettled(
-    question.testCases.map((tc) =>
-      gradeSubmission(code, tc.inputs, tc.expectedOutput, timeout),
-    ),
+    question.testCases.map((tc) => gradeSubmission(code, tc.inputs, tc.expectedOutput, timeout))
   );
 
   const results = question.testCases.map((tc, i) => {
@@ -120,20 +112,21 @@ export async function POST(request: NextRequest, { params }: Props) {
         },
         update: {
           status: allPassed ? 'SOLVED' : undefined, // only upgrade, never downgrade
-          bestScore: { set: passCount }, // will be updated below conditionally
+          totalTests: totalCount,
           attempts: { increment: 1 },
           lastCode: code,
         },
       });
 
-      // Ensure bestScore only goes up (upsert doesn't support conditional max)
-      await prisma.progress.update({
+      // Raise bestScore only when the new passCount is higher.
+      await prisma.progress.updateMany({
         where: {
-          userId_questionId: { userId: session.user.id, questionId: id },
+          userId: session.user.id,
+          questionId: id,
+          bestScore: { lt: passCount },
         },
         data: {
           bestScore: passCount,
-          ...(allPassed ? { status: 'SOLVED' } : {}),
         },
       });
     } catch {
