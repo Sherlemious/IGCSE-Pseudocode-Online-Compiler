@@ -8,6 +8,7 @@ import { LogIn, LogOut, User, Crown } from 'lucide-react';
 export default function UserMenu() {
   const { data: session, status } = useSession();
   const [open, setOpen] = useState(false);
+  const [avatarLoadFailed, setAvatarLoadFailed] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -17,6 +18,10 @@ export default function UserMenu() {
     document.addEventListener('mousedown', onClick);
     return () => document.removeEventListener('mousedown', onClick);
   }, []);
+
+  useEffect(() => {
+    setAvatarLoadFailed(false);
+  }, [session?.user?.image]);
 
   if (status === 'loading') {
     return <div className="w-6 h-6 rounded-full bg-header-text/10 animate-pulse" />;
@@ -36,6 +41,7 @@ export default function UserMenu() {
   }
 
   const isPremium = session.user.plan === 'PREMIUM';
+  const hasValidImage = Boolean(session.user.image) && !avatarLoadFailed;
 
   return (
     <div ref={menuRef} className="relative">
@@ -44,14 +50,15 @@ export default function UserMenu() {
         className="flex items-center gap-1.5 rounded hover:bg-white/10 transition duration-200 p-0.5"
         title={session.user.name ?? 'Account'}
       >
-        {session.user.image ? (
+        {hasValidImage ? (
           <Image
-            src={session.user.image}
+            src={session.user.image!}
             alt=""
             width={24}
             height={24}
             className="w-6 h-6 rounded-full border border-header-text/20"
             referrerPolicy="no-referrer"
+            onError={() => setAvatarLoadFailed(true)}
           />
         ) : (
           <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center">
@@ -65,9 +72,7 @@ export default function UserMenu() {
         <div className="absolute right-0 top-full mt-1 w-56 rounded-lg border border-border bg-surface shadow-intense z-50 overflow-hidden">
           {/* User info */}
           <div className="px-3 py-2.5 border-b border-border">
-            <div className="text-sm font-medium text-light-text truncate">
-              {session.user.name ?? 'User'}
-            </div>
+            <div className="text-sm font-medium text-light-text truncate">{session.user.name ?? 'User'}</div>
             <div className="text-xs text-dark-text truncate">{session.user.email}</div>
             <div className="mt-1.5">
               {isPremium ? (
@@ -87,7 +92,9 @@ export default function UserMenu() {
           <div className="py-1">
             {!isPremium && (
               <button
-                onClick={() => { setOpen(false); /* TODO: upgrade flow */ }}
+                onClick={() => {
+                  setOpen(false); /* TODO: upgrade flow */
+                }}
                 className="w-full flex items-center gap-2 px-3 py-2 text-xs text-warning hover:bg-warning/10 transition-colors"
               >
                 <Crown size={13} />
@@ -95,7 +102,10 @@ export default function UserMenu() {
               </button>
             )}
             <button
-              onClick={() => { setOpen(false); signOut(); }}
+              onClick={() => {
+                setOpen(false);
+                signOut();
+              }}
               className="w-full flex items-center gap-2 px-3 py-2 text-xs text-dark-text hover:text-light-text hover:bg-background transition-colors"
             >
               <LogOut size={13} />
