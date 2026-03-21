@@ -3,7 +3,19 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Menu, X, Braces, BookOpen, Github, ExternalLink, Keyboard, GraduationCap, Clock, BarChart3 } from 'lucide-react';
+import {
+  Menu,
+  X,
+  Braces,
+  BookOpen,
+  Github,
+  ExternalLink,
+  Keyboard,
+  GraduationCap,
+  Clock,
+  BarChart3,
+  ArrowLeft,
+} from 'lucide-react';
 import SettingsPanel from './settingsPanel';
 import UserMenu from '../auth/UserMenu';
 
@@ -19,9 +31,11 @@ const Header: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [showShortcuts, setShowShortcuts] = useState(false);
   const pathname = usePathname();
+  const isDocs = pathname === '/docs' || pathname.startsWith('/docs/');
   const isPractice = pathname === '/practice' || pathname.startsWith('/practice/');
   const isExam = pathname === '/exam' || pathname.startsWith('/exam/');
   const isAnalytics = pathname === '/analytics';
+  const isCompilerPage = pathname === '/';
 
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
@@ -41,18 +55,33 @@ const Header: React.FC = () => {
         <div className="px-3 py-1.5">
           <div className="flex justify-between items-center">
             {/* Logo */}
-            <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition duration-200">
+            <Link
+              href="/"
+              className={`flex items-center gap-2 transition duration-200 ${
+                isCompilerPage ? 'text-header-text' : 'text-header-text hover:text-primary'
+              }`}
+              title={isCompilerPage ? 'Pseudocode Compiler' : 'Back to Compiler'}
+              aria-label={isCompilerPage ? 'Pseudocode Compiler home' : 'Back to Compiler'}
+            >
               <Braces className="h-4 w-4 text-header-text" strokeWidth={2.5} />
               <span className="text-sm font-bold tracking-tight text-header-text">
                 Pseudocode <span className="font-normal text-header-text/60">Compiler</span>
               </span>
+              {!isCompilerPage && (
+                <span className="hidden sm:inline-flex items-center gap-1 rounded border border-primary/40 bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-primary">
+                  <ArrowLeft size={10} />
+                  Back
+                </span>
+              )}
             </Link>
 
             {/* Desktop Navigation */}
             <nav className="hidden md:flex items-center gap-1 text-xs">
               <Link
                 href="/docs"
-                className="flex items-center gap-1 px-2 py-1 rounded text-header-text/70 hover:text-header-text hover:bg-white/10 transition duration-200"
+                className={`flex items-center gap-1 px-2 py-1 rounded hover:text-header-text hover:bg-white/10 transition duration-200 ${
+                  isDocs ? 'text-primary' : 'text-header-text/70'
+                }`}
               >
                 <BookOpen size={13} />
                 Docs
@@ -140,7 +169,9 @@ const Header: React.FC = () => {
             <nav className="md:hidden mt-2 space-y-0.5 pb-2 text-sm border-t border-header-text/20 pt-2">
               <Link
                 href="/docs"
-                className="flex items-center gap-2 text-header-text/70 hover:text-header-text transition duration-200 py-1.5 px-1 rounded hover:bg-white/10"
+                className={`flex items-center gap-2 hover:text-header-text transition duration-200 py-1.5 px-1 rounded hover:bg-white/10 ${
+                  isDocs ? 'text-primary' : 'text-header-text/70'
+                }`}
                 onClick={() => setIsMenuOpen(false)}
               >
                 <BookOpen size={14} />
