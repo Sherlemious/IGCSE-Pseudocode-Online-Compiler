@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 
 interface Props {
   startedAt: string;
@@ -16,8 +16,6 @@ export default function ExamTimer({ startedAt, timeLimitMin, onTimeUp }: Props) 
     return Math.max(0, totalMs - elapsed);
   });
 
-  const handleTimeUp = useCallback(onTimeUp, [onTimeUp]);
-
   useEffect(() => {
     const interval = setInterval(() => {
       const elapsed = Date.now() - new Date(startedAt).getTime();
@@ -25,12 +23,12 @@ export default function ExamTimer({ startedAt, timeLimitMin, onTimeUp }: Props) 
       setRemaining(left);
       if (left === 0) {
         clearInterval(interval);
-        handleTimeUp();
+        onTimeUp();
       }
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [startedAt, totalMs, handleTimeUp]);
+  }, [startedAt, totalMs, onTimeUp]);
 
   const totalSec = Math.ceil(remaining / 1000);
   const hours = Math.floor(totalSec / 3600);
