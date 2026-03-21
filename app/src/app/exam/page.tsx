@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { PREMIUM_GATING_ENABLED } from '@/lib/featureFlags';
 import { Clock, Trophy, ArrowRight, Hourglass } from 'lucide-react';
 import ExamConfigForm from '@/components/exam/ExamConfigForm';
 
@@ -13,9 +14,10 @@ export default async function ExamPage() {
   if (!session) redirect('/auth/signin');
 
   const isPremium = session.user.plan === 'PREMIUM';
+  const hasFullAccess = isPremium || !PREMIUM_GATING_ENABLED;
 
   const topics = await prisma.question.findMany({
-    where: isPremium ? {} : { difficulty: 'EASY' },
+    where: hasFullAccess ? {} : { difficulty: 'EASY' },
     select: { topic: true },
     distinct: ['topic'],
   });
@@ -43,7 +45,8 @@ export default async function ExamPage() {
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
-          background: 'radial-gradient(ellipse 80% 40% at 50% 0%, rgba(var(--color-primary-rgb), 0.05) 0%, transparent 60%)',
+          background:
+            'radial-gradient(ellipse 80% 40% at 50% 0%, rgba(var(--color-primary-rgb), 0.05) 0%, transparent 60%)',
         }}
       />
 
@@ -60,12 +63,19 @@ export default async function ExamPage() {
         </div>
 
         {/* Config form */}
-        <div className="bg-surface/80 backdrop-blur-sm rounded-xl border border-border p-6 mb-6 card-glow animate-fade-in-up" style={{ animationDelay: '80ms' }}>
+        <div
+          className="bg-surface/80 backdrop-blur-sm rounded-xl border border-border p-6 mb-6 card-glow animate-fade-in-up"
+          style={{ animationDelay: '80ms' }}
+        >
           <div className="flex items-center gap-2 mb-5">
             <Clock size={14} className="text-primary" />
             <h2 className="mono-label text-light-text">Configure Exam</h2>
           </div>
-          <ExamConfigForm topics={topicList} isPremium={isPremium} />
+          <ExamConfigForm
+            topics={topicList}
+            hasFullAccess={hasFullAccess}
+            premiumGatingEnabled={PREMIUM_GATING_ENABLED}
+          />
         </div>
 
         {/* Recent attempts */}
@@ -83,18 +93,27 @@ export default async function ExamPage() {
                       hover:border-primary/30 hover:bg-surface/80 transition-all duration-200 group"
                   >
                     <div className="flex items-center gap-3">
-                      <div className={`w-2.5 h-2.5 rounded-full ring-2 ring-offset-1 ring-offset-surface ${
-                        a.status === 'IN_PROGRESS' ? 'bg-warning ring-warning/30 animate-pulse' :
-                        a.status === 'COMPLETED' ? 'bg-success ring-success/30' : 'bg-error ring-error/30'
-                      }`} />
+                      <div
+                        className={`w-2.5 h-2.5 rounded-full ring-2 ring-offset-1 ring-offset-surface ${
+                          a.status === 'IN_PROGRESS'
+                            ? 'bg-warning ring-warning/30 animate-pulse'
+                            : a.status === 'COMPLETED'
+                              ? 'bg-success ring-success/30'
+                              : 'bg-error ring-error/30'
+                        }`}
+                      />
                       <div>
                         <div className="text-xs font-medium text-light-text">
                           {a.questionCount} questions &middot; {a.timeLimitMin} min
                           {a.topic && <span className="text-dark-text"> &middot; {a.topic}</span>}
                         </div>
                         <div className="text-[10px] text-dark-text font-mono">
-                          {new Date(a.startedAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
-                          {' '}&middot; {a.status.replace('_', ' ').toLowerCase()}
+                          {new Date(a.startedAt).toLocaleDateString('en-GB', {
+                            day: '2-digit',
+                            month: 'short',
+                            year: 'numeric',
+                          })}{' '}
+                          &middot; {a.status.replace('_', ' ').toLowerCase()}
                         </div>
                       </div>
                     </div>
@@ -102,12 +121,17 @@ export default async function ExamPage() {
                       {pct !== null && (
                         <div className="flex items-center gap-1.5">
                           <Trophy size={12} className="text-warning" />
-                          <span className={`text-xs font-bold font-mono ${pct >= 70 ? 'text-success' : pct >= 40 ? 'text-warning' : 'text-error'}`}>
+                          <span
+                            className={`text-xs font-bold font-mono ${pct >= 70 ? 'text-success' : pct >= 40 ? 'text-warning' : 'text-error'}`}
+                          >
                             {pct}%
                           </span>
                         </div>
                       )}
-                      <ArrowRight size={14} className="text-dark-text/40 group-hover:text-primary group-hover:translate-x-0.5 transition-all duration-200" />
+                      <ArrowRight
+                        size={14}
+                        className="text-dark-text/40 group-hover:text-primary group-hover:translate-x-0.5 transition-all duration-200"
+                      />
                     </div>
                   </Link>
                 );

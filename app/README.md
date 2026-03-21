@@ -15,6 +15,15 @@ You can generate one with:
 openssl rand -base64 32
 ```
 
+Optional feature flag:
+
+```bash
+# Default when unset: all users can access all difficulties/features.
+NEXT_PUBLIC_PREMIUM_GATING_ENABLED=false
+```
+
+Set it to `true` when you want to enforce premium restrictions again.
+
 For OAuth providers (Google/GitHub), also set `AUTH_URL` to your app origin:
 
 ```bash

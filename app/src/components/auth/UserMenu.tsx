@@ -4,6 +4,7 @@ import { useSession, signIn, signOut } from 'next-auth/react';
 import { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
 import { LogIn, LogOut, User, Crown } from 'lucide-react';
+import { PREMIUM_GATING_ENABLED } from '@/lib/featureFlags';
 
 export default function UserMenu() {
   const { data: session, status } = useSession();
@@ -90,17 +91,23 @@ export default function UserMenu() {
 
           {/* Actions */}
           <div className="py-1">
-            {!isPremium && (
-              <button
-                onClick={() => {
-                  setOpen(false); /* TODO: upgrade flow */
-                }}
-                className="w-full flex items-center gap-2 px-3 py-2 text-xs text-warning hover:bg-warning/10 transition-colors"
-              >
-                <Crown size={13} />
-                Upgrade to Premium
-              </button>
-            )}
+            {!isPremium &&
+              (PREMIUM_GATING_ENABLED ? (
+                <button
+                  onClick={() => {
+                    setOpen(false); /* TODO: upgrade flow */
+                  }}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-xs text-warning hover:bg-warning/10 transition-colors"
+                >
+                  <Crown size={13} />
+                  Upgrade to Premium
+                </button>
+              ) : (
+                <div className="w-full flex items-center gap-2 px-3 py-2 text-xs text-primary/80">
+                  <Crown size={13} />
+                  Premium coming soon
+                </div>
+              ))}
             <button
               onClick={() => {
                 setOpen(false);

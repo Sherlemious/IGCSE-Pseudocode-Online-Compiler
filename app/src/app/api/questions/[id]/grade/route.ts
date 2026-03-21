@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '../../../../../lib/prisma';
 import { gradeSubmission } from '../../../../../lib/autograder';
 import { auth } from '../../../../../lib/auth';
+import { PREMIUM_GATING_ENABLED } from '../../../../../lib/featureFlags';
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -44,8 +45,8 @@ export async function POST(request: NextRequest, { params }: Props) {
     return NextResponse.json({ error: 'Question not found' }, { status: 404 });
   }
 
-  // Access control: MEDIUM/HARD require sign-in + premium
-  if (question.difficulty !== 'EASY') {
+  // Access control applies only when premium gating is enabled.
+  if (PREMIUM_GATING_ENABLED && question.difficulty !== 'EASY') {
     if (!session?.user) {
       return NextResponse.json({ error: 'Sign in to grade medium and hard questions.' }, { status: 401 });
     }

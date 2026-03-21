@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import SettingsPanel from './settingsPanel';
 import UserMenu from '../auth/UserMenu';
+import { PREMIUM_GATING_ENABLED } from '@/lib/featureFlags';
 
 const SHORTCUTS = [
   { keys: 'Ctrl + Enter', desc: 'Run code' },
@@ -42,6 +43,7 @@ const Header: React.FC = () => {
   const isExam = pathname === '/exam' || pathname.startsWith('/exam/');
   const isAnalytics = pathname === '/analytics';
   const isCompilerPage = pathname === '/';
+  const showPremiumComingSoon = !PREMIUM_GATING_ENABLED;
 
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
@@ -80,6 +82,12 @@ const Header: React.FC = () => {
                 </span>
               )}
             </Link>
+
+            {showPremiumComingSoon && (
+              <div className="hidden lg:flex items-center px-2 py-1 rounded border border-primary/35 bg-primary/10 text-[10px] font-semibold uppercase tracking-wider text-primary">
+                Premium Coming Soon · All Features Unlocked
+              </div>
+            )}
 
             {/* Desktop Navigation */}
             <nav className="hidden md:flex items-center gap-1 text-xs">
@@ -173,6 +181,11 @@ const Header: React.FC = () => {
           {/* Mobile Navigation */}
           {isMenuOpen && (
             <nav className="md:hidden mt-2 space-y-0.5 pb-2 text-sm border-t border-header-text/20 pt-2">
+              {showPremiumComingSoon && (
+                <div className="mb-2 rounded border border-primary/30 bg-primary/10 px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-primary">
+                  Premium Coming Soon · All Features Unlocked
+                </div>
+              )}
               <Link
                 href="/docs"
                 className={`flex items-center gap-2 hover:text-header-text transition duration-200 py-1.5 px-1 rounded hover:bg-white/10 ${

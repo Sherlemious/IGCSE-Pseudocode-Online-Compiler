@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { Lock, CheckCircle, Crown } from 'lucide-react';
 import { prisma } from '../../lib/prisma';
 import { auth } from '../../lib/auth';
+import { PREMIUM_GATING_ENABLED } from '../../lib/featureFlags';
 
 export const metadata: Metadata = {
   title: 'Practice Questions',
@@ -31,6 +32,7 @@ export default async function PracticePage({ searchParams }: PageProps) {
   const { topic: activeTopic } = await searchParams;
   const session = await auth();
   const isPremium = session?.user?.plan === 'PREMIUM';
+  const hasFullAccess = isPremium || !PREMIUM_GATING_ENABLED;
 
   let questions: Awaited<ReturnType<typeof fetchQuestions>> = [];
   let progressMap: Map<string, { status: string; bestScore: number; totalTests: number }> = new Map();
@@ -99,8 +101,16 @@ export default async function PracticePage({ searchParams }: PageProps) {
           )}
         </div>
 
-        {/* Plan notice for free users */}
-        {session && !isPremium && (
+        {/* Premium notice */}
+        {!PREMIUM_GATING_ENABLED && (
+          <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-primary/20 bg-primary/5 text-xs text-primary mb-4">
+            <Crown size={13} className="shrink-0" />
+            <span>Premium is coming soon. For now, all question difficulties are available to everyone.</span>
+          </div>
+        )}
+
+        {/* Plan notice for free users when premium gating is enabled */}
+        {PREMIUM_GATING_ENABLED && session && !isPremium && (
           <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-warning/20 bg-warning/5 text-xs text-warning mb-4">
             <Crown size={13} className="shrink-0" />
             <span>
@@ -116,7 +126,7 @@ export default async function PracticePage({ searchParams }: PageProps) {
             <Link href="/auth/signin" className="underline font-medium hover:text-light-text transition-colors">
               Sign in
             </Link>
-            <span className="text-dark-text">to track your progress and unlock all questions.</span>
+            <span className="text-dark-text">to track your progress.</span>
           </div>
         )}
 
@@ -163,7 +173,7 @@ export default async function PracticePage({ searchParams }: PageProps) {
               const qs = grouped[d];
               if (qs.length === 0) return null;
 
-              const isLocked = d !== 'EASY' && !isPremium;
+              const isLocked = d !== 'EASY' && !hasFullAccess;
 
               return (
                 <div key={d}>

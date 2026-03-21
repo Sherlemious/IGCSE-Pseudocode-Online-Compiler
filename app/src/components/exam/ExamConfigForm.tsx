@@ -6,10 +6,11 @@ import { Loader2, Zap } from 'lucide-react';
 
 interface Props {
   topics: string[];
-  isPremium: boolean;
+  hasFullAccess: boolean;
+  premiumGatingEnabled: boolean;
 }
 
-export default function ExamConfigForm({ topics, isPremium }: Props) {
+export default function ExamConfigForm({ topics, hasFullAccess, premiumGatingEnabled }: Props) {
   const router = useRouter();
   const [topic, setTopic] = useState('');
   const [difficulty, setDifficulty] = useState('');
@@ -51,6 +52,12 @@ export default function ExamConfigForm({ topics, isPremium }: Props) {
 
   return (
     <div className="space-y-5">
+      {!premiumGatingEnabled && (
+        <div className="text-xs text-primary bg-primary/8 border border-primary/20 rounded-lg px-3.5 py-2.5 animate-scale-in">
+          Premium is coming soon. All exam difficulties are currently available.
+        </div>
+      )}
+
       {error && (
         <div className="text-xs text-error bg-error/8 border border-error/15 rounded-lg px-3.5 py-2.5 animate-scale-in">
           {error}
@@ -87,8 +94,8 @@ export default function ExamConfigForm({ topics, isPremium }: Props) {
           >
             <option value="">Any</option>
             <option value="EASY">Easy</option>
-            {isPremium && <option value="MEDIUM">Medium</option>}
-            {isPremium && <option value="HARD">Hard</option>}
+            {hasFullAccess && <option value="MEDIUM">Medium</option>}
+            {hasFullAccess && <option value="HARD">Hard</option>}
           </select>
         </div>
 
