@@ -85,7 +85,7 @@ export const themes: Record<ThemeId, Theme> = {
       accent: '#FF79C6',
       background: '#282A36',
       surface: '#21222C',
-      'header-bg': '#BD93F9',
+      'header-bg': '#44475A',
       'header-text': '#F8F8F2',
       'light-text': '#F8F8F2',
       'dark-text': '#6272A4',
