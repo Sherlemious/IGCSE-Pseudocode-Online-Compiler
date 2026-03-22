@@ -40,9 +40,10 @@ function loadInitialCode(): string {
       '',
       'OUTPUT "Hello, " & name & "!"',
       '',
-      'IF age < 18',
-      '   THEN OUTPUT "You are a student."',
-      '   ELSE OUTPUT "You are an adult."',
+      'IF age < 18 THEN',
+      '   OUTPUT "You are a student."',
+      '   ELSE',
+      '  OUTPUT "You are an adult."',
       'ENDIF',
     ].join('\n');
     return '';
