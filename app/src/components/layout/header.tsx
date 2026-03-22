@@ -84,9 +84,9 @@ const Header: React.FC = () => {
             </Link>
 
             {showPremiumComingSoon && (
-              <div className="hidden lg:flex items-center px-2 py-1 rounded border border-primary/35 bg-primary/10 text-[10px] font-semibold uppercase tracking-wider text-primary">
-                Premium Coming Soon · All Features Unlocked
-              </div>
+              <span className="hidden lg:block text-[10px] text-header-text/35 font-medium tracking-widest uppercase select-none">
+                Beta · All features free
+              </span>
             )}
 
             {/* Desktop Navigation */}
@@ -184,8 +184,8 @@ const Header: React.FC = () => {
           {isMenuOpen && (
             <nav className="md:hidden mt-2 space-y-0.5 pb-2 text-sm border-t border-header-text/20 pt-2">
               {showPremiumComingSoon && (
-                <div className="mb-2 rounded border border-primary/30 bg-primary/10 px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-primary">
-                  Premium Coming Soon · All Features Unlocked
+                <div className="mb-2 text-[10px] text-header-text/40 font-medium tracking-widest uppercase">
+                  Beta · All features free
                 </div>
               )}
               <Link

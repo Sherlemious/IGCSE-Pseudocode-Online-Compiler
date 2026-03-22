@@ -1,13 +1,13 @@
 'use client';
 
 import * as Popover from '@radix-ui/react-popover';
-import { Settings, Minus, Plus, Check } from 'lucide-react';
+import { Settings, Minus, Plus, Check, WrapText } from 'lucide-react';
 import { themes, type ThemeId, useTheme } from '../../theme';
 
 const themeOrder: ThemeId[] = ['one-dark-pro', 'dracula', 'nord', 'monokai', 'github-light'];
 
 export default function SettingsPanel() {
-  const { themeId, setTheme, fontSize, setFontSize } = useTheme();
+  const { themeId, setTheme, fontSize, setFontSize, wordWrap, setWordWrap } = useTheme();
 
   return (
     <Popover.Root>
@@ -57,7 +57,7 @@ export default function SettingsPanel() {
           </div>
 
           {/* Font size control */}
-          <div>
+          <div className="mb-4">
             <h3 className="text-sm font-semibold text-light-text mb-3">Font Size</h3>
             <div className="flex items-center justify-between">
               <button
@@ -78,6 +78,24 @@ export default function SettingsPanel() {
                 <Plus className="h-4 w-4 text-light-text" />
               </button>
             </div>
+          </div>
+
+          {/* Word wrap toggle */}
+          <div>
+            <h3 className="text-sm font-semibold text-light-text mb-3">Editor</h3>
+            <button
+              onClick={() => setWordWrap(!wordWrap)}
+              className="w-full flex items-center justify-between px-3 py-2 rounded-md bg-background hover:opacity-80 transition"
+              aria-label="Toggle word wrap"
+            >
+              <span className="flex items-center gap-2 text-xs text-dark-text">
+                <WrapText className="h-3.5 w-3.5" />
+                Word Wrap
+              </span>
+              <div className={`w-8 h-4 rounded-full transition-colors relative ${wordWrap ? 'bg-primary' : 'bg-border'}`}>
+                <div className={`absolute top-0.5 w-3 h-3 rounded-full bg-white transition-transform ${wordWrap ? 'translate-x-4' : 'translate-x-0.5'}`} />
+              </div>
+            </button>
           </div>
 
           <Popover.Arrow className="fill-surface" />

@@ -17,7 +17,7 @@ type HeadingProps = {
 };
 
 const H2 = ({ id, children }: HeadingProps) => (
-  <h2 data-section={id} className="text-lg font-semibold text-light-text pt-6 pb-2 border-b border-border scroll-mt-4">
+  <h2 data-section={id} className="text-lg font-semibold text-light-text pt-6 pb-2 mb-4 border-b border-border scroll-mt-4">
     {children}
   </h2>
 );

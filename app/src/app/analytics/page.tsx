@@ -78,7 +78,7 @@ export default async function AnalyticsPage() {
   }));
 
   return (
-    <div className="flex-1 overflow-y-auto bg-background p-6 relative">
+    <div className="flex-1 overflow-y-auto bg-background bg-dot-grid p-6 relative scrollbar-thin scrollbar-thumb-primary scrollbar-track-background">
       <div
         className="absolute inset-0 pointer-events-none"
         style={{

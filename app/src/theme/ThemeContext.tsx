@@ -8,12 +8,15 @@ interface ThemeContextValue {
   setTheme: (id: ThemeId) => void;
   fontSize: number;
   setFontSize: (size: number) => void;
+  wordWrap: boolean;
+  setWordWrap: (v: boolean) => void;
 }
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
 const STORAGE_KEY_THEME = 'pseudocode-theme';
 const STORAGE_KEY_FONT_SIZE = 'pseudocode-font-size';
+const STORAGE_KEY_WORD_WRAP = 'pseudocode-word-wrap';
 const DEFAULT_THEME: ThemeId = 'one-dark-pro';
 const DEFAULT_FONT_SIZE = 14;
 const MIN_FONT_SIZE = 12;
@@ -62,14 +65,22 @@ function loadFontSize(): number {
   return DEFAULT_FONT_SIZE;
 }
 
+function loadWordWrap(): boolean {
+  const stored = localStorage.getItem(STORAGE_KEY_WORD_WRAP);
+  if (stored !== null) return stored === 'true';
+  return true;
+}
+
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [themeId, setThemeId] = useState<ThemeId>(DEFAULT_THEME);
   const [fontSize, setFontSizeState] = useState<number>(DEFAULT_FONT_SIZE);
+  const [wordWrap, setWordWrapState] = useState<boolean>(true);
 
   // Load from localStorage on mount
   useEffect(() => {
     setThemeId(loadTheme());
     setFontSizeState(loadFontSize());
+    setWordWrapState(loadWordWrap());
   }, []);
 
   useEffect(() => {
@@ -91,7 +102,12 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     setFontSizeState(clamped);
   };
 
-  return <ThemeContext.Provider value={{ themeId, setTheme, fontSize, setFontSize }}>{children}</ThemeContext.Provider>;
+  const setWordWrap = (v: boolean) => {
+    setWordWrapState(v);
+    localStorage.setItem(STORAGE_KEY_WORD_WRAP, String(v));
+  };
+
+  return <ThemeContext.Provider value={{ themeId, setTheme, fontSize, setFontSize, wordWrap, setWordWrap }}>{children}</ThemeContext.Provider>;
 }
 
 export function useTheme() {

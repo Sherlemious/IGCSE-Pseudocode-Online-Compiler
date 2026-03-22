@@ -155,17 +155,22 @@ export default function OnboardingTour() {
       <div className="absolute inset-0 bg-black/60 animate-fade-in" onClick={complete} />
 
       {/* Spotlight */}
-      {targetRect && (
-        <div
-          className="absolute tour-spotlight pointer-events-none"
-          style={{
-            top: targetRect.top - 4,
-            left: targetRect.left - 4,
-            width: targetRect.width + 8,
-            height: targetRect.height + 8,
-          }}
-        />
-      )}
+      {targetRect && (() => {
+        const rawLeft = targetRect.left - 4;
+        const clampedLeft = Math.max(2, rawLeft);
+        const clampedWidth = targetRect.width + 8 - (clampedLeft - rawLeft);
+        return (
+          <div
+            className="absolute tour-spotlight pointer-events-none"
+            style={{
+              top: targetRect.top - 4,
+              left: clampedLeft,
+              width: clampedWidth,
+              height: targetRect.height + 8,
+            }}
+          />
+        );
+      })()}
 
       {/* Tooltip card */}
       <div

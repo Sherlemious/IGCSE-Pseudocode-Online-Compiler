@@ -17,6 +17,7 @@ import {
 import ExamplePicker from './examplePicker';
 import FileViewer from './fileViewer';
 import CodeMirrorEditor from './CodeMirrorEditor';
+import { useTheme } from '../../theme';
 
 export interface EditorTab {
   id: string;
@@ -76,6 +77,7 @@ const CodeInput: React.FC<CodeInputProps> = ({
 }) => {
   const tabsContainerRef = useRef<HTMLDivElement>(null);
   const [shareStatus, setShareStatus] = useState<'idle' | 'copied'>('idle');
+  const { wordWrap } = useTheme();
 
   const handleCursorChange = useCallback(
     (line: number, col: number) => {
@@ -265,6 +267,7 @@ const CodeInput: React.FC<CodeInputProps> = ({
           breakpoints={breakpoints}
           onBreakpointToggle={onBreakpointToggle}
           ariaLabel={`Code Editor for ${activeTabName}`}
+          wordWrap={wordWrap}
         />
 
         {code.length === 0 && !isRunning && (

@@ -71,8 +71,14 @@ export default async function PracticePage({ searchParams }: PageProps) {
   const totalQuestions = questions.length;
 
   return (
-    <div className="flex-1 min-h-0 overflow-y-auto px-6 py-8 bg-background text-light-text">
-      <div className="max-w-3xl mx-auto">
+    <div className="flex-1 min-h-0 overflow-y-auto px-6 py-8 bg-background bg-dot-grid text-light-text scrollbar-thin scrollbar-thumb-primary scrollbar-track-background relative">
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background: 'radial-gradient(ellipse 80% 30% at 50% 0%, rgba(var(--color-primary-rgb), 0.04) 0%, transparent 50%)',
+        }}
+      />
+      <div className="max-w-3xl mx-auto relative">
         <div className="flex items-start justify-between gap-4 mb-2">
           <div>
             <h1 className="text-xl font-bold">Practice Questions</h1>
