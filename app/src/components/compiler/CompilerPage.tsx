@@ -7,7 +7,7 @@ import Footer from '../layout/footer';
 import OnboardingTour from '../onboarding/OnboardingTour';
 import { useInterpreter } from '../../interpreter/useInterpreter';
 import { toast } from 'sonner';
-import { AUTOSAVE_KEY, FILE_PREFIX, AUTOSAVE_DELAY } from '../../utils/constants';
+import { AUTOSAVE_KEY, FILE_PREFIX, AUTOSAVE_DELAY, ONBOARDING_KEY } from '../../utils/constants';
 
 function loadInitialCode(): string {
   try {
@@ -22,7 +22,12 @@ function loadInitialCode(): string {
   }
 
   try {
-    return localStorage.getItem(AUTOSAVE_KEY) ?? '';
+    const saved = localStorage.getItem(AUTOSAVE_KEY);
+    if (saved !== null) return saved;
+    // First-time visitor — show a hello world starter
+    const isFirstVisit = !localStorage.getItem(ONBOARDING_KEY);
+    if (isFirstVisit) return 'OUTPUT "Hello, World!"';
+    return '';
   } catch {
     return '';
   }
