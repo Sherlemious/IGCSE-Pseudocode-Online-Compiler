@@ -21,7 +21,6 @@ export async function gradeSubmission(
   inputs: string[],
   expectedOutput: string,
   timeoutMs = 10_000,
-  preloadedFiles?: Record<string, string>,
 ): Promise<GradeResult> {
   const start = Date.now();
 
@@ -55,11 +54,6 @@ export async function gradeSubmission(
   let interpreterRef: Interpreter | null = null;
 
   const fs = new ServerVirtualFileSystem();
-  if (preloadedFiles) {
-    for (const [filename, content] of Object.entries(preloadedFiles)) {
-      fs.preloadFile(filename, content);
-    }
-  }
 
   const interpreter = new Interpreter(
     {
