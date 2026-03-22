@@ -23,14 +23,25 @@ export const metadata: Metadata = {
     'IGCSE', 'IGCSE 9-1', 'O Level', 'Cambridge IGCSE', 'Cambridge O Level', 'CIE',
     // subject names
     'Computer Science', 'IGCSE Computer Science', 'O Level Computer Science',
-    // core tool terms
-    'pseudocode', 'pseudocode compiler', 'pseudocode interpreter', 'pseudocode online',
+    // core tool terms — spelling variants
+    'pseudocode', 'pseudo code', 'pseudo-code',
+    'pseudocode compiler', 'pseudocode interpreter', 'pseudocode online',
     'run pseudocode', 'pseudocode editor', 'pseudocode runner',
+    'pseudocode checker', 'pseudocode tester', 'pseudocode simulator',
+    // translator / converter
+    'pseudocode translator', 'pseudocode to Python', 'pseudocode to code',
+    'convert pseudocode', 'pseudocode converter', 'translate pseudocode',
+    // algorithm & CS concepts students search
+    'algorithm', 'flowchart', 'trace table', 'dry run', 'pseudocode algorithm',
+    'pseudocode examples', 'pseudocode syntax', 'Cambridge pseudocode syntax',
+    // student intent
+    'learn pseudocode', 'IGCSE revision', 'IGCSE practice', 'IGCSE past papers',
+    'Cambridge past papers', 'IGCSE CS revision', 'computer science revision',
+    // tool type
+    'free pseudocode compiler', 'online pseudocode IDE', 'browser pseudocode',
     // regional
     'Egypt', 'IGCSE Egypt', 'Cambridge Egypt',
-    // student intent
-    'IGCSE revision', 'IGCSE practice', 'Cambridge pseudocode syntax',
-    'pseudocode examples', 'learn pseudocode',
+    'UAE', 'Saudi Arabia', 'Pakistan', 'Nigeria', 'Kenya', 'international school',
   ],
   authors: [{ name: 'Sherlemious' }],
   icons: { icon: '/favicon.svg', shortcut: '/favicon.svg' },
