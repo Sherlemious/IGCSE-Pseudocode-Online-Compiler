@@ -23,23 +23,9 @@ export interface ParseResult {
   errors: PseudocodeError[];
 }
 
-function expandMultiDeclare(source: string): string {
-  // Expand "DECLARE x, y, z : TYPE" into separate DECLARE statements
-  // Matches: optional indent + DECLARE + (id, id, ...) + : rest-of-line
-  return source.replace(
-    /^([ \t]*declare[ \t]+)((?:\w+[ \t]*,[ \t]*)+\w+)([ \t]*:.*)$/gim,
-    (_, prefix, identifiers, typeAndRest) => {
-      const names = identifiers.split(',').map((id: string) => id.trim());
-      return names.map((name: string) => `${prefix}${name}${typeAndRest}`).join('\n');
-    }
-  );
-}
-
 export function parse(source: string): ParseResult {
-  // Expand multi-identifier DECLARE statements before parsing
-  const expanded = expandMultiDeclare(source);
   // Ensure source ends with newline for grammar consistency
-  const input = expanded.endsWith('\n') ? expanded : expanded + '\n';
+  const input = source.endsWith('\n') ? source : source + '\n';
 
   const chars = CharStream.fromString(input);
   const lexer = new PseudocodeLexer(chars);
