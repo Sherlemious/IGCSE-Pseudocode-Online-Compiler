@@ -199,7 +199,7 @@ export default function ExamConfigForm({ topics, hasFullAccess, premiumGatingEna
                   : 'border-border text-dark-text hover:border-primary/30 hover:text-light-text'
                 }`}
             >
-              {t >= 60 ? `${t / 60}h${t % 60 ? ` ${t % 60}m` : ''}` : `${t}m`}
+              {t >= 60 ? `${Math.floor(t / 60)}h${t % 60 ? ` ${t % 60}m` : ''}` : `${t}m`}
             </button>
           ))}
         </div>
