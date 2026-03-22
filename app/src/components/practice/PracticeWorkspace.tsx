@@ -104,6 +104,7 @@ export default function PracticeWorkspace({ questionId, starterCode, savedCode, 
   const [isGrading, setIsGrading] = useState(false);
   const [gradeResponse, setGradeResponse] = useState<GradeResponse | null>(null);
   const [gradingError, setGradingError] = useState<string | null>(null);
+  const [showFailuresOnly, setShowFailuresOnly] = useState(false);
 
   /* ── Input field (for terminal INPUT prompts) ───────── */
   const [inputValue, setInputValue] = useState('');
@@ -601,6 +602,7 @@ export default function PracticeWorkspace({ questionId, starterCode, savedCode, 
 
     const { results, passCount, totalCount } = gradeResponse;
     const allPassed = passCount === totalCount;
+    const visibleResults = showFailuresOnly ? results.filter((r) => !r.passed) : results;
 
     return (
       <div className="p-3 space-y-2">
@@ -626,8 +628,22 @@ export default function PracticeWorkspace({ questionId, starterCode, savedCode, 
           )}
         </div>
 
+        {/* Filter toggle */}
+        {!allPassed && results.some((r) => r.passed) && (
+          <button
+            onClick={() => setShowFailuresOnly((v) => !v)}
+            className={`text-[10px] px-2 py-1 rounded border transition-colors font-mono ${
+              showFailuresOnly
+                ? 'border-error/40 bg-error/10 text-error'
+                : 'border-border text-dark-text hover:border-error/30 hover:text-error'
+            }`}
+          >
+            {showFailuresOnly ? `Showing ${visibleResults.length} failure${visibleResults.length !== 1 ? 's' : ''}` : 'Show failures only'}
+          </button>
+        )}
+
         {/* Individual results */}
-        {results.map((r, i) => (
+        {visibleResults.map((r, i) => (
           <div
             key={r.testCaseId}
             className={`rounded border p-3 text-xs ${

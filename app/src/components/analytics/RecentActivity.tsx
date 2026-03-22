@@ -1,4 +1,5 @@
-import { CheckCircle, Circle } from 'lucide-react';
+import Link from 'next/link';
+import { CheckCircle, Circle, ArrowRight } from 'lucide-react';
 
 interface ActivityItem {
   questionTitle: string;
@@ -21,7 +22,13 @@ export default function RecentActivity({ items }: Props) {
         <h3 className="mono-label text-dark-text mb-5">Recent Activity</h3>
         <div className="text-center py-8">
           <Circle size={20} className="text-dark-text/20 mx-auto mb-2" />
-          <p className="text-xs text-dark-text/50">No activity yet. Start practicing!</p>
+          <p className="text-xs text-dark-text/50 mb-3">No activity yet</p>
+          <Link
+            href="/practice"
+            className="inline-flex items-center gap-1 text-xs text-primary/70 hover:text-primary transition-colors"
+          >
+            Start practicing <ArrowRight size={11} />
+          </Link>
         </div>
       </div>
     );

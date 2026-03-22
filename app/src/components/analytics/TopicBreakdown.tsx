@@ -1,3 +1,6 @@
+import Link from 'next/link';
+import { ArrowRight } from 'lucide-react';
+
 interface Props {
   data: Record<string, { attempted: number; solved: number }>;
 }
@@ -10,8 +13,14 @@ export default function TopicBreakdown({ data }: Props) {
     <div className="bg-surface rounded-xl border border-border p-5 animate-fade-in-up" style={{ animationDelay: '180ms' }}>
       <h3 className="mono-label text-dark-text mb-5">By Topic</h3>
       {entries.length === 0 ? (
-        <div className="text-center py-6">
+        <div className="text-center py-6 space-y-3">
           <p className="text-xs text-dark-text/50">No topic data yet</p>
+          <Link
+            href="/practice"
+            className="inline-flex items-center gap-1 text-xs text-primary/70 hover:text-primary transition-colors"
+          >
+            Start practicing <ArrowRight size={11} />
+          </Link>
         </div>
       ) : (
         <div className="space-y-4">
@@ -21,11 +30,18 @@ export default function TopicBreakdown({ data }: Props) {
             const solvedWidth = (d.solved / maxAttempted) * 100;
 
             return (
-              <div key={topic}>
+              <Link
+                key={topic}
+                href={`/practice?topic=${encodeURIComponent(topic)}`}
+                className="block group"
+              >
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs font-medium text-light-text">{topic}</span>
-                  <span className="text-[10px] text-dark-text font-mono tabular-nums">
+                  <span className="text-xs font-medium text-light-text group-hover:text-primary transition-colors">
+                    {topic}
+                  </span>
+                  <span className="text-[10px] text-dark-text font-mono tabular-nums flex items-center gap-1">
                     {d.solved}/{d.attempted} <span className="text-dark-text/40">({pct}%)</span>
+                    <ArrowRight size={9} className="text-dark-text/20 group-hover:text-primary/50 transition-colors" />
                   </span>
                 </div>
                 <div className="h-2 bg-background rounded-full overflow-hidden relative">
@@ -41,7 +57,7 @@ export default function TopicBreakdown({ data }: Props) {
                     }}
                   />
                 </div>
-              </div>
+              </Link>
             );
           })}
         </div>

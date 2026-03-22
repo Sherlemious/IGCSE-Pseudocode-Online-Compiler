@@ -26,7 +26,6 @@ import { tags as t } from '@lezer/highlight';
 const readOnlyCompartment = new Compartment();
 const gutterCompartment = new Compartment();
 const ariaLabelCompartment = new Compartment();
-const wrapCompartment = new Compartment();
 
 // Define StateEffect for line highlighting
 const setLineHighlight = StateEffect.define<{ debugLine: number | null; errorLine: number | null }>();
@@ -89,7 +88,6 @@ interface CodeMirrorEditorProps {
   breakpoints?: Set<number>;
   onBreakpointToggle?: (line: number) => void;
   ariaLabel?: string;
-  wordWrap?: boolean;
 }
 
 const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
@@ -105,7 +103,6 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
   breakpoints = new Set(),
   onBreakpointToggle,
   ariaLabel,
-  wordWrap = true,
 }) => {
   const editorRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
@@ -359,7 +356,6 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
         lineHighlightField,
         breakpointField,
         readOnlyCompartment.of(EditorState.readOnly.of(readOnly)),
-        wrapCompartment.of(wordWrap ? EditorView.lineWrapping : []),
         EditorView.updateListener.of((update) => {
           if (update.docChanged) {
             onChangeRef.current(update.state.doc.toString());
@@ -371,6 +367,7 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
             onCursorChangeRef.current(line.number, col);
           }
         }),
+        EditorView.lineWrapping,
       ],
     });
 
@@ -418,14 +415,6 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
       effects: ariaLabelCompartment.reconfigure(createAriaLabelAttributes(ariaLabel)),
     });
   }, [ariaLabel, createAriaLabelAttributes]);
-
-  // Update word wrap
-  useEffect(() => {
-    if (!viewRef.current) return;
-    viewRef.current.dispatch({
-      effects: wrapCompartment.reconfigure(wordWrap ? EditorView.lineWrapping : []),
-    });
-  }, [wordWrap]);
 
   // Scroll debug line into view
   useEffect(() => {

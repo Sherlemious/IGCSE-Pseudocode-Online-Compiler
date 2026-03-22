@@ -17,7 +17,8 @@ import {
 import ExamplePicker from './examplePicker';
 import FileViewer from './fileViewer';
 import CodeMirrorEditor from './CodeMirrorEditor';
-import { useTheme } from '../../theme';
+
+const SHORTCUT_HINT_KEY = 'pseudocode_seen_shortcut_hint';
 
 export interface EditorTab {
   id: string;
@@ -77,7 +78,21 @@ const CodeInput: React.FC<CodeInputProps> = ({
 }) => {
   const tabsContainerRef = useRef<HTMLDivElement>(null);
   const [shareStatus, setShareStatus] = useState<'idle' | 'copied'>('idle');
-  const { wordWrap } = useTheme();
+  const [showShortcutHint, setShowShortcutHint] = useState(false);
+
+  useEffect(() => {
+    try {
+      if (!localStorage.getItem(SHORTCUT_HINT_KEY)) {
+        const timer = setTimeout(() => setShowShortcutHint(true), 2500);
+        return () => clearTimeout(timer);
+      }
+    } catch { /* ignore */ }
+  }, []);
+
+  const dismissShortcutHint = useCallback(() => {
+    setShowShortcutHint(false);
+    try { localStorage.setItem(SHORTCUT_HINT_KEY, 'true'); } catch { /* ignore */ }
+  }, []);
 
   const handleCursorChange = useCallback(
     (line: number, col: number) => {
@@ -252,6 +267,18 @@ const CodeInput: React.FC<CodeInputProps> = ({
         </div>
       </div>
 
+      {/* One-time shortcut hint */}
+      {showShortcutHint && (
+        <div className="flex items-center justify-between px-3 py-1 bg-primary/5 border-b border-primary/15 text-[11px] text-primary/60 animate-fade-in shrink-0">
+          <span>
+            <kbd className="font-mono">Ctrl+Enter</kbd> run &middot; <kbd className="font-mono">Ctrl+Shift+K</kbd> stop &middot; <kbd className="font-mono">Ctrl+/</kbd> all shortcuts
+          </span>
+          <button onClick={dismissShortcutHint} className="ml-3 text-primary/40 hover:text-primary/70 transition-colors leading-none">
+            <X size={11} />
+          </button>
+        </div>
+      )}
+
       {/* Editor area */}
       <div className="flex-1 min-h-0 flex relative" data-tour="editor">
         <CodeMirrorEditor
@@ -267,7 +294,6 @@ const CodeInput: React.FC<CodeInputProps> = ({
           breakpoints={breakpoints}
           onBreakpointToggle={onBreakpointToggle}
           ariaLabel={`Code Editor for ${activeTabName}`}
-          wordWrap={wordWrap}
         />
 
         {code.length === 0 && !isRunning && (

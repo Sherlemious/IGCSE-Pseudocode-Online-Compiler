@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { Lock, CheckCircle, Crown, FileText } from 'lucide-react';
+import { Lock, CheckCircle, Crown, FileText, ArrowRight } from 'lucide-react';
 import { prisma } from '../../lib/prisma';
 import { auth } from '../../lib/auth';
 import { PREMIUM_GATING_ENABLED } from '../../lib/featureFlags';
@@ -43,7 +43,7 @@ export default async function PracticePage({ searchParams }: PageProps) {
     if (session?.user?.id) {
       const progress = await prisma.progress.findMany({
         where: { userId: session.user.id },
-        select: { questionId: true, status: true, bestScore: true, totalTests: true },
+        select: { questionId: true, status: true, bestScore: true, totalTests: true, updatedAt: true },
       });
       progressMap = new Map(progress.map((p) => [p.questionId, p]));
     }
@@ -70,6 +70,17 @@ export default async function PracticePage({ searchParams }: PageProps) {
   const totalSolved = Array.from(progressMap.values()).filter((p) => p.status === 'SOLVED').length;
   const totalQuestions = questions.length;
 
+  // "Continue where you left off" — most recently touched in-progress question
+  const resumeQuestion = (() => {
+    if (!session?.user?.id) return null;
+    const inProgress = Array.from(progressMap.entries())
+      .filter(([, p]) => p.status === 'IN_PROGRESS')
+      .sort(([, a], [, b]) => new Date((b as { updatedAt: Date }).updatedAt).getTime() - new Date((a as { updatedAt: Date }).updatedAt).getTime());
+    if (!inProgress.length) return null;
+    const [qId] = inProgress[0];
+    return questions.find((q) => q.id === qId) ?? null;
+  })();
+
   return (
     <div className="flex-1 min-h-0 overflow-y-auto px-6 py-8 bg-background bg-dot-grid text-light-text scrollbar-thin scrollbar-thumb-primary scrollbar-track-background relative">
       <div
@@ -79,6 +90,20 @@ export default async function PracticePage({ searchParams }: PageProps) {
         }}
       />
       <div className="max-w-3xl mx-auto relative">
+        {/* Resume banner */}
+        {resumeQuestion && (
+          <Link
+            href={`/practice/${resumeQuestion.id}`}
+            className="flex items-center justify-between gap-3 mb-5 px-4 py-3 rounded-xl border border-primary/25 bg-primary/5 hover:bg-primary/10 hover:border-primary/40 transition-all duration-200 group animate-fade-in-up"
+          >
+            <div className="min-w-0">
+              <div className="text-[10px] text-primary/60 font-semibold uppercase tracking-wider mb-0.5">Continue where you left off</div>
+              <div className="text-sm font-medium text-light-text truncate">{resumeQuestion.title}</div>
+            </div>
+            <ArrowRight size={15} className="text-primary/50 shrink-0 group-hover:translate-x-0.5 transition-transform" />
+          </Link>
+        )}
+
         <div className="flex items-start justify-between gap-4 mb-2">
           <div>
             <h1 className="text-xl font-bold">Practice Questions</h1>

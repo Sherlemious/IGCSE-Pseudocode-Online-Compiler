@@ -1,4 +1,4 @@
-import { Trophy, Clock, AlertTriangle, Circle } from 'lucide-react';
+import { Trophy, Clock, AlertTriangle, Circle, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 
 interface ExamItem {
@@ -25,7 +25,13 @@ export default function ExamHistory({ exams }: Props) {
         <h3 className="mono-label text-dark-text mb-5">Exam History</h3>
         <div className="text-center py-8">
           <Circle size={20} className="text-dark-text/20 mx-auto mb-2" />
-          <p className="text-xs text-dark-text/50">No exams taken yet</p>
+          <p className="text-xs text-dark-text/50 mb-3">No exams taken yet</p>
+          <Link
+            href="/exam"
+            className="inline-flex items-center gap-1 text-xs text-primary/70 hover:text-primary transition-colors"
+          >
+            Take an exam <ArrowRight size={11} />
+          </Link>
         </div>
       </div>
     );

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { ChevronRight, List, X } from 'lucide-react';
+import { ChevronRight, List, X, Search } from 'lucide-react';
 
 import CodeBlock from '../../components/common/CodeBlock';
 import Kw from '../../components/common/Kw';
@@ -32,6 +32,7 @@ const DocsPage = () => {
   const [activeId, setActiveId] = useState('general');
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['general']));
   const [tocOpen, setTocOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const contentRef = useRef<HTMLDivElement>(null);
   const sidebarRef = useRef<HTMLElement>(null);
 
@@ -122,9 +123,25 @@ const DocsPage = () => {
   };
 
   /* ── Sidebar TOC renderer ─────────────────────────────── */
+  const q = searchQuery.toLowerCase().trim();
+  const filteredToc = q
+    ? toc
+        .map((entry) => {
+          const parentMatch = entry.label.toLowerCase().includes(q);
+          const matchingChildren = entry.children?.filter((c) => c.label.toLowerCase().includes(q));
+          if (parentMatch) return entry;
+          if (matchingChildren?.length) return { ...entry, children: matchingChildren };
+          return null;
+        })
+        .filter(Boolean) as typeof toc
+    : toc;
+
   const renderToc = () => (
     <nav className="text-sm select-none">
-      {toc.map((entry) => {
+      {filteredToc.length === 0 && (
+        <p className="text-xs text-dark-text/40 px-3 py-2">No results</p>
+      )}
+      {filteredToc.map((entry) => {
         const isExpanded = expandedSections.has(entry.id);
         const isActive = activeId === entry.id || entry.children?.some((c) => c.id === activeId);
         const hasChildren = entry.children && entry.children.length > 0;
@@ -207,7 +224,17 @@ const DocsPage = () => {
               scrollbar-thin scrollbar-thumb-primary scrollbar-track-background scrollbar-thumb-rounded-full"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="text-xs font-semibold uppercase tracking-wider text-dark-text mb-3 px-3">Contents</div>
+            <div className="text-xs font-semibold uppercase tracking-wider text-dark-text mb-2 px-3">Contents</div>
+            <div className="relative mb-2 px-1">
+              <Search size={11} className="absolute left-3 top-1/2 -translate-y-1/2 text-dark-text/40 pointer-events-none" />
+              <input
+                type="text"
+                placeholder="Search…"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-7 pr-3 py-1.5 text-xs bg-background border border-border rounded-md text-light-text placeholder:text-dark-text/30 focus:outline-none focus:border-primary/40 transition-colors"
+              />
+            </div>
             {renderToc()}
           </div>
         </div>
@@ -220,6 +247,16 @@ const DocsPage = () => {
           scrollbar-thin scrollbar-thumb-primary scrollbar-track-background scrollbar-thumb-rounded-full"
       >
         <div className="text-xs font-semibold uppercase tracking-wider text-dark-text mb-2 px-3 pt-2">Contents</div>
+        <div className="relative mb-2 px-1">
+          <Search size={11} className="absolute left-3 top-1/2 -translate-y-1/2 text-dark-text/40 pointer-events-none" />
+          <input
+            type="text"
+            placeholder="Search…"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-7 pr-3 py-1.5 text-xs bg-background border border-border rounded-md text-light-text placeholder:text-dark-text/30 focus:outline-none focus:border-primary/40 transition-colors"
+          />
+        </div>
         {renderToc()}
       </aside>
 

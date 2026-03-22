@@ -74,6 +74,7 @@ export default function ExamWorkspace({ examId, questions, timeLimitMin, started
   const [activeTab, setActiveTab] = useState<'terminal' | 'results'>('terminal');
   const [grading, setGrading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [timeUp, setTimeUp] = useState(false);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   const question = questions[currentIndex];
@@ -172,7 +173,8 @@ export default function ExamWorkspace({ examId, questions, timeLimitMin, started
   );
 
   const handleTimeUp = useCallback(() => {
-    handleSubmit(true);
+    setTimeUp(true);
+    setTimeout(() => handleSubmit(true), 3000);
   }, [handleSubmit]);
 
   useEffect(() => {
@@ -198,6 +200,18 @@ export default function ExamWorkspace({ examId, questions, timeLimitMin, started
 
   return (
     <div className="flex-1 min-h-0 overflow-hidden bg-background flex flex-col">
+      {/* Time's Up overlay */}
+      {timeUp && (
+        <div className="fixed inset-0 bg-black/75 z-50 flex items-center justify-center">
+          <div className="bg-surface border border-border rounded-2xl p-10 text-center max-w-xs w-full mx-4 animate-scale-in shadow-intense">
+            <div className="w-14 h-14 rounded-full bg-error/15 border border-error/30 flex items-center justify-center mx-auto mb-4">
+              <Loader2 size={24} className="text-error animate-spin" />
+            </div>
+            <h2 className="text-xl font-bold text-light-text mb-2">Time&apos;s Up!</h2>
+            <p className="text-xs text-dark-text leading-relaxed">Submitting your exam&hellip;</p>
+          </div>
+        </div>
+      )}
       {/* Top bar */}
       <div className="h-11 border-b border-border bg-surface flex items-center justify-between px-3 shrink-0">
         <div className="flex items-center gap-3">

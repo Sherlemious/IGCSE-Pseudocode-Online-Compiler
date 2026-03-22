@@ -1,8 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Loader2, Zap } from 'lucide-react';
+
+const SETTINGS_KEY = 'exam_last_settings';
 
 interface Props {
   topics: string[];
@@ -19,9 +21,24 @@ export default function ExamConfigForm({ topics, hasFullAccess, premiumGatingEna
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  // Restore last-used settings on mount
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(SETTINGS_KEY);
+      if (!saved) return;
+      const s = JSON.parse(saved);
+      if (s.topic !== undefined && topics.includes(s.topic)) setTopic(s.topic);
+      if (s.difficulty !== undefined) setDifficulty(s.difficulty);
+      if (s.questionCount !== undefined) setQuestionCount(s.questionCount);
+      if (s.timeLimitMin !== undefined) setTimeLimitMin(s.timeLimitMin);
+    } catch { /* ignore */ }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   async function handleStart() {
     setLoading(true);
     setError('');
+    try { localStorage.setItem(SETTINGS_KEY, JSON.stringify({ topic, difficulty, questionCount, timeLimitMin })); } catch { /* ignore */ }
 
     try {
       const res = await fetch('/api/exam/start', {
