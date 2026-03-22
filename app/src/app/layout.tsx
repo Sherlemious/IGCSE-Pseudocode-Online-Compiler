@@ -16,7 +16,22 @@ export const metadata: Metadata = {
     template: '%s | IGCSE Pseudocode Compiler',
   },
   description: DESCRIPTION,
-  keywords: ['pseudocode', 'IGCSE', 'compiler', 'Cambridge', 'Computer Science', '0478', 'pseudocode online', 'IGCSE CS'],
+  keywords: [
+    // syllabus codes
+    '0478', '0984', '2210',
+    // exam boards & levels
+    'IGCSE', 'IGCSE 9-1', 'O Level', 'Cambridge IGCSE', 'Cambridge O Level', 'CIE',
+    // subject names
+    'Computer Science', 'IGCSE Computer Science', 'O Level Computer Science',
+    // core tool terms
+    'pseudocode', 'pseudocode compiler', 'pseudocode interpreter', 'pseudocode online',
+    'run pseudocode', 'pseudocode editor', 'pseudocode runner',
+    // regional
+    'Egypt', 'IGCSE Egypt', 'Cambridge Egypt',
+    // student intent
+    'IGCSE revision', 'IGCSE practice', 'Cambridge pseudocode syntax',
+    'pseudocode examples', 'learn pseudocode',
+  ],
   authors: [{ name: 'Sherlemious' }],
   icons: { icon: '/favicon.svg', shortcut: '/favicon.svg' },
   openGraph: {
