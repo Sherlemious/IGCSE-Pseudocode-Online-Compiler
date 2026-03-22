@@ -30,9 +30,13 @@ statement
 // ─── DECLARE / CONSTANT ────────────────────────────────────────────────────
 
 declareStatement
-    : DECLARE IDENTIFIER COLON ARRAY LBRACKET expr COLON expr RBRACKET OF dataType
+    : DECLARE identifierList COLON ARRAY LBRACKET expr COLON expr RBRACKET OF dataType
     | DECLARE IDENTIFIER COLON ARRAY LBRACKET expr COLON expr COMMA expr COLON expr RBRACKET OF dataType
-    | DECLARE IDENTIFIER COLON dataType
+    | DECLARE identifierList COLON dataType
+    ;
+
+identifierList
+    : IDENTIFIER (COMMA IDENTIFIER)*
     ;
 
 constantStatement

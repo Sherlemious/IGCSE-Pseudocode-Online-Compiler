@@ -259,35 +259,33 @@ export class Interpreter {
   // ─── DECLARE ────────────────────────────────────────────────────
 
   private async visitDeclare(ctx: DeclareStatementContext): Promise<void> {
-    const name = ctx.IDENTIFIER().getText();
     const exprs = ctx.expr();
 
     if (ctx.ARRAY()) {
-      // Array declaration
       const dataTypeText = ctx.dataType().getText();
       if (ctx.COMMA()) {
-        // 2D: DECLARE x : ARRAY[l1:u1, l2:u2] OF type
+        // 2D: DECLARE x : ARRAY[l1:u1, l2:u2] OF type (single identifier only)
+        const name = ctx.IDENTIFIER()!.getText();
         const l1 = toNumber(await this.evalExpr(exprs[0]));
         const u1 = toNumber(await this.evalExpr(exprs[1]));
         const l2 = toNumber(await this.evalExpr(exprs[2]));
         const u2 = toNumber(await this.evalExpr(exprs[3]));
         const arr = new PseudocodeArray(
-          [
-            { lower: l1, upper: u1 },
-            { lower: l2, upper: u2 },
-          ],
+          [{ lower: l1, upper: u1 }, { lower: l2, upper: u2 }],
           dataTypeText
         );
         this.env.declare(name, arr);
       } else {
-        // 1D: DECLARE x : ARRAY[l:u] OF type
+        // 1D: DECLARE x, y, ... : ARRAY[l:u] OF type
         const lower = toNumber(await this.evalExpr(exprs[0]));
         const upper = toNumber(await this.evalExpr(exprs[1]));
-        const arr = new PseudocodeArray([{ lower, upper }], dataTypeText);
-        this.env.declare(name, arr);
+        for (const id of ctx.identifierList()!.IDENTIFIER()) {
+          const arr = new PseudocodeArray([{ lower, upper }], dataTypeText);
+          this.env.declare(id.getText(), arr);
+        }
       }
     } else {
-      // Simple variable declaration — initialize with type-appropriate zero value
+      // Simple variable declarations — initialize with type-appropriate zero value
       const typeText = ctx.dataType().getText().toUpperCase();
       let defaultValue;
       switch (typeText) {
@@ -298,7 +296,9 @@ export class Interpreter {
         case 'BOOLEAN': defaultValue = mkBoolean(false); break;
         default:        defaultValue = mkNone();
       }
-      this.env.declare(name, defaultValue);
+      for (const id of ctx.identifierList()!.IDENTIFIER()) {
+        this.env.declare(id.getText(), defaultValue);
+      }
     }
   }
 
