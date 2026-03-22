@@ -35,7 +35,7 @@ export default async function PracticePage({ searchParams }: PageProps) {
   const hasFullAccess = isPremium || !PREMIUM_GATING_ENABLED;
 
   let questions: Awaited<ReturnType<typeof fetchQuestions>> = [];
-  let progressMap: Map<string, { status: string; bestScore: number; totalTests: number }> = new Map();
+  let progressMap: Map<string, { status: string; bestScore: number; totalTests: number; updatedAt: Date }> = new Map();
 
   try {
     questions = await fetchQuestions();
