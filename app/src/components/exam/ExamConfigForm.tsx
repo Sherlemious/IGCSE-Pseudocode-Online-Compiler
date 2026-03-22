@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Loader2, Zap } from 'lucide-react';
+import { Loader2, Zap, ChevronDown, Minus, Plus, Lock } from 'lucide-react';
 
 const SETTINGS_KEY = 'exam_last_settings';
 
@@ -12,14 +12,24 @@ interface Props {
   premiumGatingEnabled: boolean;
 }
 
+const DIFFICULTY_OPTIONS = [
+  { value: '',       label: 'Any',    color: 'text-light-text',  activeBg: 'bg-primary/10 border-primary/40 text-primary' },
+  { value: 'EASY',   label: 'Easy',   color: 'text-success',     activeBg: 'bg-success/10 border-success/40 text-success' },
+  { value: 'MEDIUM', label: 'Medium', color: 'text-warning',     activeBg: 'bg-warning/10 border-warning/40 text-warning' },
+  { value: 'HARD',   label: 'Hard',   color: 'text-error',       activeBg: 'bg-error/10  border-error/40  text-error'  },
+];
+
+const QUESTION_PRESETS = [3, 5, 10, 15, 20];
+const TIME_PRESETS     = [15, 30, 45, 60, 90, 120];
+
 export default function ExamConfigForm({ topics, hasFullAccess, premiumGatingEnabled }: Props) {
   const router = useRouter();
-  const [topic, setTopic] = useState('');
-  const [difficulty, setDifficulty] = useState('');
+  const [topic,         setTopic]         = useState('');
+  const [difficulty,    setDifficulty]    = useState('');
   const [questionCount, setQuestionCount] = useState(5);
-  const [timeLimitMin, setTimeLimitMin] = useState(60);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [timeLimitMin,  setTimeLimitMin]  = useState(60);
+  const [loading,       setLoading]       = useState(false);
+  const [error,         setError]         = useState('');
 
   // Restore last-used settings on mount
   useEffect(() => {
@@ -27,10 +37,10 @@ export default function ExamConfigForm({ topics, hasFullAccess, premiumGatingEna
       const saved = localStorage.getItem(SETTINGS_KEY);
       if (!saved) return;
       const s = JSON.parse(saved);
-      if (s.topic !== undefined && topics.includes(s.topic)) setTopic(s.topic);
+      if (s.topic      !== undefined && topics.includes(s.topic)) setTopic(s.topic);
       if (s.difficulty !== undefined) setDifficulty(s.difficulty);
       if (s.questionCount !== undefined) setQuestionCount(s.questionCount);
-      if (s.timeLimitMin !== undefined) setTimeLimitMin(s.timeLimitMin);
+      if (s.timeLimitMin  !== undefined) setTimeLimitMin(s.timeLimitMin);
     } catch { /* ignore */ }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -45,8 +55,8 @@ export default function ExamConfigForm({ topics, hasFullAccess, premiumGatingEna
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          topic: topic || undefined,
-          difficulty: difficulty || undefined,
+          topic:         topic      || undefined,
+          difficulty:    difficulty || undefined,
           questionCount,
           timeLimitMin,
         }),
@@ -67,88 +77,140 @@ export default function ExamConfigForm({ topics, hasFullAccess, premiumGatingEna
     }
   }
 
+  const adjustCount = (delta: number) =>
+    setQuestionCount((v) => Math.min(20, Math.max(1, v + delta)));
+
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
+      {/* Banners */}
       {!premiumGatingEnabled && (
         <div className="text-xs text-primary bg-primary/8 border border-primary/20 rounded-lg px-3.5 py-2.5 animate-scale-in">
-          Premium is coming soon. All exam difficulties are currently available.
+          Premium is coming soon — all exam difficulties are currently available.
         </div>
       )}
-
       {error && (
         <div className="text-xs text-error bg-error/8 border border-error/15 rounded-lg px-3.5 py-2.5 animate-scale-in">
           {error}
         </div>
       )}
 
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label className="mono-label text-dark-text mb-1.5 block">Topic</label>
+      {/* ── Topic ─────────────────────────────────────────── */}
+      <div>
+        <label className="mono-label text-dark-text mb-2 block">Topic</label>
+        <div className="relative">
           <select
             value={topic}
             onChange={(e) => setTopic(e.target.value)}
-            className="w-full px-3.5 py-2.5 rounded-lg bg-background border border-border text-light-text text-sm
-              focus:outline-none input-glow transition-all duration-200 appearance-none
-              bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2212%22%20height%3D%2212%22%20viewBox%3D%220%200%2012%2012%22%3E%3Cpath%20fill%3D%22%23828997%22%20d%3D%22M2%204l4%204%204-4%22%2F%3E%3C%2Fsvg%3E')] bg-[length:12px] bg-[right_12px_center] bg-no-repeat pr-8"
+            className="w-full appearance-none pl-3.5 pr-9 py-2.5 rounded-lg bg-background border border-border
+              text-sm text-light-text focus:outline-none focus:border-primary/50 transition-colors duration-200"
           >
             <option value="">All topics</option>
             {topics.map((t) => (
-              <option key={t} value={t}>
-                {t}
-              </option>
+              <option key={t} value={t}>{t}</option>
             ))}
           </select>
-        </div>
-
-        <div>
-          <label className="mono-label text-dark-text mb-1.5 block">Difficulty</label>
-          <select
-            value={difficulty}
-            onChange={(e) => setDifficulty(e.target.value)}
-            className="w-full px-3.5 py-2.5 rounded-lg bg-background border border-border text-light-text text-sm
-              focus:outline-none input-glow transition-all duration-200 appearance-none
-              bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2212%22%20height%3D%2212%22%20viewBox%3D%220%200%2012%2012%22%3E%3Cpath%20fill%3D%22%23828997%22%20d%3D%22M2%204l4%204%204-4%22%2F%3E%3C%2Fsvg%3E')] bg-[length:12px] bg-[right_12px_center] bg-no-repeat pr-8"
-          >
-            <option value="">Any</option>
-            <option value="EASY">Easy</option>
-            {hasFullAccess && <option value="MEDIUM">Medium</option>}
-            {hasFullAccess && <option value="HARD">Hard</option>}
-          </select>
-        </div>
-
-        <div>
-          <label className="mono-label text-dark-text mb-1.5 block">Questions</label>
-          <input
-            type="number"
-            min={1}
-            max={20}
-            value={questionCount}
-            onChange={(e) => setQuestionCount(Number(e.target.value))}
-            className="w-full px-3.5 py-2.5 rounded-lg bg-background border border-border text-light-text text-sm font-mono
-              focus:outline-none input-glow transition-all duration-200"
+          <ChevronDown
+            size={14}
+            className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-dark-text/50"
           />
-        </div>
-
-        <div>
-          <label className="mono-label text-dark-text mb-1.5 block">Time Limit</label>
-          <div className="relative">
-            <input
-              type="number"
-              min={10}
-              max={180}
-              step={5}
-              value={timeLimitMin}
-              onChange={(e) => setTimeLimitMin(Number(e.target.value))}
-              className="w-full px-3.5 py-2.5 rounded-lg bg-background border border-border text-light-text text-sm font-mono
-                focus:outline-none input-glow transition-all duration-200 pr-12"
-            />
-            <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[10px] text-dark-text/50 font-mono">
-              min
-            </span>
-          </div>
         </div>
       </div>
 
+      {/* ── Difficulty ────────────────────────────────────── */}
+      <div>
+        <label className="mono-label text-dark-text mb-2 block">Difficulty</label>
+        <div className="grid grid-cols-4 gap-2">
+          {DIFFICULTY_OPTIONS.map(({ value, label, activeBg }) => {
+            const locked = value !== '' && value !== 'EASY' && !hasFullAccess;
+            const isActive = difficulty === value;
+            return (
+              <button
+                key={value}
+                onClick={() => !locked && setDifficulty(value)}
+                disabled={locked}
+                className={`relative flex items-center justify-center gap-1 py-2 rounded-lg border text-xs font-medium
+                  transition-all duration-150
+                  ${isActive
+                    ? activeBg
+                    : 'border-border text-dark-text hover:border-primary/30 hover:text-light-text'
+                  }
+                  ${locked ? 'opacity-35 cursor-not-allowed' : 'cursor-pointer'}`}
+              >
+                {locked && <Lock size={9} className="shrink-0" />}
+                {label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* ── Questions ─────────────────────────────────────── */}
+      <div>
+        <label className="mono-label text-dark-text mb-2 block">Questions</label>
+        <div className="flex items-center gap-3 mb-2.5">
+          <button
+            onClick={() => adjustCount(-1)}
+            disabled={questionCount <= 1}
+            className="w-9 h-9 rounded-lg border border-border bg-background flex items-center justify-center
+              hover:border-primary/40 hover:text-primary transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+          >
+            <Minus size={14} />
+          </button>
+          <span className="flex-1 text-center text-2xl font-bold font-mono text-light-text tabular-nums">
+            {questionCount}
+          </span>
+          <button
+            onClick={() => adjustCount(1)}
+            disabled={questionCount >= 20}
+            className="w-9 h-9 rounded-lg border border-border bg-background flex items-center justify-center
+              hover:border-primary/40 hover:text-primary transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+          >
+            <Plus size={14} />
+          </button>
+        </div>
+        <div className="flex gap-1.5">
+          {QUESTION_PRESETS.map((n) => (
+            <button
+              key={n}
+              onClick={() => setQuestionCount(n)}
+              className={`flex-1 py-1 rounded-md border text-[11px] font-mono transition-colors duration-150
+                ${questionCount === n
+                  ? 'border-primary/40 bg-primary/10 text-primary'
+                  : 'border-border text-dark-text hover:border-primary/30 hover:text-light-text'
+                }`}
+            >
+              {n}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* ── Time Limit ────────────────────────────────────── */}
+      <div>
+        <label className="mono-label text-dark-text mb-2 block">Time Limit</label>
+        <div className="grid grid-cols-3 gap-2">
+          {TIME_PRESETS.map((t) => (
+            <button
+              key={t}
+              onClick={() => setTimeLimitMin(t)}
+              className={`py-2 rounded-lg border text-xs font-mono font-medium transition-colors duration-150
+                ${timeLimitMin === t
+                  ? 'border-primary/40 bg-primary/10 text-primary'
+                  : 'border-border text-dark-text hover:border-primary/30 hover:text-light-text'
+                }`}
+            >
+              {t >= 60 ? `${t / 60}h${t % 60 ? ` ${t % 60}m` : ''}` : `${t}m`}
+            </button>
+          ))}
+        </div>
+        {!TIME_PRESETS.includes(timeLimitMin) && (
+          <p className="text-[10px] text-primary/60 font-mono mt-1.5 text-center">
+            Custom: {timeLimitMin} min
+          </p>
+        )}
+      </div>
+
+      {/* ── Begin Exam ────────────────────────────────────── */}
       <button
         onClick={handleStart}
         disabled={loading}
@@ -158,7 +220,7 @@ export default function ExamConfigForm({ topics, hasFullAccess, premiumGatingEna
           shadow-[0_0_20px_-4px_rgba(var(--color-primary-rgb),0.4)]"
       >
         {loading ? <Loader2 size={15} className="animate-spin" /> : <Zap size={15} />}
-        {loading ? 'Starting...' : 'Begin Exam'}
+        {loading ? 'Starting…' : 'Begin Exam'}
       </button>
     </div>
   );
