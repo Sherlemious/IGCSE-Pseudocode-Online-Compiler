@@ -220,7 +220,8 @@ const OutputDisplay: React.FC<OutputDisplayProps> = ({
           <div className="text-center space-y-1">
             <div className="text-sm text-dark-text/70">IGCSE Pseudocode Compiler</div>
             <div className="text-xs text-dark-text/40">
-              Write code on the left, run with <kbd>Ctrl+Enter</kbd>
+              <span className="hidden md:inline">Write code on the left, run with <kbd>Ctrl+Enter</kbd></span>
+              <span className="md:hidden">Write code above, tap Run to execute</span>
             </div>
           </div>
         </div>

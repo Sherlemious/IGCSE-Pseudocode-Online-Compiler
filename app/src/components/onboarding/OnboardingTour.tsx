@@ -119,6 +119,18 @@ export default function OnboardingTour() {
 
   // Calculate tooltip position
   const getTooltipStyle = (): React.CSSProperties => {
+    const isMobileView = typeof window !== 'undefined' && window.innerWidth < 768;
+
+    // On mobile, anchor the card to the bottom of the screen
+    if (isMobileView) {
+      return {
+        bottom: '24px',
+        left: '16px',
+        right: '16px',
+        maxWidth: 'none',
+      };
+    }
+
     if (!targetRect) return { top: '50%', left: '50%', transform: 'translate(-50%, -50%)' };
 
     const pad = 12;

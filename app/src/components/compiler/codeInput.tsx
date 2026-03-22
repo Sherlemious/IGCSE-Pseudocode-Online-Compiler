@@ -269,7 +269,7 @@ const CodeInput: React.FC<CodeInputProps> = ({
 
       {/* One-time shortcut hint */}
       {showShortcutHint && (
-        <div className="flex items-center justify-between px-3 py-1 bg-primary/5 border-b border-primary/15 text-[11px] text-primary/60 animate-fade-in shrink-0">
+        <div className="hidden md:flex items-center justify-between px-3 py-1 bg-primary/5 border-b border-primary/15 text-[11px] text-primary/60 animate-fade-in shrink-0">
           <span>
             <kbd className="font-mono">Ctrl+Enter</kbd> run &middot; <kbd className="font-mono">Ctrl+Shift+K</kbd> stop &middot; <kbd className="font-mono">Ctrl+/</kbd> all shortcuts
           </span>
@@ -297,7 +297,7 @@ const CodeInput: React.FC<CodeInputProps> = ({
         />
 
         {code.length === 0 && !isRunning && (
-          <div className="absolute bottom-4 left-0 right-0 flex justify-center pointer-events-none">
+          <div className="absolute bottom-4 left-0 right-0 hidden md:flex justify-center pointer-events-none">
             <div className="flex items-center gap-1.5 text-xs text-dark-text/40">
               <Keyboard size={12} />
               <span>
