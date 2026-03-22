@@ -3,6 +3,7 @@
 import React from 'react';
 import { Circle, Loader } from 'lucide-react';
 import type { CursorPosition } from '../compiler/codeInput';
+import { PREMIUM_GATING_ENABLED } from '@/lib/featureFlags';
 
 interface FooterProps {
   isRunning?: boolean;
@@ -12,7 +13,7 @@ interface FooterProps {
 
 const Footer: React.FC<FooterProps> = ({ isRunning = false, cursor, lineCount }) => {
   return (
-    <footer className="h-8 bg-header-bg border-t border-border px-3 flex items-center justify-between text-[11px] font-mono shrink-0 select-none">
+    <footer className="h-8 bg-header-bg border-t border-border px-3 flex items-center justify-between text-[11px] font-mono shrink-0 select-none relative">
       {/* Left section */}
       <div className="flex items-center gap-3">
         <div className="flex items-center gap-1.5">
@@ -26,6 +27,13 @@ const Footer: React.FC<FooterProps> = ({ isRunning = false, cursor, lineCount })
           </span>
         </div>
       </div>
+
+      {/* Centre section */}
+      {!PREMIUM_GATING_ENABLED && (
+        <span className="absolute left-1/2 -translate-x-1/2 text-[10px] text-header-text/30 font-mono tracking-widest uppercase hidden sm:block">
+          Beta · All features free
+        </span>
+      )}
 
       {/* Right section */}
       <div className="flex items-center gap-3 text-header-text/70">
