@@ -26,7 +26,25 @@ function loadInitialCode(): string {
     if (saved !== null) return saved;
     // First-time visitor — show a hello world starter
     const isFirstVisit = !localStorage.getItem(ONBOARDING_KEY);
-    if (isFirstVisit) return 'OUTPUT "Hello, World!"';
+    if (isFirstVisit) return [
+      '// Welcome! Press Run (or Ctrl+Enter) to execute this code.',
+      '',
+      'DECLARE name : STRING',
+      'DECLARE age  : INTEGER',
+      '',
+      'OUTPUT "What is your name? "',
+      'INPUT name',
+      '',
+      'OUTPUT "How old are you? "',
+      'INPUT age',
+      '',
+      'OUTPUT "Hello, " & name & "!"',
+      '',
+      'IF age < 18',
+      '   THEN OUTPUT "You are a student."',
+      '   ELSE OUTPUT "You are an adult."',
+      'ENDIF',
+    ].join('\n');
     return '';
   } catch {
     return '';
