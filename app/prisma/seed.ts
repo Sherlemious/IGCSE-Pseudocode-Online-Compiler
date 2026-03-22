@@ -383,7 +383,7 @@ ENDIF`,
     hints: [
       'You need a chain of IF/ELSEIF statements that checks the score from highest to lowest grade boundary.',
       'After checking >= 90 and >= 80, continue with ELSEIF for >= 70 (C), >= 60 (D), and ELSE for F.',
-      'Complete the chain: ELSEIF Score >= 80 THEN OUTPUT "B" ELSEIF Score >= 70 THEN OUTPUT "C" ELSEIF Score >= 60 THEN OUTPUT "D" ELSE OUTPUT "F"',
+      'Complete the chain:\nELSEIF Score >= 80 THEN\n    OUTPUT "B"\nELSEIF Score >= 70 THEN\n    OUTPUT "C"\nELSEIF Score >= 60 THEN\n    OUTPUT "D"\nELSE\n    OUTPUT "F"',
     ],
     solution: `DECLARE Score : INTEGER
 
@@ -447,7 +447,7 @@ NEXT i`,
     hints: [
       'After checking divisible by 15 (both 3 and 5), you need to check divisible by 3 only, then by 5 only, then the default case.',
       'Use ELSEIF MOD(i, 3) = 0 for Fizz, ELSEIF MOD(i, 5) = 0 for Buzz, and ELSE OUTPUT i for everything else.',
-      'Complete the chain: ELSEIF MOD(i, 3) = 0 THEN OUTPUT "Fizz" ELSEIF MOD(i, 5) = 0 THEN OUTPUT "Buzz" ELSE OUTPUT i',
+      'Complete the chain:\nELSEIF MOD(i, 3) = 0 THEN\n    OUTPUT "Fizz"\nELSEIF MOD(i, 5) = 0 THEN\n    OUTPUT "Buzz"\nELSE\n    OUTPUT i',
     ],
     solution: `DECLARE N : INTEGER
 DECLARE i : INTEGER
@@ -1445,7 +1445,7 @@ ENDIF`,
     hints: [
       'You need to classify a number into one of three categories. Think about what conditions define each category.',
       'Use IF/ELSEIF/ELSE to check: is the number greater than 0 (positive), less than 0 (negative), or neither (zero)?',
-      'IF N > 0 THEN OUTPUT "Positive" ELSEIF N < 0 THEN OUTPUT "Negative" ELSE OUTPUT "Zero"',
+      'IF N > 0 THEN\n    OUTPUT "Positive"\nELSEIF N < 0 THEN\n    OUTPUT "Negative"\nELSE\n    OUTPUT "Zero"\nENDIF',
     ],
     solution: `DECLARE N : INTEGER
 
@@ -1724,7 +1724,7 @@ ENDIF`,
     hints: [
       'You need to check the length of the string. Think about which built-in function gives you the number of characters.',
       'Use LENGTH() to get the string length, then check if it is between 6 and 12 inclusive using AND.',
-      'Len <- LENGTH(Username). IF Len >= 6 AND Len <= 12 THEN OUTPUT "Valid" ELSE OUTPUT "Invalid".',
+      'Len <- LENGTH(Username)\nIF Len >= 6 AND Len <= 12 THEN\n    OUTPUT "Valid"\nELSE\n    OUTPUT "Invalid"\nENDIF',
     ],
     solution: `DECLARE Username : STRING
 DECLARE Len : INTEGER
@@ -2246,7 +2246,7 @@ INPUT Efficiency
     hints: [
       'You only need a simple selection statement here — think about which value separates A-rated from non-A-rated.',
       'Use IF ... THEN ... ELSE ... ENDIF with the condition Efficiency >= 92.',
-      'IF Efficiency >= 92 THEN OUTPUT "A-rated" ELSE OUTPUT "Not A-rated" ENDIF',
+      'IF Efficiency >= 92 THEN\n    OUTPUT "A-rated"\nELSE\n    OUTPUT "Not A-rated"\nENDIF',
     ],
     solution: `DECLARE Efficiency : INTEGER
 
