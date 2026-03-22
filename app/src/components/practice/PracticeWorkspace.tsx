@@ -23,6 +23,7 @@ import {
   EyeOff,
   Lightbulb,
   BookOpen,
+  FileText,
 } from 'lucide-react';
 
 /* ── Types ──────────────────────────────────────────────── */
@@ -49,6 +50,7 @@ interface Props {
   questionId: string;
   starterCode: string;
   savedCode?: string | null;
+  preloadedFileNames?: string[];
 }
 
 /* ── Helpers ────────────────────────────────────────────── */
@@ -80,7 +82,7 @@ function errorHint(error: NonNullable<GradeResultItem['error']>): string {
 
 /* ── Component ──────────────────────────────────────────── */
 
-export default function PracticeWorkspace({ questionId, starterCode, savedCode }: Props) {
+export default function PracticeWorkspace({ questionId, starterCode, savedCode, preloadedFileNames }: Props) {
   /* ── Code state ─────────────────────────────────────── */
   const [code, setCode] = useState(() => savedCode || loadSavedCode(questionId, starterCode));
 
@@ -451,6 +453,15 @@ export default function PracticeWorkspace({ questionId, starterCode, savedCode }
               or <kbd>Ctrl+Shift+Enter</kbd> to grade
             </div>
           </div>
+          {preloadedFileNames && preloadedFileNames.length > 0 && (
+            <div className="flex items-center gap-1.5 text-[10px] text-info/70 bg-info/5 border border-info/20 rounded px-2.5 py-1.5 max-w-xs text-center">
+              <FileText size={11} className="shrink-0" />
+              <span>
+                <strong className="font-semibold">{preloadedFileNames.join(', ')}</strong>
+                {' '}pre-loaded during grading — not available in local runs
+              </span>
+            </div>
+          )}
         </div>
       );
     }

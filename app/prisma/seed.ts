@@ -2212,6 +2212,750 @@ NEXT Row`,
       },
     ],
   },
+
+  // ════════════════════════════════════════════════ REAL PAST PAPERS ═══
+
+  // ── Question A: Energy Efficiency Rating ─────────────────────────────
+  {
+    title: 'Energy Efficiency Rating',
+    description: `Read an appliance's energy efficiency as an integer percentage. If efficiency is 92 or over, output \`A-rated\`. If below 92, output \`Not A-rated\`.
+
+**Source:** 2023 Feb/Mar Variant 2 Q6(b)
+
+**Input:** A single integer — the efficiency percentage.
+**Output:** \`A-rated\` or \`Not A-rated\`.
+
+**Example:**
+\`\`\`
+Input:  95
+Output: A-rated
+\`\`\``,
+    difficulty: 'EASY' as const,
+    topic: 'Selection',
+    year: 2023,
+    session: 'Feb/Mar',
+    variant: 2,
+    questionNumber: 6,
+    part: 'b',
+    marks: 2,
+    starterCode: `DECLARE Efficiency : INTEGER
+
+INPUT Efficiency
+
+// Check if efficiency is 92% or over and output the rating`,
+    hints: [
+      'You only need a simple selection statement here — think about which value separates A-rated from non-A-rated.',
+      'Use IF ... THEN ... ELSE ... ENDIF with the condition Efficiency >= 92.',
+      'IF Efficiency >= 92 THEN OUTPUT "A-rated" ELSE OUTPUT "Not A-rated" ENDIF',
+    ],
+    solution: `DECLARE Efficiency : INTEGER
+
+INPUT Efficiency
+
+IF Efficiency >= 92 THEN
+    OUTPUT "A-rated"
+ELSE
+    OUTPUT "Not A-rated"
+ENDIF`,
+    solutionExplanation: 'A simple IF/ELSE checks whether the efficiency meets the 92% threshold. Output the appropriate rating string based on the condition.',
+    testCases: [
+      { inputs: ['95'], expectedOutput: 'A-rated',     description: 'Above threshold',       sortOrder: 0 },
+      { inputs: ['92'], expectedOutput: 'A-rated',     description: 'Exactly 92 — boundary', sortOrder: 1 },
+      { inputs: ['80'], expectedOutput: 'Not A-rated', description: 'Below threshold',        sortOrder: 2 },
+      { inputs: ['100'], expectedOutput: 'A-rated',    description: null,                     sortOrder: 3, isHidden: true },
+      { inputs: ['91'], expectedOutput: 'Not A-rated', description: null,                     sortOrder: 4, isHidden: true },
+    ],
+  },
+
+  // ── Question B: Average of Numbers in Array ───────────────────────────
+  {
+    title: 'Average of Numbers in Array',
+    description: `Read N numbers (1 ≤ N ≤ 50) and store them in a 1D array. Use a single loop to compute the total, then output the integer average (using integer division).
+
+**Source:** Inspired by 2023 Feb/Mar Variant 2 Q2(b)
+
+**Input:** N on the first line, then N integers one per line.
+**Output:** The integer average (integer division — no decimals).
+
+**Example:**
+\`\`\`
+Input:  5
+        10
+        20
+        30
+        40
+        50
+Output: 30
+\`\`\``,
+    difficulty: 'EASY' as const,
+    topic: 'Arrays',
+    year: 2023,
+    session: 'Feb/Mar',
+    variant: 2,
+    questionNumber: 2,
+    part: 'b',
+    marks: 5,
+    starterCode: `DECLARE N : INTEGER
+DECLARE i : INTEGER
+DECLARE Total : INTEGER
+DECLARE Avg : INTEGER
+DECLARE Number : ARRAY[1:50] OF INTEGER
+
+INPUT N
+
+Total <- 0
+FOR i <- 1 TO N
+    INPUT Number[i]
+    // add to total
+NEXT i
+
+// Calculate and output the average`,
+    hints: [
+      'You need a running total variable that starts at 0 and is updated inside the loop.',
+      'Accumulate: Total <- Total + Number[i] inside the FOR loop. After the loop, divide to get the average.',
+      'After the loop: Avg <- Total DIV N then OUTPUT Avg',
+    ],
+    solution: `DECLARE N : INTEGER
+DECLARE i : INTEGER
+DECLARE Total : INTEGER
+DECLARE Avg : INTEGER
+DECLARE Number : ARRAY[1:50] OF INTEGER
+
+INPUT N
+
+Total <- 0
+FOR i <- 1 TO N
+    INPUT Number[i]
+    Total <- Total + Number[i]
+NEXT i
+
+Avg <- Total DIV N
+OUTPUT Avg`,
+    solutionExplanation: 'Use a FOR loop to iterate through all N elements, accumulating the total. After the loop, divide using DIV for integer division and output the result.',
+    testCases: [
+      { inputs: ['5', '10', '20', '30', '40', '50'], expectedOutput: '30', description: 'Average of 5 numbers', sortOrder: 0 },
+      { inputs: ['4', '2', '4', '6', '8'],           expectedOutput: '5',  description: 'Average of 4 numbers', sortOrder: 1 },
+      { inputs: ['3', '9', '9', '9'],                 expectedOutput: '9',  description: 'All same values',      sortOrder: 2 },
+      { inputs: ['1', '42'],                          expectedOutput: '42', description: null,                   sortOrder: 3, isHidden: true },
+      { inputs: ['6', '1', '2', '3', '4', '5', '6'], expectedOutput: '3',  description: null,                   sortOrder: 4, isHidden: true },
+    ],
+  },
+
+  // ── Question C: Find Minimum in Array ────────────────────────────────
+  {
+    title: 'Find Minimum in Array',
+    description: `Read 10 integers (each between -20 and 100 inclusive) into a 1D array. Using a single loop, find and output the lowest value.
+
+**Source:** Inspired by 2023 Oct/Nov Variant 2 Q3(b)
+
+**Input:** 10 integers on separate lines.
+**Output:** The minimum value.
+
+**Example:**
+\`\`\`
+Input:  5
+        3
+        -1
+        10
+        7
+        2
+        -20
+        8
+        4
+        6
+Output: -20
+\`\`\``,
+    difficulty: 'EASY' as const,
+    topic: 'Arrays',
+    year: 2023,
+    session: 'Oct/Nov',
+    variant: 2,
+    questionNumber: 3,
+    part: 'b',
+    marks: 4,
+    starterCode: `DECLARE i : INTEGER
+DECLARE Min : INTEGER
+DECLARE Temp : ARRAY[1:10] OF INTEGER
+
+FOR i <- 1 TO 10
+    INPUT Temp[i]
+NEXT i
+
+// Find the minimum value using a loop
+Min <- Temp[1]
+FOR i <- 2 TO 10
+    // update Min if a smaller value is found
+NEXT i
+
+OUTPUT Min`,
+    hints: [
+      'Set Min to the first element before the loop, then compare each subsequent element.',
+      'Inside the loop: IF Temp[i] < Min THEN update Min.',
+      'Min <- Temp[1], then FOR i <- 2 TO 10 — IF Temp[i] < Min THEN Min <- Temp[i] ENDIF',
+    ],
+    solution: `DECLARE i : INTEGER
+DECLARE Min : INTEGER
+DECLARE Temp : ARRAY[1:10] OF INTEGER
+
+FOR i <- 1 TO 10
+    INPUT Temp[i]
+NEXT i
+
+Min <- Temp[1]
+FOR i <- 2 TO 10
+    IF Temp[i] < Min THEN
+        Min <- Temp[i]
+    ENDIF
+NEXT i
+
+OUTPUT Min`,
+    solutionExplanation: 'Initialise Min with the first element, then loop from the second element onwards. If any element is smaller than the current Min, update Min. Output the final minimum after the loop.',
+    testCases: [
+      { inputs: ['5', '3', '-1', '10', '7', '2', '-20', '8', '4', '6'],     expectedOutput: '-20', description: 'Min is negative', sortOrder: 0 },
+      { inputs: ['10', '20', '30', '40', '50', '60', '70', '80', '90', '100'], expectedOutput: '10', description: 'Min is first',    sortOrder: 1 },
+      { inputs: ['50', '50', '50', '50', '50', '50', '50', '50', '50', '1'],   expectedOutput: '1',  description: 'Min is last',     sortOrder: 2 },
+      { inputs: ['-5', '-10', '-15', '-20', '-3', '-8', '-12', '-1', '-6', '-9'], expectedOutput: '-20', description: null, sortOrder: 3, isHidden: true },
+      { inputs: ['0', '0', '0', '0', '0', '0', '0', '0', '0', '0'],          expectedOutput: '0',  description: null,            sortOrder: 4, isHidden: true },
+    ],
+  },
+
+  // ── Question D: Maximum, Minimum and Range ────────────────────────────
+  {
+    title: 'Maximum, Minimum and Range',
+    description: `Read N positive integers (each less than 1000). Find and output the largest, smallest, and range (largest minus smallest) — each on a separate line.
+
+**Source:** 2021 May/Jun Variant 2 Q2(a)
+
+**Input:** N on the first line (2 ≤ N ≤ 10), then N integers.
+**Output:** Three lines — largest, smallest, range.
+
+**Example:**
+\`\`\`
+Input:  5
+        34
+        12
+        78
+        5
+        56
+Output: 78
+        5
+        73
+\`\`\``,
+    difficulty: 'MEDIUM' as const,
+    topic: 'Loops',
+    year: 2021,
+    session: 'May/Jun',
+    variant: 2,
+    questionNumber: 2,
+    part: 'a',
+    marks: 6,
+    starterCode: `DECLARE N : INTEGER
+DECLARE i : INTEGER
+DECLARE Num : INTEGER
+DECLARE Largest : INTEGER
+DECLARE Smallest : INTEGER
+
+INPUT N
+INPUT Num
+Largest <- Num
+Smallest <- Num
+
+FOR i <- 2 TO N
+    INPUT Num
+    // Update Largest and Smallest as needed
+NEXT i
+
+// Output the results`,
+    hints: [
+      'Read the first number before the loop, set both Largest and Smallest to it, then loop from 2 to N.',
+      'Inside the loop: use two separate IF statements — one to update Largest, one to update Smallest.',
+      'After the loop: OUTPUT Largest, OUTPUT Smallest, OUTPUT Largest - Smallest',
+    ],
+    solution: `DECLARE N : INTEGER
+DECLARE i : INTEGER
+DECLARE Num : INTEGER
+DECLARE Largest : INTEGER
+DECLARE Smallest : INTEGER
+
+INPUT N
+INPUT Num
+Largest <- Num
+Smallest <- Num
+
+FOR i <- 2 TO N
+    INPUT Num
+    IF Num > Largest THEN
+        Largest <- Num
+    ENDIF
+    IF Num < Smallest THEN
+        Smallest <- Num
+    ENDIF
+NEXT i
+
+OUTPUT Largest
+OUTPUT Smallest
+OUTPUT Largest - Smallest`,
+    solutionExplanation: 'Read the first number and initialise both Largest and Smallest to it. For each subsequent number, update Largest if larger or Smallest if smaller. The range is simply Largest minus Smallest.',
+    testCases: [
+      { inputs: ['5', '34', '12', '78', '5', '56'],    expectedOutput: '78\n5\n73',   description: 'Mixed values',          sortOrder: 0 },
+      { inputs: ['3', '100', '50', '75'],               expectedOutput: '100\n50\n50', description: '3 numbers',             sortOrder: 1 },
+      { inputs: ['4', '10', '10', '10', '10'],          expectedOutput: '10\n10\n0',   description: 'All same — range is 0', sortOrder: 2 },
+      { inputs: ['2', '999', '1'],                      expectedOutput: '999\n1\n998', description: null,                   sortOrder: 3, isHidden: true },
+      { inputs: ['6', '4', '8', '15', '16', '23', '42'], expectedOutput: '42\n4\n38', description: null,                   sortOrder: 4, isHidden: true },
+    ],
+  },
+
+  // ── Question E: Count Students by Age Group ───────────────────────────
+  {
+    title: 'Count Students by Age Group',
+    description: `Read 10 student ages. Count and output how many are:
+- aged 7 to 11 (i.e. ≥ 7 AND < 12)
+- aged 12 to 17 (i.e. ≥ 12 AND < 18)
+- aged 18 or over
+
+Output the three counts on separate lines in that order.
+
+**Source:** Inspired by 2022 Feb/Mar Variant 2 Q2(a)(b)
+
+**Input:** 10 integers — the student ages.
+**Output:** Three lines — count of 7–11, count of 12–17, count of 18+.
+
+**Example:**
+\`\`\`
+Input:  8 10 13 16 20 25 7 12 18 11
+Output: 4
+        3
+        3
+\`\`\``,
+    difficulty: 'MEDIUM' as const,
+    topic: 'Loops',
+    year: 2022,
+    session: 'Feb/Mar',
+    variant: 2,
+    questionNumber: 2,
+    part: 'a',
+    marks: 8,
+    starterCode: `DECLARE Student : INTEGER
+DECLARE Age : INTEGER
+DECLARE Count7to11 : INTEGER
+DECLARE Count12to17 : INTEGER
+DECLARE Count18Plus : INTEGER
+
+Count7to11 <- 0
+Count12to17 <- 0
+Count18Plus <- 0
+
+FOR Student <- 1 TO 10
+    INPUT Age
+    // Classify age into the correct group
+NEXT Student
+
+OUTPUT Count7to11
+OUTPUT Count12to17
+OUTPUT Count18Plus`,
+    hints: [
+      'You need three counters — one per age group. Initialise them all to 0 before the loop.',
+      'Use three separate IF statements (not ELSEIF) to check each range independently. The ranges are: 7≤age<12, 12≤age<18, age≥18.',
+      'Each IF uses AND: IF Age >= 7 AND Age < 12 THEN Count7to11 <- Count7to11 + 1 ENDIF',
+    ],
+    solution: `DECLARE Student : INTEGER
+DECLARE Age : INTEGER
+DECLARE Count7to11 : INTEGER
+DECLARE Count12to17 : INTEGER
+DECLARE Count18Plus : INTEGER
+
+Count7to11 <- 0
+Count12to17 <- 0
+Count18Plus <- 0
+
+FOR Student <- 1 TO 10
+    INPUT Age
+    IF Age >= 7 AND Age < 12 THEN
+        Count7to11 <- Count7to11 + 1
+    ENDIF
+    IF Age >= 12 AND Age < 18 THEN
+        Count12to17 <- Count12to17 + 1
+    ENDIF
+    IF Age >= 18 THEN
+        Count18Plus <- Count18Plus + 1
+    ENDIF
+NEXT Student
+
+OUTPUT Count7to11
+OUTPUT Count12to17
+OUTPUT Count18Plus`,
+    solutionExplanation: 'Use three separate IF statements (not ELSEIF) inside the loop to check each age range independently. Each counter is incremented when the age falls in that range. Output the three counts in order after the loop.',
+    testCases: [
+      { inputs: ['8', '10', '13', '16', '20', '25', '7', '12', '18', '11'], expectedOutput: '4\n3\n3',  description: 'Mixed ages',      sortOrder: 0 },
+      { inputs: ['8', '9', '10', '11', '7', '8', '9', '10', '11', '7'],     expectedOutput: '10\n0\n0', description: 'All in 7-11',     sortOrder: 1 },
+      { inputs: ['20', '21', '22', '23', '24', '25', '26', '27', '28', '29'], expectedOutput: '0\n0\n10', description: 'All 18+',       sortOrder: 2 },
+      { inputs: ['12', '13', '14', '15', '16', '17', '12', '13', '14', '15'], expectedOutput: '0\n10\n0', description: null,           sortOrder: 3, isHidden: true },
+      { inputs: ['5', '6', '8', '13', '20', '3', '9', '15', '22', '1'],      expectedOutput: '2\n2\n2',  description: null,            sortOrder: 4, isHidden: true },
+    ],
+  },
+
+  // ── Question F: String Extraction and Lowercase ───────────────────────
+  {
+    title: 'String Extraction and Lowercase',
+    description: `The string \`"Learning Never Exhausts The Mind"\` is stored in a variable \`Quote\`.
+
+Write pseudocode to:
+1. Store that string in \`Quote\`
+2. Extract and output the last 8 characters (\`"The Mind"\`)
+3. Output the entire string in lowercase
+
+**Source:** 2023 Oct/Nov Variant 2 Q7
+
+**Input:** None — the string is hardcoded in the program.
+**Output:** Two lines — \`The Mind\` then \`learning never exhausts the mind\`
+
+**Note:** \`SUBSTRING(str, start, length)\` returns \`length\` characters from position \`start\`. The string has 32 characters, so \`"The Mind"\` starts at position 25.`,
+    difficulty: 'MEDIUM' as const,
+    topic: 'String Processing',
+    year: 2023,
+    session: 'Oct/Nov',
+    variant: 2,
+    questionNumber: 7,
+    part: null,
+    marks: 5,
+    starterCode: `DECLARE Quote : STRING
+
+Quote <- "Learning Never Exhausts The Mind"
+
+// Extract and output the last 8 characters ("The Mind")
+
+// Output the full string in lowercase`,
+    hints: [
+      'Count the characters in the string to find where \'The Mind\' starts. Remember: position 1 is the first character.',
+      'The string \'Learning Never Exhausts The Mind\' has 32 characters total. \'The Mind\' is 8 characters long — count backwards from the end to find its starting position.',
+      'OUTPUT SUBSTRING(Quote, 25, 8) to get \'The Mind\', then OUTPUT LCASE(Quote) for the lowercase version.',
+    ],
+    solution: `DECLARE Quote : STRING
+
+Quote <- "Learning Never Exhausts The Mind"
+
+OUTPUT SUBSTRING(Quote, 25, 8)
+OUTPUT LCASE(Quote)`,
+    solutionExplanation: 'The string has 32 characters. "The Mind" starts at position 25 and is 8 characters long, so SUBSTRING(Quote, 25, 8) extracts it. LCASE() converts the entire string to lowercase.',
+    testCases: [
+      {
+        inputs: [],
+        expectedOutput: 'The Mind\nlearning never exhausts the mind',
+        description: 'Fixed string operations',
+        sortOrder: 0,
+      },
+    ],
+  },
+
+  // ── Question G: Double Entry Validation ──────────────────────────────
+  {
+    title: 'Double Entry Validation',
+    description: `Implement a double-entry check for a measurement.
+
+Ask the user to enter the measurement twice. If both entries match, store the value in \`Measurement\` and output \`Accepted\`. If they don't match, repeat the process until they do.
+
+**Source:** Inspired by 2023 May/Jun Variant 2 Q4(b)(ii)
+
+**Input:** Pairs of integers until both match. Each pair is two lines.
+**Output:** \`Accepted\` followed by the accepted value, each on a separate line.
+
+**Example:**
+\`\`\`
+Input:  10
+        5       (mismatch — try again)
+        10
+        10      (match!)
+Output: Accepted
+        10
+\`\`\``,
+    difficulty: 'MEDIUM' as const,
+    topic: 'Loops',
+    year: 2023,
+    session: 'May/Jun',
+    variant: 2,
+    questionNumber: 4,
+    part: 'b',
+    marks: 3,
+    starterCode: `DECLARE Measurement : INTEGER
+DECLARE Entry1 : INTEGER
+DECLARE Entry2 : INTEGER
+
+REPEAT
+    INPUT Entry1
+    INPUT Entry2
+UNTIL Entry1 = Entry2
+
+Measurement <- Entry1
+OUTPUT "Accepted"
+OUTPUT Measurement`,
+    hints: [
+      'A double-entry check repeats until both entries match. Which loop type is ideal when you always run at least once?',
+      'Use REPEAT ... UNTIL with two INPUT statements inside — one for each entry. The condition is Entry1 = Entry2.',
+      'REPEAT / INPUT Entry1 / INPUT Entry2 / UNTIL Entry1 = Entry2, then Measurement <- Entry1',
+    ],
+    solution: `DECLARE Measurement : INTEGER
+DECLARE Entry1 : INTEGER
+DECLARE Entry2 : INTEGER
+
+REPEAT
+    INPUT Entry1
+    INPUT Entry2
+UNTIL Entry1 = Entry2
+
+Measurement <- Entry1
+OUTPUT "Accepted"
+OUTPUT Measurement`,
+    solutionExplanation: 'A REPEAT/UNTIL loop keeps asking for two inputs until they match. Once the loop exits (both entries equal), store the value and output the confirmation.',
+    testCases: [
+      { inputs: ['10', '10'],               expectedOutput: 'Accepted\n10', description: 'Match on first attempt',  sortOrder: 0 },
+      { inputs: ['5', '3', '5', '5'],       expectedOutput: 'Accepted\n5',  description: 'Match on second attempt', sortOrder: 1 },
+      { inputs: ['0', '0'],                 expectedOutput: 'Accepted\n0',  description: 'Zero value',              sortOrder: 2 },
+      { inputs: ['99', '1', '99', '99'],    expectedOutput: 'Accepted\n99', description: null,                     sortOrder: 3, isHidden: true },
+      { inputs: ['7', '8', '7', '9', '7', '7'], expectedOutput: 'Accepted\n7', description: null,                  sortOrder: 4, isHidden: true },
+    ],
+  },
+
+  // ── Question H: Validate Input in Range ──────────────────────────────
+  {
+    title: 'Validate Input in Range',
+    description: `Write an algorithm to ensure the variable \`Length\` is between 15 and 35 inclusive. Keep asking for input until a valid value is entered. Output \`Valid\` followed by the accepted value.
+
+**Source:** Inspired by 2023 May/Jun Variant 3 Q5(b)
+
+**Input:** One or more integers until a value in the range 15–35 is entered.
+**Output:** \`Valid\` then the valid value, each on a separate line.
+
+**Note:** The prompt \`"Enter a length between 15 and 35: "\` is output before each input attempt.
+
+**Example:**
+\`\`\`
+Input:  20
+Output: Enter a length between 15 and 35:
+        Valid
+        20
+\`\`\``,
+    difficulty: 'EASY' as const,
+    topic: 'Loops',
+    year: 2023,
+    session: 'May/Jun',
+    variant: 3,
+    questionNumber: 5,
+    part: 'b',
+    marks: 3,
+    starterCode: `DECLARE Length : INTEGER
+
+REPEAT
+    OUTPUT "Enter a length between 15 and 35: "
+    INPUT Length
+UNTIL Length >= 15 AND Length <= 35
+
+OUTPUT "Valid"
+OUTPUT Length`,
+    hints: [
+      'Use a REPEAT/UNTIL loop — it always runs at least once, which is perfect for input validation.',
+      'The condition after UNTIL should be the valid range check: Length >= 15 AND Length <= 35.',
+      'REPEAT / OUTPUT prompt / INPUT Length / UNTIL Length >= 15 AND Length <= 35',
+    ],
+    solution: `DECLARE Length : INTEGER
+
+REPEAT
+    OUTPUT "Enter a length between 15 and 35: "
+    INPUT Length
+UNTIL Length >= 15 AND Length <= 35
+
+OUTPUT "Valid"
+OUTPUT Length`,
+    solutionExplanation: 'A REPEAT/UNTIL loop continues to prompt and read input until the value is within the valid range. After the loop exits, output the confirmation and the valid value.',
+    testCases: [
+      {
+        inputs: ['20'],
+        expectedOutput: 'Enter a length between 15 and 35: \nValid\n20',
+        description: 'Valid on first attempt',
+        sortOrder: 0,
+      },
+      {
+        inputs: ['5', '40', '15'],
+        expectedOutput: 'Enter a length between 15 and 35: \nEnter a length between 15 and 35: \nEnter a length between 15 and 35: \nValid\n15',
+        description: 'Two invalid then valid',
+        sortOrder: 1,
+      },
+      {
+        inputs: ['35'],
+        expectedOutput: 'Enter a length between 15 and 35: \nValid\n35',
+        description: 'Upper boundary',
+        sortOrder: 2,
+      },
+      {
+        inputs: ['15'],
+        expectedOutput: 'Enter a length between 15 and 35: \nValid\n15',
+        description: null,
+        sortOrder: 3,
+        isHidden: true,
+      },
+      {
+        inputs: ['0', '36', '25'],
+        expectedOutput: 'Enter a length between 15 and 35: \nEnter a length between 15 and 35: \nEnter a length between 15 and 35: \nValid\n25',
+        description: null,
+        sortOrder: 4,
+        isHidden: true,
+      },
+    ],
+  },
+
+  // ════════════════════════════════════════════════ FILE HANDLING ═══
+
+  {
+    title: 'Read Names from File',
+    description: `A file called \`names.txt\` has already been created and contains three names, one per line:
+
+\`\`\`
+Alice
+Bob
+Charlie
+\`\`\`
+
+Open the file for reading. Read each name and output it. Close the file when done.
+
+**Input:** None (read from the file).
+**Output:** Three names, each on a separate line, exactly as stored in the file.
+
+**Example output:**
+\`\`\`
+Alice
+Bob
+Charlie
+\`\`\``,
+    difficulty: 'MEDIUM' as const,
+    topic: 'File Handling',
+    starterCode: `DECLARE Name : STRING
+
+OPENFILE "names.txt" FOR READ
+WHILE NOT EOF("names.txt") DO
+    READFILE "names.txt", Name
+    OUTPUT Name
+ENDWHILE
+CLOSEFILE "names.txt"`,
+    hints: [
+      'File I/O uses OPENFILE, READFILE, and CLOSEFILE. The EOF() function returns TRUE when there are no more lines to read.',
+      'Open the file with OPENFILE "names.txt" FOR READ. Use a WHILE NOT EOF("names.txt") DO loop to repeatedly read a line with READFILE and OUTPUT it.',
+      'OPENFILE "names.txt" FOR READ → WHILE NOT EOF("names.txt") DO → READFILE "names.txt", Name → OUTPUT Name → ENDWHILE → CLOSEFILE "names.txt"',
+    ],
+    solution: `DECLARE Name : STRING
+
+OPENFILE "names.txt" FOR READ
+WHILE NOT EOF("names.txt") DO
+    READFILE "names.txt", Name
+    OUTPUT Name
+ENDWHILE
+CLOSEFILE "names.txt"`,
+    solutionExplanation: 'Open the file for reading with OPENFILE. Use a WHILE NOT EOF loop: each iteration reads the next line into Name using READFILE and immediately outputs it. Once EOF is reached the loop ends and CLOSEFILE releases the file.',
+    testCases: [
+      {
+        inputs: [],
+        expectedOutput: 'Alice\nBob\nCharlie',
+        description: 'Three names in file',
+        sortOrder: 0,
+        initialFiles: JSON.stringify({ 'names.txt': 'Alice\nBob\nCharlie' }),
+      },
+      {
+        inputs: [],
+        expectedOutput: 'Xena\nYuki\nZara',
+        description: null,
+        sortOrder: 1,
+        isHidden: true,
+        initialFiles: JSON.stringify({ 'names.txt': 'Xena\nYuki\nZara' }),
+      },
+      {
+        inputs: [],
+        expectedOutput: 'Solo',
+        description: null,
+        sortOrder: 2,
+        isHidden: true,
+        initialFiles: JSON.stringify({ 'names.txt': 'Solo' }),
+      },
+    ],
+  },
+
+  {
+    title: 'Write Names to File and Read Back',
+    description: `Read **3 names** from the user (one per line). Write each name to a file called \`output.txt\`, one name per line. Then close the file, reopen it for reading, and output each name in **UPPERCASE**.
+
+**Input:** 3 names on separate lines.
+**Output:** The 3 names in uppercase, one per line.
+
+**Example:**
+\`\`\`
+Input:  alice
+        bob
+        charlie
+Output: ALICE
+        BOB
+        CHARLIE
+\`\`\``,
+    difficulty: 'HARD' as const,
+    topic: 'File Handling',
+    starterCode: `DECLARE Name : STRING
+DECLARE i : INTEGER
+
+// Write the 3 names to the file
+OPENFILE "output.txt" FOR WRITE
+FOR i <- 1 TO 3
+    INPUT Name
+    WRITEFILE "output.txt", Name
+NEXT i
+CLOSEFILE "output.txt"
+
+// Read back and output in uppercase
+OPENFILE "output.txt" FOR READ
+WHILE NOT EOF("output.txt") DO
+    READFILE "output.txt", Name
+    OUTPUT UCASE(Name)
+ENDWHILE
+CLOSEFILE "output.txt"`,
+    hints: [
+      'You need two phases: first open FOR WRITE and use WRITEFILE, then CLOSEFILE and reopen FOR READ to use READFILE. Always CLOSEFILE between phases.',
+      'Phase 1: OPENFILE FOR WRITE → FOR loop with INPUT + WRITEFILE → CLOSEFILE. Phase 2: OPENFILE FOR READ → WHILE NOT EOF loop with READFILE + OUTPUT UCASE → CLOSEFILE.',
+      'Make sure to CLOSEFILE "output.txt" after writing before reopening for reading. The starter code shows the full structure — focus on filling in each section correctly.',
+    ],
+    solution: `DECLARE Name : STRING
+DECLARE i : INTEGER
+
+OPENFILE "output.txt" FOR WRITE
+FOR i <- 1 TO 3
+    INPUT Name
+    WRITEFILE "output.txt", Name
+NEXT i
+CLOSEFILE "output.txt"
+
+OPENFILE "output.txt" FOR READ
+WHILE NOT EOF("output.txt") DO
+    READFILE "output.txt", Name
+    OUTPUT UCASE(Name)
+ENDWHILE
+CLOSEFILE "output.txt"`,
+    solutionExplanation: 'Open the file for writing and use a FOR loop to read each name and write it with WRITEFILE. Close the file. Reopen for reading and use WHILE NOT EOF to read each name back, outputting it in uppercase with UCASE(). Close the file again.',
+    testCases: [
+      {
+        inputs: ['alice', 'bob', 'charlie'],
+        expectedOutput: 'ALICE\nBOB\nCHARLIE',
+        description: 'Lowercase → uppercase',
+        sortOrder: 0,
+      },
+      {
+        inputs: ['XENA', 'Yuki', 'zara'],
+        expectedOutput: 'XENA\nYUKI\nZARA',
+        description: 'Mixed case → uppercase',
+        sortOrder: 1,
+      },
+      {
+        inputs: ['apple', 'Mango', 'PEAR'],
+        expectedOutput: 'APPLE\nMANGO\nPEAR',
+        description: null,
+        sortOrder: 2,
+        isHidden: true,
+      },
+    ],
+  },
 ];
 
 // ─── Main seed function ────────────────────────────────────────────────────────
@@ -2234,12 +2978,13 @@ async function main() {
   // ExamAnswer / ExamAttempt records) are preserved.
   console.log('Seeding practice questions...');
 
-  const testCaseData = (tc: { inputs: string[]; expectedOutput: string; description: string | null; isHidden?: boolean; sortOrder: number }) => ({
+  const testCaseData = (tc: { inputs: string[]; expectedOutput: string; description: string | null; isHidden?: boolean; sortOrder: number; initialFiles?: string | null }) => ({
     inputs: tc.inputs,
     expectedOutput: tc.expectedOutput,
     description: tc.description ?? null,
     isHidden: tc.isHidden ?? false,
     sortOrder: tc.sortOrder,
+    initialFiles: tc.initialFiles ?? null,
   });
 
   for (const [idx, q] of questions.entries()) {

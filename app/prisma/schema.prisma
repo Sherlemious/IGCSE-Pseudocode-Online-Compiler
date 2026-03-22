@@ -132,6 +132,7 @@ model TestCase {
   isHidden       Boolean  @default(false)
   description    String?
   sortOrder      Int      @default(0)
+  initialFiles   String?  @db.Text // JSON: Record<string, string> of filename → content
 
   @@index([questionId])
 }

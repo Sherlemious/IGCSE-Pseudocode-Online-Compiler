@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { ChevronLeft, Crown, Lock } from 'lucide-react';
+import { ChevronLeft, Crown, Lock, FileText } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { prisma } from '../../../lib/prisma';
@@ -39,7 +39,7 @@ export default async function QuestionPage({ params }: Props) {
         testCases: {
           where: { isHidden: false },
           orderBy: { sortOrder: 'asc' },
-          select: { id: true, inputs: true, expectedOutput: true, description: true },
+          select: { id: true, inputs: true, expectedOutput: true, description: true, initialFiles: true },
         },
       },
     });
@@ -69,6 +69,16 @@ export default async function QuestionPage({ params }: Props) {
       /* ignore */
     }
   }
+
+  const anyPreloadedFiles = question.testCases.some((tc) => tc.initialFiles);
+  const preloadedFileNames = anyPreloadedFiles
+    ? Array.from(new Set(
+        question.testCases.flatMap((tc) => {
+          if (!tc.initialFiles) return [];
+          try { return Object.keys(JSON.parse(tc.initialFiles) as Record<string, string>); } catch { return []; }
+        })
+      ))
+    : [];
 
   return (
     <div className="flex-1 min-h-0 overflow-hidden bg-background text-light-text flex flex-col lg:flex-row">
@@ -114,6 +124,22 @@ export default async function QuestionPage({ params }: Props) {
             <span className="bg-surface px-2 py-0.5 rounded border border-border text-dark-text">{question.marks} marks</span>
           )}
         </div>
+        {anyPreloadedFiles && (
+          <div className="flex items-start gap-2 px-3 py-2 rounded-lg border border-info/25 bg-info/5 text-xs text-info mb-4">
+            <FileText size={13} className="shrink-0 mt-0.5" />
+            <div>
+              <span className="font-semibold">File I/O question</span>
+              {' — '}
+              <span className="text-info/80">
+                {preloadedFileNames.map((f, i) => (
+                  <span key={f}>{i > 0 && ', '}<code className="font-mono bg-info/10 px-1 py-0.5 rounded">{f}</code></span>
+                ))}
+                {' '}{preloadedFileNames.length === 1 ? 'is' : 'are'} pre-loaded for you during grading.
+              </span>
+            </div>
+          </div>
+        )}
+
         <div className="text-sm text-light-text/85 leading-relaxed">
           <ReactMarkdown
             remarkPlugins={[remarkGfm]}
@@ -181,24 +207,38 @@ export default async function QuestionPage({ params }: Props) {
           <div className="mt-6">
             <h2 className="text-sm font-semibold text-light-text mb-2">Sample Test Cases</h2>
             <div className="space-y-3">
-              {question.testCases.map((tc, i) => (
-                <div key={tc.id} className="bg-surface rounded border border-border p-3 text-xs font-mono">
-                  <div className="text-dark-text mb-1">
-                    Test {i + 1}
-                    {tc.description ? `: ${tc.description}` : ''}
-                  </div>
-                  {tc.inputs.length > 0 && (
-                    <div className="mb-1">
-                      <span className="text-info">Inputs: </span>
-                      {tc.inputs.join(', ')}
+              {question.testCases.map((tc, i) => {
+                let preloadedFiles: Record<string, string> | null = null;
+                if (tc.initialFiles) {
+                  try { preloadedFiles = JSON.parse(tc.initialFiles) as Record<string, string>; } catch { /* ignore */ }
+                }
+                return (
+                  <div key={tc.id} className="bg-surface rounded border border-border p-3 text-xs font-mono">
+                    <div className="text-dark-text mb-1.5 font-sans text-[11px]">
+                      Test {i + 1}{tc.description ? `: ${tc.description}` : ''}
                     </div>
-                  )}
-                  <div>
-                    <span className="text-success">Expected: </span>
-                    <span className="whitespace-pre-wrap">{tc.expectedOutput}</span>
+                    {preloadedFiles && Object.entries(preloadedFiles).map(([filename, content]) => (
+                      <div key={filename} className="mb-2 rounded border border-info/25 bg-info/5 p-2">
+                        <div className="flex items-center gap-1 text-info mb-1.5">
+                          <FileText size={10} />
+                          <span className="font-sans text-[10px] font-semibold">{filename}</span>
+                        </div>
+                        <pre className="whitespace-pre-wrap text-light-text/80 leading-relaxed">{content}</pre>
+                      </div>
+                    ))}
+                    {tc.inputs.length > 0 && (
+                      <div className="mb-1">
+                        <span className="text-info">Inputs: </span>
+                        {tc.inputs.join(', ')}
+                      </div>
+                    )}
+                    <div>
+                      <span className="text-success">Expected: </span>
+                      <span className="whitespace-pre-wrap">{tc.expectedOutput}</span>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}
@@ -244,7 +284,12 @@ export default async function QuestionPage({ params }: Props) {
           </div>
         </div>
       ) : (
-        <PracticeWorkspace questionId={question.id} starterCode={question.starterCode ?? ''} savedCode={savedCode} />
+        <PracticeWorkspace
+          questionId={question.id}
+          starterCode={question.starterCode ?? ''}
+          savedCode={savedCode}
+          preloadedFileNames={preloadedFileNames.length > 0 ? preloadedFileNames : undefined}
+        />
       )}
     </div>
   );

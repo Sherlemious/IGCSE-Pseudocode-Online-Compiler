@@ -57,7 +57,13 @@ export async function POST(request: NextRequest, { params }: Props) {
 
   // Grade all test cases in parallel
   const settled = await Promise.allSettled(
-    question.testCases.map((tc) => gradeSubmission(code, tc.inputs, tc.expectedOutput, timeout))
+    question.testCases.map((tc) => {
+      let preloadedFiles: Record<string, string> | undefined;
+      if (tc.initialFiles) {
+        try { preloadedFiles = JSON.parse(tc.initialFiles) as Record<string, string>; } catch { /* ignore bad JSON */ }
+      }
+      return gradeSubmission(code, tc.inputs, tc.expectedOutput, timeout, preloadedFiles);
+    })
   );
 
   const results = question.testCases.map((tc, i) => {

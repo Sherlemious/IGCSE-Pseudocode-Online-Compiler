@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { Lock, CheckCircle, Crown } from 'lucide-react';
+import { Lock, CheckCircle, Crown, FileText } from 'lucide-react';
 import { prisma } from '../../lib/prisma';
 import { auth } from '../../lib/auth';
 import { PREMIUM_GATING_ENABLED } from '../../lib/featureFlags';
@@ -147,12 +147,13 @@ export default async function PracticePage({ searchParams }: PageProps) {
               <Link
                 key={t}
                 href={`/practice?topic=${encodeURIComponent(t)}`}
-                className={`px-3 py-1 rounded-full border text-xs transition-colors ${
+                className={`inline-flex items-center gap-1 px-3 py-1 rounded-full border text-xs transition-colors ${
                   activeTopic === t
                     ? 'bg-primary/20 border-primary/50 text-primary'
                     : 'border-border text-dark-text hover:border-primary/40 hover:text-light-text'
                 }`}
               >
+                {t === 'File Handling' && <FileText size={10} />}
                 {t}
               </Link>
             ))}
@@ -197,10 +198,8 @@ export default async function PracticePage({ searchParams }: PageProps) {
                             q.session,
                             q.variant ? `V${q.variant}` : null,
                             q.questionNumber ? `Q${q.questionNumber}${q.part ? `(${q.part})` : ''}` : null,
-                            q.marks ? `[${q.marks}m]` : null,
                           ].filter(Boolean).join(' ')
                         : q.paper ?? null;
-                      const meta = [q.topic, paperRef].filter(Boolean).join(' \u00b7 ');
                       const progress = progressMap.get(q.id);
                       const solved = progress?.status === 'SOLVED';
                       const cardContent = (
@@ -222,7 +221,26 @@ export default async function PracticePage({ searchParams }: PageProps) {
 
                             <div className="min-w-0">
                               <div className="font-medium text-light-text truncate">{q.title}</div>
-                              {meta && <div className="text-xs text-dark-text mt-0.5">{meta}</div>}
+                              {(q.topic || paperRef) && (
+                                <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                                  {q.topic && (
+                                    <span className={`inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded border ${
+                                      q.topic === 'File Handling'
+                                        ? 'bg-info/10 border-info/30 text-info'
+                                        : 'bg-surface border-border text-dark-text'
+                                    }`}>
+                                      {q.topic === 'File Handling' && <FileText size={9} />}
+                                      {q.topic}
+                                    </span>
+                                  )}
+                                  {paperRef && (
+                                    <span className="text-[10px] text-dark-text/60 font-mono">{paperRef}</span>
+                                  )}
+                                  {q.marks && (
+                                    <span className="text-[10px] text-warning/70 font-mono">{q.marks}m</span>
+                                  )}
+                                </div>
+                              )}
                             </div>
                           </div>
 

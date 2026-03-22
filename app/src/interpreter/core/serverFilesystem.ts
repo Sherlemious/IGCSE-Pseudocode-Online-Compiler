@@ -72,6 +72,10 @@ export class ServerVirtualFileSystem {
     return file.pointer >= file.lines.length;
   }
 
+  preloadFile(filename: string, content: string): void {
+    this.store.set(filename, content);
+  }
+
   reset(): void {
     this.openFiles.clear();
     this.store.clear();
