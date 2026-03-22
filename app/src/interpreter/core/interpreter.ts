@@ -287,8 +287,18 @@ export class Interpreter {
         this.env.declare(name, arr);
       }
     } else {
-      // Simple variable declaration
-      this.env.declare(name);
+      // Simple variable declaration — initialize with type-appropriate zero value
+      const typeText = ctx.dataType().getText().toUpperCase();
+      let defaultValue;
+      switch (typeText) {
+        case 'INTEGER': defaultValue = mkInteger(0); break;
+        case 'REAL':    defaultValue = mkReal(0.0); break;
+        case 'STRING':  defaultValue = mkString(''); break;
+        case 'CHAR':    defaultValue = mkChar(' '); break;
+        case 'BOOLEAN': defaultValue = mkBoolean(false); break;
+        default:        defaultValue = mkNone();
+      }
+      this.env.declare(name, defaultValue);
     }
   }
 
