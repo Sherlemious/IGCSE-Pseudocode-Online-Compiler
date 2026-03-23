@@ -1,9 +1,11 @@
 import type { Metadata } from 'next';
+import Script from 'next/script';
 import './globals.css';
 import { ThemeProvider } from '../theme/ThemeContext';
 import SessionWrapper from '../components/auth/SessionWrapper';
 import Header from '../components/layout/header';
 import { Toaster } from 'sonner';
+import PostHogProvider from '../components/analytics/PostHogProvider';
 
 const SITE_URL = 'https://pseudocode-compiler.sherlemious.com';
 const DESCRIPTION =
@@ -80,14 +82,28 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
       </head>
+      <Script
+        src="https://www.googletagmanager.com/gtag/js?id=G-8DTBPF97YS"
+        strategy="afterInteractive"
+      />
+      <Script id="gtag-init" strategy="afterInteractive">
+        {`
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){dataLayer.push(arguments);}
+          gtag('js', new Date());
+          gtag('config', 'G-8DTBPF97YS');
+        `}
+      </Script>
       <body className="h-screen flex flex-col overflow-hidden">
-        <SessionWrapper>
-          <ThemeProvider>
-            <Header />
-            <main className="flex-1 min-h-0 flex flex-col overflow-hidden">{children}</main>
-            <Toaster position="top-center" theme="dark" richColors />
-          </ThemeProvider>
-        </SessionWrapper>
+        <PostHogProvider>
+          <SessionWrapper>
+            <ThemeProvider>
+              <Header />
+              <main className="flex-1 min-h-0 flex flex-col overflow-hidden">{children}</main>
+              <Toaster position="top-center" theme="dark" richColors />
+            </ThemeProvider>
+          </SessionWrapper>
+        </PostHogProvider>
       </body>
     </html>
   );
