@@ -15,11 +15,12 @@
  *  - 2nd+ session, anyone:                    "Try an Exam"
  */
 
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { usePostHog } from 'posthog-js/react';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
+import ExamNudgeCard from './ExamNudgeCard';
 
 const LS = {
   usageMs: 'nudge_usage_ms',
@@ -56,6 +57,7 @@ export default function OnboardingNudges() {
   const startRef = useRef<number>(Date.now());
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const dbSyncedRef = useRef(false);
+  const [showExamCard, setShowExamCard] = useState(false);
 
   // Mark nudge shown in localStorage; if authenticated also persist to DB.
   const markShown = useCallback(
@@ -101,8 +103,10 @@ export default function OnboardingNudges() {
       if (totalMs >= THRESHOLDS.practiceMs && !lsGet(LS.practice)) {
         showNudge('practice', 'Ready for a challenge?', 'Test your pseudocode skills with IGCSE-style practice questions.', 'Try Practice', () => router.push('/practice'));
       }
-      if (sessions >= THRESHOLDS.examSession && !lsGet(LS.exam)) {
-        showNudge('exam', 'Simulate a real exam', 'Try a timed IGCSE exam — see how you score under pressure.', 'Start Exam', () => router.push('/exam'), 3_000);
+        if (sessions >= THRESHOLDS.examSession && !lsGet(LS.exam)) {
+        markShown('exam');
+        ph?.capture('nudge_shown', { nudge: 'exam' });
+        setTimeout(() => setShowExamCard(true), 3_000);
       }
       if (totalMs >= THRESHOLDS.shareMs && !lsGet(LS.share)) {
         const SITE_URL = 'https://pseudocode-compiler.sherlemious.com';
@@ -118,6 +122,13 @@ export default function OnboardingNudges() {
     },
     [showNudge],
   );
+
+  // Dev shortcut: ?exam_nudge=1 forces exam nudge card open immediately
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get('exam_nudge') === '1') {
+      setShowExamCard(true);
+    }
+  }, []);
 
   // Sync DB nudge state → localStorage on first authenticated load
   useEffect(() => {
@@ -159,6 +170,19 @@ export default function OnboardingNudges() {
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status]);
+
+  if (showExamCard) {
+    return (
+      <ExamNudgeCard
+        onStart={() => {
+          ph?.capture('nudge_clicked', { nudge: 'exam' });
+          setShowExamCard(false);
+          router.push('/exam');
+        }}
+        onDismiss={() => setShowExamCard(false)}
+      />
+    );
+  }
 
   return null;
 }
