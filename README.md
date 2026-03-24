@@ -49,7 +49,7 @@ See the full [Pseudocode Language Reference](pseudocode.md) for details.
 1. Clone the repository:
    ```bash
    git clone https://github.com/Sherlemious/IGCSE-Pseudocode-Online-Compiler
-   cd IGCSE-Pseudocode-Online-Compiler/frontend
+   cd IGCSE-Pseudocode-Online-Compiler/app
    ```
 
 2. Install dependencies:
