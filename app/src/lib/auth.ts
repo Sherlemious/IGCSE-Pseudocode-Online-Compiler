@@ -4,7 +4,7 @@ import Google from 'next-auth/providers/google';
 import { PrismaAdapter } from '@auth/prisma-adapter';
 // import bcrypt from 'bcryptjs';
 import { prisma } from './prisma';
-import { resend, FROM_ADDRESS } from './resend';
+import { getResend, FROM_ADDRESS } from './resend';
 import { welcomeEmailHtml, welcomeEmailText } from '@/emails/welcome';
 
 const authSecret =
@@ -54,6 +54,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   events: {
     async createUser({ user }) {
       if (!user.email) return;
+      const resend = getResend();
+      if (!resend) return;
       const name = user.name ?? 'Student';
       await resend.emails.send({
         from: FROM_ADDRESS,
