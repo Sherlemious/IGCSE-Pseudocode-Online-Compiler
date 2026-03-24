@@ -15,8 +15,6 @@ import { useState } from 'react';
 import { X } from 'lucide-react';
 import { usePostHog } from 'posthog-js/react';
 
-const SURVEY_ID = 'compiler-feedback-v1';
-const SURVEY_NAME = 'Compiler Feedback';
 const LS_KEY = 'feedback_survey_shown';
 
 const RATINGS = [1, 2, 3, 4, 5] as const;
@@ -45,11 +43,9 @@ export default function FeedbackSurvey({ onDismiss }: Props) {
 
   const submit = () => {
     if (!rating) return;
-    ph?.capture('survey sent', {
-      $survey_id: SURVEY_ID,
-      $survey_name: SURVEY_NAME,
-      $survey_response: rating,
-      $survey_response_comment: comment.trim() || undefined,
+    ph?.capture('feedback_submitted', {
+      rating,
+      comment: comment.trim() || undefined,
     });
     try { localStorage.setItem(LS_KEY, 'true'); } catch { /* ignore */ }
     setSubmitted(true);
