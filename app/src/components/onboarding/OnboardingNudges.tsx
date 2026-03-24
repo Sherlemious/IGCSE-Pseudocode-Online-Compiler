@@ -13,13 +13,15 @@
  *  - 90 s cumulative usage, unauthenticated:  sign-up prompt
  *  - 15 min cumulative usage, anyone:         "Try Practice"
  *  - 2nd+ session, anyone:                    "Try an Exam"
+ *  - 25 min cumulative usage, anyone:         "Share with classmates"
  */
 
 import { useEffect, useRef, useCallback, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { usePostHog } from 'posthog-js/react';
-import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
+import { UserPlus, GraduationCap, Share2, Clock } from 'lucide-react';
+import NudgeCard from './NudgeCard';
 import ExamNudgeCard from './ExamNudgeCard';
 
 const LS = {
@@ -32,23 +34,20 @@ const LS = {
 } as const;
 
 type NudgeKey = 'signup' | 'practice' | 'exam' | 'share';
+type ActiveNudge = NudgeKey | null;
 
 const THRESHOLDS = {
   signupMs: 90_000,
   practiceMs: 15 * 60_000,
   examSession: 2,
-  shareMs: 25 * 60_000, // 25 min — they've invested enough to care
+  shareMs: 25 * 60_000,
 } as const;
 
-function lsGet(key: string) {
-  return localStorage.getItem(key);
-}
-function lsNum(key: string) {
-  return parseInt(localStorage.getItem(key) ?? '0', 10) || 0;
-}
-function lsSet(key: string, val: string) {
-  localStorage.setItem(key, val);
-}
+const SITE_URL = 'https://pseudocode-compiler.sherlemious.com';
+
+function lsGet(key: string) { return localStorage.getItem(key); }
+function lsNum(key: string) { return parseInt(localStorage.getItem(key) ?? '0', 10) || 0; }
+function lsSet(key: string, val: string) { localStorage.setItem(key, val); }
 
 export default function OnboardingNudges() {
   const { data: session, status } = useSession();
@@ -57,9 +56,8 @@ export default function OnboardingNudges() {
   const startRef = useRef<number>(Date.now());
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const dbSyncedRef = useRef(false);
-  const [showExamCard, setShowExamCard] = useState(false);
+  const [activeNudge, setActiveNudge] = useState<ActiveNudge>(null);
 
-  // Mark nudge shown in localStorage; if authenticated also persist to DB.
   const markShown = useCallback(
     (key: NudgeKey) => {
       lsSet(`nudge_shown_${key}`, '1');
@@ -68,87 +66,78 @@ export default function OnboardingNudges() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ nudge: key }),
-        }).catch(() => {}); // fire-and-forget; localStorage is the fallback
+        }).catch(() => {});
       }
     },
     [session?.user?.id],
   );
 
-  const showNudge = useCallback(
-    (key: NudgeKey, title: string, description: string, label: string, onAction: () => void, delay = 0) => {
+  const triggerNudge = useCallback(
+    (key: NudgeKey, delay = 0) => {
       markShown(key);
       ph?.capture('nudge_shown', { nudge: key });
-      setTimeout(() => {
-        toast(title, {
-          description,
-          duration: 14_000,
-          action: {
-            label,
-            onClick: () => {
-              ph?.capture('nudge_clicked', { nudge: key });
-              onAction();
-            },
-          },
-        });
-      }, delay);
+      setTimeout(() => setActiveNudge(key), delay);
     },
     [markShown, ph],
+  );
+
+  const dismissNudge = useCallback(() => setActiveNudge(null), []);
+
+  const handleCta = useCallback(
+    (key: NudgeKey, action: () => void) => {
+      ph?.capture('nudge_clicked', { nudge: key });
+      setActiveNudge(null);
+      action();
+    },
+    [ph],
   );
 
   const checkNudges = useCallback(
     (totalMs: number, sessions: number, isAuthed: boolean) => {
       if (!isAuthed && totalMs >= THRESHOLDS.signupMs && !lsGet(LS.signup)) {
-        showNudge('signup', 'Save your code anywhere', 'Create a free account to save your code across devices, track progress, and unlock practice questions.', 'Sign up free', () => router.push('/auth/signup'));
+        triggerNudge('signup');
+        return;
       }
       if (totalMs >= THRESHOLDS.practiceMs && !lsGet(LS.practice)) {
-        showNudge('practice', 'Ready for a challenge?', 'Test your pseudocode skills with IGCSE-style practice questions.', 'Try Practice', () => router.push('/practice'));
+        triggerNudge('practice');
+        return;
       }
-        if (sessions >= THRESHOLDS.examSession && !lsGet(LS.exam)) {
-        markShown('exam');
-        ph?.capture('nudge_shown', { nudge: 'exam' });
-        setTimeout(() => setShowExamCard(true), 3_000);
+      if (sessions >= THRESHOLDS.examSession && !lsGet(LS.exam)) {
+        triggerNudge('exam', 3_000);
+        return;
       }
       if (totalMs >= THRESHOLDS.shareMs && !lsGet(LS.share)) {
-        const SITE_URL = 'https://pseudocode-compiler.sherlemious.com';
-        const text = `If you're studying IGCSE Computer Science, this free pseudocode compiler is worth checking out.\n${SITE_URL}`;
-        showNudge('share', 'Know someone studying IGCSE CS?', "Share this tool with classmates or your teacher — it's completely free.", 'Share now', () => {
-          if (navigator.share) {
-            navigator.share({ title: 'IGCSE Pseudocode Compiler', text, url: SITE_URL }).catch(() => {});
-          } else {
-            navigator.clipboard.writeText(SITE_URL).catch(() => {});
-          }
-        }, 6_000);
+        triggerNudge('share', 6_000);
+        return;
       }
     },
-    [showNudge],
+    [triggerNudge],
   );
 
-  // Dev shortcut: ?exam_nudge=1 forces exam nudge card open immediately
+  // Dev shortcuts
   useEffect(() => {
-    if (new URLSearchParams(window.location.search).get('exam_nudge') === '1') {
-      setShowExamCard(true);
-    }
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('exam_nudge') === '1') setActiveNudge('exam');
+    if (params.get('signup_nudge') === '1') setActiveNudge('signup');
+    if (params.get('practice_nudge') === '1') setActiveNudge('practice');
+    if (params.get('share_nudge') === '1') setActiveNudge('share');
   }, []);
 
   // Sync DB nudge state → localStorage on first authenticated load
   useEffect(() => {
     if (status !== 'authenticated' || dbSyncedRef.current) return;
     dbSyncedRef.current = true;
-
     fetch('/api/nudges')
       .then((r) => r.json())
       .then(({ nudgesShown }: { nudgesShown: string[] }) => {
-        for (const key of nudgesShown) {
-          lsSet(`nudge_shown_${key}`, '1'); // DB wins — suppress locally too
-        }
+        for (const key of nudgesShown) lsSet(`nudge_shown_${key}`, '1');
       })
-      .catch(() => {}); // non-critical; fall back to localStorage
+      .catch(() => {});
   }, [status]);
 
   // Usage accumulator + threshold checks
   useEffect(() => {
     if (status === 'loading') return;
-
     const sessions = lsNum(LS.sessionCount) + 1;
     lsSet(LS.sessionCount, String(sessions));
 
@@ -160,7 +149,6 @@ export default function OnboardingNudges() {
       checkNudges(total, sessions, status === 'authenticated');
     }, 30_000);
 
-    // Check immediately for returning users already past thresholds
     checkNudges(lsNum(LS.usageMs), sessions, status === 'authenticated');
 
     return () => {
@@ -171,15 +159,60 @@ export default function OnboardingNudges() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status]);
 
-  if (showExamCard) {
+  if (activeNudge === 'signup') {
+    return (
+      <NudgeCard
+        icon={UserPlus}
+        title="Save your code anywhere"
+        description="Create a free account to save your code across devices, track your progress, and unlock practice questions."
+        ctaLabel="Sign up free"
+        onCta={() => handleCta('signup', () => router.push('/auth/signup'))}
+        onDismiss={dismissNudge}
+      />
+    );
+  }
+
+  if (activeNudge === 'practice') {
+    return (
+      <NudgeCard
+        icon={GraduationCap}
+        title="Ready for a challenge?"
+        description="Test your pseudocode skills with IGCSE-style practice questions — instant feedback on every attempt."
+        ctaLabel="Try Practice"
+        onCta={() => handleCta('practice', () => router.push('/practice'))}
+        onDismiss={dismissNudge}
+      />
+    );
+  }
+
+  if (activeNudge === 'exam') {
     return (
       <ExamNudgeCard
-        onStart={() => {
-          ph?.capture('nudge_clicked', { nudge: 'exam' });
-          setShowExamCard(false);
-          router.push('/exam');
-        }}
-        onDismiss={() => setShowExamCard(false)}
+        onStart={() => handleCta('exam', () => router.push('/exam'))}
+        onDismiss={dismissNudge}
+      />
+    );
+  }
+
+  if (activeNudge === 'share') {
+    return (
+      <NudgeCard
+        icon={Share2}
+        title="Know someone studying IGCSE CS?"
+        description="Share this free tool with classmates or your teacher — it works on any device, no install needed."
+        meta={SITE_URL.replace('https://', '')}
+        ctaLabel="Share now"
+        onCta={() =>
+          handleCta('share', () => {
+            const text = `If you're studying IGCSE Computer Science, this free pseudocode compiler is worth checking out.\n${SITE_URL}`;
+            if (navigator.share) {
+              navigator.share({ title: 'IGCSE Pseudocode Compiler', text, url: SITE_URL }).catch(() => {});
+            } else {
+              navigator.clipboard.writeText(SITE_URL).catch(() => {});
+            }
+          })
+        }
+        onDismiss={dismissNudge}
       />
     );
   }
