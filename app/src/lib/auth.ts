@@ -4,6 +4,8 @@ import Google from 'next-auth/providers/google';
 import { PrismaAdapter } from '@auth/prisma-adapter';
 // import bcrypt from 'bcryptjs';
 import { prisma } from './prisma';
+import { resend, FROM_ADDRESS } from './resend';
+import { welcomeEmailHtml, welcomeEmailText } from '@/emails/welcome';
 
 const authSecret =
   process.env.AUTH_SECRET ??
@@ -48,6 +50,19 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   ],
   pages: {
     signIn: '/auth/signin',
+  },
+  events: {
+    async createUser({ user }) {
+      if (!user.email) return;
+      const name = user.name ?? 'Student';
+      await resend.emails.send({
+        from: FROM_ADDRESS,
+        to: user.email,
+        subject: 'Welcome to the IGCSE Pseudocode Compiler',
+        html: welcomeEmailHtml(name),
+        text: welcomeEmailText(name),
+      }).catch(() => {}); // non-critical — don't break sign-in if email fails
+    },
   },
   callbacks: {
     async jwt({ token, user }) {

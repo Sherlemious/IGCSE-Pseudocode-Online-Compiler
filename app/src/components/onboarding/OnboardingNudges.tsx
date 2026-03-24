@@ -98,7 +98,7 @@ export default function OnboardingNudges() {
   const checkNudges = useCallback(
     (totalMs: number, sessions: number, isAuthed: boolean) => {
       if (!isAuthed && totalMs >= THRESHOLDS.signupMs && !lsGet(LS.signup)) {
-        showNudge('signup', 'Track your progress', 'Create a free account to save progress and unlock practice questions.', 'Sign up free', () => router.push('/auth/signup'));
+        showNudge('signup', 'Save your code anywhere', 'Create a free account to save your code across devices, track progress, and unlock practice questions.', 'Sign up free', () => router.push('/auth/signup'));
       }
       if (totalMs >= THRESHOLDS.practiceMs && !lsGet(LS.practice)) {
         showNudge('practice', 'Ready for a challenge?', 'Test your pseudocode skills with IGCSE-style practice questions.', 'Try Practice', () => router.push('/practice'));
