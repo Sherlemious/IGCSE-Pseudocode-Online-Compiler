@@ -4,7 +4,8 @@ import { useSession, signIn, signOut } from 'next-auth/react';
 import { useState, useRef, useEffect } from 'react';
 import { usePostHog } from 'posthog-js/react';
 import Image from 'next/image';
-import { LogIn, LogOut, User, Crown } from 'lucide-react';
+import { LogIn, LogOut, User, Crown, BarChart3 } from 'lucide-react';
+import Link from 'next/link';
 import { PREMIUM_GATING_ENABLED } from '@/lib/featureFlags';
 
 export default function UserMenu() {
@@ -113,6 +114,15 @@ export default function UserMenu() {
                   Premium coming soon
                 </div>
               ))}
+            <Link
+              href="/analytics"
+              onClick={() => setOpen(false)}
+              className="w-full flex items-center gap-2 px-3 py-2 text-xs text-dark-text hover:text-light-text hover:bg-background transition-colors"
+            >
+              <BarChart3 size={13} />
+              Analytics
+            </Link>
+            <div className="my-1 border-t border-border/40" />
             <button
               onClick={() => {
                 setOpen(false);

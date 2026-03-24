@@ -14,7 +14,6 @@ import {
   Keyboard,
   GraduationCap,
   Clock,
-  BarChart3,
   ArrowLeft,
 } from 'lucide-react';
 import SettingsPanel from './settingsPanel';
@@ -50,7 +49,6 @@ const Header: React.FC = () => {
   const isDocs = pathname === '/docs' || pathname.startsWith('/docs/');
   const isPractice = pathname === '/practice' || pathname.startsWith('/practice/');
   const isExam = pathname === '/exam' || pathname.startsWith('/exam/');
-  const isAnalytics = pathname === '/analytics';
   const isCompilerPage = pathname === '/';
 
   useEffect(() => {
@@ -125,16 +123,6 @@ const Header: React.FC = () => {
               >
                 <Clock size={13} />
                 Exam
-              </Link>
-              <Link
-                href="/analytics"
-                onClick={() => trackNav('analytics')}
-                className={`flex items-center gap-1 px-2 py-1 rounded hover:text-header-text hover:bg-white/10 transition duration-200 ${
-                  isAnalytics ? 'text-primary' : 'text-header-text/70'
-                }`}
-              >
-                <BarChart3 size={13} />
-                Analytics
               </Link>
               <a
                 href="https://github.com/Sherlemious/IGCSE-Pseudocode-Online-Compiler"
@@ -221,16 +209,6 @@ const Header: React.FC = () => {
               >
                 <Clock size={14} />
                 Exam
-              </Link>
-              <Link
-                href="/analytics"
-                className={`flex items-center gap-2 hover:text-header-text transition duration-200 py-1.5 px-1 rounded hover:bg-white/10 ${
-                  isAnalytics ? 'text-primary' : 'text-header-text/70'
-                }`}
-                onClick={() => { setIsMenuOpen(false); trackNav('analytics'); }}
-              >
-                <BarChart3 size={14} />
-                Analytics
               </Link>
               <a
                 href="https://github.com/Sherlemious/IGCSE-Pseudocode-Online-Compiler"
