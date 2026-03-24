@@ -90,6 +90,10 @@ const CompilerPage: React.FC = () => {
     const code = loadInitialCode();
     savedCode.current = code;
     setTabs([{ id: 'main', name: 'main.pseudo', content: code }]);
+    // Dev shortcut: ?survey=1 forces the feedback survey open immediately
+    if (new URLSearchParams(window.location.search).get('survey') === '1') {
+      setTimeout(() => setShowFeedback(true), 500);
+    }
   }, []);
 
   const activeTab = tabs.find((t) => t.id === activeTabId) ?? tabs[0];
