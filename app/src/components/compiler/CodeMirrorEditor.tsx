@@ -211,7 +211,11 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
       '&': {
         fontSize: 'var(--editor-font-size)',
         height: '100%',
+        width: '100%',
         backgroundColor: 'var(--color-background)',
+      },
+      '&.cm-editor': {
+        minWidth: '0',
       },
       '.cm-content': {
         fontFamily: '"Fira Code Variable", "Fira Code", monospace',
@@ -427,7 +431,7 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
     });
   }, [debugLine]);
 
-  return <div ref={editorRef} className="flex-1 min-w-0" />;
+  return <div ref={editorRef} className="flex-1 min-w-0 overflow-hidden" />;
 };
 
 export default CodeMirrorEditor;

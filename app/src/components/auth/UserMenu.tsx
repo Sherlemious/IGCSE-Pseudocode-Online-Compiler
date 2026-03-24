@@ -2,6 +2,7 @@
 
 import { useSession, signIn, signOut } from 'next-auth/react';
 import { useState, useRef, useEffect } from 'react';
+import { usePostHog } from 'posthog-js/react';
 import Image from 'next/image';
 import { LogIn, LogOut, User, Crown } from 'lucide-react';
 import { PREMIUM_GATING_ENABLED } from '@/lib/featureFlags';
@@ -9,6 +10,7 @@ import { PREMIUM_GATING_ENABLED } from '@/lib/featureFlags';
 export default function UserMenu() {
   const { data: session, status } = useSession();
   const [open, setOpen] = useState(false);
+  const ph = usePostHog();
   const [avatarLoadFailed, setAvatarLoadFailed] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -31,7 +33,10 @@ export default function UserMenu() {
   if (!session) {
     return (
       <button
-        onClick={() => signIn()}
+        onClick={() => {
+          ph?.capture('sign_in_clicked', { source: 'header' });
+          signIn();
+        }}
         className="flex items-center gap-1.5 px-2 py-1 rounded text-xs text-header-text/70
           hover:text-header-text hover:bg-white/10 transition duration-200"
       >

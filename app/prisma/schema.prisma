@@ -23,6 +23,7 @@ model User {
   image         String?
   password      String?   @db.Text
   plan          Plan      @default(FREE)
+  nudgesShown   String[]  @default([])
 
   accounts     Account[]
   sessions     Session[]

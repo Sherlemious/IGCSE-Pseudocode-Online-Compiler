@@ -83,8 +83,12 @@ const CodeInput: React.FC<CodeInputProps> = ({
   useEffect(() => {
     try {
       if (!localStorage.getItem(SHORTCUT_HINT_KEY)) {
-        const timer = setTimeout(() => setShowShortcutHint(true), 2500);
-        return () => clearTimeout(timer);
+        const showTimer = setTimeout(() => setShowShortcutHint(true), 2500);
+        const hideTimer = setTimeout(() => {
+          setShowShortcutHint(false);
+          try { localStorage.setItem(SHORTCUT_HINT_KEY, 'true'); } catch { /* ignore */ }
+        }, 5 * 60_000);
+        return () => { clearTimeout(showTimer); clearTimeout(hideTimer); };
       }
     } catch { /* ignore */ }
   }, []);

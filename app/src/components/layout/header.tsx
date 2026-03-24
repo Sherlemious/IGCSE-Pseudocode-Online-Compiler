@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { usePostHog } from 'posthog-js/react';
 import { siGithub } from 'simple-icons/icons';
 import {
   Menu,
@@ -18,6 +19,7 @@ import {
 } from 'lucide-react';
 import SettingsPanel from './settingsPanel';
 import UserMenu from '../auth/UserMenu';
+import ShareButton from '../share/ShareButton';
 
 const SHORTCUTS = [
   { keys: 'Ctrl + Enter', desc: 'Run code' },
@@ -37,6 +39,14 @@ const Header: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [showShortcuts, setShowShortcuts] = useState(false);
   const pathname = usePathname();
+  const ph = usePostHog();
+
+  const trackNav = useCallback(
+    (destination: string) => {
+      ph?.capture('nav_clicked', { destination, from: pathname });
+    },
+    [ph, pathname],
+  );
   const isDocs = pathname === '/docs' || pathname.startsWith('/docs/');
   const isPractice = pathname === '/practice' || pathname.startsWith('/practice/');
   const isExam = pathname === '/exam' || pathname.startsWith('/exam/');
@@ -87,6 +97,7 @@ const Header: React.FC = () => {
               <Link
                 href="/docs"
                 data-tour="docs-link"
+                onClick={() => trackNav('docs')}
                 className={`flex items-center gap-1 px-2 py-1 rounded hover:text-header-text hover:bg-white/10 transition duration-200 ${
                   isDocs ? 'text-primary' : 'text-header-text/70'
                 }`}
@@ -97,6 +108,7 @@ const Header: React.FC = () => {
               <Link
                 href="/practice"
                 data-tour="practice-link"
+                onClick={() => trackNav('practice')}
                 className={`flex items-center gap-1 px-2 py-1 rounded hover:text-header-text hover:bg-white/10 transition duration-200 ${
                   isPractice ? 'text-primary' : 'text-header-text/70'
                 }`}
@@ -106,6 +118,7 @@ const Header: React.FC = () => {
               </Link>
               <Link
                 href="/exam"
+                onClick={() => trackNav('exam')}
                 className={`flex items-center gap-1 px-2 py-1 rounded hover:text-header-text hover:bg-white/10 transition duration-200 ${
                   isExam ? 'text-primary' : 'text-header-text/70'
                 }`}
@@ -115,6 +128,7 @@ const Header: React.FC = () => {
               </Link>
               <Link
                 href="/analytics"
+                onClick={() => trackNav('analytics')}
                 className={`flex items-center gap-1 px-2 py-1 rounded hover:text-header-text hover:bg-white/10 transition duration-200 ${
                   isAnalytics ? 'text-primary' : 'text-header-text/70'
                 }`}
@@ -140,6 +154,8 @@ const Header: React.FC = () => {
                 <ExternalLink size={12} />
                 Portfolio
               </a>
+              <div className="w-px h-4 bg-header-text/20 mx-1" />
+              <ShareButton compact />
               <div className="w-px h-4 bg-header-text/20 mx-1" />
               <button
                 onClick={() => setShowShortcuts(true)}
@@ -181,7 +197,7 @@ const Header: React.FC = () => {
                 className={`flex items-center gap-2 hover:text-header-text transition duration-200 py-1.5 px-1 rounded hover:bg-white/10 ${
                   isDocs ? 'text-primary' : 'text-header-text/70'
                 }`}
-                onClick={() => setIsMenuOpen(false)}
+                onClick={() => { setIsMenuOpen(false); trackNav('docs'); }}
               >
                 <BookOpen size={14} />
                 Docs
@@ -191,7 +207,7 @@ const Header: React.FC = () => {
                 className={`flex items-center gap-2 hover:text-header-text transition duration-200 py-1.5 px-1 rounded hover:bg-white/10 ${
                   isPractice ? 'text-primary' : 'text-header-text/70'
                 }`}
-                onClick={() => setIsMenuOpen(false)}
+                onClick={() => { setIsMenuOpen(false); trackNav('practice'); }}
               >
                 <GraduationCap size={14} />
                 Practice
@@ -201,7 +217,7 @@ const Header: React.FC = () => {
                 className={`flex items-center gap-2 hover:text-header-text transition duration-200 py-1.5 px-1 rounded hover:bg-white/10 ${
                   isExam ? 'text-primary' : 'text-header-text/70'
                 }`}
-                onClick={() => setIsMenuOpen(false)}
+                onClick={() => { setIsMenuOpen(false); trackNav('exam'); }}
               >
                 <Clock size={14} />
                 Exam
@@ -211,7 +227,7 @@ const Header: React.FC = () => {
                 className={`flex items-center gap-2 hover:text-header-text transition duration-200 py-1.5 px-1 rounded hover:bg-white/10 ${
                   isAnalytics ? 'text-primary' : 'text-header-text/70'
                 }`}
-                onClick={() => setIsMenuOpen(false)}
+                onClick={() => { setIsMenuOpen(false); trackNav('analytics'); }}
               >
                 <BarChart3 size={14} />
                 Analytics

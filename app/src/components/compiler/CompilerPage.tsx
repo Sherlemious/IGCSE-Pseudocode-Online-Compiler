@@ -5,9 +5,13 @@ import CodeInput, { type EditorTab, type CursorPosition } from './codeInput';
 import OutputDisplay from './outputDisplay';
 import Footer from '../layout/footer';
 import OnboardingTour from '../onboarding/OnboardingTour';
+import FeedbackSurvey, { shouldShowFeedbackSurvey } from '../feedback/FeedbackSurvey';
 import { useInterpreter } from '../../interpreter/useInterpreter';
 import { toast } from 'sonner';
 import { AUTOSAVE_KEY, FILE_PREFIX, AUTOSAVE_DELAY, ONBOARDING_KEY } from '../../utils/constants';
+
+const FEEDBACK_RUN_THRESHOLD = 2;
+const FEEDBACK_RUN_LS_KEY = 'compiler_run_count';
 
 function loadInitialCode(): string {
   try {
@@ -59,6 +63,8 @@ const CompilerPage: React.FC = () => {
   const [isRunning, setIsRunning] = useState(false);
   const [cursor, setCursor] = useState<CursorPosition | undefined>();
   const [lineCount, setLineCount] = useState(1);
+  const [showFeedback, setShowFeedback] = useState(false);
+  const feedbackShownRef = useRef(false);
 
   const {
     entries,
@@ -203,9 +209,31 @@ const CompilerPage: React.FC = () => {
     setActiveTabId(tabId);
   }, []);
 
+  const triggerFeedback = useCallback(() => {
+    if (!feedbackShownRef.current && shouldShowFeedbackSurvey()) {
+      feedbackShownRef.current = true;
+      setShowFeedback(true);
+    }
+  }, []);
+
+  // 20-minute time-based survey trigger
+  useEffect(() => {
+    const timer = setTimeout(triggerFeedback, 20 * 60_000);
+    return () => clearTimeout(timer);
+  }, [triggerFeedback]);
+
   const handleRunCode = async () => {
     if (!activeTab.content.trim()) return;
     await run(activeTab.content);
+
+    // Track run count and trigger feedback survey after threshold
+    try {
+      const count = (parseInt(localStorage.getItem(FEEDBACK_RUN_LS_KEY) ?? '0', 10) || 0) + 1;
+      localStorage.setItem(FEEDBACK_RUN_LS_KEY, String(count));
+      if (count >= FEEDBACK_RUN_THRESHOLD) {
+        setTimeout(triggerFeedback, 1500);
+      }
+    } catch { /* ignore */ }
   };
 
   const handleDebugCode = async () => {
@@ -266,6 +294,7 @@ const CompilerPage: React.FC = () => {
       </div>
       <Footer isRunning={isRunning} cursor={cursor} lineCount={lineCount} />
       <OnboardingTour />
+      {showFeedback && <FeedbackSurvey onDismiss={() => setShowFeedback(false)} />}
     </div>
   );
 };

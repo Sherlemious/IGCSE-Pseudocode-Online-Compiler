@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { Clock, ArrowLeft, CheckCircle, XCircle, RotateCcw, Minus } from 'lucide-react';
+import ExamShareButton from '@/components/share/ExamShareButton';
 
 export const metadata: Metadata = { title: 'Exam Results' };
 
@@ -126,6 +127,11 @@ export default async function ExamResultsPage({ params }: Props) {
               {exam.difficulty && ` / ${exam.difficulty}`}
             </div>
           )}
+        </div>
+
+        {/* Share */}
+        <div className="mb-6 animate-fade-in-up" style={{ animationDelay: '100ms' }}>
+          <ExamShareButton percentage={percentage} topic={exam.topic} />
         </div>
 
         {/* Per-question breakdown */}

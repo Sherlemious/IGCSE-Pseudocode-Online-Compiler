@@ -6,6 +6,8 @@ import SessionWrapper from '../components/auth/SessionWrapper';
 import Header from '../components/layout/header';
 import { Toaster } from 'sonner';
 import PostHogProvider from '../components/analytics/PostHogProvider';
+import SessionIdentifier from '../components/analytics/SessionIdentifier';
+import OnboardingNudges from '../components/onboarding/OnboardingNudges';
 
 const SITE_URL = 'https://pseudocode-compiler.sherlemious.com';
 const DESCRIPTION =
@@ -97,6 +99,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="h-screen flex flex-col overflow-hidden">
         <PostHogProvider>
           <SessionWrapper>
+            <SessionIdentifier />
+            <OnboardingNudges />
             <ThemeProvider>
               <Header />
               <main className="flex-1 min-h-0 flex flex-col overflow-hidden">{children}</main>

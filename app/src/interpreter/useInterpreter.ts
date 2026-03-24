@@ -1,6 +1,24 @@
 import { useState, useRef, useCallback } from 'react';
+import posthog from 'posthog-js';
 import { Interpreter, parse, PseudocodeError } from './index';
 import type { OutputEntry, DebugVariable } from './core/types';
+import { humanizeParseError, humanizeRuntimeError } from './errorMessages';
+
+function captureError(
+  errorType: 'parse' | 'runtime',
+  message: string,
+  line: number | null | undefined,
+  codeLines: number,
+) {
+  try {
+    posthog.capture('interpreter_error', {
+      error_type: errorType,
+      error_message: message,
+      line: line ?? null,
+      code_lines: codeLines,
+    });
+  } catch { /* non-critical */ }
+}
 
 export function useInterpreter() {
   const [entries, setEntries] = useState<OutputEntry[]>([]);
@@ -69,10 +87,12 @@ export function useInterpreter() {
       const { tree, errors } = parse(sourceCode);
 
       if (errors.length > 0) {
+        const codeLines = sourceCode.split('\n').length;
+        errors.forEach((e) => captureError('parse', e.message, e.line, codeLines));
         setEntries(
           errors.map((e) => ({
             kind: 'error' as const,
-            text: `Line ${e.line ?? '?'}:${e.column ?? '?'} — ${e.message}`,
+            text: `Line ${e.line ?? '?'} — ${humanizeParseError(e.message)}`,
           }))
         );
         // Mark first error line
@@ -117,14 +137,15 @@ export function useInterpreter() {
           },
           onError(error: PseudocodeError) {
             flushOutputSync();
+            captureError('runtime', error.message, error.line, sourceCode.split('\n').length);
             if (error.line != null) setErrorLine(error.line);
             setEntries((prev) => [
               ...prev,
               {
                 kind: 'error',
                 text: error.line
-                  ? `Runtime error at line ${error.line}: ${error.message}`
-                  : `Runtime error: ${error.message}`,
+                  ? `Line ${error.line} — ${humanizeRuntimeError(error.message)}`
+                  : humanizeRuntimeError(error.message),
               },
             ]);
           },
@@ -152,15 +173,19 @@ export function useInterpreter() {
         flushOutputSync();
 
         if (e instanceof PseudocodeError) {
+          captureError('runtime', e.message, e.line, sourceCode.split('\n').length);
           if (e.line != null) setErrorLine(e.line);
           setEntries((prev) => [
             ...prev,
             {
               kind: 'error',
-              text: e.line ? `Runtime error at line ${e.line}: ${e.message}` : `Runtime error: ${e.message}`,
+              text: e.line
+                ? `Line ${e.line} — ${humanizeRuntimeError(e.message)}`
+                : humanizeRuntimeError(e.message),
             },
           ]);
         } else if (e instanceof Error && e.message !== 'Execution cancelled') {
+          captureError('runtime', e.message, null, sourceCode.split('\n').length);
           setEntries((prev) => [...prev, { kind: 'error', text: `Error: ${e.message}` }]);
         }
         setIsRunning(false);
