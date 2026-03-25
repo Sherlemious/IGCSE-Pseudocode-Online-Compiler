@@ -28,6 +28,7 @@ const readOnlyCompartment = new Compartment();
 const gutterCompartment = new Compartment();
 const ariaLabelCompartment = new Compartment();
 const wrapCompartment = new Compartment();
+const fontSizeCompartment = new Compartment();
 
 // Define StateEffect for line highlighting
 const setLineHighlight = StateEffect.define<{ debugLine: number | null; errorLine: number | null }>();
@@ -214,7 +215,6 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
     // Custom theme
     const customTheme = EditorView.theme({
       '&': {
-        fontSize: 'var(--editor-font-size)',
         height: '100%',
         width: '100%',
         backgroundColor: 'var(--color-background)',
@@ -366,6 +366,7 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
         breakpointField,
         readOnlyCompartment.of(EditorState.readOnly.of(readOnly)),
         wrapCompartment.of(wordWrap ? EditorView.lineWrapping : []),
+        fontSizeCompartment.of(EditorView.theme({ '&': { fontSize: `${fontSize}px` } })),
         EditorView.updateListener.of((update) => {
           if (update.docChanged) {
             onChangeRef.current(update.state.doc.toString());
@@ -433,10 +434,12 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
     });
   }, [wordWrap]);
 
-  // Remeasure gutter alignment when font size changes
+  // Reconfigure font size so CodeMirror remeasures gutter alignment
   useEffect(() => {
     if (!viewRef.current) return;
-    viewRef.current.requestMeasure();
+    viewRef.current.dispatch({
+      effects: fontSizeCompartment.reconfigure(EditorView.theme({ '&': { fontSize: `${fontSize}px` } })),
+    });
   }, [fontSize]);
 
   // Scroll debug line into view
