@@ -158,13 +158,6 @@ const Header: React.FC = () => {
 
             {/* Mobile */}
             <div className="md:hidden flex items-center gap-1">
-              <button
-                onClick={() => setShowShortcuts(true)}
-                className="p-1 rounded hover:bg-white/10 transition duration-200 text-header-text/70 hover:text-header-text"
-                title="Keyboard Shortcuts"
-              >
-                <Keyboard size={14} />
-              </button>
               <SettingsPanel />
               <UserMenu />
               <button
