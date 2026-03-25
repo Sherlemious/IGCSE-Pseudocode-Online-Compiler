@@ -32,7 +32,7 @@
     "antlr4ng": "^3.0.16",
     "bcryptjs": "^3.0.3",
     "lucide-react": "^0.577.0",
-    "next": "16.1.6",
+    "next": "16.2.1",
     "next-auth": "^5.0.0-beta.30",
     "posthog-js": "^1.363.1",
     "prisma": "^6.19.2",
@@ -46,7 +46,8 @@
     "tailwind-scrollbar": "^4.0.2"
   },
   "overrides": {
-    "effect": "^3.21.0"
+    "effect": "^3.21.0",
+    "picomatch": "^4.0.4"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
@@ -55,7 +56,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9.38.0",
-    "eslint-config-next": "^16.1.6",
+    "eslint-config-next": "^16.2.1",
     "tailwindcss": "^4",
     "tsx": "^4.21.0",
     "typescript": "^5"
