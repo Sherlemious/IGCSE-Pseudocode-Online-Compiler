@@ -87,6 +87,46 @@ const WRONG_TOKENS: Record<string, string> = {
   ':=':    'Use ← (or <-) for assignment, not :=\n  Example: x ← 5',
 };
 
+/**
+ * Portugol/VisualG keywords mapped to their IGCSE equivalents.
+ * Keys are lowercase; values are the replacement hint.
+ */
+const PORTUGOL_TOKENS: Record<string, string> = {
+  escreval:     'OUTPUT',
+  escreva:      'OUTPUT',
+  imprima:      'OUTPUT',
+  leia:         'INPUT',
+  se:           'IF ... THEN',
+  entao:        'THEN',
+  fimse:        'ENDIF',
+  senao:        'ELSE',
+  enquanto:     'WHILE ... DO',
+  faca:         'DO',
+  fimenquanto:  'ENDWHILE',
+  para:         'FOR ... TO',
+  fimpara:      'NEXT',
+  repita:       'REPEAT',
+  ate:          'UNTIL',
+  inicio:       '(no BEGIN/INICIO — write statements directly)',
+  algoritmo:    '(no header needed — write statements directly)',
+  programa:     '(no header needed — write statements directly)',
+  procedimento: 'PROCEDURE',
+  funcao:       'FUNCTION',
+  retorne:      'RETURN',
+};
+
+/** If the token (with or without a trailing `(`) is a Portugol keyword, return a hint. */
+function portugolHint(token: string): string | null {
+  const key = token.replace(/\($/, '').toLowerCase();
+  const igcse = PORTUGOL_TOKENS[key];
+  if (!igcse) return null;
+  return (
+    `"${token}" looks like Portugol/VisualG syntax — this compiler uses Cambridge IGCSE pseudocode.\n` +
+    `  Use ${igcse} instead.\n` +
+    `  See the Docs tab for the full IGCSE syntax reference.`
+  );
+}
+
 export function humanizeParseError(rawMessage: string): string {
   const lower = rawMessage.toLowerCase();
 
@@ -128,6 +168,10 @@ export function humanizeParseError(rawMessage: string): string {
     if (token) {
       const tokenUpper = token.toUpperCase();
 
+      // Portugol/VisualG keywords
+      const phint = portugolHint(token);
+      if (phint) return phint;
+
       // Wrong-token list (non-pseudocode keywords)
       const wrongHint = WRONG_TOKENS[token.toLowerCase()] ?? WRONG_TOKENS[token];
       if (wrongHint) return wrongHint;
@@ -152,6 +196,8 @@ export function humanizeParseError(rawMessage: string): string {
   if (lower.includes('no viable alternative')) {
     const token = extractToken(rawMessage);
     if (token) {
+      const phint = portugolHint(token);
+      if (phint) return phint;
       const nearest = nearestKeyword(token);
       if (nearest) return `"${token}" is not recognised — did you mean ${nearest}?`;
     }
@@ -175,7 +221,13 @@ export function humanizeRuntimeError(rawMessage: string): string {
   const notDefined = rawMessage.match(/Variable '([^']+)' is not defined/);
   if (notDefined) {
     const name = notDefined[1];
-    return `'${name}' has not been declared.\n  Declare it before use: DECLARE ${name} : INTEGER`;
+    return (
+      `'${name}' has not been declared. Add a DECLARE statement before using it:\n` +
+      `  DECLARE ${name} : INTEGER   // whole numbers\n` +
+      `  DECLARE ${name} : REAL      // decimals\n` +
+      `  DECLARE ${name} : STRING    // text\n` +
+      `  DECLARE ${name} : BOOLEAN   // TRUE / FALSE`
+    );
   }
 
   // Constant reassignment
