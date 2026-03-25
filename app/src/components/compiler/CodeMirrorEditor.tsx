@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef, useCallback } from 'react';
+import { useTheme } from '../../theme/ThemeContext';
 import {
   EditorView,
   keymap,
@@ -107,6 +108,7 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
   ariaLabel,
   wordWrap = true,
 }) => {
+  const { fontSize } = useTheme();
   const editorRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
   const onChangeRef = useRef(onChange);
@@ -430,6 +432,12 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
       effects: wrapCompartment.reconfigure(wordWrap ? EditorView.lineWrapping : []),
     });
   }, [wordWrap]);
+
+  // Remeasure gutter alignment when font size changes
+  useEffect(() => {
+    if (!viewRef.current) return;
+    viewRef.current.requestMeasure();
+  }, [fontSize]);
 
   // Scroll debug line into view
   useEffect(() => {
