@@ -13,12 +13,14 @@ import {
   Download,
   Share2,
   Check,
+  WrapText,
 } from 'lucide-react';
 import ExamplePicker from './examplePicker';
 import FileViewer from './fileViewer';
 import CodeMirrorEditor from './CodeMirrorEditor';
 
 const SHORTCUT_HINT_KEY = 'pseudocode_seen_shortcut_hint';
+const WORD_WRAP_KEY = 'pseudocode_word_wrap';
 
 export interface EditorTab {
   id: string;
@@ -79,6 +81,17 @@ const CodeInput: React.FC<CodeInputProps> = ({
   const tabsContainerRef = useRef<HTMLDivElement>(null);
   const [shareStatus, setShareStatus] = useState<'idle' | 'copied'>('idle');
   const [showShortcutHint, setShowShortcutHint] = useState(false);
+  const [wordWrap, setWordWrap] = useState(() => {
+    try { return localStorage.getItem(WORD_WRAP_KEY) !== 'false'; } catch { return true; }
+  });
+
+  const toggleWordWrap = useCallback(() => {
+    setWordWrap((v) => {
+      const next = !v;
+      try { localStorage.setItem(WORD_WRAP_KEY, String(next)); } catch { /* ignore */ }
+      return next;
+    });
+  }, []);
 
   useEffect(() => {
     try {
@@ -209,6 +222,14 @@ const CodeInput: React.FC<CodeInputProps> = ({
             >
               {shareStatus === 'copied' ? <Check size={14} className="text-success" /> : <Share2 size={14} />}
             </button>
+            <button
+              onClick={toggleWordWrap}
+              className={`flex items-center justify-center w-7 h-7 rounded transition-colors
+                ${wordWrap ? 'text-primary bg-primary/10' : 'text-dark-text hover:text-light-text hover:bg-background'}`}
+              title={wordWrap ? 'Word wrap on — click to disable' : 'Word wrap off — click to enable'}
+            >
+              <WrapText size={14} />
+            </button>
           </div>
         </div>
 
@@ -298,6 +319,7 @@ const CodeInput: React.FC<CodeInputProps> = ({
           breakpoints={breakpoints}
           onBreakpointToggle={onBreakpointToggle}
           ariaLabel={`Code Editor for ${activeTabName}`}
+          wordWrap={wordWrap}
         />
 
         {code.length === 0 && !isRunning && (
