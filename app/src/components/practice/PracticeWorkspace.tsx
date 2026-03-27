@@ -15,7 +15,6 @@ import {
   XCircle,
   Clock,
   AlertTriangle,
-  Loader2,
   ChevronRight,
   Terminal,
   ClipboardCheck,
@@ -24,6 +23,7 @@ import {
   Lightbulb,
   BookOpen,
   FileText,
+  X,
 } from 'lucide-react';
 
 /* ── Types ──────────────────────────────────────────────── */
@@ -106,6 +106,11 @@ export default function PracticeWorkspace({ questionId, starterCode, savedCode, 
   const [gradingError, setGradingError] = useState<string | null>(null);
   const [showFailuresOnly, setShowFailuresOnly] = useState(false);
 
+  /* ── Confirm dialogs + mobile view + jump to line ───── */
+  const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
+  const [mobileView, setMobileView] = useState<'editor' | 'output'>('editor');
+  const [jumpToLine, setJumpToLine] = useState<number | null>(null);
+
   /* ── Input field (for terminal INPUT prompts) ───────── */
   const [inputValue, setInputValue] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
@@ -167,6 +172,10 @@ export default function PracticeWorkspace({ questionId, starterCode, savedCode, 
       }
       const data: GradeResponse = await res.json();
       setGradeResponse(data);
+      setMobileView('output');
+      window.dispatchEvent(new CustomEvent('practice:graded', {
+        detail: { isSolved: data.passCount === data.totalCount },
+      }));
     } catch {
       setGradingError('Failed to connect to the grading server. Please try again.');
     } finally {
@@ -176,8 +185,7 @@ export default function PracticeWorkspace({ questionId, starterCode, savedCode, 
 
   const handleReset = useCallback(() => {
     if (code === starterCode) return;
-    if (!confirm('Reset to starter code? Your changes will be lost.')) return;
-    setCode(starterCode);
+    setResetConfirmOpen(true);
   }, [code, starterCode]);
 
   const handleInputSubmit = (e: React.FormEvent) => {
@@ -233,6 +241,15 @@ export default function PracticeWorkspace({ questionId, starterCode, savedCode, 
 
   /* ── Derived state ──────────────────────────────────── */
   const busy = isRunning || isGrading;
+
+  /* ── Desktop detection for split pane sizing ─────── */
+  const [isDesktop, setIsDesktop] = useState(false);
+  useEffect(() => {
+    const update = () => setIsDesktop(window.innerWidth >= 1024);
+    update();
+    window.addEventListener('resize', update);
+    return () => window.removeEventListener('resize', update);
+  }, []);
 
   /* ── Render ─────────────────────────────────────────── */
   return (
@@ -328,7 +345,7 @@ export default function PracticeWorkspace({ questionId, starterCode, savedCode, 
             title="Grade (Ctrl+Shift+Enter)"
           >
             {isGrading ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              <span className="inline-block h-3.5 w-3.5 rounded-full border-2 border-primary/30 border-t-primary animate-spin" />
             ) : (
               <ClipboardCheck className="h-3.5 w-3.5" />
             )}
@@ -337,10 +354,40 @@ export default function PracticeWorkspace({ questionId, starterCode, savedCode, 
         </div>
       </div>
 
+      {/* ── Mobile tab switcher ──────────────────────── */}
+      <div className="lg:hidden flex shrink-0 border-b border-border bg-surface">
+        <button
+          onClick={() => setMobileView('editor')}
+          className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs font-medium transition-colors ${
+            mobileView === 'editor' ? 'text-light-text border-b-2 border-primary' : 'text-dark-text'
+          }`}
+        >
+          <FileText className="h-3 w-3" />
+          Editor
+        </button>
+        <button
+          onClick={() => setMobileView('output')}
+          className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs font-medium transition-colors ${
+            mobileView === 'output' ? 'text-light-text border-b-2 border-primary' : 'text-dark-text'
+          }`}
+        >
+          <Terminal className="h-3 w-3" />
+          Output
+          {gradeResponse && (
+            <span className={`text-[10px] font-mono font-semibold ${gradeResponse.passCount === gradeResponse.totalCount ? 'text-success' : 'text-warning'}`}>
+              {gradeResponse.passCount}/{gradeResponse.totalCount}
+            </span>
+          )}
+        </button>
+      </div>
+
       {/* ── Editor + Output split ────────────────────── */}
       <div ref={containerRef} className="flex-1 min-h-0 flex flex-col">
         {/* Editor */}
-        <div className="min-h-0 flex overflow-hidden" style={{ flex: `0 0 ${splitPercent}%` }}>
+        <div
+          className={mobileView === 'output' ? 'hidden lg:flex min-h-0 overflow-hidden' : 'flex min-h-0 overflow-hidden'}
+          style={isDesktop ? { flex: `0 0 ${splitPercent}%` } : { flex: '1' }}
+        >
           <CodeMirrorEditor
             value={code}
             onChange={setCode}
@@ -353,18 +400,20 @@ export default function PracticeWorkspace({ questionId, starterCode, savedCode, 
             breakpoints={breakpoints}
             onBreakpointToggle={toggleBreakpoint}
             ariaLabel="Practice Code Editor"
+            jumpToLine={jumpToLine}
+            onJumpToLineConsumed={() => setJumpToLine(null)}
           />
         </div>
 
-        {/* Drag handle */}
+        {/* Drag handle - desktop only */}
         <div
-          className="shrink-0 h-1 w-full bg-border hover:bg-primary transition-colors cursor-row-resize"
+          className="hidden lg:block shrink-0 h-1 w-full bg-border hover:bg-primary transition-colors cursor-row-resize"
           onMouseDown={handleDragStart}
           onTouchStart={handleDragStart}
         />
 
         {/* Output panel */}
-        <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+        <div className={`min-h-0 flex-col overflow-hidden ${mobileView === 'editor' ? 'hidden lg:flex' : 'flex'} flex-1`}>
           {/* Tab bar */}
           <div className="h-8 bg-surface border-b border-border flex items-center justify-between px-2 shrink-0">
             <div className="flex items-center gap-0.5">
@@ -400,7 +449,7 @@ export default function PracticeWorkspace({ questionId, starterCode, savedCode, 
                     {gradeResponse.passCount}/{gradeResponse.totalCount}
                   </span>
                 )}
-                {isGrading && <Loader2 className="h-3 w-3 animate-spin text-primary" />}
+                {isGrading && <span className="inline-block w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />}
               </button>
             </div>
             <div className="flex items-center gap-0.5">
@@ -436,6 +485,44 @@ export default function PracticeWorkspace({ questionId, starterCode, savedCode, 
           )}
         </div>
       </div>
+
+      {/* Reset confirm dialog */}
+      {resetConfirmOpen && (
+        <div
+          className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4"
+          onClick={() => setResetConfirmOpen(false)}
+        >
+          <div
+            className="bg-surface border border-border rounded-xl p-5 max-w-sm w-full shadow-2xl animate-scale-in"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start justify-between mb-3">
+              <h3 className="text-sm font-semibold text-light-text flex items-center gap-2">
+                <RotateCcw size={14} className="text-warning shrink-0" />
+                Reset to starter code?
+              </h3>
+              <button onClick={() => setResetConfirmOpen(false)} className="text-dark-text hover:text-light-text transition-colors p-0.5">
+                <X size={14} />
+              </button>
+            </div>
+            <p className="text-xs text-dark-text mb-4 leading-relaxed">Your current code will be lost.</p>
+            <div className="flex gap-2 justify-end">
+              <button
+                onClick={() => setResetConfirmOpen(false)}
+                className="px-3 py-1.5 text-xs text-dark-text hover:text-light-text transition-colors rounded-lg hover:bg-background"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => { setResetConfirmOpen(false); setCode(starterCode); }}
+                className="px-3 py-1.5 text-xs font-medium text-warning bg-warning/10 hover:bg-warning/20 rounded-lg border border-warning/30 transition-colors"
+              >
+                Reset
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 
@@ -502,8 +589,15 @@ export default function PracticeWorkspace({ questionId, starterCode, savedCode, 
             );
           }
           if (entry.kind === 'error') {
+            const lineMatch = entry.text.match(/^Line (\d+)/);
+            const errLine = lineMatch ? parseInt(lineMatch[1], 10) : null;
             return (
-              <div key={i} className="flex gap-2 whitespace-pre-wrap py-0.5">
+              <div
+                key={i}
+                className={`flex gap-2 whitespace-pre-wrap py-0.5 ${errLine ? 'cursor-pointer hover:opacity-75 transition-opacity' : ''}`}
+                onClick={errLine ? () => { setJumpToLine(errLine); setMobileView('editor'); } : undefined}
+                title={errLine ? `Click to jump to line ${errLine}` : undefined}
+              >
                 <span className="text-error shrink-0 font-bold">!</span>
                 <span className="text-error">{entry.text}</span>
               </div>
@@ -566,9 +660,20 @@ export default function PracticeWorkspace({ questionId, starterCode, savedCode, 
   function renderResults() {
     if (isGrading) {
       return (
-        <div className="h-full flex flex-col items-center justify-center gap-3 p-4">
-          <Loader2 className="h-6 w-6 animate-spin text-primary" />
-          <span className="text-xs text-dark-text">Grading against all test cases\u2026</span>
+        <div className="p-3 space-y-2 animate-pulse">
+          <div className="rounded-lg border border-border p-3">
+            <div className="h-5 bg-surface rounded w-10 mx-auto mb-1.5" />
+            <div className="h-3 bg-surface rounded w-24 mx-auto" />
+          </div>
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="rounded border border-border p-3">
+              <div className="flex items-center gap-2 mb-1">
+                <div className="h-3.5 w-3.5 rounded-full bg-surface shrink-0" />
+                <div className="h-3 bg-surface rounded w-28" />
+                <div className="ml-auto h-3 bg-surface rounded w-10" />
+              </div>
+            </div>
+          ))}
         </div>
       );
     }
