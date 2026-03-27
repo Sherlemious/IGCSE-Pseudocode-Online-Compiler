@@ -1,8 +1,7 @@
 'use client';
 
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useState } from 'react';
-import { ChevronDown, ChevronRight, FileText } from 'lucide-react';
+import { X, SlidersHorizontal, FileText } from 'lucide-react';
 
 interface YearGroup {
   year: number;
@@ -31,185 +30,242 @@ export function PracticeFilters({
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const [expandedYears, setExpandedYears] = useState<Set<number>>(
-    activeYear ? new Set([activeYear]) : new Set()
-  );
+  const hasActiveFilter = !!(activeTopic || activeYear || activeTag);
+
+  const activeSessions = activeYear
+    ? (yearGroups.find((g) => g.year === activeYear)?.sessions ?? [])
+    : [];
 
   function buildUrl(overrides: Record<string, string | undefined>) {
     const params = new URLSearchParams(searchParams.toString());
     for (const [key, val] of Object.entries(overrides)) {
-      if (val === undefined) {
-        params.delete(key);
-      } else {
-        params.set(key, val);
-      }
+      if (val === undefined) params.delete(key);
+      else params.set(key, val);
     }
     const qs = params.toString();
     return qs ? `/practice?${qs}` : '/practice';
   }
 
-  function toggleYear(year: number) {
-    setExpandedYears((prev) => {
-      const next = new Set(prev);
-      if (next.has(year)) next.delete(year);
-      else next.add(year);
-      return next;
-    });
-  }
-
-  function selectYear(year: number) {
-    const isActive = activeYear === year && !activeSession;
-    router.push(
-      buildUrl(isActive ? { year: undefined, session: undefined } : { year: String(year), session: undefined })
-    );
-    if (!expandedYears.has(year)) setExpandedYears((prev) => new Set([...prev, year]));
-  }
-
-  function selectSession(year: number, session: string) {
-    const isActive = activeYear === year && activeSession === session;
-    router.push(
-      buildUrl(isActive ? { year: undefined, session: undefined } : { year: String(year), session })
-    );
+  function clearAll() {
+    router.push('/practice');
   }
 
   return (
-    <div className="space-y-3 mb-6">
-      {/* ── Topic chips ── */}
-      {topics.length > 0 && (
-        <div className="flex flex-wrap gap-2">
-          <button
-            onClick={() => router.push(buildUrl({ topic: undefined }))}
-            className={`px-3 py-1 rounded-full border text-xs transition-colors cursor-pointer ${
-              !activeTopic
-                ? 'bg-primary/20 border-primary/50 text-primary'
-                : 'border-border text-dark-text hover:border-primary/40 hover:text-light-text'
-            }`}
-          >
-            All
-          </button>
-          {topics.map((t) => (
-            <button
-              key={t}
-              onClick={() => router.push(buildUrl({ topic: activeTopic === t ? undefined : t }))}
-              className={`inline-flex items-center gap-1 px-3 py-1 rounded-full border text-xs transition-colors cursor-pointer ${
-                activeTopic === t
-                  ? 'bg-primary/20 border-primary/50 text-primary'
-                  : 'border-border text-dark-text hover:border-primary/40 hover:text-light-text'
-              }`}
-            >
-              {t === 'File Handling' && <FileText size={10} />}
-              {t}
-            </button>
-          ))}
-        </div>
-      )}
-
-      {/* ── Year / Session tree ── */}
-      {yearGroups.length > 0 && (
-        <div className="rounded-lg border border-border bg-surface overflow-hidden">
-          <div className="px-3 py-1.5 border-b border-border/50 flex items-center gap-2">
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-dark-text/60">
-              Year &amp; Session
-            </span>
-            {activeYear && (
-              <button
-                onClick={() => router.push(buildUrl({ year: undefined, session: undefined }))}
-                className="ml-auto text-[10px] text-primary/60 hover:text-primary transition-colors cursor-pointer"
-              >
-                Clear
-              </button>
-            )}
-          </div>
-          <div className="p-2 space-y-0.5">
-            <button
-              onClick={() => router.push(buildUrl({ year: undefined, session: undefined }))}
-              className={`w-full text-left px-2 py-1 rounded text-xs transition-colors cursor-pointer ${
-                !activeYear
-                  ? 'bg-primary/15 text-primary font-medium'
-                  : 'text-dark-text hover:bg-white/5 hover:text-light-text'
-              }`}
-            >
-              All years
-            </button>
-
-            {yearGroups.map(({ year, sessions }) => {
-              const isYearActive = activeYear === year;
-              const isExpanded = expandedYears.has(year);
-
-              return (
-                <div key={year}>
-                  <div className="flex items-center gap-0.5">
-                    <button
-                      onClick={() => toggleYear(year)}
-                      className="p-0.5 text-dark-text/40 hover:text-light-text transition-colors cursor-pointer shrink-0"
-                    >
-                      {isExpanded ? <ChevronDown size={11} /> : <ChevronRight size={11} />}
-                    </button>
-                    <button
-                      onClick={() => selectYear(year)}
-                      className={`flex-1 text-left px-2 py-1 rounded text-xs font-medium transition-colors cursor-pointer ${
-                        isYearActive && !activeSession
-                          ? 'bg-primary/15 text-primary'
-                          : 'text-dark-text hover:bg-white/5 hover:text-light-text'
-                      }`}
-                    >
-                      {year}
-                    </button>
-                  </div>
-
-                  {isExpanded && (
-                    <div className="ml-5 mb-1 space-y-0.5">
-                      {sessions.map((s) => (
-                        <button
-                          key={s}
-                          onClick={() => selectSession(year, s)}
-                          className={`w-full text-left px-2 py-0.5 rounded text-[11px] transition-colors cursor-pointer ${
-                            isYearActive && activeSession === s
-                              ? 'bg-primary/10 text-primary font-medium'
-                              : 'text-dark-text/60 hover:bg-white/5 hover:text-light-text'
-                          }`}
-                        >
-                          {s}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* ── Tag chips ── */}
-      {allTags.length > 0 && (
+    <div className="mb-6 space-y-2">
+      {/* ── Active filter pills ── */}
+      {hasActiveFilter && (
         <div className="flex flex-wrap items-center gap-1.5">
-          <span className="text-[10px] font-semibold uppercase tracking-wider text-dark-text/60 shrink-0">
-            Tags:
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-dark-text/50 shrink-0 flex items-center gap-1">
+            <SlidersHorizontal size={10} />
+            Active:
           </span>
-          {activeTag && (
-            <button
-              onClick={() => router.push(buildUrl({ tag: undefined }))}
-              className="text-[10px] text-primary/60 hover:text-primary transition-colors cursor-pointer"
-            >
-              Clear
-            </button>
+          {activeTopic && (
+            <ActivePill
+              label={activeTopic}
+              onRemove={() => router.push(buildUrl({ topic: undefined }))}
+            />
           )}
-          {allTags.map((tag) => (
-            <button
-              key={tag}
-              onClick={() => router.push(buildUrl({ tag: activeTag === tag ? undefined : tag }))}
-              className={`px-2.5 py-0.5 rounded-full border text-[11px] transition-colors cursor-pointer ${
-                activeTag === tag
-                  ? 'bg-info/15 border-info/40 text-info'
-                  : 'border-border text-dark-text/70 hover:border-primary/40 hover:text-light-text'
-              }`}
-            >
-              {tag}
-            </button>
-          ))}
+          {activeYear && (
+            <ActivePill
+              label={activeSession ? `${activeYear} · ${activeSession}` : String(activeYear)}
+              onRemove={() => router.push(buildUrl({ year: undefined, session: undefined }))}
+            />
+          )}
+          {activeTag && (
+            <ActivePill
+              label={activeTag}
+              onRemove={() => router.push(buildUrl({ tag: undefined }))}
+              color="info"
+            />
+          )}
+          <button
+            onClick={clearAll}
+            className="text-[10px] text-dark-text/40 hover:text-dark-text transition-colors cursor-pointer underline underline-offset-2 ml-1"
+          >
+            Clear all
+          </button>
         </div>
       )}
+
+      {/* ── Unified filter panel ── */}
+      <div className="rounded-xl border border-border bg-surface overflow-hidden divide-y divide-border/40">
+
+        {/* Topic row */}
+        {topics.length > 0 && (
+          <FilterRow label="Topic">
+            <Chip
+              active={!activeTopic}
+              onClick={() => router.push(buildUrl({ topic: undefined }))}
+            >
+              All
+            </Chip>
+            {topics.map((t) => (
+              <Chip
+                key={t}
+                active={activeTopic === t}
+                onClick={() => router.push(buildUrl({ topic: activeTopic === t ? undefined : t }))}
+              >
+                {t === 'File Handling' && <FileText size={10} className="shrink-0" />}
+                {t}
+              </Chip>
+            ))}
+          </FilterRow>
+        )}
+
+        {/* Year row */}
+        {yearGroups.length > 0 && (
+          <FilterRow label="Year">
+            <Chip
+              active={!activeYear}
+              onClick={() => router.push(buildUrl({ year: undefined, session: undefined }))}
+            >
+              All
+            </Chip>
+            {yearGroups.map(({ year }) => (
+              <Chip
+                key={year}
+                active={activeYear === year}
+                onClick={() =>
+                  router.push(
+                    buildUrl(
+                      activeYear === year && !activeSession
+                        ? { year: undefined, session: undefined }
+                        : { year: String(year), session: undefined }
+                    )
+                  )
+                }
+              >
+                {year}
+              </Chip>
+            ))}
+          </FilterRow>
+        )}
+
+        {/* Session sub-row — only when a year with multiple sessions is selected */}
+        {activeYear && activeSessions.length > 0 && (
+          <FilterRow label="Session" indent>
+            {activeSessions.map((s) => (
+              <Chip
+                key={s}
+                active={activeSession === s}
+                onClick={() =>
+                  router.push(
+                    buildUrl(
+                      activeSession === s
+                        ? { year: String(activeYear), session: undefined }
+                        : { year: String(activeYear), session: s }
+                    )
+                  )
+                }
+                size="sm"
+              >
+                {s}
+              </Chip>
+            ))}
+          </FilterRow>
+        )}
+
+        {/* Tags row */}
+        {allTags.length > 0 && (
+          <FilterRow label="Tags">
+            {allTags.map((tag) => (
+              <Chip
+                key={tag}
+                active={activeTag === tag}
+                onClick={() => router.push(buildUrl({ tag: activeTag === tag ? undefined : tag }))}
+                color="info"
+              >
+                {tag}
+              </Chip>
+            ))}
+          </FilterRow>
+        )}
+      </div>
     </div>
+  );
+}
+
+// ── Sub-components ────────────────────────────────────────────────────────────
+
+function FilterRow({
+  label,
+  indent,
+  children,
+}: {
+  label: string;
+  indent?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className={`flex items-start gap-3 px-3 py-2 ${indent ? 'bg-primary/[0.03]' : ''}`}>
+      <span
+        className={`text-[10px] font-semibold uppercase tracking-wider shrink-0 pt-0.5 w-14 text-right ${
+          indent ? 'text-primary/40' : 'text-dark-text/50'
+        }`}
+      >
+        {label}
+      </span>
+      <div className="flex flex-wrap gap-1.5 flex-1">{children}</div>
+    </div>
+  );
+}
+
+function Chip({
+  active,
+  onClick,
+  children,
+  color = 'primary',
+  size = 'md',
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+  color?: 'primary' | 'info';
+  size?: 'md' | 'sm';
+}) {
+  const base = 'inline-flex items-center gap-1 rounded-full border font-medium transition-all duration-150 cursor-pointer select-none';
+  const sz = size === 'sm' ? 'px-2 py-0.5 text-[10px]' : 'px-2.5 py-0.5 text-[11px]';
+
+  const active_cls =
+    color === 'info'
+      ? 'bg-info/15 border-info/40 text-info'
+      : 'bg-primary/20 border-primary/50 text-primary';
+  const inactive_cls =
+    color === 'info'
+      ? 'border-border text-dark-text/60 hover:border-info/30 hover:text-info/80 hover:bg-info/5'
+      : 'border-border/70 text-dark-text/70 hover:border-primary/40 hover:text-light-text hover:bg-primary/5';
+
+  return (
+    <button onClick={onClick} className={`${base} ${sz} ${active ? active_cls : inactive_cls}`}>
+      {children}
+    </button>
+  );
+}
+
+function ActivePill({
+  label,
+  onRemove,
+  color = 'primary',
+}: {
+  label: string;
+  onRemove: () => void;
+  color?: 'primary' | 'info';
+}) {
+  const cls =
+    color === 'info'
+      ? 'bg-info/10 border-info/30 text-info'
+      : 'bg-primary/10 border-primary/30 text-primary';
+
+  return (
+    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[11px] font-medium ${cls}`}>
+      {label}
+      <button
+        onClick={onRemove}
+        className="ml-0.5 opacity-60 hover:opacity-100 transition-opacity cursor-pointer"
+        aria-label={`Remove ${label} filter`}
+      >
+        <X size={10} />
+      </button>
+    </span>
   );
 }

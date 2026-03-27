@@ -2424,7 +2424,7 @@ OUTPUT Min`,
     title: 'Maximum, Minimum and Range',
     description: `Read N positive integers (each less than 1000). Find and output the largest, smallest, and range (largest minus smallest) — each on a separate line.
 
-**Source:** 2021 May/Jun Variant 2 Q2(a)
+**Source:** 2021 May/June Variant 2 Q2(a)
 
 **Input:** N on the first line (2 ≤ N ≤ 10), then N integers.
 **Output:** Three lines — largest, smallest, range.
@@ -2444,7 +2444,7 @@ Output: 78
     difficulty: 'MEDIUM' as const,
     topic: 'Loops',
     year: 2021,
-    session: 'May/Jun',
+    session: 'May/June',
     variant: 2,
     questionNumber: 2,
     part: 'a',
@@ -2654,7 +2654,7 @@ OUTPUT LCASE(Quote)`,
 
 Ask the user to enter the measurement twice. If both entries match, store the value in \`Measurement\` and output \`Accepted\`. If they don't match, repeat the process until they do.
 
-**Source:** Inspired by 2023 May/Jun Variant 2 Q4(b)(ii)
+**Source:** Inspired by 2023 May/June Variant 2 Q4(b)(ii)
 
 **Input:** Pairs of integers until both match. Each pair is two lines.
 **Output:** \`Accepted\` followed by the accepted value, each on a separate line.
@@ -2671,7 +2671,7 @@ Output: Accepted
     difficulty: 'MEDIUM' as const,
     topic: 'Loops',
     year: 2023,
-    session: 'May/Jun',
+    session: 'May/June',
     variant: 2,
     questionNumber: 4,
     part: 'b',
@@ -2720,7 +2720,7 @@ OUTPUT Measurement`,
     title: 'Validate Input in Range',
     description: `Write an algorithm to ensure the variable \`Length\` is between 15 and 35 inclusive. Keep asking for input until a valid value is entered. Output \`Valid\` followed by the accepted value.
 
-**Source:** Inspired by 2023 May/Jun Variant 3 Q5(b)
+**Source:** Inspired by 2023 May/June Variant 3 Q5(b)
 
 **Input:** One or more integers until a value in the range 15–35 is entered.
 **Output:** \`Valid\` then the valid value, each on a separate line.
@@ -2737,7 +2737,7 @@ Output: Enter a length between 15 and 35:
     difficulty: 'EASY' as const,
     topic: 'Loops',
     year: 2023,
-    session: 'May/Jun',
+    session: 'May/June',
     variant: 3,
     questionNumber: 5,
     part: 'b',
@@ -3223,7 +3223,7 @@ Output: Egypt
     topic: 'String Processing',
     tags: ['Past Paper', 'Selection'],
     year: 2025,
-    session: 'May/Jun',
+    session: 'May/June',
     variant: 1,
     starterCode: `DECLARE Telephone : STRING
 DECLARE CountryCode : STRING
@@ -3281,7 +3281,7 @@ Output: Odd
     topic: 'Procedures & Functions',
     tags: ['Past Paper', 'Functions'],
     year: 2025,
-    session: 'May/Jun',
+    session: 'May/June',
     variant: 1,
     starterCode: `DECLARE A : INTEGER
 DECLARE B : STRING
@@ -3342,7 +3342,7 @@ Output: Password too short, please try again
     topic: 'Loops',
     tags: ['Past Paper', 'Validation'],
     year: 2025,
-    session: 'May/Jun',
+    session: 'May/June',
     variant: 3,
     starterCode: `DECLARE Password : STRING
 
@@ -3408,7 +3408,7 @@ Output: Error, re-enter
     topic: 'Arrays',
     tags: ['Past Paper', 'Verification'],
     year: 2025,
-    session: 'May/Jun',
+    session: 'May/June',
     variant: 2,
     starterCode: `DECLARE Numbers : ARRAY[1:3] OF INTEGER
 DECLARE Index : INTEGER
@@ -3480,7 +3480,7 @@ Output: C
     topic: 'String Processing',
     tags: ['Past Paper', 'Iteration'],
     year: 2025,
-    session: 'May/Jun',
+    session: 'May/June',
     variant: 3,
     starterCode: `DECLARE Word : STRING
 DECLARE Index : INTEGER
@@ -4832,7 +4832,7 @@ Output: Enter a number between 15 and 35 inclusive
     topic: 'Selection',
     tags: ['Past Paper', 'Validation'],
     year: 2023,
-    session: 'May/Jun',
+    session: 'May/June',
     variant: 3,
     starterCode: `DECLARE Length : INTEGER
 
@@ -4888,7 +4888,7 @@ Output: Please enter measurement
     topic: 'Loops',
     tags: ['Past Paper', 'Verification'],
     year: 2023,
-    session: 'May/Jun',
+    session: 'May/June',
     variant: 2,
     starterCode: `DECLARE Measurement : REAL
 DECLARE MeasurementCheck : REAL
@@ -4937,7 +4937,7 @@ Output: 5
     topic: 'String Processing',
     tags: ['Past Paper', 'String Manipulation'],
     year: 2023,
-    session: 'May/Jun',
+    session: 'May/June',
     variant: 2,
     starterCode: `DECLARE P : STRING
 DECLARE Q : CHAR
@@ -5005,7 +5005,7 @@ Output: Total: 15
     topic: 'Loops',
     tags: ['Past Paper', 'Totalling'],
     year: 2023,
-    session: 'May/Jun',
+    session: 'May/June',
     variant: 1,
     starterCode: `DECLARE Number : INTEGER
 DECLARE Total : INTEGER
@@ -5078,7 +5078,7 @@ Output: Enter temperature
     topic: 'Arrays',
     tags: ['Past Paper', 'Validation', 'Arrays'],
     year: 2023,
-    session: 'May/Jun',
+    session: 'May/June',
     variant: 1,
     starterCode: `DECLARE Readings : ARRAY[1:5] OF REAL
 DECLARE DayLoop : INTEGER

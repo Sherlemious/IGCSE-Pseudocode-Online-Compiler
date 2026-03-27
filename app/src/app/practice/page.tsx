@@ -66,7 +66,7 @@ export default async function PracticePage({ searchParams }: PageProps) {
       if (q.session) yearSessionMap.get(q.year)!.add(q.session);
     }
   }
-  const SESSION_ORDER = ['May/Jun', 'Oct/Nov', 'Feb/Mar'];
+  const SESSION_ORDER = ['May/June', 'Oct/Nov', 'Feb/Mar'];
   const yearGroups = Array.from(yearSessionMap.entries())
     .sort(([a], [b]) => b - a)
     .map(([year, sessionsSet]) => ({
