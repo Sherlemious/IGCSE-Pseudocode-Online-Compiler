@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter, useSearchParams } from 'next/navigation';
-import { X, SlidersHorizontal, FileText } from 'lucide-react';
+import { X, SlidersHorizontal, FileText, Search } from 'lucide-react';
 
 interface YearGroup {
   year: number;
@@ -16,6 +16,7 @@ interface Props {
   activeYear?: number;
   activeSession?: string;
   activeTag?: string;
+  activeQ?: string;
 }
 
 export function PracticeFilters({
@@ -26,11 +27,12 @@ export function PracticeFilters({
   activeYear,
   activeSession,
   activeTag,
+  activeQ,
 }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const hasActiveFilter = !!(activeTopic || activeYear || activeTag);
+  const hasActiveFilter = !!(activeTopic || activeYear || activeTag || activeQ);
 
   const activeSessions = activeYear
     ? (yearGroups.find((g) => g.year === activeYear)?.sessions ?? [])
@@ -51,7 +53,7 @@ export function PracticeFilters({
   }
 
   return (
-    <div className="mb-6 space-y-2">
+    <div className="mb-6 space-y-2 sticky top-0 z-10 bg-background pb-1">
       {/* ── Active filter pills ── */}
       {hasActiveFilter && (
         <div className="flex flex-wrap items-center gap-1.5">
@@ -78,6 +80,12 @@ export function PracticeFilters({
               color="info"
             />
           )}
+          {activeQ && (
+            <ActivePill
+              label={`"${activeQ}"`}
+              onRemove={() => router.push(buildUrl({ q: undefined }))}
+            />
+          )}
           <button
             onClick={clearAll}
             className="text-[10px] text-dark-text/40 hover:text-dark-text transition-colors cursor-pointer underline underline-offset-2 ml-1"
@@ -89,6 +97,27 @@ export function PracticeFilters({
 
       {/* ── Unified filter panel ── */}
       <div className="rounded-xl border border-border bg-surface overflow-hidden divide-y divide-border/40">
+
+        {/* Search row */}
+        <div className="flex items-center gap-2 px-3 py-2">
+          <Search size={13} className="text-dark-text/50 shrink-0" />
+          <input
+            type="text"
+            placeholder="Search questions…"
+            value={activeQ ?? ''}
+            onChange={(e) => router.push(buildUrl({ q: e.target.value || undefined }))}
+            className="flex-1 bg-transparent text-xs text-light-text placeholder:text-dark-text/40 outline-none"
+          />
+          {activeQ && (
+            <button
+              onClick={() => router.push(buildUrl({ q: undefined }))}
+              className="text-dark-text/40 hover:text-dark-text transition-colors"
+              aria-label="Clear search"
+            >
+              <X size={12} />
+            </button>
+          )}
+        </div>
 
         {/* Topic row */}
         {topics.length > 0 && (

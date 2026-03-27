@@ -27,11 +27,11 @@ const DIFFICULTY_BADGE: Record<string, string> = {
 const DIFFICULTIES = ['EASY', 'MEDIUM', 'HARD'] as const;
 
 interface PageProps {
-  searchParams: Promise<{ topic?: string; year?: string; session?: string; tag?: string }>;
+  searchParams: Promise<{ topic?: string; year?: string; session?: string; tag?: string; q?: string }>;
 }
 
 export default async function PracticePage({ searchParams }: PageProps) {
-  const { topic: activeTopic, year: yearParam, session: activeSession, tag: activeTag } = await searchParams;
+  const { topic: activeTopic, year: yearParam, session: activeSession, tag: activeTag, q: activeQ } = await searchParams;
   const activeYear = yearParam ? parseInt(yearParam, 10) : undefined;
 
   const session = await auth();
@@ -85,6 +85,7 @@ export default async function PracticePage({ searchParams }: PageProps) {
     if (activeYear && q.year !== activeYear) return false;
     if (activeSession && q.session !== activeSession) return false;
     if (activeTag && !q.tags.includes(activeTag)) return false;
+    if (activeQ && !q.title.toLowerCase().includes(activeQ.toLowerCase())) return false;
     return true;
   });
 
@@ -194,6 +195,7 @@ export default async function PracticePage({ searchParams }: PageProps) {
             activeYear={activeYear}
             activeSession={activeSession}
             activeTag={activeTag}
+            activeQ={activeQ}
           />
         </Suspense>
 
