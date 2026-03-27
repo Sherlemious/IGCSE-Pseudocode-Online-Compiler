@@ -5689,6 +5689,238 @@ OUTPUT "Accepted: " & Day`,
       { inputs: ['2'],              expectedOutput: 'Accepted: 2',                             description: null,                   sortOrder: 4, isHidden: true },
     ],
   },
+
+  // ═══ OCT/NOV 2021 PAST PAPERS ═══
+
+  {
+    title: 'Simple Calculator',
+    description: `Write an algorithm that acts as a simple calculator. It should first read an integer \`Operator\` representing the chosen operation (1 for addition, 2 for subtraction, 3 for multiplication, 4 for division). Then, it reads two numbers, \`Value1\` and \`Value2\`. It performs the chosen operation on the two numbers and outputs the result.
+
+**Input:** An integer \`Operator\` (1 to 4), followed by two real numbers \`Value1\` and \`Value2\`.
+**Output:** A single number representing the result of the calculation.
+
+**Example:**
+\`\`\`
+Input:  1
+        5.5
+        10
+Output: 15.5
+\`\`\``,
+    difficulty: 'EASY' as const,
+    topic: 'Selection',
+    tags: ['Past Paper', 'Complete Question', 'CASE OF'],
+    year: 2021,
+    session: 'Oct/Nov',
+    variant: 2,
+    starterCode: `DECLARE Operator : INTEGER
+DECLARE Value1 : REAL
+DECLARE Value2 : REAL
+DECLARE Answer : REAL
+
+INPUT Operator
+INPUT Value1
+INPUT Value2
+
+// Use a CASE OF statement to calculate Answer based on Operator
+
+OUTPUT Answer`,
+    hints: [
+      'Use a CASE OF statement checking the variable Operator.',
+      'Remember: 1 is +, 2 is -, 3 is *, and 4 is /.',
+      'Assign the result to Answer inside each CASE branch, then OUTPUT Answer at the end.',
+    ],
+    solution: `DECLARE Operator : INTEGER
+DECLARE Value1 : REAL
+DECLARE Value2 : REAL
+DECLARE Answer : REAL
+
+INPUT Operator
+INPUT Value1
+INPUT Value2
+
+CASE OF Operator
+    1 : Answer <- Value1 + Value2
+    2 : Answer <- Value1 - Value2
+    3 : Answer <- Value1 * Value2
+    4 : Answer <- Value1 / Value2
+ENDCASE
+
+OUTPUT Answer`,
+    solutionExplanation: 'A CASE statement evaluates the inputted Operator to determine which arithmetic operation to perform, storing the result in Answer before outputting it.',
+    testCases: [
+      { inputs: ['1', '5.5', '10'],  expectedOutput: '15.5', description: 'Addition',                    sortOrder: 0 },
+      { inputs: ['2', '10', '4'],    expectedOutput: '6',    description: 'Subtraction',                  sortOrder: 1 },
+      { inputs: ['3', '7', '8'],     expectedOutput: '56',   description: 'Multiplication',               sortOrder: 2, isHidden: true },
+      { inputs: ['4', '20', '5'],    expectedOutput: '4',    description: 'Division',                     sortOrder: 3, isHidden: true },
+      { inputs: ['4', '10', '4'],    expectedOutput: '2.5',  description: 'Division with decimal result', sortOrder: 4, isHidden: true },
+    ],
+  },
+
+  // ═══ MAY/JUNE 2022 PAST PAPERS ═══
+
+  {
+    title: '3-Digit Palindrome Filter',
+    description: `Write an algorithm that takes an integer \`Limit\` as input. It then loops \`Limit\` times, reading an integer \`Value\` each time. If \`Value\` is a 3-digit number (between 100 and 999 inclusive) and its first digit equals its last digit, output that number.
+
+**Input:** Integer \`Limit\`, followed by \`Limit\` integers.
+**Output:** Each qualifying number on a new line.
+
+**Example:**
+\`\`\`
+Input:  4
+        99
+        606
+        8448
+        747
+Output: 606
+        747
+\`\`\``,
+    difficulty: 'MEDIUM' as const,
+    topic: 'Loops',
+    tags: ['Past Paper', 'Complete Question'],
+    year: 2022,
+    session: 'May/June',
+    variant: 1,
+    starterCode: `DECLARE Limit : INTEGER
+DECLARE Value : INTEGER
+DECLARE Counter : INTEGER
+DECLARE First : INTEGER
+DECLARE Last : INTEGER
+
+INPUT Limit
+
+// FOR loop running Limit times
+// Read Value, check if 3-digit, extract first and last digits, compare`,
+    hints: [
+      'Find the first digit of a 3-digit number using integer division: Value DIV 100.',
+      'Find the last digit using the MOD operator: Value MOD 10.',
+      'Use an outer IF to check 100 <= Value <= 999 before extracting digits.',
+    ],
+    solution: `DECLARE Limit : INTEGER
+DECLARE Value : INTEGER
+DECLARE Counter : INTEGER
+DECLARE First : INTEGER
+DECLARE Last : INTEGER
+
+INPUT Limit
+FOR Counter <- 1 TO Limit
+    INPUT Value
+    IF Value >= 100 AND Value <= 999 THEN
+        First <- Value DIV 100
+        Last <- Value MOD 10
+        IF First = Last THEN
+            OUTPUT Value
+        ENDIF
+    ENDIF
+NEXT Counter`,
+    solutionExplanation: 'The algorithm uses a FOR loop to read numbers. It filters for 3-digit numbers using a range check, then isolates the first and last digits using DIV and MOD operators to compare them.',
+    testCases: [
+      { inputs: ['4', '99', '606', '8448', '747'],   expectedOutput: '606\n747',   description: 'Mixed digits and lengths',   sortOrder: 0 },
+      { inputs: ['3', '121', '500', '343'],           expectedOutput: '121\n343',   description: 'Standard 3-digit checks',    sortOrder: 1 },
+      { inputs: ['4', '99', '101', '888', '1000'],    expectedOutput: '101\n888',   description: null,                         sortOrder: 2, isHidden: true },
+      { inputs: ['2', '212', '454'],                  expectedOutput: '212\n454',   description: null,                         sortOrder: 3, isHidden: true },
+      { inputs: ['1', '989'],                         expectedOutput: '989',        description: null,                         sortOrder: 4, isHidden: true },
+    ],
+  },
+
+  // ═══ FEB/MAR 2022 PAST PAPERS ═══
+
+  {
+    title: 'Student Age Category Counter',
+    description: `Write an algorithm to categorise the ages of a number of students. First, input \`N\` (the number of students). Then, input \`N\` integer ages. Count and output the number of students in four categories: under 7, 7 to 11, 12 to 17, and 18 and over.
+
+**Input:** Integer \`N\`, followed by \`N\` integer ages.
+**Output:** Four lines in the exact format shown.
+
+**Example:**
+\`\`\`
+Input:  5
+        6
+        7
+        12
+        18
+        20
+Output: Under 7: 1
+        7 to 11: 1
+        12 to 17: 1
+        18 and over: 2
+\`\`\``,
+    difficulty: 'MEDIUM' as const,
+    topic: 'Selection',
+    tags: ['Past Paper', 'Adapted'],
+    year: 2022,
+    session: 'Feb/Mar',
+    variant: 2,
+    starterCode: `DECLARE N : INTEGER
+DECLARE Age : INTEGER
+DECLARE CountUnder7 : INTEGER
+DECLARE Count7to11 : INTEGER
+DECLARE Count12to17 : INTEGER
+DECLARE Count18Over : INTEGER
+DECLARE i : INTEGER
+
+CountUnder7 <- 0
+Count7to11 <- 0
+Count12to17 <- 0
+Count18Over <- 0
+
+INPUT N
+
+// FOR loop, read Age each iteration, use IF-ELSE to increment the right counter
+
+OUTPUT "Under 7: " & CountUnder7
+OUTPUT "7 to 11: " & Count7to11
+OUTPUT "12 to 17: " & Count12to17
+OUTPUT "18 and over: " & Count18Over`,
+    hints: [
+      'Use a FOR loop from 1 to N to read the ages.',
+      'Use nested IF...ELSE statements — check Age < 7 first, then < 12, then < 18, with the final ELSE for 18 and over.',
+      'Concatenate the string label and the variable using & when outputting.',
+    ],
+    solution: `DECLARE N : INTEGER
+DECLARE Age : INTEGER
+DECLARE CountUnder7 : INTEGER
+DECLARE Count7to11 : INTEGER
+DECLARE Count12to17 : INTEGER
+DECLARE Count18Over : INTEGER
+DECLARE i : INTEGER
+
+CountUnder7 <- 0
+Count7to11 <- 0
+Count12to17 <- 0
+Count18Over <- 0
+
+INPUT N
+FOR i <- 1 TO N
+    INPUT Age
+    IF Age < 7 THEN
+        CountUnder7 <- CountUnder7 + 1
+    ELSE
+        IF Age < 12 THEN
+            Count7to11 <- Count7to11 + 1
+        ELSE
+            IF Age < 18 THEN
+                Count12to17 <- Count12to17 + 1
+            ELSE
+                Count18Over <- Count18Over + 1
+            ENDIF
+        ENDIF
+    ENDIF
+NEXT i
+
+OUTPUT "Under 7: " & CountUnder7
+OUTPUT "7 to 11: " & Count7to11
+OUTPUT "12 to 17: " & Count12to17
+OUTPUT "18 and over: " & Count18Over`,
+    solutionExplanation: 'A FOR loop processes the N ages. A chain of nested IF-ELSE statements sequentially evaluates the age bounds to increment the respective counter variable, which are then concatenated into strings for output.',
+    testCases: [
+      { inputs: ['5', '6', '7', '12', '18', '20'],       expectedOutput: 'Under 7: 1\n7 to 11: 1\n12 to 17: 1\n18 and over: 2', description: 'One in each lower, two in highest', sortOrder: 0 },
+      { inputs: ['3', '5', '5', '5'],                    expectedOutput: 'Under 7: 3\n7 to 11: 0\n12 to 17: 0\n18 and over: 0', description: 'All under 7',                    sortOrder: 1 },
+      { inputs: ['4', '18', '19', '20', '21'],           expectedOutput: 'Under 7: 0\n7 to 11: 0\n12 to 17: 0\n18 and over: 4', description: null,                             sortOrder: 2, isHidden: true },
+      { inputs: ['0'],                                   expectedOutput: 'Under 7: 0\n7 to 11: 0\n12 to 17: 0\n18 and over: 0', description: 'Zero students',                  sortOrder: 3, isHidden: true },
+      { inputs: ['6', '6', '11', '12', '17', '18', '8'], expectedOutput: 'Under 7: 1\n7 to 11: 2\n12 to 17: 2\n18 and over: 1', description: 'Boundary values',               sortOrder: 4, isHidden: true },
+    ],
+  },
 ];
 
 // ─── Main seed function ────────────────────────────────────────────────────────
