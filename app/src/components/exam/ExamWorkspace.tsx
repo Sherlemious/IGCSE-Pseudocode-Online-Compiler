@@ -2,6 +2,8 @@
 
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import CodeMirrorEditor from '../compiler/CodeMirrorEditor';
 import { useInterpreter } from '../../interpreter/useInterpreter';
 import type { OutputEntry } from '../../interpreter';
@@ -18,6 +20,7 @@ import {
   Send,
   ChevronLeft,
   ChevronRight,
+  Bug,
 } from 'lucide-react';
 
 /* ── Types ──────────────────────────────────────────────── */
@@ -84,7 +87,14 @@ export default function ExamWorkspace({ examId, questions, timeLimitMin, started
     entries,
     isRunning,
     waitingForInput,
+    isStepping,
+    debugLine,
+    debugVariables,
+    errorLine,
     run: interpreterRun,
+    debugRun,
+    step,
+    continueExecution,
     stop: interpreterStop,
     provideInput,
     clearEntries,
@@ -295,7 +305,27 @@ export default function ExamWorkspace({ examId, questions, timeLimitMin, started
           >
             {question.difficulty}
           </span>
-          <div className="text-xs text-light-text/80 whitespace-pre-wrap leading-relaxed">{question.description}</div>
+          <div className="text-xs text-light-text/80 leading-relaxed prose-sm">
+            <ReactMarkdown
+              remarkPlugins={[remarkGfm]}
+              components={{
+                p: ({ ...props }) => <p className="mb-2" {...props} />,
+                strong: ({ ...props }) => <strong className="text-light-text font-semibold" {...props} />,
+                ul: ({ ...props }) => <ul className="list-disc pl-4 mb-2 space-y-0.5" {...props} />,
+                ol: ({ ...props }) => <ol className="list-decimal pl-4 mb-2 space-y-0.5" {...props} />,
+                code: ({ children, ...props }) => (
+                  <code className="font-mono text-[0.82em] px-1 py-0.5 rounded bg-surface border border-border text-info" {...props}>
+                    {children}
+                  </code>
+                ),
+                pre: ({ ...props }) => (
+                  <pre className="mb-2 p-2 rounded bg-background border border-border overflow-x-auto text-xs" {...props} />
+                ),
+              }}
+            >
+              {question.description}
+            </ReactMarkdown>
+          </div>
 
           {question.testCases.length > 0 && (
             <div className="mt-5">
@@ -331,17 +361,40 @@ export default function ExamWorkspace({ examId, questions, timeLimitMin, started
         <div className="flex-1 min-h-0 flex flex-col">
           {/* Toolbar */}
           <div className="h-9 border-b border-border bg-surface flex items-center gap-1.5 px-2 shrink-0">
-            <button
-              onClick={handleRun}
-              className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium transition-all duration-200 ${
-                isRunning
-                  ? 'bg-error/15 text-error hover:bg-error/25'
-                  : 'bg-success/15 text-success hover:bg-success/25'
-              }`}
-            >
-              {isRunning ? <Square size={11} /> : <Play size={11} />}
-              {isRunning ? 'Stop' : 'Run'}
-            </button>
+            {/* Debug step controls */}
+            {isStepping && (
+              <>
+                <button onClick={step} className="flex items-center gap-1 px-2 py-1 rounded-md text-xs text-info hover:bg-info/10 transition-colors">
+                  <Bug size={11} />Step
+                </button>
+                <button onClick={continueExecution} className="flex items-center gap-1 px-2 py-1 rounded-md text-xs text-success hover:bg-success/10 transition-colors">
+                  <Play size={11} />Continue
+                </button>
+              </>
+            )}
+            {!isStepping && (
+              <>
+                <button
+                  onClick={() => { clearEntries(); setActiveTab('terminal'); debugRun(code); }}
+                  disabled={grading}
+                  className="flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium text-warning hover:bg-warning/10 transition-all duration-200 disabled:opacity-40"
+                >
+                  <Bug size={11} />
+                  Debug
+                </button>
+                <button
+                  onClick={handleRun}
+                  className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium transition-all duration-200 ${
+                    isRunning
+                      ? 'bg-error/15 text-error hover:bg-error/25'
+                      : 'bg-success/15 text-success hover:bg-success/25'
+                  }`}
+                >
+                  {isRunning ? <Square size={11} /> : <Play size={11} />}
+                  {isRunning ? 'Stop' : 'Run'}
+                </button>
+              </>
+            )}
             <button
               onClick={handleGrade}
               disabled={grading || isRunning}
@@ -376,7 +429,14 @@ export default function ExamWorkspace({ examId, questions, timeLimitMin, started
 
           {/* Editor */}
           <div className="flex-1 min-h-0 flex flex-col" style={{ flex: '1 1 60%' }}>
-            <CodeMirrorEditor value={code} onChange={handleCodeChange} />
+            <CodeMirrorEditor
+              value={code}
+              onChange={handleCodeChange}
+              isRunning={isRunning}
+              readOnly={isStepping}
+              debugLine={debugLine}
+              errorLine={errorLine}
+            />
           </div>
 
           {/* Output panel */}
@@ -401,6 +461,25 @@ export default function ExamWorkspace({ examId, questions, timeLimitMin, started
             <div className="flex-1 overflow-y-auto p-2.5 font-mono text-xs scrollbar-thin scrollbar-thumb-primary">
               {activeTab === 'terminal' ? (
                 <div className="space-y-0.5">
+                  {/* Debug variable watch */}
+                  {isStepping && debugVariables.length > 0 && (
+                    <div className="mb-2 pb-2 border-b border-border/30">
+                      <div className="flex items-center gap-1.5 text-xs text-warning mb-1">
+                        <Bug size={11} />
+                        <span className="font-semibold">Variables</span>
+                      </div>
+                      {debugVariables.map((v) => (
+                        <div key={v.name} className="flex gap-2 text-xs">
+                          <span className="text-light-text">{v.name}</span>
+                          <span className="text-dark-text">=</span>
+                          <span className="text-info">
+                            {v.type === 'STRING' ? `"${v.value}"` : v.type === 'CHAR' ? `'${v.value}'` : v.value}
+                          </span>
+                          <span className="text-dark-text/40 text-[10px]">{v.type}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                   {entries.map((entry: OutputEntry, i: number) => (
                     <div
                       key={i}
