@@ -1,9 +1,11 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { Suspense } from 'react';
 import { Lock, CheckCircle, Crown, FileText, ArrowRight } from 'lucide-react';
 import { prisma } from '../../lib/prisma';
 import { auth } from '../../lib/auth';
 import { PREMIUM_GATING_ENABLED } from '../../lib/featureFlags';
+import { PracticeFilters } from './PracticeFilters';
 
 export const metadata: Metadata = {
   title: 'Practice Questions',
@@ -25,11 +27,13 @@ const DIFFICULTY_BADGE: Record<string, string> = {
 const DIFFICULTIES = ['EASY', 'MEDIUM', 'HARD'] as const;
 
 interface PageProps {
-  searchParams: Promise<{ topic?: string }>;
+  searchParams: Promise<{ topic?: string; year?: string; session?: string; tag?: string }>;
 }
 
 export default async function PracticePage({ searchParams }: PageProps) {
-  const { topic: activeTopic } = await searchParams;
+  const { topic: activeTopic, year: yearParam, session: activeSession, tag: activeTag } = await searchParams;
+  const activeYear = yearParam ? parseInt(yearParam, 10) : undefined;
+
   const session = await auth();
   const isPremium = session?.user?.plan === 'PREMIUM';
   const hasFullAccess = isPremium || !PREMIUM_GATING_ENABLED;
@@ -51,11 +55,38 @@ export default async function PracticePage({ searchParams }: PageProps) {
     // DB not yet configured — show placeholder
   }
 
-  // Distinct topics (sorted)
+  // ── Derived filter data ────────────────────────────────────────────────────
   const topics = Array.from(new Set(questions.map((q) => q.topic).filter(Boolean) as string[])).sort();
 
-  // Filter by topic
-  const filtered = activeTopic ? questions.filter((q) => q.topic === activeTopic) : questions;
+  // Year groups: sorted descending, each with its unique sessions sorted
+  const yearSessionMap = new Map<number, Set<string>>();
+  for (const q of questions) {
+    if (q.year) {
+      if (!yearSessionMap.has(q.year)) yearSessionMap.set(q.year, new Set());
+      if (q.session) yearSessionMap.get(q.year)!.add(q.session);
+    }
+  }
+  const SESSION_ORDER = ['May/Jun', 'Oct/Nov', 'Feb/Mar'];
+  const yearGroups = Array.from(yearSessionMap.entries())
+    .sort(([a], [b]) => b - a)
+    .map(([year, sessionsSet]) => ({
+      year,
+      sessions: Array.from(sessionsSet).sort(
+        (a, b) => SESSION_ORDER.indexOf(b) - SESSION_ORDER.indexOf(a)
+      ),
+    }));
+
+  // All unique tags (sorted)
+  const allTags = Array.from(new Set(questions.flatMap((q) => q.tags))).sort();
+
+  // ── Filtering ──────────────────────────────────────────────────────────────
+  const filtered = questions.filter((q) => {
+    if (activeTopic && q.topic !== activeTopic) return false;
+    if (activeYear && q.year !== activeYear) return false;
+    if (activeSession && q.session !== activeSession) return false;
+    if (activeTag && !q.tags.includes(activeTag)) return false;
+    return true;
+  });
 
   // Group by difficulty
   const grouped = DIFFICULTIES.reduce(
@@ -70,7 +101,7 @@ export default async function PracticePage({ searchParams }: PageProps) {
   const totalSolved = Array.from(progressMap.values()).filter((p) => p.status === 'SOLVED').length;
   const totalQuestions = questions.length;
 
-  // "Continue where you left off" — most recently touched in-progress question
+  // "Continue where you left off"
   const resumeQuestion = (() => {
     if (!session?.user?.id) return null;
     const inProgress = Array.from(progressMap.entries())
@@ -112,7 +143,6 @@ export default async function PracticePage({ searchParams }: PageProps) {
             </p>
           </div>
 
-          {/* Progress summary */}
           {session && totalQuestions > 0 && (
             <div className="shrink-0 text-right">
               <div className="text-2xl font-bold text-light-text">
@@ -132,65 +162,42 @@ export default async function PracticePage({ searchParams }: PageProps) {
           )}
         </div>
 
-        {/* Premium notice */}
+        {/* Premium / sign-in notices */}
         {!PREMIUM_GATING_ENABLED && (
           <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-primary/20 bg-primary/5 text-xs text-primary mb-4">
             <Crown size={13} className="shrink-0" />
             <span>Premium is coming soon. For now, all question difficulties are available to everyone.</span>
           </div>
         )}
-
-        {/* Plan notice for free users when premium gating is enabled */}
         {PREMIUM_GATING_ENABLED && session && !isPremium && (
           <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-warning/20 bg-warning/5 text-xs text-warning mb-4">
             <Crown size={13} className="shrink-0" />
             <span>
-              Free plan — easy questions are fully available. <strong>Upgrade to Premium</strong> to unlock medium and
-              hard questions.
+              Free plan — easy questions are fully available. <strong>Upgrade to Premium</strong> to unlock medium and hard questions.
             </span>
           </div>
         )}
-
-        {/* Sign-in prompt */}
         {!session && (
           <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-primary/20 bg-primary/5 text-xs text-primary mb-4">
-            <Link href="/auth/signin" className="underline font-medium hover:text-light-text transition-colors">
-              Sign in
-            </Link>
+            <Link href="/auth/signin" className="underline font-medium hover:text-light-text transition-colors">Sign in</Link>
             <span className="text-dark-text">to track your progress.</span>
           </div>
         )}
 
-        {/* Topic filter chips */}
-        {topics.length > 0 && (
-          <div className="flex flex-wrap gap-2 mb-6">
-            <Link
-              href="/practice"
-              className={`px-3 py-1 rounded-full border text-xs transition-colors ${
-                !activeTopic
-                  ? 'bg-primary/20 border-primary/50 text-primary'
-                  : 'border-border text-dark-text hover:border-primary/40 hover:text-light-text'
-              }`}
-            >
-              All
-            </Link>
-            {topics.map((t) => (
-              <Link
-                key={t}
-                href={`/practice?topic=${encodeURIComponent(t)}`}
-                className={`inline-flex items-center gap-1 px-3 py-1 rounded-full border text-xs transition-colors ${
-                  activeTopic === t
-                    ? 'bg-primary/20 border-primary/50 text-primary'
-                    : 'border-border text-dark-text hover:border-primary/40 hover:text-light-text'
-                }`}
-              >
-                {t === 'File Handling' && <FileText size={10} />}
-                {t}
-              </Link>
-            ))}
-          </div>
-        )}
+        {/* Filters */}
+        <Suspense fallback={null}>
+          <PracticeFilters
+            topics={topics}
+            yearGroups={yearGroups}
+            allTags={allTags}
+            activeTopic={activeTopic}
+            activeYear={activeYear}
+            activeSession={activeSession}
+            activeTag={activeTag}
+          />
+        </Suspense>
 
+        {/* Question list */}
         {questions.length === 0 ? (
           <div className="rounded-lg border border-border bg-surface p-8 text-center text-dark-text">
             <p className="text-sm">No questions yet. Add questions via the database.</p>
@@ -204,7 +211,6 @@ export default async function PracticePage({ searchParams }: PageProps) {
             {DIFFICULTIES.map((d) => {
               const qs = grouped[d];
               if (qs.length === 0) return null;
-
               const isLocked = d !== 'EASY' && !hasFullAccess;
 
               return (
@@ -222,7 +228,6 @@ export default async function PracticePage({ searchParams }: PageProps) {
                   </div>
                   <div className="space-y-2">
                     {qs.map((q) => {
-                      // Build a compact reference string from structured fields
                       const paperRef = q.year
                         ? [
                             q.year,
@@ -233,26 +238,23 @@ export default async function PracticePage({ searchParams }: PageProps) {
                         : q.paper ?? null;
                       const progress = progressMap.get(q.id);
                       const solved = progress?.status === 'SOLVED';
+
                       const cardContent = (
                         <>
                           <div className="flex items-center gap-3 min-w-0">
-                            {/* Progress indicator */}
                             {isLocked ? (
                               <Lock className="h-4 w-4 text-dark-text/40 shrink-0" />
                             ) : solved ? (
                               <CheckCircle className="h-4 w-4 text-success shrink-0" />
                             ) : progress ? (
-                              <div
-                                className="h-4 w-4 rounded-full border-2 border-warning shrink-0"
-                                title="Attempted"
-                              />
+                              <div className="h-4 w-4 rounded-full border-2 border-warning shrink-0" title="Attempted" />
                             ) : (
                               <div className="h-4 w-4 rounded-full border-2 border-border shrink-0" />
                             )}
 
                             <div className="min-w-0">
                               <div className="font-medium text-light-text truncate">{q.title}</div>
-                              {(q.topic || paperRef) && (
+                              {(q.topic || paperRef || q.tags.length > 0) && (
                                 <div className="flex flex-wrap items-center gap-1.5 mt-1">
                                   {q.topic && (
                                     <span className={`inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded border ${
@@ -270,6 +272,11 @@ export default async function PracticePage({ searchParams }: PageProps) {
                                   {q.marks && (
                                     <span className="text-[10px] text-warning/70 font-mono">{q.marks}m</span>
                                   )}
+                                  {q.tags.slice(0, 3).map((tag) => (
+                                    <span key={tag} className="text-[10px] px-1.5 py-0.5 rounded-full border border-border/60 text-dark-text/50">
+                                      {tag}
+                                    </span>
+                                  ))}
                                 </div>
                               )}
                             </div>
@@ -281,9 +288,7 @@ export default async function PracticePage({ searchParams }: PageProps) {
                                 {progress.bestScore}/{progress.totalTests}
                               </span>
                             )}
-                            <span
-                              className={`text-xs font-semibold px-2 py-0.5 rounded border ${DIFFICULTY_BADGE[q.difficulty] ?? 'border-border text-dark-text'}`}
-                            >
+                            <span className={`text-xs font-semibold px-2 py-0.5 rounded border ${DIFFICULTY_BADGE[q.difficulty] ?? 'border-border text-dark-text'}`}>
                               {q.difficulty}
                             </span>
                           </div>
@@ -322,7 +327,7 @@ export default async function PracticePage({ searchParams }: PageProps) {
 async function fetchQuestions() {
   return prisma.question.findMany({
     select: {
-      id: true, title: true, difficulty: true, topic: true,
+      id: true, title: true, difficulty: true, topic: true, tags: true,
       year: true, session: true, variant: true, paper: true,
       questionNumber: true, part: true, marks: true,
     },

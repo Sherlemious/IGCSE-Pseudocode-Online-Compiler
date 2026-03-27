@@ -108,6 +108,7 @@ model Question {
   part           String?   // "a", "b", "(i)", "(ii)"
   marks          Int?
   topic          String?
+  tags           String[] @default([])
   starterCode String?    @db.Text
 
   hints               String[]

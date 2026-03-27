@@ -2956,6 +2956,2739 @@ CLOSEFILE "output.txt"`,
       },
     ],
   },
+
+  // ════════════════════════════════════════ OCT/NOV 2025 PAST PAPERS ═══
+
+  {
+    title: 'Theme Park Booking',
+    description: `Calculate the total cost of a theme park booking based on the number of adult and child tickets required.
+
+**Input:** Two integers on separate lines: number of adult tickets, then number of child tickets.
+**Output:** The total cost of the booking including a fixed booking fee, formatted exactly as shown.
+
+- Adult tickets cost $12.99 each.
+- Child tickets cost $7.99 each.
+- A booking fee of $1.99 is added to every booking.
+
+**Example:**
+\`\`\`
+Input:  2
+        2
+Output: The total cost is 43.95
+\`\`\``,
+    difficulty: 'EASY' as const,
+    topic: 'Arithmetic',
+    tags: ['Past Paper', 'Unseen'],
+    year: 2025,
+    session: 'Oct/Nov',
+    variant: 3,
+    starterCode: `DECLARE Adult : INTEGER
+DECLARE Child : INTEGER
+DECLARE Total : REAL
+
+INPUT Adult
+INPUT Child
+
+// Calculate the total cost using the ticket prices and booking fee
+// Output the total with the exact message format required`,
+    hints: [
+      'Multiply the number of adults by 12.99 and children by 7.99.',
+      'Do not forget to add the 1.99 booking fee at the end of your calculation.',
+      'Use string concatenation: OUTPUT "The total cost is " & Total',
+    ],
+    solution: `DECLARE Adult : INTEGER
+DECLARE Child : INTEGER
+DECLARE Total : REAL
+
+INPUT Adult
+INPUT Child
+
+Total <- (Adult * 12.99) + (Child * 7.99) + 1.99
+
+OUTPUT "The total cost is " & Total`,
+    solutionExplanation: 'Read the ticket counts, compute the total using the three constants, and output the result with the required label using string concatenation.',
+    testCases: [
+      { inputs: ['2', '2'],   expectedOutput: 'The total cost is 43.95', description: '2 adults, 2 children', sortOrder: 0 },
+      { inputs: ['1', '0'],   expectedOutput: 'The total cost is 14.98', description: '1 adult, 0 children',  sortOrder: 1 },
+      { inputs: ['0', '3'],   expectedOutput: 'The total cost is 25.96', description: '0 adults, 3 children', sortOrder: 2, isHidden: true },
+      { inputs: ['10', '10'], expectedOutput: 'The total cost is 211.79', description: 'Large group',         sortOrder: 3, isHidden: true },
+      { inputs: ['2', '1'],   expectedOutput: 'The total cost is 35.96', description: '2 adults, 1 child',   sortOrder: 4, isHidden: true },
+    ],
+  },
+
+  {
+    title: 'Seconds to Minutes and Seconds',
+    description: `Convert a total number of seconds into minutes and remaining seconds.
+
+**Input:** A single integer representing the total number of seconds.
+**Output:** Two lines stating the number of minutes and the number of remaining seconds.
+
+**Example:**
+\`\`\`
+Input:  130
+Output: The number of minutes is 2
+        The number of seconds is 10
+\`\`\``,
+    difficulty: 'EASY' as const,
+    topic: 'Arithmetic',
+    tags: ['Past Paper', 'Unseen'],
+    year: 2025,
+    session: 'Oct/Nov',
+    variant: 1,
+    starterCode: `DECLARE TotalSeconds : INTEGER
+DECLARE Minutes : INTEGER
+DECLARE Seconds : INTEGER
+
+INPUT TotalSeconds
+
+// Use integer division to find the minutes
+// Use modulo to find the remaining seconds
+// Output both results`,
+    hints: [
+      'Think about which built-in math functions give you the whole number of times 60 fits into a number, and the remainder.',
+      'Use the DIV function for minutes and the MOD function for seconds.',
+      'Minutes <- DIV(TotalSeconds, 60) and Seconds <- MOD(TotalSeconds, 60)',
+    ],
+    solution: `DECLARE TotalSeconds : INTEGER
+DECLARE Minutes : INTEGER
+DECLARE Seconds : INTEGER
+
+INPUT TotalSeconds
+
+Minutes <- DIV(TotalSeconds, 60)
+Seconds <- MOD(TotalSeconds, 60)
+
+OUTPUT "The number of minutes is " & Minutes
+OUTPUT "The number of seconds is " & Seconds`,
+    solutionExplanation: 'DIV extracts the integer quotient (minutes) and MOD extracts the remainder (seconds) when dividing by 60.',
+    testCases: [
+      { inputs: ['130'],  expectedOutput: 'The number of minutes is 2\nThe number of seconds is 10',  description: 'Over two minutes',  sortOrder: 0 },
+      { inputs: ['59'],   expectedOutput: 'The number of minutes is 0\nThe number of seconds is 59',  description: 'Under a minute',    sortOrder: 1 },
+      { inputs: ['3600'], expectedOutput: 'The number of minutes is 60\nThe number of seconds is 0',  description: 'Exactly one hour',  sortOrder: 2, isHidden: true },
+      { inputs: ['3665'], expectedOutput: 'The number of minutes is 61\nThe number of seconds is 5',  description: 'Over an hour',      sortOrder: 3, isHidden: true },
+      { inputs: ['0'],    expectedOutput: 'The number of minutes is 0\nThe number of seconds is 0',   description: 'Zero seconds',      sortOrder: 4, isHidden: true },
+    ],
+  },
+
+  {
+    title: 'Email Validation Check',
+    description: `Validate an email address by checking that it contains an @ symbol. Use the SUBSTRING function to inspect each character.
+
+**Input:** A string representing the email address to check.
+**Output:** The original email address followed by " is valid" or " is NOT valid".
+
+**Example:**
+\`\`\`
+Input:  hello@world.com
+Output: hello@world.com is valid
+\`\`\``,
+    difficulty: 'MEDIUM' as const,
+    topic: 'String Processing',
+    tags: ['Past Paper', 'Unseen', 'Validation'],
+    year: 2025,
+    session: 'Oct/Nov',
+    variant: 2,
+    starterCode: `DECLARE EmailAddress : STRING
+DECLARE Valid : BOOLEAN
+DECLARE i : INTEGER
+DECLARE Char : CHAR
+
+INPUT EmailAddress
+Valid <- FALSE
+
+// Loop through the length of the string
+// Use SUBSTRING to extract one character at a time
+// If the character is "@" then set Valid to TRUE
+
+// Output the final decision`,
+    hints: [
+      'You will need a FOR loop that runs from 1 to LENGTH(EmailAddress).',
+      'Inside the loop, check if SUBSTRING(EmailAddress, i, 1) = "@".',
+      'After the loop, use IF/ELSE to output the right message based on the boolean flag.',
+    ],
+    solution: `DECLARE EmailAddress : STRING
+DECLARE Valid : BOOLEAN
+DECLARE i : INTEGER
+DECLARE Char : CHAR
+
+INPUT EmailAddress
+Valid <- FALSE
+
+FOR i <- 1 TO LENGTH(EmailAddress)
+    Char <- SUBSTRING(EmailAddress, i, 1)
+    IF Char = "@" THEN
+        Valid <- TRUE
+    ENDIF
+NEXT i
+
+IF Valid = TRUE THEN
+    OUTPUT EmailAddress & " is valid"
+ELSE
+    OUTPUT EmailAddress & " is NOT valid"
+ENDIF`,
+    solutionExplanation: 'Iterate each character via SUBSTRING, flipping a boolean flag to TRUE when "@" is found, then format the output based on that flag.',
+    testCases: [
+      { inputs: ['hello@world.com'],  expectedOutput: 'hello@world.com is valid',     description: 'Valid email',       sortOrder: 0 },
+      { inputs: ['no_at_symbol.com'], expectedOutput: 'no_at_symbol.com is NOT valid', description: 'Missing @ symbol',  sortOrder: 1 },
+      { inputs: ['a@b'],              expectedOutput: 'a@b is valid',                  description: 'Short valid email', sortOrder: 2, isHidden: true },
+      { inputs: ['just_text'],        expectedOutput: 'just_text is NOT valid',         description: 'Plain text',        sortOrder: 3, isHidden: true },
+      { inputs: ['@start'],           expectedOutput: '@start is valid',                description: 'Starts with @',     sortOrder: 4, isHidden: true },
+    ],
+  },
+
+  {
+    title: '8-Bit Binary Converter',
+    description: `Convert a positive denary (base-10) integer into an 8-bit binary string.
+
+**Input:** A whole number between 1 and 255 inclusive.
+**Output:** An 8-character string representing the binary equivalent (with leading zeros).
+
+**Example:**
+\`\`\`
+Input:  127
+Output: 01111111
+\`\`\``,
+    difficulty: 'MEDIUM' as const,
+    topic: 'Algorithms',
+    tags: ['Past Paper', 'Unseen', 'Number Systems'],
+    year: 2025,
+    session: 'Oct/Nov',
+    variant: 3,
+    starterCode: `DECLARE DenaryNumber : INTEGER
+DECLARE BinaryStr : STRING
+DECLARE Remainder : INTEGER
+DECLARE Count : INTEGER
+
+INPUT DenaryNumber
+BinaryStr <- ""
+
+// Loop exactly 8 times to get all 8 bits
+// Find the remainder of DenaryNumber divided by 2
+// Put the new bit at the FRONT of BinaryStr
+// Divide DenaryNumber by 2 (using DIV to drop fractions)`,
+    hints: [
+      'Use a FOR loop that runs 8 times to guarantee exactly 8 bits are generated.',
+      'To put the bit at the front of the string, use: BinaryStr <- "1" & BinaryStr',
+      'Use MOD(DenaryNumber, 2) to get the bit, and DIV(DenaryNumber, 2) to reduce the number each iteration.',
+    ],
+    solution: `DECLARE DenaryNumber : INTEGER
+DECLARE BinaryStr : STRING
+DECLARE Remainder : INTEGER
+DECLARE Count : INTEGER
+
+INPUT DenaryNumber
+BinaryStr <- ""
+
+FOR Count <- 1 TO 8
+    Remainder <- MOD(DenaryNumber, 2)
+    IF Remainder = 1 THEN
+        BinaryStr <- "1" & BinaryStr
+    ELSE
+        BinaryStr <- "0" & BinaryStr
+    ENDIF
+    DenaryNumber <- DIV(DenaryNumber, 2)
+NEXT Count
+
+OUTPUT BinaryStr`,
+    solutionExplanation: 'Repeated division by 2 discovers the LSB first, so each new bit is prepended to maintain correct binary order.',
+    testCases: [
+      { inputs: ['127'], expectedOutput: '01111111', description: 'Max value starting with 0', sortOrder: 0 },
+      { inputs: ['255'], expectedOutput: '11111111', description: 'All ones',                   sortOrder: 1 },
+      { inputs: ['1'],   expectedOutput: '00000001', description: 'Just one',                   sortOrder: 2, isHidden: true },
+      { inputs: ['170'], expectedOutput: '10101010', description: 'Alternating bits',           sortOrder: 3, isHidden: true },
+      { inputs: ['12'],  expectedOutput: '00001100', description: 'Small even number',          sortOrder: 4, isHidden: true },
+    ],
+  },
+
+  // ════════════════════════════════════════ MAY/JUN 2025 PAST PAPERS ════
+
+  {
+    title: 'Extract Country Code',
+    description: `A telephone number is input as a 13-character string. The first character is always '+', followed by a 2-digit country code (e.g. "+441234567890").
+
+Extract the 2-digit country code and check its value:
+- Code "44" → output \`UK\`
+- Code "20" → output \`Egypt\`
+- Any other code → output \`Unknown\`
+
+**Input:** A single 13-character string.
+**Output:** \`UK\`, \`Egypt\`, or \`Unknown\`.
+
+**Example:**
+\`\`\`
+Input:  +201234567890
+Output: Egypt
+\`\`\``,
+    difficulty: 'MEDIUM' as const,
+    topic: 'String Processing',
+    tags: ['Past Paper', 'Selection'],
+    year: 2025,
+    session: 'May/Jun',
+    variant: 1,
+    starterCode: `DECLARE Telephone : STRING
+DECLARE CountryCode : STRING
+
+INPUT Telephone
+
+// Extract the country code using SUBSTRING
+// The code starts at position 2 and is 2 characters long
+// Check the code and output the appropriate country`,
+    hints: [
+      'Use the SUBSTRING function to extract the 2-digit code. Strings are 1-indexed and the "+" is at position 1.',
+      'SUBSTRING(Telephone, 2, 2) will give you the two digits you need.',
+      'Use IF...ELSE to compare the extracted string to "44" and "20".',
+    ],
+    solution: `DECLARE Telephone : STRING
+DECLARE CountryCode : STRING
+
+INPUT Telephone
+CountryCode <- SUBSTRING(Telephone, 2, 2)
+
+IF CountryCode = "44" THEN
+    OUTPUT "UK"
+ELSE
+    IF CountryCode = "20" THEN
+        OUTPUT "Egypt"
+    ELSE
+        OUTPUT "Unknown"
+    ENDIF
+ENDIF`,
+    solutionExplanation: 'SUBSTRING grabs exactly 2 characters from index 2, skipping the "+". Nested IF statements then determine the matching country.',
+    testCases: [
+      { inputs: ['+441234567890'], expectedOutput: 'UK',      description: 'UK country code',      sortOrder: 0 },
+      { inputs: ['+209876543210'], expectedOutput: 'Egypt',   description: 'Egypt country code',   sortOrder: 1 },
+      { inputs: ['+115555555555'], expectedOutput: 'Unknown', description: 'Unknown country code', sortOrder: 2 },
+      { inputs: ['+440000000000'], expectedOutput: 'UK',      description: null,                   sortOrder: 3, isHidden: true },
+      { inputs: ['+991234567890'], expectedOutput: 'Unknown', description: null,                   sortOrder: 4, isHidden: true },
+    ],
+  },
+
+  {
+    title: 'Odd or Even Function',
+    description: `Write a function named \`Odds\` that takes an integer parameter \`X\` and returns \`"Even"\` if the number is even, or \`"Odd"\` if it is odd.
+
+In the main program: input an integer into \`A\`, call \`Odds(A)\`, store the result in \`B\`, and output \`B\`.
+
+**Input:** A single integer.
+**Output:** \`"Even"\` or \`"Odd"\`.
+
+**Example:**
+\`\`\`
+Input:  7
+Output: Odd
+\`\`\``,
+    difficulty: 'EASY' as const,
+    topic: 'Procedures & Functions',
+    tags: ['Past Paper', 'Functions'],
+    year: 2025,
+    session: 'May/Jun',
+    variant: 1,
+    starterCode: `DECLARE A : INTEGER
+DECLARE B : STRING
+
+// Define your function here
+FUNCTION Odds(X : INTEGER) RETURNS STRING
+    // Check if X is divisible by 2
+
+ENDFUNCTION
+
+INPUT A
+// Call the function and assign to B
+// Output B`,
+    hints: [
+      'Use the MOD library routine to find the remainder of X divided by 2.',
+      'If MOD(X, 2) = 0, the number is even. Use RETURN to send the string back.',
+      'Assign the result: B <- Odds(A), then OUTPUT B.',
+    ],
+    solution: `DECLARE A : INTEGER
+DECLARE B : STRING
+
+FUNCTION Odds(X : INTEGER) RETURNS STRING
+    IF MOD(X, 2) = 0 THEN
+        RETURN "Even"
+    ELSE
+        RETURN "Odd"
+    ENDIF
+ENDFUNCTION
+
+INPUT A
+B <- Odds(A)
+OUTPUT B`,
+    solutionExplanation: 'The function uses MOD to determine divisibility by 2. The main program inputs the value, calls the function, and outputs the returned string.',
+    testCases: [
+      { inputs: ['4'],   expectedOutput: 'Even', description: 'Positive even', sortOrder: 0 },
+      { inputs: ['7'],   expectedOutput: 'Odd',  description: 'Positive odd',  sortOrder: 1 },
+      { inputs: ['0'],   expectedOutput: 'Even', description: 'Zero is even',  sortOrder: 2 },
+      { inputs: ['-3'],  expectedOutput: 'Odd',  description: null,            sortOrder: 3, isHidden: true },
+      { inputs: ['100'], expectedOutput: 'Even', description: null,            sortOrder: 4, isHidden: true },
+    ],
+  },
+
+  {
+    title: 'Password Length Validation',
+    description: `A password must contain at least 12 characters. Write an algorithm that prompts a user to enter a password. If it is less than 12 characters, output \`"Password too short, please try again"\` and ask again. Repeat until valid, then output \`"Password accepted"\`.
+
+**Input:** One or more strings representing password attempts.
+**Output:** Error messages for each invalid attempt, then the success message.
+
+**Example:**
+\`\`\`
+Input:  short
+        thisislongenough
+Output: Password too short, please try again
+        Password accepted
+\`\`\``,
+    difficulty: 'EASY' as const,
+    topic: 'Loops',
+    tags: ['Past Paper', 'Validation'],
+    year: 2025,
+    session: 'May/Jun',
+    variant: 3,
+    starterCode: `DECLARE Password : STRING
+
+// Use a REPEAT...UNTIL loop for validation
+REPEAT
+    INPUT Password
+
+    // Check length and output error if necessary
+
+UNTIL // Add condition here
+
+OUTPUT "Password accepted"`,
+    hints: [
+      'A REPEAT...UNTIL loop is perfect here because you always want to ask at least once.',
+      'Use the LENGTH() function to check the number of characters in Password.',
+      'The loop continues UNTIL LENGTH(Password) >= 12. Inside, use IF to print the error if LENGTH(Password) < 12.',
+    ],
+    solution: `DECLARE Password : STRING
+
+REPEAT
+    INPUT Password
+    IF LENGTH(Password) < 12 THEN
+        OUTPUT "Password too short, please try again"
+    ENDIF
+UNTIL LENGTH(Password) >= 12
+
+OUTPUT "Password accepted"`,
+    solutionExplanation: 'A REPEAT loop guarantees the user is prompted at least once. LENGTH validates the size, prints an error if too short, and exits when valid.',
+    testCases: [
+      { inputs: ['tooshort', 'validpassword123'],                   expectedOutput: 'Password too short, please try again\nPassword accepted',                                                                  description: 'One invalid then valid',      sortOrder: 0 },
+      { inputs: ['exactlytwelv'],                                    expectedOutput: 'Password accepted',                                                                                                         description: 'Exactly 12 characters',       sortOrder: 1 },
+      { inputs: ['123', '456', 'superlongpassword'],                 expectedOutput: 'Password too short, please try again\nPassword too short, please try again\nPassword accepted',                            description: 'Two invalid then valid',      sortOrder: 2 },
+      { inputs: ['a', 'b', 'c', 'thisisacceptable'],                 expectedOutput: 'Password too short, please try again\nPassword too short, please try again\nPassword too short, please try again\nPassword accepted', description: null, sortOrder: 3, isHidden: true },
+      { inputs: ['verylongpasswordfromthestart'],                    expectedOutput: 'Password accepted',                                                                                                         description: null,                          sortOrder: 4, isHidden: true },
+    ],
+  },
+
+  {
+    title: 'Double Entry Verification',
+    description: `To prevent data entry errors, a double-entry check is used.
+
+Write a program that:
+1. Inputs 3 numbers into an array called \`Numbers\`.
+2. Asks the user to re-enter each number for verification.
+3. If the second entry does not match, output \`"Error, re-enter"\` and store the corrected input in the array.
+4. After all checks, output \`"The check has been completed."\`
+
+**Input:** 3 integers (initial), then 3 verification integers (plus corrections if mismatched).
+**Output:** Error messages for mismatches, then the completion message.
+
+**Example:**
+\`\`\`
+Input:  1
+        2
+        3
+        1
+        9
+        2
+Output: Error, re-enter
+        The check has been completed.
+\`\`\``,
+    difficulty: 'MEDIUM' as const,
+    topic: 'Arrays',
+    tags: ['Past Paper', 'Verification'],
+    year: 2025,
+    session: 'May/Jun',
+    variant: 2,
+    starterCode: `DECLARE Numbers : ARRAY[1:3] OF INTEGER
+DECLARE Index : INTEGER
+DECLARE CheckNumber : INTEGER
+
+// First loop: populate the array
+FOR Index <- 1 TO 3
+    INPUT Numbers[Index]
+NEXT Index
+
+// Second loop: verify the entries
+FOR Index <- 1 TO 3
+    INPUT CheckNumber
+
+    // Compare CheckNumber to Numbers[Index]
+    // If different, print error and overwrite Numbers[Index] with a new INPUT
+
+NEXT Index
+
+OUTPUT "The check has been completed."`,
+    hints: [
+      'You need two separate FOR loops from 1 TO 3. The first fills the array.',
+      'In the second loop, compare the new input CheckNumber with Numbers[Index].',
+      'If CheckNumber <> Numbers[Index], output the error and INPUT Numbers[Index] to store the correction.',
+    ],
+    solution: `DECLARE Numbers : ARRAY[1:3] OF INTEGER
+DECLARE Index : INTEGER
+DECLARE CheckNumber : INTEGER
+
+FOR Index <- 1 TO 3
+    INPUT Numbers[Index]
+NEXT Index
+
+FOR Index <- 1 TO 3
+    INPUT CheckNumber
+    IF CheckNumber <> Numbers[Index] THEN
+        OUTPUT "Error, re-enter"
+        INPUT Numbers[Index]
+    ENDIF
+NEXT Index
+
+OUTPUT "The check has been completed."`,
+    solutionExplanation: 'Two loops: first fills the array, second verifies each entry. A mismatch triggers an error message and a corrective INPUT that overwrites the stored value.',
+    testCases: [
+      { inputs: ['5', '10', '15', '5', '10', '15'],         expectedOutput: 'The check has been completed.',                    description: 'All match',          sortOrder: 0 },
+      { inputs: ['1', '2', '3', '1', '9', '2', '3'],        expectedOutput: 'Error, re-enter\nThe check has been completed.',   description: 'One mismatch',       sortOrder: 1 },
+      { inputs: ['0', '0', '0', '0', '1', '0', '0'],        expectedOutput: 'Error, re-enter\nThe check has been completed.',   description: null,                 sortOrder: 2, isHidden: true },
+      { inputs: ['99', '88', '77', '99', '88', '77'],        expectedOutput: 'The check has been completed.',                    description: null,                 sortOrder: 3, isHidden: true },
+    ],
+  },
+
+  {
+    title: 'Extract Consonants',
+    description: `Given an uppercase string, output each consonant on a new line. Vowels (A, E, I, O, U) should be skipped.
+
+**Input:** A single string in uppercase.
+**Output:** The consonants of the string, each on a new line.
+
+**Example:**
+\`\`\`
+Input:  COMPUTER
+Output: C
+        M
+        P
+        T
+        R
+\`\`\``,
+    difficulty: 'MEDIUM' as const,
+    topic: 'String Processing',
+    tags: ['Past Paper', 'Iteration'],
+    year: 2025,
+    session: 'May/Jun',
+    variant: 3,
+    starterCode: `DECLARE Word : STRING
+DECLARE Index : INTEGER
+DECLARE Letter : CHAR
+
+INPUT Word
+
+// Loop through each character using LENGTH(Word)
+FOR Index <- 1 TO LENGTH(Word)
+    Letter <- SUBSTRING(Word, Index, 1)
+
+    // Use a CASE statement to skip vowels and output consonants
+
+NEXT Index`,
+    hints: [
+      'Use a FOR loop from 1 TO LENGTH(Word) to examine each letter.',
+      'Use a CASE statement with cases for "A", "E", "I", "O", "U" that do nothing, and an OTHERWISE case that outputs the letter.',
+      'Alternatively: IF Letter <> "A" AND Letter <> "E" AND Letter <> "I" AND Letter <> "O" AND Letter <> "U" THEN OUTPUT Letter',
+    ],
+    solution: `DECLARE Word : STRING
+DECLARE Index : INTEGER
+DECLARE Letter : CHAR
+
+INPUT Word
+
+FOR Index <- 1 TO LENGTH(Word)
+    Letter <- SUBSTRING(Word, Index, 1)
+    CASE OF Letter
+        "A" : Letter <- ""
+        "E" : Letter <- ""
+        "I" : Letter <- ""
+        "O" : Letter <- ""
+        "U" : Letter <- ""
+        OTHERWISE : OUTPUT Letter
+    ENDCASE
+NEXT Index`,
+    solutionExplanation: 'SUBSTRING extracts each character. The CASE statement acts as a filter — doing nothing for vowels but triggering OUTPUT for any other character.',
+    testCases: [
+      { inputs: ['COMPUTER'], expectedOutput: 'C\nM\nP\nT\nR',    description: 'Standard word',                sortOrder: 0 },
+      { inputs: ['SCIENCE'],  expectedOutput: 'S\nC\nN\nC',       description: 'Multiple consecutive vowels',  sortOrder: 1 },
+      { inputs: ['AEIOU'],    expectedOutput: '',                   description: 'All vowels — no output',       sortOrder: 2 },
+      { inputs: ['RHYTHM'],   expectedOutput: 'R\nH\nY\nT\nH\nM', description: null,                           sortOrder: 3, isHidden: true },
+      { inputs: ['APPLE'],    expectedOutput: 'P\nP\nL',           description: null,                           sortOrder: 4, isHidden: true },
+    ],
+  },
+
+  // ════════════════════════════════════════ FEB/MAR 2025 PAST PAPERS ════
+
+  {
+    title: 'Integer Input Validation',
+    description: `Write an algorithm to allow a number to be input and check whether it is an integer.
+
+If the number is an integer, the loop ends. If not, output \`"Please try again"\` and repeat until a valid integer is provided.
+
+**Input:** A sequence of numbers.
+**Output:** \`"Please try again"\` for each non-integer input.
+
+**Example:**
+\`\`\`
+Input:  4.5
+        3.14
+        7
+Output: Please try again
+        Please try again
+\`\`\``,
+    difficulty: 'EASY' as const,
+    topic: 'Loops',
+    tags: ['Past Paper', 'Complete Question', 'Validation'],
+    year: 2025,
+    session: 'Feb/Mar',
+    starterCode: `DECLARE Number : REAL
+
+// Add your loop and validation logic here`,
+    hints: [
+      'You need a loop that continues until a valid integer is entered. A REPEAT...UNTIL loop runs the body at least once.',
+      'To check if a number is an integer, use MOD() to find the remainder when divided by 1.',
+      'Check if MOD(Number, 1) <> 0 to output the error, and set UNTIL MOD(Number, 1) = 0.',
+    ],
+    solution: `DECLARE Number : REAL
+
+REPEAT
+    INPUT Number
+    IF MOD(Number, 1) <> 0 THEN
+        OUTPUT "Please try again"
+    ENDIF
+UNTIL MOD(Number, 1) = 0`,
+    solutionExplanation: 'A REPEAT...UNTIL loop prompts for input. MOD(Number, 1) checks for a fractional part; if non-zero, the number is not an integer and the error message is output.',
+    testCases: [
+      { inputs: ['4.5', '3.14', '7'], expectedOutput: 'Please try again\nPlease try again', description: 'Two invalid then valid',     sortOrder: 0 },
+      { inputs: ['10'],               expectedOutput: '',                                    description: 'Valid on first try',         sortOrder: 1 },
+      { inputs: ['0.99', '1'],        expectedOutput: 'Please try again',                   description: null,                         sortOrder: 2, isHidden: true },
+      { inputs: ['-4.5', '-4'],       expectedOutput: 'Please try again',                   description: null,                         sortOrder: 3, isHidden: true },
+      { inputs: ['0'],                expectedOutput: '',                                    description: null,                         sortOrder: 4, isHidden: true },
+    ],
+  },
+
+  {
+    title: 'Highest, Smallest, Total and Average',
+    description: `Write an algorithm that takes 5 positive integers as input, finds the highest and smallest values, calculates their total, and outputs the average rounded to 2 decimal places.
+
+**Input:** 5 positive integers.
+**Output:** Four lines: the highest number, the smallest number, the total, and the average.
+
+**Example:**
+\`\`\`
+Input:  10
+        20
+        30
+        40
+        50
+Output: The highest number is 50
+        The smallest number is 10
+        The total is 150
+        The average is 30
+\`\`\``,
+    difficulty: 'MEDIUM' as const,
+    topic: 'Algorithms',
+    tags: ['Past Paper', 'Adapted'],
+    year: 2025,
+    session: 'Feb/Mar',
+    starterCode: `DECLARE Highest : INTEGER
+DECLARE Smallest : INTEGER
+DECLARE Total : INTEGER
+DECLARE Count : INTEGER
+DECLARE Num : INTEGER
+
+Highest <- 0
+Smallest <- 99999
+Total <- 0
+
+// Add your loop to read 5 numbers and calculate the required values
+
+OUTPUT "The highest number is " & Highest
+// Output the remaining results`,
+    hints: [
+      'Use a FOR loop running from 1 to 5 to handle the inputs.',
+      'Inside the loop, add the input to Total and use IF statements to update Highest and Smallest.',
+      'Use ROUND(Total / 5, 2) for the average in the final OUTPUT statement.',
+    ],
+    solution: `DECLARE Highest : INTEGER
+DECLARE Smallest : INTEGER
+DECLARE Total : INTEGER
+DECLARE Count : INTEGER
+DECLARE Num : INTEGER
+
+Highest <- 0
+Smallest <- 99999
+Total <- 0
+
+FOR Count <- 1 TO 5
+    INPUT Num
+    Total <- Total + Num
+    IF Num > Highest THEN
+        Highest <- Num
+    ENDIF
+    IF Num < Smallest THEN
+        Smallest <- Num
+    ENDIF
+NEXT Count
+
+OUTPUT "The highest number is " & Highest
+OUTPUT "The smallest number is " & Smallest
+OUTPUT "The total is " & Total
+OUTPUT "The average is " & ROUND(Total / 5, 2)`,
+    solutionExplanation: 'A FOR loop gathers 5 inputs. Standard min/max algorithms compare each input against tracked values. ROUND formats the average.',
+    testCases: [
+      { inputs: ['10', '20', '30', '40', '50'],   expectedOutput: 'The highest number is 50\nThe smallest number is 10\nThe total is 150\nThe average is 30',  description: 'Ascending',       sortOrder: 0 },
+      { inputs: ['5', '5', '5', '5', '5'],         expectedOutput: 'The highest number is 5\nThe smallest number is 5\nThe total is 25\nThe average is 5',      description: 'All identical',   sortOrder: 1 },
+      { inputs: ['1', '2', '3', '4', '6'],          expectedOutput: 'The highest number is 6\nThe smallest number is 1\nThe total is 16\nThe average is 3.2',   description: null,              sortOrder: 2, isHidden: true },
+      { inputs: ['100', '10', '50', '20', '80'],    expectedOutput: 'The highest number is 100\nThe smallest number is 10\nThe total is 260\nThe average is 52', description: null,              sortOrder: 3, isHidden: true },
+      { inputs: ['99', '1', '45', '45', '10'],      expectedOutput: 'The highest number is 99\nThe smallest number is 1\nThe total is 200\nThe average is 40',  description: null,              sortOrder: 4, isHidden: true },
+    ],
+  },
+
+  {
+    title: 'Sports Club Membership System',
+    description: `A sports club uses a six-character alphanumeric membership code. Manage members using three 1D arrays: \`MemberID\`, \`FirstName\`, and \`LastName\`.
+
+The menu must offer three options:
+1. Input a new member (validate code length = 6, then check uniqueness)
+2. Output all stored members
+3. Stop
+
+For each new member: validate the code is exactly 6 characters, check it is unique, then store the code, first name, and last name. Invalid menu input should prompt the error \`"You must input 1, 2 or 3. Please try again"\`.
+
+*Arrays sized for up to 5 members.*`,
+    difficulty: 'HARD' as const,
+    topic: 'Arrays',
+    tags: ['Past Paper', 'Complete Question', '15 Marks'],
+    year: 2025,
+    session: 'Feb/Mar',
+    starterCode: `DECLARE MemberID : ARRAY[1:5] OF STRING
+DECLARE FirstName : ARRAY[1:5] OF STRING
+DECLARE LastName : ARRAY[1:5] OF STRING
+
+DECLARE Answer : INTEGER
+DECLARE Code : STRING
+DECLARE NextIndex : INTEGER
+DECLARE Used : BOOLEAN
+
+NextIndex <- 1
+
+// Start your menu loop here`,
+    hints: [
+      'Use nested REPEAT...UNTIL loops: an outer loop for the main menu and inner loops for validating inputs.',
+      'To check for uniqueness, use a WHILE loop (linear search) comparing Code against all elements in MemberID up to NextIndex.',
+      'Increment NextIndex only AFTER a valid, unique code and both names have been stored.',
+    ],
+    solution: `DECLARE MemberID : ARRAY[1:5] OF STRING
+DECLARE FirstName : ARRAY[1:5] OF STRING
+DECLARE LastName : ARRAY[1:5] OF STRING
+
+DECLARE Answer : INTEGER
+DECLARE Code : STRING
+DECLARE IndexCheck : INTEGER
+DECLARE Used : BOOLEAN
+DECLARE NextIndex : INTEGER
+
+NextIndex <- 1
+
+REPEAT
+    OUTPUT "Enter 1 to input, 2 to output, 3 to stop"
+    REPEAT
+        INPUT Answer
+        IF Answer < 1 OR Answer > 3 THEN
+            OUTPUT "You must input 1, 2 or 3. Please try again"
+        ENDIF
+    UNTIL Answer >= 1 AND Answer <= 3
+
+    IF Answer = 1 THEN
+        REPEAT
+            Used <- FALSE
+            OUTPUT "Enter a new six-character membership code"
+            INPUT Code
+            IF LENGTH(Code) <> 6 THEN
+                OUTPUT "The code must contain six characters, please try again."
+            ELSE
+                IndexCheck <- 1
+                WHILE IndexCheck < NextIndex AND NOT Used DO
+                    IF Code = MemberID[IndexCheck] THEN
+                        Used <- TRUE
+                        OUTPUT "This code has already been used, please try again"
+                    ELSE
+                        IndexCheck <- IndexCheck + 1
+                    ENDIF
+                ENDWHILE
+                IF NOT Used THEN
+                    MemberID[NextIndex] <- Code
+                    OUTPUT "Enter your first name"
+                    INPUT FirstName[NextIndex]
+                    OUTPUT "Enter your last name"
+                    INPUT LastName[NextIndex]
+                    NextIndex <- NextIndex + 1
+                ENDIF
+            ENDIF
+        UNTIL LENGTH(Code) = 6 AND NOT Used
+    ENDIF
+
+    IF Answer = 2 THEN
+        IndexCheck <- 1
+        WHILE IndexCheck < NextIndex DO
+            OUTPUT "Membership code: " & MemberID[IndexCheck]
+            OUTPUT "First name: " & FirstName[IndexCheck]
+            OUTPUT "Last name: " & LastName[IndexCheck]
+            IndexCheck <- IndexCheck + 1
+        ENDWHILE
+    ENDIF
+UNTIL Answer = 3`,
+    solutionExplanation: 'The outer REPEAT loop drives the menu. Input validation uses LENGTH and a linear search for uniqueness. Parallel arrays maintain data integrity across indexes.',
+    testCases: [
+      {
+        inputs: ['3'],
+        expectedOutput: 'Enter 1 to input, 2 to output, 3 to stop',
+        description: 'Immediate stop',
+        sortOrder: 0,
+      },
+      {
+        inputs: ['1', '123456', 'Alice', 'Smith', '2', '3'],
+        expectedOutput: 'Enter 1 to input, 2 to output, 3 to stop\nEnter a new six-character membership code\nEnter your first name\nEnter your last name\nEnter 1 to input, 2 to output, 3 to stop\nMembership code: 123456\nFirst name: Alice\nLast name: Smith\nEnter 1 to input, 2 to output, 3 to stop',
+        description: 'Add one member and list',
+        sortOrder: 1,
+      },
+      {
+        inputs: ['1', 'SHORT', '123456', 'Bob', 'Jones', '3'],
+        expectedOutput: 'Enter 1 to input, 2 to output, 3 to stop\nEnter a new six-character membership code\nThe code must contain six characters, please try again.\nEnter a new six-character membership code\nEnter your first name\nEnter your last name\nEnter 1 to input, 2 to output, 3 to stop',
+        description: 'Triggers length validation',
+        sortOrder: 2,
+      },
+      {
+        inputs: ['4', '3'],
+        expectedOutput: 'Enter 1 to input, 2 to output, 3 to stop\nYou must input 1, 2 or 3. Please try again\nEnter 1 to input, 2 to output, 3 to stop',
+        description: null,
+        sortOrder: 3,
+        isHidden: true,
+      },
+      {
+        inputs: ['1', '123456', 'A', 'B', '1', '123456', '654321', 'C', 'D', '2', '3'],
+        expectedOutput: 'Enter 1 to input, 2 to output, 3 to stop\nEnter a new six-character membership code\nEnter your first name\nEnter your last name\nEnter 1 to input, 2 to output, 3 to stop\nEnter a new six-character membership code\nThis code has already been used, please try again\nEnter a new six-character membership code\nEnter your first name\nEnter your last name\nEnter 1 to input, 2 to output, 3 to stop\nMembership code: 123456\nFirst name: A\nLast name: B\nMembership code: 654321\nFirst name: C\nLast name: D\nEnter 1 to input, 2 to output, 3 to stop',
+        description: null,
+        sortOrder: 4,
+        isHidden: true,
+      },
+    ],
+  },
+
+  // ════════════════════════════════════════════ PRACTICE QUESTIONS ═══
+
+  {
+    title: 'Array Zero Counter & Total',
+    description: `Read 5 integer values into an array. Count how many are exactly 0, and calculate the sum of all non-zero values.
+
+**Input:** 5 integers entered one by one.
+**Output:** Two lines: the count of zeros, then the total of non-zero numbers.
+
+**Example:**
+\`\`\`
+Input:  0
+        5
+        0
+        10
+        -2
+Output: Zeros: 2
+        Total: 13
+\`\`\``,
+    difficulty: 'EASY' as const,
+    topic: 'Arrays',
+    tags: ['Counting', 'Totalling'],
+    starterCode: `DECLARE A : ARRAY[1:5] OF INTEGER
+DECLARE Index : INTEGER
+DECLARE Zeros : INTEGER
+DECLARE Total : INTEGER
+
+Zeros <- 0
+Total <- 0
+
+// Add your loop here to read 5 integers into the array
+// Then process the array to update Zeros and Total
+
+OUTPUT "Zeros: " & Zeros
+OUTPUT "Total: " & Total`,
+    hints: [
+      'You need a count-controlled FOR loop running from 1 to 5.',
+      'Inside the loop, use an IF...ELSE statement to check if A[Index] = 0.',
+      'If it is 0, increment Zeros. ELSE, add A[Index] to Total.',
+    ],
+    solution: `DECLARE A : ARRAY[1:5] OF INTEGER
+DECLARE Index : INTEGER
+DECLARE Zeros : INTEGER
+DECLARE Total : INTEGER
+
+Zeros <- 0
+Total <- 0
+
+FOR Index <- 1 TO 5
+    INPUT A[Index]
+    IF A[Index] = 0 THEN
+        Zeros <- Zeros + 1
+    ELSE
+        Total <- Total + A[Index]
+    ENDIF
+NEXT Index
+
+OUTPUT "Zeros: " & Zeros
+OUTPUT "Total: " & Total`,
+    solutionExplanation: 'A FOR loop reads 5 values. An IF/ELSE checks each for zero: matching values increment the counter, others add to the total.',
+    testCases: [
+      { inputs: ['0', '5', '0', '10', '-2'], expectedOutput: 'Zeros: 2\nTotal: 13',   description: 'Mix of zeros, positives, negatives', sortOrder: 0 },
+      { inputs: ['1', '2', '3', '4', '5'],   expectedOutput: 'Zeros: 0\nTotal: 15',   description: 'No zeros',                          sortOrder: 1 },
+      { inputs: ['0', '0', '0', '0', '0'],   expectedOutput: 'Zeros: 5\nTotal: 0',    description: 'All zeros',                          sortOrder: 2, isHidden: true },
+      { inputs: ['-5', '0', '5', '0', '1'],  expectedOutput: 'Zeros: 2\nTotal: 1',    description: null,                                 sortOrder: 3, isHidden: true },
+      { inputs: ['10', '20', '30', '40', '50'], expectedOutput: 'Zeros: 0\nTotal: 150', description: null,                              sortOrder: 4, isHidden: true },
+    ],
+  },
+
+  {
+    title: 'Password Validation Rules',
+    description: `A password is valid only if it meets all three rules:
+1. Length is between 8 and 20 characters inclusive.
+2. Contains a mix of uppercase and lowercase letters (not entirely one case).
+3. Contains the exclamation mark character \`!\`.
+
+Read a password and output \`"Accepted"\` if all rules pass, or \`"Rejected"\` otherwise.
+
+**Input:** A single string.
+**Output:** \`"Accepted"\` or \`"Rejected"\`.
+
+**Example:**
+\`\`\`
+Input:  My!Hidden
+Output: Accepted
+\`\`\``,
+    difficulty: 'MEDIUM' as const,
+    topic: 'String Processing',
+    tags: ['Validation', 'Flags'],
+    starterCode: `DECLARE Password : STRING
+DECLARE Accept : BOOLEAN
+DECLARE HasExclamation : BOOLEAN
+DECLARE Index : INTEGER
+
+INPUT Password
+Accept <- TRUE
+HasExclamation <- FALSE
+
+// 1. Check length
+IF LENGTH(Password) < 8 OR LENGTH(Password) > 20 THEN
+    Accept <- FALSE
+ENDIF
+
+// 2. Check for mixed case (compare against UCASE and LCASE versions)
+
+// 3. Loop to find '!'
+// Use SUBSTRING to check each character
+
+IF Accept = TRUE THEN
+    OUTPUT "Accepted"
+ELSE
+    OUTPUT "Rejected"
+ENDIF`,
+    hints: [
+      'To check for mixed case: if UCASE(Password) = Password, there are no lowercase letters. Similarly for LCASE.',
+      'Use a FOR loop from 1 to LENGTH(Password). Check SUBSTRING(Password, Index, 1) = "!".',
+      'If HasExclamation remains FALSE after the loop, set Accept <- FALSE before the final IF.',
+    ],
+    solution: `DECLARE Password : STRING
+DECLARE Accept : BOOLEAN
+DECLARE HasExclamation : BOOLEAN
+DECLARE Index : INTEGER
+
+INPUT Password
+Accept <- TRUE
+HasExclamation <- FALSE
+
+IF LENGTH(Password) < 8 OR LENGTH(Password) > 20 THEN
+    Accept <- FALSE
+ENDIF
+
+IF LCASE(Password) = Password OR UCASE(Password) = Password THEN
+    Accept <- FALSE
+ENDIF
+
+FOR Index <- 1 TO LENGTH(Password)
+    IF SUBSTRING(Password, Index, 1) = "!" THEN
+        HasExclamation <- TRUE
+    ENDIF
+NEXT Index
+
+IF HasExclamation = FALSE THEN
+    Accept <- FALSE
+ENDIF
+
+IF Accept = TRUE THEN
+    OUTPUT "Accepted"
+ELSE
+    OUTPUT "Rejected"
+ENDIF`,
+    solutionExplanation: 'A boolean flag (Accept) starts TRUE. Three independent checks — length, case mix, and exclamation mark — can each flip it to FALSE. The character search uses SUBSTRING inside a FOR loop.',
+    testCases: [
+      { inputs: ['My!Hidden'],             expectedOutput: 'Accepted', description: 'All criteria met',         sortOrder: 0 },
+      { inputs: ['M!word'],                expectedOutput: 'Rejected', description: 'Too short',                sortOrder: 1 },
+      { inputs: ['my!hidden'],             expectedOutput: 'Rejected', description: 'No uppercase',             sortOrder: 2 },
+      { inputs: ['MY!HIDDEN'],             expectedOutput: 'Rejected', description: 'No lowercase',             sortOrder: 3, isHidden: true },
+      { inputs: ['MyHiddenWord'],          expectedOutput: 'Rejected', description: 'Missing !',                sortOrder: 4, isHidden: true },
+      { inputs: ['A!b123456789012345678'], expectedOutput: 'Rejected', description: 'Too long',                 sortOrder: 5, isHidden: true },
+    ],
+  },
+
+  {
+    title: 'Running Club Top 3 & Certificates',
+    description: `A running club records names and times (in seconds) for 4 members in a 1-km race. Store them in parallel arrays, sort in ascending order of time (fastest first), output the top 3 runners, and count how many earned a certificate (time strictly less than 240 seconds).
+
+**Input:** 8 alternating lines: Name, Time, Name, Time…
+**Output:** "First: [Name]", "Second: [Name]", "Third: [Name]", then "Certificates: [Count]".
+
+**Example:**
+\`\`\`
+Input:  Alice
+        230
+        Bob
+        250
+        Charlie
+        210
+        Dave
+        235
+Output: First: Charlie
+        Second: Alice
+        Third: Dave
+        Certificates: 3
+\`\`\``,
+    difficulty: 'HARD' as const,
+    topic: 'Algorithms',
+    tags: ['Sorting', 'Parallel Arrays'],
+    starterCode: `DECLARE MemberName : ARRAY[1:4] OF STRING
+DECLARE MemberTime : ARRAY[1:4] OF INTEGER
+DECLARE Index : INTEGER
+DECLARE Swap : BOOLEAN
+DECLARE TempTime : INTEGER
+DECLARE TempName : STRING
+DECLARE CertCount : INTEGER
+
+// 1. Input data into the parallel arrays
+FOR Index <- 1 TO 4
+    INPUT MemberName[Index]
+    INPUT MemberTime[Index]
+NEXT Index
+
+// 2. Sort in ascending order of time (Bubble Sort)
+REPEAT
+    Swap <- FALSE
+    FOR Index <- 1 TO 3
+        // Add sorting logic — swap both arrays when needed
+    NEXT Index
+UNTIL Swap = FALSE
+
+// 3. Output top 3
+
+// 4. Count and output certificates`,
+    hints: [
+      'Every time you swap in MemberTime, also swap the same indices in MemberName.',
+      'Inside the loop: IF MemberTime[Index] > MemberTime[Index + 1] THEN swap both arrays using Temp variables.',
+      'After outputting First/Second/Third, use another FOR loop from 1 TO 4 checking MemberTime[Index] < 240.',
+    ],
+    solution: `DECLARE MemberName : ARRAY[1:4] OF STRING
+DECLARE MemberTime : ARRAY[1:4] OF INTEGER
+DECLARE Index : INTEGER
+DECLARE Swap : BOOLEAN
+DECLARE TempTime : INTEGER
+DECLARE TempName : STRING
+DECLARE CertCount : INTEGER
+
+FOR Index <- 1 TO 4
+    INPUT MemberName[Index]
+    INPUT MemberTime[Index]
+NEXT Index
+
+REPEAT
+    Swap <- FALSE
+    FOR Index <- 1 TO 3
+        IF MemberTime[Index] > MemberTime[Index + 1] THEN
+            TempTime <- MemberTime[Index]
+            MemberTime[Index] <- MemberTime[Index + 1]
+            MemberTime[Index + 1] <- TempTime
+            TempName <- MemberName[Index]
+            MemberName[Index] <- MemberName[Index + 1]
+            MemberName[Index + 1] <- TempName
+            Swap <- TRUE
+        ENDIF
+    NEXT Index
+UNTIL Swap = FALSE
+
+OUTPUT "First: " & MemberName[1]
+OUTPUT "Second: " & MemberName[2]
+OUTPUT "Third: " & MemberName[3]
+
+CertCount <- 0
+FOR Index <- 1 TO 4
+    IF MemberTime[Index] < 240 THEN
+        CertCount <- CertCount + 1
+    ENDIF
+NEXT Index
+OUTPUT "Certificates: " & CertCount`,
+    solutionExplanation: 'Parallel 1D arrays hold names and times. Bubble sort keeps them synchronised by swapping both arrays whenever a swap occurs. A final linear scan counts qualifying times.',
+    testCases: [
+      { inputs: ['Alice', '230', 'Bob', '250', 'Charlie', '210', 'Dave', '235'],     expectedOutput: 'First: Charlie\nSecond: Alice\nThird: Dave\nCertificates: 3',  description: 'Unsorted, 3 certificates',    sortOrder: 0 },
+      { inputs: ['Zara', '240', 'Yara', '241', 'Xara', '242', 'Wara', '243'],       expectedOutput: 'First: Zara\nSecond: Yara\nThird: Xara\nCertificates: 0',      description: 'Already sorted, 0 certs',     sortOrder: 1 },
+      { inputs: ['D', '210', 'C', '200', 'B', '190', 'A', '180'],                   expectedOutput: 'First: A\nSecond: B\nThird: C\nCertificates: 4',               description: 'Reverse sorted, all certs',   sortOrder: 2, isHidden: true },
+      { inputs: ['Fast', '150', 'Slow', '300', 'Mid1', '239', 'Mid2', '240'],       expectedOutput: 'First: Fast\nSecond: Mid1\nThird: Mid2\nCertificates: 2',      description: 'Edge around 240s',            sortOrder: 3, isHidden: true },
+      { inputs: ['Runner1', '215', 'Runner2', '220', 'Runner3', '215', 'Runner4', '205'], expectedOutput: 'First: Runner4\nSecond: Runner1\nThird: Runner3\nCertificates: 4', description: 'Duplicate times',  sortOrder: 4, isHidden: true },
+    ],
+  },
+
+  {
+    title: 'Temperature Range Sentinel',
+    description: `Monitor temperature readings (real numbers) and output a warning for each:
+- Strictly below 35.0 → \`"Temperature too low"\`
+- Strictly above 38.0 → \`"Temperature too high"\`
+- Otherwise → \`"Temperature normal"\`
+
+Continue until the rogue value \`999.0\` is entered (do not evaluate 999.0).
+
+**Input:** A sequence of REAL numbers ending with 999.0.
+**Output:** A string evaluation for each valid temperature.
+
+**Example:**
+\`\`\`
+Input:  34.2
+        36.1
+        38.5
+        999.0
+Output: Temperature too low
+        Temperature normal
+        Temperature too high
+\`\`\``,
+    difficulty: 'EASY' as const,
+    topic: 'Selection',
+    tags: ['Sentinel Loop', 'While Loop'],
+    starterCode: `DECLARE Temp : REAL
+
+INPUT Temp
+
+WHILE Temp <> 999.0 DO
+    // Write your nested IF or IF-ELSE statements here
+
+
+    // Remember to read the next value before the loop restarts!
+    INPUT Temp
+ENDWHILE`,
+    hints: [
+      'A WHILE loop checks the sentinel value before executing the body — perfect here.',
+      'Inside the loop: IF Temp < 35.0 THEN ... ELSE IF Temp > 38.0 THEN ... ELSE ... ENDIF.',
+      'Do not forget to read the next Temp at the very end of the WHILE loop body.',
+    ],
+    solution: `DECLARE Temp : REAL
+
+INPUT Temp
+WHILE Temp <> 999.0 DO
+    IF Temp < 35.0 THEN
+        OUTPUT "Temperature too low"
+    ELSE
+        IF Temp > 38.0 THEN
+            OUTPUT "Temperature too high"
+        ELSE
+            OUTPUT "Temperature normal"
+        ENDIF
+    ENDIF
+    INPUT Temp
+ENDWHILE`,
+    solutionExplanation: 'A pre-condition WHILE loop checks for the sentinel 999.0. Nested IF statements categorise the temperature. A secondary INPUT at the bottom of the loop captures the next reading.',
+    testCases: [
+      { inputs: ['34.2', '36.1', '38.5', '999.0'], expectedOutput: 'Temperature too low\nTemperature normal\nTemperature too high', description: 'One of each category',         sortOrder: 0 },
+      { inputs: ['999.0'],                          expectedOutput: '',                                                              description: 'Immediate sentinel, no output', sortOrder: 1 },
+      { inputs: ['35.0', '38.0', '999.0'],          expectedOutput: 'Temperature normal\nTemperature normal',                       description: 'Exact boundary values',        sortOrder: 2, isHidden: true },
+      { inputs: ['10.5', '20.0', '999.0'],          expectedOutput: 'Temperature too low\nTemperature too low',                     description: 'Multiple lows',               sortOrder: 3, isHidden: true },
+      { inputs: ['40.1', '100.0', '37.5', '999.0'], expectedOutput: 'Temperature too high\nTemperature too high\nTemperature normal', description: 'Highs then normal',          sortOrder: 4, isHidden: true },
+    ],
+  },
+
+  // ════════════════════════════════════════ FEB/MAR 2024 PAST PAPERS ════
+
+  {
+    title: 'Linear Search in an Array',
+    description: `Read 5 numbers into an array called \`Values\`, then read a search number \`MyNumber\`. Use a linear search to find if \`MyNumber\` is in the array.
+
+**Input:** 5 numbers (array), then the search target.
+**Output:** The 1-based position if found, or \`"Not found"\`.
+
+**Example:**
+\`\`\`
+Input:  10
+        20
+        30
+        40
+        50
+        30
+Output: 3
+\`\`\``,
+    difficulty: 'MEDIUM' as const,
+    topic: 'Arrays',
+    tags: ['Past Paper', 'Adapted'],
+    year: 2024,
+    session: 'Feb/Mar',
+    variant: 2,
+    starterCode: `DECLARE Values : ARRAY[1:5] OF INTEGER
+DECLARE MyNumber : INTEGER
+DECLARE i : INTEGER
+DECLARE Found : BOOLEAN
+DECLARE Position : INTEGER
+
+// 1. Read 5 numbers into the Values array
+
+// 2. Read MyNumber
+
+// 3. Search for MyNumber
+
+// 4. Output Position or "Not found"`,
+    hints: [
+      'Use a FOR loop from 1 TO 5 to INPUT the array values.',
+      'Set Found <- FALSE before starting your search loop.',
+      'Inside the search loop: IF Values[i] = MyNumber THEN set Found <- TRUE and save Position <- i.',
+    ],
+    solution: `DECLARE Values : ARRAY[1:5] OF INTEGER
+DECLARE MyNumber : INTEGER
+DECLARE i : INTEGER
+DECLARE Found : BOOLEAN
+DECLARE Position : INTEGER
+
+FOR i <- 1 TO 5
+    INPUT Values[i]
+NEXT i
+
+INPUT MyNumber
+Found <- FALSE
+
+FOR i <- 1 TO 5
+    IF Values[i] = MyNumber THEN
+        Found <- TRUE
+        Position <- i
+    ENDIF
+NEXT i
+
+IF Found = TRUE THEN
+    OUTPUT Position
+ELSE
+    OUTPUT "Not found"
+ENDIF`,
+    solutionExplanation: 'Two FOR loops: the first populates the array, the second performs a linear search by comparing each element to MyNumber. The flag and position are updated on each match (so duplicates return the last position). The flag is then checked to produce the output.',
+    testCases: [
+      { inputs: ['10', '20', '30', '40', '50', '30'],   expectedOutput: '3',         description: 'Found in middle',                        sortOrder: 0 },
+      { inputs: ['5', '15', '25', '35', '45', '99'],    expectedOutput: 'Not found', description: 'Not in array',                          sortOrder: 1 },
+      { inputs: ['1', '2', '3', '4', '5', '1'],         expectedOutput: '1',         description: null,                                    sortOrder: 2, isHidden: true },
+      { inputs: ['9', '9', '9', '9', '9', '9'],         expectedOutput: '5',         description: 'Multiple instances — last position',    sortOrder: 3, isHidden: true },
+      { inputs: ['-10', '0', '10', '20', '30', '-10'],  expectedOutput: '1',         description: null,                                    sortOrder: 4, isHidden: true },
+    ],
+  },
+
+  {
+    title: 'Bubble Sort an Array',
+    description: `Sort an array of 5 numbers into ascending order using bubble sort.
+
+**Input:** 5 numbers.
+**Output:** The 5 numbers sorted in ascending order, each on a new line.
+
+**Example:**
+\`\`\`
+Input:  50
+        20
+        10
+        40
+        30
+Output: 10
+        20
+        30
+        40
+        50
+\`\`\``,
+    difficulty: 'HARD' as const,
+    topic: 'Algorithms',
+    tags: ['Past Paper', 'Adapted'],
+    year: 2024,
+    session: 'Feb/Mar',
+    variant: 2,
+    starterCode: `DECLARE Values : ARRAY[1:5] OF INTEGER
+DECLARE i : INTEGER
+DECLARE Swap : BOOLEAN
+DECLARE Temp : INTEGER
+DECLARE Last : INTEGER
+
+FOR i <- 1 TO 5
+    INPUT Values[i]
+NEXT i
+
+Last <- 5
+REPEAT
+    Swap <- FALSE
+    // Write your inner loop here
+
+    Last <- Last - 1
+UNTIL Swap = FALSE OR Last = 1
+
+FOR i <- 1 TO 5
+    OUTPUT Values[i]
+NEXT i`,
+    hints: [
+      'Use a REPEAT UNTIL loop to keep making passes until no swaps are made.',
+      'Inside, use a FOR loop from 1 TO Last - 1 to compare adjacent elements.',
+      'If Values[i] > Values[i + 1], use a Temp variable to swap them and set Swap <- TRUE.',
+    ],
+    solution: `DECLARE Values : ARRAY[1:5] OF INTEGER
+DECLARE i : INTEGER
+DECLARE Swap : BOOLEAN
+DECLARE Temp : INTEGER
+DECLARE Last : INTEGER
+
+FOR i <- 1 TO 5
+    INPUT Values[i]
+NEXT i
+
+Last <- 5
+REPEAT
+    Swap <- FALSE
+    FOR i <- 1 TO Last - 1
+        IF Values[i] > Values[i + 1] THEN
+            Temp <- Values[i]
+            Values[i] <- Values[i + 1]
+            Values[i + 1] <- Temp
+            Swap <- TRUE
+        ENDIF
+    NEXT i
+    Last <- Last - 1
+UNTIL Swap = FALSE OR Last = 1
+
+FOR i <- 1 TO 5
+    OUTPUT Values[i]
+NEXT i`,
+    solutionExplanation: 'The outer REPEAT loop continues until a full pass occurs without swaps. The inner FOR loop checks adjacent elements and swaps them when out of order. Decrementing Last avoids redundant comparisons.',
+    testCases: [
+      { inputs: ['50', '20', '10', '40', '30'],     expectedOutput: '10\n20\n30\n40\n50',    description: 'Random order',     sortOrder: 0 },
+      { inputs: ['1', '2', '3', '4', '5'],          expectedOutput: '1\n2\n3\n4\n5',         description: 'Already sorted',   sortOrder: 1 },
+      { inputs: ['5', '4', '3', '2', '1'],          expectedOutput: '1\n2\n3\n4\n5',         description: null,               sortOrder: 2, isHidden: true },
+      { inputs: ['-5', '0', '-10', '10', '5'],      expectedOutput: '-10\n-5\n0\n5\n10',     description: null,               sortOrder: 3, isHidden: true },
+      { inputs: ['10', '10', '10', '5', '5'],       expectedOutput: '5\n5\n10\n10\n10',      description: null,               sortOrder: 4, isHidden: true },
+    ],
+  },
+
+  {
+    title: 'Profit Calculator with Validation',
+    description: `Continuously read pairs of cost price and selling price, calculate the profit (sell − cost), and output it. Repeat until both values are 0.
+
+Both inputs must be validated to ensure they are **0 or greater** (negative values are rejected).
+The pair \`0, 0\` stops the algorithm without producing output.
+
+**Input:** Alternating cost and sell prices.
+**Output:** \`"Profit is X"\` for each valid non-exit pair.
+
+**Example:**
+\`\`\`
+Input:  -5
+        10
+        15
+        0
+        0
+Output: Profit is 5
+\`\`\``,
+    difficulty: 'MEDIUM' as const,
+    topic: 'Loops',
+    tags: ['Past Paper', 'Adapted', 'Validation'],
+    year: 2024,
+    session: 'Feb/Mar',
+    variant: 2,
+    starterCode: `DECLARE Cost : REAL
+DECLARE Sell : REAL
+DECLARE Profit : REAL
+
+REPEAT
+    // Input and validate Cost
+
+    // Input and validate Sell
+
+    // Calculate and output if not the exit pair
+
+UNTIL Cost = 0 AND Sell = 0`,
+    hints: [
+      'Use nested REPEAT UNTIL loops to validate inputs: REPEAT INPUT Cost UNTIL Cost >= 0.',
+      'After reading both valid values, check IF Cost <> 0 OR Sell <> 0 THEN before outputting — this skips the exit pair.',
+      'Calculate Profit <- Sell - Cost and OUTPUT "Profit is " & Profit.',
+    ],
+    solution: `DECLARE Cost : REAL
+DECLARE Sell : REAL
+DECLARE Profit : REAL
+
+REPEAT
+    REPEAT
+        INPUT Cost
+    UNTIL Cost >= 0
+
+    REPEAT
+        INPUT Sell
+    UNTIL Sell >= 0
+
+    IF Cost <> 0 OR Sell <> 0 THEN
+        Profit <- Sell - Cost
+        OUTPUT "Profit is " & Profit
+    ENDIF
+UNTIL Cost = 0 AND Sell = 0`,
+    solutionExplanation: 'Nested REPEAT loops ensure valid (non-negative) inputs. An IF guard prevents outputting for the 0,0 exit pair. The outer loop repeats until both inputs are 0.',
+    testCases: [
+      { inputs: ['10', '15', '0', '0'],            expectedOutput: 'Profit is 5',                    description: 'Simple valid case',           sortOrder: 0 },
+      { inputs: ['-5', '10', '12', '0', '0'],      expectedOutput: 'Profit is 2',                    description: 'Negative cost validation',    sortOrder: 1 },
+      { inputs: ['10', '-10', '5', '0', '0'],      expectedOutput: 'Profit is -5',                   description: null,                          sortOrder: 2, isHidden: true },
+      { inputs: ['20', '30', '50', '100', '0', '0'], expectedOutput: 'Profit is 10\nProfit is 50', description: null,                          sortOrder: 3, isHidden: true },
+      { inputs: ['0', '0'],                         expectedOutput: '',                               description: 'Immediate exit',              sortOrder: 4, isHidden: true },
+    ],
+  },
+
+  {
+    title: 'Screen Time Tracker',
+    description: `Process screen time data for a class of students over 5 days.
+
+For each student:
+1. Input their name, then 5 daily screen times in minutes (validate each is >= 0).
+2. Immediately output: their name, total screen time formatted as hours and minutes, and the count of days with > 300 minutes.
+
+After all students, output the class average weekly screen time and the name of the student with the lowest total.
+
+**Input:** Number of students, then for each student: name then 5 daily minutes.
+**Output:** Per-student stats, then class summary.
+
+**Example:**
+\`\`\`
+Input:  2
+        Ali
+        300 310 100 0 0
+        Sam
+        400 400 400 400 400
+Output: Ali
+        Screen time 11 hours 50 minutes
+        Days with more than 300 minutes screen time 1
+        Sam
+        Screen time 33 hours 20 minutes
+        Days with more than 300 minutes screen time 5
+        Average weekly screen time for class 1355
+        Lowest weekly time Ali
+\`\`\``,
+    difficulty: 'HARD' as const,
+    topic: 'Algorithms',
+    tags: ['Past Paper', 'Complete Question', '15 Marks'],
+    year: 2024,
+    session: 'Feb/Mar',
+    variant: 2,
+    starterCode: `DECLARE ClassSize : INTEGER
+DECLARE StudentName : STRING
+DECLARE DayCounter : INTEGER
+DECLARE StudentCounter : INTEGER
+DECLARE Minutes : INTEGER
+DECLARE Total : INTEGER
+DECLARE DaysOver300 : INTEGER
+DECLARE ClassTotal : INTEGER
+DECLARE LowestMinutes : INTEGER
+DECLARE LowestName : STRING
+
+INPUT ClassSize
+ClassTotal <- 0
+LowestMinutes <- 999999
+
+FOR StudentCounter <- 1 TO ClassSize
+    INPUT StudentName
+    Total <- 0
+    DaysOver300 <- 0
+
+    // Loop over 5 days: validate input, accumulate Total, count days > 300
+
+    // Update LowestMinutes/LowestName
+
+    // Output student stats
+
+    ClassTotal <- ClassTotal + Total
+NEXT StudentCounter
+
+// Output class summary`,
+    hints: [
+      'Inside the student loop, use FOR DayCounter <- 1 TO 5 with a nested REPEAT INPUT Minutes UNTIL Minutes >= 0 to validate.',
+      'Use DIV(Total, 60) for hours and MOD(Total, 60) for remaining minutes.',
+      'After all students, Average <- ClassTotal / ClassSize. Output it along with LowestName.',
+    ],
+    solution: `DECLARE ClassSize : INTEGER
+DECLARE StudentName : STRING
+DECLARE DayCounter : INTEGER
+DECLARE StudentCounter : INTEGER
+DECLARE Minutes : INTEGER
+DECLARE Total : INTEGER
+DECLARE DaysOver300 : INTEGER
+DECLARE ClassTotal : INTEGER
+DECLARE LowestMinutes : INTEGER
+DECLARE LowestName : STRING
+
+INPUT ClassSize
+ClassTotal <- 0
+LowestMinutes <- 999999
+
+FOR StudentCounter <- 1 TO ClassSize
+    INPUT StudentName
+    Total <- 0
+    DaysOver300 <- 0
+
+    FOR DayCounter <- 1 TO 5
+        REPEAT
+            INPUT Minutes
+        UNTIL Minutes >= 0
+        Total <- Total + Minutes
+        IF Minutes > 300 THEN
+            DaysOver300 <- DaysOver300 + 1
+        ENDIF
+    NEXT DayCounter
+
+    IF Total < LowestMinutes THEN
+        LowestMinutes <- Total
+        LowestName <- StudentName
+    ENDIF
+
+    OUTPUT StudentName
+    OUTPUT "Screen time " & DIV(Total, 60) & " hours " & MOD(Total, 60) & " minutes"
+    OUTPUT "Days with more than 300 minutes screen time " & DaysOver300
+
+    ClassTotal <- ClassTotal + Total
+NEXT StudentCounter
+
+OUTPUT "Average weekly screen time for class " & (ClassTotal / ClassSize)
+OUTPUT "Lowest weekly time " & LowestName`,
+    solutionExplanation: 'Nested loops (students then days) collect and validate input. DIV and MOD format the time output. Running totals track the class average and a comparison finds the minimum.',
+    testCases: [
+      {
+        inputs: ['2', 'Ali', '300', '310', '100', '0', '0', 'Sam', '400', '400', '400', '400', '400'],
+        expectedOutput: 'Ali\nScreen time 11 hours 50 minutes\nDays with more than 300 minutes screen time 1\nSam\nScreen time 33 hours 20 minutes\nDays with more than 300 minutes screen time 5\nAverage weekly screen time for class 1355\nLowest weekly time Ali',
+        description: 'Two students, Ali lowest',
+        sortOrder: 0,
+      },
+      {
+        inputs: ['1', 'John', '60', '120', '180', '240', '300'],
+        expectedOutput: 'John\nScreen time 15 hours 0 minutes\nDays with more than 300 minutes screen time 0\nAverage weekly screen time for class 900\nLowest weekly time John',
+        description: 'Single student',
+        sortOrder: 1,
+      },
+      {
+        inputs: ['2', 'A', '0', '0', '0', '0', '0', 'B', '100', '100', '100', '100', '100'],
+        expectedOutput: 'A\nScreen time 0 hours 0 minutes\nDays with more than 300 minutes screen time 0\nB\nScreen time 8 hours 20 minutes\nDays with more than 300 minutes screen time 0\nAverage weekly screen time for class 250\nLowest weekly time A',
+        description: null,
+        sortOrder: 2,
+        isHidden: true,
+      },
+      {
+        inputs: ['1', 'Val', '-10', '301', '0', '0', '0', '0'],
+        expectedOutput: 'Val\nScreen time 5 hours 1 minutes\nDays with more than 300 minutes screen time 1\nAverage weekly screen time for class 301\nLowest weekly time Val',
+        description: 'Validation — negative input rejected',
+        sortOrder: 3,
+        isHidden: true,
+      },
+    ],
+  },
+
+  // ════════════════════════════════════════ OCT/NOV 2023 PAST PAPERS ════
+
+  {
+    title: 'Rope Cost Calculator',
+    description: `Calculate the cost of a length of rope. Read the length (between 0.5 and 6.0 inclusive), validate it with a WHILE loop, then read the cost per metre. Output the total price.
+
+**Input:** First the length (re-input until valid), then the cost per metre.
+**Output:** The calculated price (numeric value only).
+
+**Example:**
+\`\`\`
+Input:  8.0
+        0.4
+        2.5
+        2.0
+Output: 5
+\`\`\``,
+    difficulty: 'MEDIUM' as const,
+    topic: 'Selection',
+    tags: ['Past Paper', 'Unseen', 'Validation'],
+    year: 2023,
+    session: 'Oct/Nov',
+    variant: 1,
+    starterCode: `DECLARE Length : REAL
+DECLARE Cost : REAL
+DECLARE Price : REAL
+
+INPUT Length
+
+// Add validation loop here
+
+INPUT Cost
+// Calculate and output price`,
+    hints: [
+      'Use a WHILE loop with the condition for an invalid length: Length < 0.5 OR Length > 6.0.',
+      'Inside the WHILE loop, simply INPUT Length again.',
+      'After the loop, INPUT Cost, then Price <- Length * Cost, then OUTPUT Price.',
+    ],
+    solution: `DECLARE Length : REAL
+DECLARE Cost : REAL
+DECLARE Price : REAL
+
+INPUT Length
+WHILE Length < 0.5 OR Length > 6.0 DO
+    INPUT Length
+ENDWHILE
+
+INPUT Cost
+Price <- Length * Cost
+OUTPUT Price`,
+    solutionExplanation: 'A WHILE loop re-asks for length while it is outside bounds. Once valid, the cost is read, the total price computed, and output.',
+    testCases: [
+      { inputs: ['2.5', '2.0'],                  expectedOutput: '5',    description: 'Valid on first try',   sortOrder: 0 },
+      { inputs: ['7.0', '0.2', '3.0', '1.5'],    expectedOutput: '4.5',  description: 'Invalid then valid',   sortOrder: 1 },
+      { inputs: ['0.5', '10'],                   expectedOutput: '5',    description: 'Lower boundary',       sortOrder: 2, isHidden: true },
+      { inputs: ['6.0', '3'],                    expectedOutput: '18',   description: 'Upper boundary',       sortOrder: 3, isHidden: true },
+      { inputs: ['-1.0', '8.5', '4.0', '2.5'],  expectedOutput: '10',   description: 'Negative rejected',    sortOrder: 4, isHidden: true },
+    ],
+  },
+
+  {
+    title: 'Theatre Seat Booking Validation',
+    description: `Accept only whole numbers between 1 and 6 inclusive for the number of seats. Repeatedly ask until valid, then output the valid number.
+
+**Input:** A sequence of integers.
+**Output:** The first valid integer entered.
+
+**Example:**
+\`\`\`
+Input:  0
+        7
+        4
+Output: 4
+\`\`\``,
+    difficulty: 'EASY' as const,
+    topic: 'Loops',
+    tags: ['Past Paper', 'Validation'],
+    year: 2023,
+    session: 'Oct/Nov',
+    variant: 3,
+    starterCode: `DECLARE Seats : INTEGER
+
+INPUT Seats
+
+// Add your validation loop here`,
+    hints: [
+      'The input is invalid if it is less than 1 OR greater than 6.',
+      'Use WHILE Seats < 1 OR Seats > 6 DO ... ENDWHILE.',
+      'Inside the loop, just INPUT Seats again.',
+    ],
+    solution: `DECLARE Seats : INTEGER
+
+INPUT Seats
+WHILE Seats < 1 OR Seats > 6 DO
+    INPUT Seats
+ENDWHILE
+
+OUTPUT Seats`,
+    solutionExplanation: 'A WHILE loop continues while the value is out of range, forcing re-entry until a valid number is provided.',
+    testCases: [
+      { inputs: ['0', '7', '4'],   expectedOutput: '4', description: 'Two invalid then valid', sortOrder: 0 },
+      { inputs: ['5'],             expectedOutput: '5', description: 'Valid on first try',     sortOrder: 1 },
+      { inputs: ['1'],             expectedOutput: '1', description: 'Lower boundary',         sortOrder: 2, isHidden: true },
+      { inputs: ['6'],             expectedOutput: '6', description: 'Upper boundary',         sortOrder: 3, isHidden: true },
+      { inputs: ['-5', '10', '3'], expectedOutput: '3', description: 'Negative and large rejected', sortOrder: 4, isHidden: true },
+    ],
+  },
+
+  {
+    title: 'Extracting String Data',
+    description: `Input a string, a starting position, and a length. Output the extracted substring, then the entire original string in lowercase.
+
+**Input:** A string, an integer start position (1-indexed), and an integer length.
+**Output:** The substring, then the lowercase string.
+
+**Example:**
+\`\`\`
+Input:  Learning Never Exhausts The Mind
+        25
+        8
+Output: The Mind
+        learning never exhausts the mind
+\`\`\``,
+    difficulty: 'EASY' as const,
+    topic: 'String Processing',
+    tags: ['Past Paper', 'String Operations', 'Complete Question'],
+    year: 2023,
+    session: 'Oct/Nov',
+    variant: 2,
+    starterCode: `DECLARE Quote : STRING
+DECLARE StartPos : INTEGER
+DECLARE NumChars : INTEGER
+
+INPUT Quote
+INPUT StartPos
+INPUT NumChars
+
+// Output the substring
+
+// Output the lowercase string`,
+    hints: [
+      'Pass the variables directly into SUBSTRING and LCASE inside OUTPUT statements.',
+      'OUTPUT SUBSTRING(Quote, StartPos, NumChars)',
+      'OUTPUT LCASE(Quote)',
+    ],
+    solution: `DECLARE Quote : STRING
+DECLARE StartPos : INTEGER
+DECLARE NumChars : INTEGER
+
+INPUT Quote
+INPUT StartPos
+INPUT NumChars
+
+OUTPUT SUBSTRING(Quote, StartPos, NumChars)
+OUTPUT LCASE(Quote)`,
+    solutionExplanation: 'SUBSTRING uses the provided start and length; LCASE converts to lowercase. Each OUTPUT produces a new line.',
+    testCases: [
+      { inputs: ['Learning Never Exhausts The Mind', '25', '8'], expectedOutput: 'The Mind\nlearning never exhausts the mind', description: 'Past paper example',  sortOrder: 0 },
+      { inputs: ['Computer Science', '1', '8'],                  expectedOutput: 'Computer\ncomputer science',                description: 'First word',          sortOrder: 1 },
+      { inputs: ['IGCSE 2023', '7', '4'],                        expectedOutput: '2023\nigcse 2023',                          description: null,                  sortOrder: 2, isHidden: true },
+      { inputs: ['HELLO', '2', '2'],                             expectedOutput: 'EL\nhello',                                 description: null,                  sortOrder: 3, isHidden: true },
+      { inputs: ['Pseudocode', '1', '10'],                       expectedOutput: 'Pseudocode\npseudocode',                    description: 'Full string',         sortOrder: 4, isHidden: true },
+    ],
+  },
+
+  {
+    title: 'Lowest Temperature Finder',
+    description: `Read exactly 5 temperature readings using a loop. Output the single lowest temperature.
+
+**Input:** 5 numbers.
+**Output:** The lowest temperature.
+
+**Example:**
+\`\`\`
+Input:  25
+        10
+        30
+        -5
+        15
+Output: -5
+\`\`\``,
+    difficulty: 'MEDIUM' as const,
+    topic: 'Algorithms',
+    tags: ['Past Paper', 'Min/Max'],
+    year: 2023,
+    session: 'Oct/Nov',
+    variant: 2,
+    starterCode: `DECLARE Temp : REAL
+DECLARE MinTemp : REAL
+DECLARE i : INTEGER
+
+MinTemp <- 1000
+
+FOR i <- 1 TO 5
+    // Add your logic here
+NEXT i
+
+OUTPUT MinTemp`,
+    hints: [
+      'Initialise MinTemp to a high number so the first input replaces it.',
+      'Inside the loop: INPUT Temp, then compare with MinTemp.',
+      'IF Temp < MinTemp THEN MinTemp <- Temp ENDIF.',
+    ],
+    solution: `DECLARE Temp : REAL
+DECLARE MinTemp : REAL
+DECLARE i : INTEGER
+
+MinTemp <- 1000
+
+FOR i <- 1 TO 5
+    INPUT Temp
+    IF Temp < MinTemp THEN
+        MinTemp <- Temp
+    ENDIF
+NEXT i
+
+OUTPUT MinTemp`,
+    solutionExplanation: 'Initialised to a high sentinel. Each reading updates the minimum when smaller, guaranteeing the lowest value is captured.',
+    testCases: [
+      { inputs: ['25', '10', '30', '-5', '15'],     expectedOutput: '-5',  description: 'Contains negatives', sortOrder: 0 },
+      { inputs: ['100', '90', '80', '70', '60'],    expectedOutput: '60',  description: 'Descending',         sortOrder: 1 },
+      { inputs: ['5', '5', '5', '5', '5'],          expectedOutput: '5',   description: 'All identical',      sortOrder: 2, isHidden: true },
+      { inputs: ['-10', '-20', '-5', '-30', '-15'], expectedOutput: '-30', description: 'All negative',       sortOrder: 3, isHidden: true },
+      { inputs: ['42', '105', '12', '99', '1'],     expectedOutput: '1',   description: 'Lowest at end',      sortOrder: 4, isHidden: true },
+    ],
+  },
+
+  {
+    title: 'Daily Temperature Aggregator',
+    description: `Read 3 temperature readings for a day. Find the maximum, the minimum, and calculate the average.
+
+**Input:** 3 numbers.
+**Output:** Maximum, minimum, and average on separate lines.
+
+**Example:**
+\`\`\`
+Input:  12.0
+        15.0
+        9.0
+Output: 15
+        9
+        12
+\`\`\``,
+    difficulty: 'MEDIUM' as const,
+    topic: 'Algorithms',
+    tags: ['Past Paper', 'Min/Max', 'Totalling'],
+    year: 2023,
+    session: 'Oct/Nov',
+    variant: 3,
+    starterCode: `DECLARE Temp : REAL
+DECLARE MaxTemp : REAL
+DECLARE MinTemp : REAL
+DECLARE Total : REAL
+DECLARE Average : REAL
+DECLARE i : INTEGER
+
+MaxTemp <- -1000
+MinTemp <- 1000
+Total <- 0
+
+// Write your loop to read 3 temperatures
+// Update MaxTemp, MinTemp, and Total inside
+
+Average <- Total / 3
+
+OUTPUT MaxTemp
+OUTPUT MinTemp
+OUTPUT Average`,
+    hints: [
+      'Use a FOR loop from 1 TO 3.',
+      'Inside: add Temp to Total; check IF Temp > MaxTemp and IF Temp < MinTemp separately.',
+      'Output MaxTemp, then MinTemp, then Average.',
+    ],
+    solution: `DECLARE Temp : REAL
+DECLARE MaxTemp : REAL
+DECLARE MinTemp : REAL
+DECLARE Total : REAL
+DECLARE Average : REAL
+DECLARE i : INTEGER
+
+MaxTemp <- -1000
+MinTemp <- 1000
+Total <- 0
+
+FOR i <- 1 TO 3
+    INPUT Temp
+    Total <- Total + Temp
+    IF Temp > MaxTemp THEN
+        MaxTemp <- Temp
+    ENDIF
+    IF Temp < MinTemp THEN
+        MinTemp <- Temp
+    ENDIF
+NEXT i
+
+Average <- Total / 3
+
+OUTPUT MaxTemp
+OUTPUT MinTemp
+OUTPUT Average`,
+    solutionExplanation: 'A single FOR loop reads and processes all three temperatures, accumulating the sum and continuously updating running max and min values.',
+    testCases: [
+      { inputs: ['12.0', '15.0', '9.0'],  expectedOutput: '15\n9\n12',  description: 'Standard',       sortOrder: 0 },
+      { inputs: ['-5', '-2', '-8'],        expectedOutput: '-2\n-8\n-5', description: 'All negative',   sortOrder: 1 },
+      { inputs: ['10', '10', '10'],        expectedOutput: '10\n10\n10', description: 'Constant',       sortOrder: 2, isHidden: true },
+      { inputs: ['0', '30', '15'],         expectedOutput: '30\n0\n15',  description: 'Zero included',  sortOrder: 3, isHidden: true },
+      { inputs: ['100', '50', '0'],        expectedOutput: '100\n0\n50', description: 'Descending',     sortOrder: 4, isHidden: true },
+    ],
+  },
+
+  // ════════════════════════════════════════ MAY/JUN 2023 PAST PAPERS ════
+
+  {
+    title: 'Validation Range Check',
+    description: `Ensure a length is between 15 and 35 inclusive. Output an initial prompt, then show an error and re-ask for each invalid input, until a valid value is entered.
+
+**Input:** A sequence of integers.
+**Output:** Initial prompt, error messages for invalid inputs, then "Accepted".
+
+**Example:**
+\`\`\`
+Input:  10
+        40
+        20
+Output: Enter a number between 15 and 35 inclusive
+        Your number must be between 15 and 35 inclusive
+        Your number must be between 15 and 35 inclusive
+        Accepted
+\`\`\``,
+    difficulty: 'EASY' as const,
+    topic: 'Selection',
+    tags: ['Past Paper', 'Validation'],
+    year: 2023,
+    session: 'May/Jun',
+    variant: 3,
+    starterCode: `DECLARE Length : INTEGER
+
+// Output initial prompt and read input
+
+// Start your validation loop here`,
+    hints: [
+      'Use a WHILE loop with the condition: Length < 15 OR Length > 35.',
+      'Inside the loop, output the error message and INPUT Length again.',
+      'After the loop, output "Accepted".',
+    ],
+    solution: `DECLARE Length : INTEGER
+
+OUTPUT "Enter a number between 15 and 35 inclusive"
+INPUT Length
+
+WHILE Length < 15 OR Length > 35 DO
+    OUTPUT "Your number must be between 15 and 35 inclusive"
+    INPUT Length
+ENDWHILE
+
+OUTPUT "Accepted"`,
+    solutionExplanation: 'The initial prompt and input happen before the loop. The WHILE loop repeats with an error message as long as the value is out of range.',
+    testCases: [
+      { inputs: ['25'],             expectedOutput: 'Enter a number between 15 and 35 inclusive\nAccepted',                                                                                                                                      description: 'Valid on first try',   sortOrder: 0 },
+      { inputs: ['10', '40', '20'], expectedOutput: 'Enter a number between 15 and 35 inclusive\nYour number must be between 15 and 35 inclusive\nYour number must be between 15 and 35 inclusive\nAccepted',                                    description: 'Two invalid then valid', sortOrder: 1 },
+      { inputs: ['14', '36', '15'], expectedOutput: 'Enter a number between 15 and 35 inclusive\nYour number must be between 15 and 35 inclusive\nYour number must be between 15 and 35 inclusive\nAccepted',                                    description: null,                    sortOrder: 2, isHidden: true },
+      { inputs: ['0', '100', '35'], expectedOutput: 'Enter a number between 15 and 35 inclusive\nYour number must be between 15 and 35 inclusive\nYour number must be between 15 and 35 inclusive\nAccepted',                                    description: null,                    sortOrder: 3, isHidden: true },
+      { inputs: ['-5', '22'],       expectedOutput: 'Enter a number between 15 and 35 inclusive\nYour number must be between 15 and 35 inclusive\nAccepted',                                                                                     description: null,                    sortOrder: 4, isHidden: true },
+    ],
+  },
+
+  {
+    title: 'Measurement Double-Entry Check',
+    description: `Ask the user to enter a measurement, then ask them to re-enter it to verify. If the two values do not match, repeat the entire process until they do. Once matched, output \`"Verified"\`.
+
+**Input:** Measurement pairs (real numbers) until both match.
+**Output:** A prompt before each entry attempt, then "Verified".
+
+**Example:**
+\`\`\`
+Input:  5.5
+        5.6
+        5.5
+        5.5
+Output: Please enter measurement
+        Please re-enter measurement
+        Please enter measurement
+        Please re-enter measurement
+        Verified
+\`\`\``,
+    difficulty: 'EASY' as const,
+    topic: 'Loops',
+    tags: ['Past Paper', 'Verification'],
+    year: 2023,
+    session: 'May/Jun',
+    variant: 2,
+    starterCode: `DECLARE Measurement : REAL
+DECLARE MeasurementCheck : REAL
+
+// Use a loop to perform the double entry verification`,
+    hints: [
+      'A REPEAT...UNTIL loop is ideal — it always runs at least once.',
+      'Inside: output the prompt, INPUT Measurement, output the check prompt, INPUT MeasurementCheck.',
+      'UNTIL Measurement = MeasurementCheck.',
+    ],
+    solution: `DECLARE Measurement : REAL
+DECLARE MeasurementCheck : REAL
+
+REPEAT
+    OUTPUT "Please enter measurement"
+    INPUT Measurement
+    OUTPUT "Please re-enter measurement"
+    INPUT MeasurementCheck
+UNTIL Measurement = MeasurementCheck
+
+OUTPUT "Verified"`,
+    solutionExplanation: 'A REPEAT UNTIL loop guarantees the prompts run at least once, repeating only when the two entries do not match.',
+    testCases: [
+      { inputs: ['10.5', '10.5'],                  expectedOutput: 'Please enter measurement\nPlease re-enter measurement\nVerified',                                                                                                                            description: 'Matches first time',      sortOrder: 0 },
+      { inputs: ['5.5', '5.6', '5.5', '5.5'],      expectedOutput: 'Please enter measurement\nPlease re-enter measurement\nPlease enter measurement\nPlease re-enter measurement\nVerified',                                                                   description: 'Fails once then matches', sortOrder: 1 },
+      { inputs: ['1', '2', '3', '4', '5', '5'],    expectedOutput: 'Please enter measurement\nPlease re-enter measurement\nPlease enter measurement\nPlease re-enter measurement\nPlease enter measurement\nPlease re-enter measurement\nVerified',             description: null,                      sortOrder: 2, isHidden: true },
+      { inputs: ['-3.14', '-3.14'],                 expectedOutput: 'Please enter measurement\nPlease re-enter measurement\nVerified',                                                                                                                            description: null,                      sortOrder: 3, isHidden: true },
+      { inputs: ['0', '1', '0', '0'],               expectedOutput: 'Please enter measurement\nPlease re-enter measurement\nPlease enter measurement\nPlease re-enter measurement\nVerified',                                                                   description: null,                      sortOrder: 4, isHidden: true },
+    ],
+  },
+
+  {
+    title: 'Character Position Finder',
+    description: `Input a string \`P\` and a single character \`Q\`. Convert both to uppercase, then find the 1-based position of the first occurrence of \`Q\` in \`P\`. Output \`0\` if not found.
+
+**Input:** A string, then a single character.
+**Output:** An integer representing the position (or 0).
+
+**Example:**
+\`\`\`
+Input:  The world
+        w
+Output: 5
+\`\`\``,
+    difficulty: 'MEDIUM' as const,
+    topic: 'String Processing',
+    tags: ['Past Paper', 'String Manipulation'],
+    year: 2023,
+    session: 'May/Jun',
+    variant: 2,
+    starterCode: `DECLARE P : STRING
+DECLARE Q : CHAR
+DECLARE Position : INTEGER
+DECLARE Counter : INTEGER
+
+INPUT P
+INPUT Q
+
+Position <- 0
+// Convert to uppercase and search`,
+    hints: [
+      'Use UCASE() to convert both P and Q to uppercase for case-insensitive comparison.',
+      'Loop: WHILE Counter <= LENGTH(P) AND Position = 0 DO',
+      'Inside: IF SUBSTRING(P, Counter, 1) = Q THEN Position <- Counter; Counter <- Counter + 1.',
+    ],
+    solution: `DECLARE P : STRING
+DECLARE Q : CHAR
+DECLARE Position : INTEGER
+DECLARE Counter : INTEGER
+
+INPUT P
+INPUT Q
+
+P <- UCASE(P)
+Q <- UCASE(Q)
+Position <- 0
+Counter <- 1
+
+WHILE Counter <= LENGTH(P) AND Position = 0 DO
+    IF SUBSTRING(P, Counter, 1) = Q THEN
+        Position <- Counter
+    ENDIF
+    Counter <- Counter + 1
+ENDWHILE
+
+OUTPUT Position`,
+    solutionExplanation: 'Both strings are uppercased for case-insensitive comparison. The WHILE loop stops early (Position > 0) when the first match is found.',
+    testCases: [
+      { inputs: ['The world', 'w'], expectedOutput: '5', description: 'Found (case insensitive)', sortOrder: 0 },
+      { inputs: ['Apple', 'z'],     expectedOutput: '0', description: 'Not found',                sortOrder: 1 },
+      { inputs: ['BANANA', 'A'],    expectedOutput: '2', description: 'First occurrence',         sortOrder: 2, isHidden: true },
+      { inputs: ['hello', 'H'],     expectedOutput: '1', description: null,                       sortOrder: 3, isHidden: true },
+      { inputs: ['abcdefg', 'G'],   expectedOutput: '7', description: null,                       sortOrder: 4, isHidden: true },
+    ],
+  },
+
+  {
+    title: 'Totalling Positive Numbers',
+    description: `Read numbers until 0 is entered. Total only the positive numbers and count how many there were.
+
+**Input:** A sequence of integers ending with 0.
+**Output:** The total and the count of positive numbers.
+
+**Example:**
+\`\`\`
+Input:  5
+        -2
+        10
+        0
+Output: Total: 15
+        Count: 2
+\`\`\``,
+    difficulty: 'MEDIUM' as const,
+    topic: 'Loops',
+    tags: ['Past Paper', 'Totalling'],
+    year: 2023,
+    session: 'May/Jun',
+    variant: 1,
+    starterCode: `DECLARE Number : INTEGER
+DECLARE Total : INTEGER
+DECLARE Count : INTEGER
+
+Total <- 0
+Count <- 0
+
+// Loop until 0 is entered`,
+    hints: [
+      'Read an initial input before the WHILE loop, and another at the end of the loop body.',
+      'WHILE Number <> 0 DO ... ENDWHILE.',
+      'Inside: IF Number > 0 THEN Total <- Total + Number, Count <- Count + 1.',
+    ],
+    solution: `DECLARE Number : INTEGER
+DECLARE Total : INTEGER
+DECLARE Count : INTEGER
+
+Total <- 0
+Count <- 0
+
+INPUT Number
+WHILE Number <> 0 DO
+    IF Number > 0 THEN
+        Total <- Total + Number
+        Count <- Count + 1
+    ENDIF
+    INPUT Number
+ENDWHILE
+
+OUTPUT "Total: " & Total
+OUTPUT "Count: " & Count`,
+    solutionExplanation: 'A sentinel-controlled WHILE loop ends on 0. An IF filters negatives, maintaining a running total and count of positive inputs only.',
+    testCases: [
+      { inputs: ['5', '-2', '10', '0'],        expectedOutput: 'Total: 15\nCount: 2',  description: 'Mix positive/negative', sortOrder: 0 },
+      { inputs: ['-5', '-10', '0'],             expectedOutput: 'Total: 0\nCount: 0',  description: 'Only negatives',        sortOrder: 1 },
+      { inputs: ['0'],                           expectedOutput: 'Total: 0\nCount: 0',  description: 'Immediate zero',        sortOrder: 2, isHidden: true },
+      { inputs: ['1', '2', '3', '4', '5', '0'], expectedOutput: 'Total: 15\nCount: 5', description: null,                    sortOrder: 3, isHidden: true },
+      { inputs: ['100', '-99', '1', '0'],       expectedOutput: 'Total: 101\nCount: 2', description: null,                   sortOrder: 4, isHidden: true },
+    ],
+  },
+
+  {
+    title: 'Temperature Readings & Conversion',
+    description: `Use a 1D array \`Readings[1:5]\` to store 5 validated temperature readings (−20.0 to +50.0 inclusive). Prompt before each reading; show "Invalid temperature" and re-ask if out of range.
+
+After all readings, output the Celsius average (rounded to 1 d.p.), then the Fahrenheit equivalent using F = C × 9/5 + 32 (also 1 d.p.).
+
+**Input:** Valid/invalid temperatures for 5 positions.
+**Output:** "Enter temperature" prompts, "Invalid temperature" for rejects, then the two averages.
+
+**Example:**
+\`\`\`
+Input:  10.0
+        60.0
+        20.0
+        15.0
+        15.0
+        15.0
+Output: Enter temperature
+        Enter temperature
+        Invalid temperature
+        Enter temperature
+        Enter temperature
+        Enter temperature
+        Average C: 15.0
+        Average F: 59.0
+\`\`\``,
+    difficulty: 'HARD' as const,
+    topic: 'Arrays',
+    tags: ['Past Paper', 'Validation', 'Arrays'],
+    year: 2023,
+    session: 'May/Jun',
+    variant: 1,
+    starterCode: `DECLARE Readings : ARRAY[1:5] OF REAL
+DECLARE DayLoop : INTEGER
+DECLARE InTemp : REAL
+DECLARE TotalDayTemp : REAL
+DECLARE AverageTemp : REAL
+DECLARE Fahrenheit : REAL
+
+TotalDayTemp <- 0.0
+
+// Write loop to read, validate, and store 5 readings`,
+    hints: [
+      'FOR DayLoop <- 1 TO 5: OUTPUT "Enter temperature", INPUT InTemp.',
+      'Nested WHILE InTemp < -20.0 OR InTemp > 50.0: OUTPUT "Invalid temperature", INPUT InTemp.',
+      'Use ROUND(TotalDayTemp / 5, 1) for Celsius average, ROUND(AverageTemp * 9 / 5 + 32, 1) for Fahrenheit.',
+    ],
+    solution: `DECLARE Readings : ARRAY[1:5] OF REAL
+DECLARE DayLoop : INTEGER
+DECLARE InTemp : REAL
+DECLARE TotalDayTemp : REAL
+DECLARE AverageTemp : REAL
+DECLARE Fahrenheit : REAL
+
+TotalDayTemp <- 0.0
+
+FOR DayLoop <- 1 TO 5
+    OUTPUT "Enter temperature"
+    INPUT InTemp
+    WHILE InTemp < -20.0 OR InTemp > 50.0 DO
+        OUTPUT "Invalid temperature"
+        INPUT InTemp
+    ENDWHILE
+    Readings[DayLoop] <- InTemp
+    TotalDayTemp <- TotalDayTemp + InTemp
+NEXT DayLoop
+
+AverageTemp <- ROUND(TotalDayTemp / 5, 1)
+Fahrenheit <- ROUND(AverageTemp * 9 / 5 + 32, 1)
+
+OUTPUT "Average C: " & AverageTemp
+OUTPUT "Average F: " & Fahrenheit`,
+    solutionExplanation: 'A FOR loop with a nested WHILE loop for range validation populates the array. DIV/MOD are not needed here — ROUND formats the computed averages.',
+    testCases: [
+      { inputs: ['10.0', '60.0', '20.0', '15.0', '15.0', '15.0'],  expectedOutput: 'Enter temperature\nEnter temperature\nInvalid temperature\nEnter temperature\nEnter temperature\nEnter temperature\nAverage C: 15.0\nAverage F: 59.0', description: 'One invalid',  sortOrder: 0 },
+      { inputs: ['0.0', '0.0', '0.0', '0.0', '0.0'],                expectedOutput: 'Enter temperature\nEnter temperature\nEnter temperature\nEnter temperature\nEnter temperature\nAverage C: 0.0\nAverage F: 32.0',                      description: 'All zeros',   sortOrder: 1 },
+      { inputs: ['-20.0', '50.0', '10.0', '-10.0', '20.0'],         expectedOutput: 'Enter temperature\nEnter temperature\nEnter temperature\nEnter temperature\nEnter temperature\nAverage C: 10.0\nAverage F: 50.0',                    description: null,          sortOrder: 2, isHidden: true },
+      { inputs: ['-25.0', '25.0', '25.0', '25.0', '25.0', '25.0'],  expectedOutput: 'Enter temperature\nInvalid temperature\nEnter temperature\nEnter temperature\nEnter temperature\nEnter temperature\nAverage C: 25.0\nAverage F: 77.0', description: null,         sortOrder: 3, isHidden: true },
+      { inputs: ['-5.5', '2.5', '10.0', '12.5', '18.0'],            expectedOutput: 'Enter temperature\nEnter temperature\nEnter temperature\nEnter temperature\nEnter temperature\nAverage C: 7.5\nAverage F: 45.5',                     description: null,          sortOrder: 4, isHidden: true },
+    ],
+  },
+
+  // ═══ FEB/MAR 2023 PAST PAPERS ═══
+
+  {
+    title: 'Energy Efficiency A-rated Check',
+    description: `An appliance is classified as "A-rated" if its energy efficiency is 92% or greater.
+
+Write a program that reads a real number representing the energy efficiency percentage and outputs "A-rated" if it meets the threshold. If the value is below 92, the program outputs nothing.
+
+**Input:** A single real number representing energy efficiency (e.g. 92.0).
+**Output:** "A-rated" if efficiency >= 92, or nothing otherwise.
+
+**Example:**
+\`\`\`
+Input:  95
+Output: A-rated
+\`\`\``,
+    difficulty: 'EASY' as const,
+    topic: 'Selection',
+    tags: ['Past Paper'],
+    year: 2023,
+    session: 'Feb/Mar',
+    variant: 1,
+    starterCode: `DECLARE Efficiency : REAL
+
+INPUT Efficiency
+
+// Output "A-rated" if Efficiency is 92 or greater`,
+    hints: [
+      'Use an IF statement with the condition `Efficiency >= 92`.',
+      'Inside the IF block, use OUTPUT to print "A-rated".',
+      'There is no ELSE clause needed — the program does nothing if the condition is false.',
+    ],
+    solution: `DECLARE Efficiency : REAL
+
+INPUT Efficiency
+
+IF Efficiency >= 92 THEN
+    OUTPUT "A-rated"
+ENDIF`,
+    solutionExplanation: 'A simple IF statement checks if the input variable Efficiency is greater than or equal to 92. If the condition evaluates to true, it outputs "A-rated".',
+    testCases: [
+      { inputs: ['95'],    expectedOutput: 'A-rated', description: 'Above threshold',      sortOrder: 0 },
+      { inputs: ['92'],    expectedOutput: 'A-rated', description: 'Exactly on threshold', sortOrder: 1 },
+      { inputs: ['85'],    expectedOutput: '',         description: 'Below threshold',      sortOrder: 2, isHidden: true },
+      { inputs: ['91.9'],  expectedOutput: '',         description: 'Just below threshold', sortOrder: 3, isHidden: true },
+      { inputs: ['100'],   expectedOutput: 'A-rated', description: 'Maximum efficiency',   sortOrder: 4, isHidden: true },
+    ],
+  },
+
+  {
+    title: 'Rounding Comparison Function',
+    description: `Write a program that defines and tests a function called \`Same\`.
+
+The function \`Same(A, B)\` should take an integer \`A\` and a real number \`B\` as parameters, and return \`TRUE\` if the value of \`A\` is the same as the value of \`B\` when \`B\` is rounded to the nearest whole number. Otherwise, it returns \`FALSE\`.
+
+After defining the function, your program should input an integer \`X\` and a real number \`Y\`, call the function, and output "Match" if it returns \`TRUE\`, or "No Match" if it returns \`FALSE\`.
+
+**Input:** An integer \`X\` followed by a real number \`Y\`.
+**Output:** "Match" or "No Match".
+
+**Example:**
+\`\`\`
+Input:  5
+        4.8
+Output: Match
+\`\`\``,
+    difficulty: 'MEDIUM' as const,
+    topic: 'Procedures & Functions',
+    tags: ['Past Paper', 'Functions', 'Built-in Functions'],
+    year: 2023,
+    session: 'Feb/Mar',
+    variant: 2,
+    starterCode: `// Define the function Same here
+FUNCTION Same(A : INTEGER, B : REAL) RETURNS BOOLEAN
+    // Your logic here using the ROUND() function
+ENDFUNCTION
+
+DECLARE X : INTEGER
+DECLARE Y : REAL
+DECLARE Z : BOOLEAN
+
+INPUT X
+INPUT Y
+
+// Call the function and output "Match" or "No Match"`,
+    hints: [
+      'Inside the function, compare `A` to `ROUND(B, 0)`.',
+      'Use an IF statement in the main code to check if `Same(X, Y)` evaluates to TRUE.',
+      'Remember to store the result of the function call in the boolean variable `Z` (e.g., `Z <- Same(X, Y)`).',
+    ],
+    solution: `FUNCTION Same(A : INTEGER, B : REAL) RETURNS BOOLEAN
+    IF A = ROUND(B, 0) THEN
+        RETURN TRUE
+    ELSE
+        RETURN FALSE
+    ENDIF
+ENDFUNCTION
+
+DECLARE X : INTEGER
+DECLARE Y : REAL
+DECLARE Z : BOOLEAN
+
+INPUT X
+INPUT Y
+
+Z <- Same(X, Y)
+
+IF Z = TRUE THEN
+    OUTPUT "Match"
+ELSE
+    OUTPUT "No Match"
+ENDIF`,
+    solutionExplanation: 'The function uses the built-in ROUND(B, 0) to round the real number to the nearest integer before comparing it to A. The main program passes the inputs to the function and branches the output based on the returned boolean flag.',
+    testCases: [
+      { inputs: ['5', '4.8'],   expectedOutput: 'Match',    description: 'Rounds up to match',        sortOrder: 0 },
+      { inputs: ['5', '5.2'],   expectedOutput: 'Match',    description: 'Rounds down to match',      sortOrder: 1 },
+      { inputs: ['5', '5.6'],   expectedOutput: 'No Match', description: 'Rounds up to wrong number', sortOrder: 2, isHidden: true },
+      { inputs: ['10', '9.1'],  expectedOutput: 'No Match', description: 'Rounds down to wrong number', sortOrder: 3, isHidden: true },
+      { inputs: ['-3', '-2.9'], expectedOutput: 'Match',    description: 'Negative numbers rounding', sortOrder: 4, isHidden: true },
+    ],
+  },
+
+  {
+    title: 'Sports League Match Tracker',
+    description: `A sports team earns points based on match results: 3 for an away win, 2 for a home win, 1 for a drawn match, and 0 for a lost match.
+
+Write a program that first reads the total number of matches played (\`MatchNo\`). Then, it should loop \`MatchNo\` times, reading the result of each match (3, 2, 1, or 0). Calculate the total points for the team and count the number of away wins, home wins, draws, and losses.
+
+**Input:** An integer representing \`MatchNo\`, followed by \`MatchNo\` integers representing the match results.
+**Output:** 5 lines displaying the total points and the counts for each result type.
+
+**Example:**
+\`\`\`
+Input:  4
+        3
+        2
+        1
+        0
+Output: Total points: 6
+        Away wins: 1
+        Home wins: 1
+        Draws: 1
+        Losses: 1
+\`\`\``,
+    difficulty: 'HARD' as const,
+    topic: 'Algorithms',
+    tags: ['Past Paper', 'Counting', 'Totalling', 'CASE OF'],
+    year: 2023,
+    session: 'Feb/Mar',
+    variant: 2,
+    starterCode: `DECLARE MatchNo : INTEGER
+DECLARE Result : INTEGER
+DECLARE TotalPoints : INTEGER
+DECLARE AwayWins : INTEGER
+DECLARE HomeWins : INTEGER
+DECLARE Draws : INTEGER
+DECLARE Losses : INTEGER
+DECLARE Count : INTEGER
+
+TotalPoints <- 0
+AwayWins <- 0
+HomeWins <- 0
+Draws <- 0
+Losses <- 0
+
+INPUT MatchNo
+
+// Write a FOR loop from 1 TO MatchNo
+// INPUT Result each iteration
+// Use CASE OF to update counters and add to TotalPoints
+
+OUTPUT "Total points: " & TotalPoints
+OUTPUT "Away wins: " & AwayWins
+OUTPUT "Home wins: " & HomeWins
+OUTPUT "Draws: " & Draws
+OUTPUT "Losses: " & Losses`,
+    hints: [
+      'You need a FOR loop running from 1 to `MatchNo`.',
+      'Inside the loop, INPUT Result, then add Result to TotalPoints.',
+      'Use a CASE OF Result block to increment AwayWins (if 3), HomeWins (if 2), Draws (if 1), or Losses (if 0).',
+    ],
+    solution: `DECLARE MatchNo : INTEGER
+DECLARE Result : INTEGER
+DECLARE TotalPoints : INTEGER
+DECLARE AwayWins : INTEGER
+DECLARE HomeWins : INTEGER
+DECLARE Draws : INTEGER
+DECLARE Losses : INTEGER
+DECLARE Count : INTEGER
+
+TotalPoints <- 0
+AwayWins <- 0
+HomeWins <- 0
+Draws <- 0
+Losses <- 0
+
+INPUT MatchNo
+
+FOR Count <- 1 TO MatchNo
+    INPUT Result
+    TotalPoints <- TotalPoints + Result
+    CASE OF Result
+        3 : AwayWins <- AwayWins + 1
+        2 : HomeWins <- HomeWins + 1
+        1 : Draws <- Draws + 1
+        0 : Losses <- Losses + 1
+    ENDCASE
+NEXT Count
+
+OUTPUT "Total points: " & TotalPoints
+OUTPUT "Away wins: " & AwayWins
+OUTPUT "Home wins: " & HomeWins
+OUTPUT "Draws: " & Draws
+OUTPUT "Losses: " & Losses`,
+    solutionExplanation: 'The algorithm uses a definite iteration loop (FOR) to process a pre-determined number of match results. A CASE statement effectively acts as a selection structure to update individual tally counters, while a running total keeps track of the overall score.',
+    testCases: [
+      { inputs: ['4', '3', '2', '1', '0'],          expectedOutput: 'Total points: 6\nAway wins: 1\nHome wins: 1\nDraws: 1\nLosses: 1',   description: 'One of each result', sortOrder: 0 },
+      { inputs: ['5', '3', '3', '3', '3', '3'],     expectedOutput: 'Total points: 15\nAway wins: 5\nHome wins: 0\nDraws: 0\nLosses: 0', description: 'All away wins',      sortOrder: 1 },
+      { inputs: ['0'],                               expectedOutput: 'Total points: 0\nAway wins: 0\nHome wins: 0\nDraws: 0\nLosses: 0',  description: 'Zero matches',       sortOrder: 2, isHidden: true },
+      { inputs: ['3', '0', '0', '0'],               expectedOutput: 'Total points: 0\nAway wins: 0\nHome wins: 0\nDraws: 0\nLosses: 3',  description: 'All losses',         sortOrder: 3, isHidden: true },
+      { inputs: ['6', '2', '2', '2', '1', '1', '0'], expectedOutput: 'Total points: 8\nAway wins: 0\nHome wins: 3\nDraws: 2\nLosses: 1', description: 'Mixed results',      sortOrder: 4, isHidden: true },
+    ],
+  },
+
+  // ═══ OCT/NOV 2022 PAST PAPERS ═══
+
+  {
+    title: 'Bread Rolls Stock Tracker',
+    description: `A bakery needs a program to make sure there are always enough fresh bread rolls available. The bakery starts with a stock of 50 bread rolls. The program should repeatedly take in the number of rolls sold until a value of -1 is entered.
+
+Whenever the stock falls below 20, the program should output "Add new stock" and add 50 to the current stock. When -1 is entered, the program should stop and output the total number of rolls sold.
+
+**Input:** A sequence of integers representing rolls sold, ending with -1.
+**Output:** "Add new stock" each time stock drops below 20, then the total rolls sold at the end.
+
+**Example:**
+\`\`\`
+Input:  24
+        12
+        -1
+Output: Add new stock
+        36
+\`\`\``,
+    difficulty: 'MEDIUM' as const,
+    topic: 'Loops',
+    tags: ['Past Paper', 'Complete Question'],
+    year: 2022,
+    session: 'Oct/Nov',
+    variant: 1,
+    starterCode: `DECLARE Stock : INTEGER
+DECLARE Total : INTEGER
+DECLARE Sold : INTEGER
+
+Stock <- 50
+Total <- 0
+
+// Add your WHILE loop and logic here`,
+    hints: [
+      'You will need a WHILE loop that continues as long as Sold is not equal to -1.',
+      'Inside the loop, subtract the Sold amount from Stock. Then use an IF statement to check if Stock < 20.',
+      'If Stock < 20, output the message and add 50 to Stock. Keep a running total of rolls sold and input the next Sold before the loop repeats.',
+    ],
+    solution: `DECLARE Stock : INTEGER
+DECLARE Total : INTEGER
+DECLARE Sold : INTEGER
+
+Stock <- 50
+Total <- 0
+
+INPUT Sold
+WHILE Sold <> -1 DO
+    Stock <- Stock - Sold
+    IF Stock < 20 THEN
+        OUTPUT "Add new stock"
+        Stock <- Stock + 50
+    ENDIF
+    Total <- Total + Sold
+    INPUT Sold
+ENDWHILE
+
+OUTPUT Total`,
+    solutionExplanation: 'The program uses a WHILE loop to process sales until a sentinel value (-1) is encountered. It continuously updates the running stock and total sold variables, using a conditional check to trigger restocking when the threshold is breached.',
+    testCases: [
+      { inputs: ['24', '12', '-1'],                        expectedOutput: 'Add new stock\n36',                description: 'One restock triggered',         sortOrder: 0 },
+      { inputs: ['5', '5', '5', '-1'],                     expectedOutput: '15',                              description: 'No restocking needed',          sortOrder: 1 },
+      { inputs: ['10', '10', '10', '10', '-1'],            expectedOutput: 'Add new stock\n40',               description: null,                            sortOrder: 2, isHidden: true },
+      { inputs: ['45', '-1'],                              expectedOutput: 'Add new stock\n45',               description: null,                            sortOrder: 3, isHidden: true },
+      { inputs: ['-1'],                                    expectedOutput: '0',                               description: null,                            sortOrder: 4, isHidden: true },
+      { inputs: ['24', '12', '6', '30', '12', '18', '-1'], expectedOutput: 'Add new stock\nAdd new stock\n102', description: 'Multiple restocks',           sortOrder: 5, isHidden: true },
+    ],
+  },
+
+  {
+    title: 'Three-Digit Number Breakdown',
+    description: `Write an algorithm to divide a three-digit number into its hundreds, tens, and units components using the built-in mathematical operators \`DIV\` (integer division) and \`MOD\` (remainder).
+
+**Input:** A single positive integer between 100 and 999.
+**Output:** A single line in the format: "Hundreds: H Tens: T Units: U"
+
+**Example:**
+\`\`\`
+Input:  876
+Output: Hundreds: 8 Tens: 7 Units: 6
+\`\`\``,
+    difficulty: 'EASY' as const,
+    topic: 'Arithmetic',
+    tags: ['Past Paper', 'Flowchart Conversion'],
+    year: 2022,
+    session: 'Oct/Nov',
+    variant: 2,
+    starterCode: `DECLARE Number : INTEGER
+DECLARE Hundreds : INTEGER
+DECLARE Tens : INTEGER
+DECLARE Units : INTEGER
+DECLARE Temp : INTEGER
+
+INPUT Number
+
+// Calculate Hundreds, Tens, and Units here
+
+OUTPUT "Hundreds: " & Hundreds & " Tens: " & Tens & " Units: " & Units`,
+    hints: [
+      'To isolate the hundreds digit, use integer division by 100: `Hundreds <- Number DIV 100`.',
+      'To find the remaining part without the hundreds, use MOD 100 and store it in Temp.',
+      'Then `Tens <- Temp DIV 10` and `Units <- Number MOD 10`.',
+    ],
+    solution: `DECLARE Number : INTEGER
+DECLARE Hundreds : INTEGER
+DECLARE Tens : INTEGER
+DECLARE Units : INTEGER
+DECLARE Temp : INTEGER
+
+INPUT Number
+
+Hundreds <- Number DIV 100
+Temp <- Number MOD 100
+Tens <- Temp DIV 10
+Units <- Number MOD 10
+
+OUTPUT "Hundreds: " & Hundreds & " Tens: " & Tens & " Units: " & Units`,
+    solutionExplanation: 'By using integer division (DIV), we extract the most significant digit. By using modulus (MOD), we strip away the higher digits to process the remainder.',
+    testCases: [
+      { inputs: ['876'], expectedOutput: 'Hundreds: 8 Tens: 7 Units: 6', description: 'Standard 3-digit number',        sortOrder: 0 },
+      { inputs: ['606'], expectedOutput: 'Hundreds: 6 Tens: 0 Units: 6', description: 'Zero in tens place',             sortOrder: 1 },
+      { inputs: ['124'], expectedOutput: 'Hundreds: 1 Tens: 2 Units: 4', description: null,                             sortOrder: 2, isHidden: true },
+      { inputs: ['999'], expectedOutput: 'Hundreds: 9 Tens: 9 Units: 9', description: null,                             sortOrder: 3, isHidden: true },
+      { inputs: ['100'], expectedOutput: 'Hundreds: 1 Tens: 0 Units: 0', description: null,                             sortOrder: 4, isHidden: true },
+    ],
+  },
+
+  {
+    title: 'Wheelbarrow Restock Tracker',
+    description: `A hardware store uses an algorithm to ensure there are enough wheelbarrows in stock. The initial stock is 10 and total sold starts at 0.
+
+The program takes a sequence of string inputs ("Y" for a sale, "N" to stop). Every time a wheelbarrow is sold ("Y"), the stock drops by 1. If the stock drops below 5, the program outputs "Add new stock" and adds 10 to the stock. When "N" is entered, output the total number sold.
+
+**Input:** A sequence of "Y" and "N" string inputs, ending with "N".
+**Output:** "Add new stock" when stock falls below 5, then the total sold after "N".
+
+**Example:**
+\`\`\`
+Input:  Y Y Y Y Y Y N
+Output: Add new stock
+        6
+\`\`\``,
+    difficulty: 'MEDIUM' as const,
+    topic: 'Loops',
+    tags: ['Past Paper', 'Flowchart Conversion'],
+    year: 2022,
+    session: 'Oct/Nov',
+    variant: 3,
+    starterCode: `DECLARE Stock : INTEGER
+DECLARE Total : INTEGER
+DECLARE Sale : STRING
+
+Stock <- 10
+Total <- 0
+
+INPUT Sale
+
+WHILE Sale <> "N" DO
+    // Decrement stock, check threshold, count total
+
+    INPUT Sale
+ENDWHILE
+
+OUTPUT Total`,
+    hints: [
+      'Subtract 1 from Stock at the start of the loop body. Then check if Stock < 5.',
+      'If the condition is met, output "Add new stock" and increase Stock by 10.',
+      'Always add 1 to Total before asking for the next Sale input at the bottom of the loop.',
+    ],
+    solution: `DECLARE Stock : INTEGER
+DECLARE Total : INTEGER
+DECLARE Sale : STRING
+
+Stock <- 10
+Total <- 0
+
+INPUT Sale
+
+WHILE Sale <> "N" DO
+    Stock <- Stock - 1
+    IF Stock < 5 THEN
+        OUTPUT "Add new stock"
+        Stock <- Stock + 10
+    ENDIF
+    Total <- Total + 1
+    INPUT Sale
+ENDWHILE
+
+OUTPUT Total`,
+    solutionExplanation: 'The WHILE loop runs until the exit condition "N" is provided. For each sale, stock is reduced. A nested IF handles the conditional restocking logic independently of the total sales counter, which increments unconditionally for every "Y" processed.',
+    testCases: [
+      { inputs: ['Y', 'Y', 'Y', 'Y', 'Y', 'Y', 'N'],                               expectedOutput: 'Add new stock\n6',  description: 'Triggers one restock',  sortOrder: 0 },
+      { inputs: ['Y', 'Y', 'Y', 'N'],                                               expectedOutput: '3',                 description: 'No restock triggered', sortOrder: 1 },
+      { inputs: ['N'],                                                               expectedOutput: '0',                 description: 'Immediate stop',       sortOrder: 2, isHidden: true },
+      { inputs: ['Y', 'Y', 'Y', 'Y', 'Y', 'Y', 'Y', 'Y', 'Y', 'Y', 'Y', 'N'],    expectedOutput: 'Add new stock\n11', description: null,                   sortOrder: 3, isHidden: true },
+    ],
+  },
+
+  {
+    title: 'Student Mark Categorizer',
+    description: `A teacher needs a program to categorize student test marks. The program will continuously read integer marks until a value of -1 is entered.
+
+The marks should be sorted into three categories:
+- **Higher**: 80 or greater
+- **Middle**: 50 to 79 (inclusive)
+- **Lower**: less than 50
+
+At the end, output the total counts for each category.
+
+**Input:** A sequence of integers ending with -1.
+**Output:** Three lines formatted as "Higher: X", "Middle: Y", and "Lower: Z".
+
+**Example:**
+\`\`\`
+Input:  85 50 49 90 12 -1
+Output: Higher: 2
+        Middle: 1
+        Lower: 2
+\`\`\``,
+    difficulty: 'MEDIUM' as const,
+    topic: 'Selection',
+    tags: ['Past Paper', 'Adapted'],
+    year: 2022,
+    session: 'Oct/Nov',
+    variant: 2,
+    starterCode: `DECLARE Mark : INTEGER
+DECLARE HighCount : INTEGER
+DECLARE MidCount : INTEGER
+DECLARE LowCount : INTEGER
+
+HighCount <- 0
+MidCount <- 0
+LowCount <- 0
+
+INPUT Mark
+
+// Add WHILE loop and nested IF selection here
+
+OUTPUT "Higher: " & HighCount
+OUTPUT "Middle: " & MidCount
+OUTPUT "Lower: " & LowCount`,
+    hints: [
+      'Use a WHILE loop that runs as long as Mark <> -1.',
+      'Use IF/ELSE inside the loop. Start by checking if Mark >= 80.',
+      'If not >= 80, nest another IF inside the ELSE block to check if Mark >= 50. Anything left falls into Lower.',
+    ],
+    solution: `DECLARE Mark : INTEGER
+DECLARE HighCount : INTEGER
+DECLARE MidCount : INTEGER
+DECLARE LowCount : INTEGER
+
+HighCount <- 0
+MidCount <- 0
+LowCount <- 0
+
+INPUT Mark
+
+WHILE Mark <> -1 DO
+    IF Mark >= 80 THEN
+        HighCount <- HighCount + 1
+    ELSE
+        IF Mark >= 50 THEN
+            MidCount <- MidCount + 1
+        ELSE
+            LowCount <- LowCount + 1
+        ENDIF
+    ENDIF
+    INPUT Mark
+ENDWHILE
+
+OUTPUT "Higher: " & HighCount
+OUTPUT "Middle: " & MidCount
+OUTPUT "Lower: " & LowCount`,
+    solutionExplanation: 'The algorithm uses a WHILE loop for continuous input and nested IF statements to correctly bucket each score into one of three mutually exclusive categories.',
+    testCases: [
+      { inputs: ['85', '50', '49', '90', '12', '-1'], expectedOutput: 'Higher: 2\nMiddle: 1\nLower: 2', description: 'Standard mix of grades',   sortOrder: 0 },
+      { inputs: ['-1'],                               expectedOutput: 'Higher: 0\nMiddle: 0\nLower: 0', description: 'Immediate termination',    sortOrder: 1 },
+      { inputs: ['100', '80', '81', '-1'],            expectedOutput: 'Higher: 3\nMiddle: 0\nLower: 0', description: null,                       sortOrder: 2, isHidden: true },
+      { inputs: ['79', '50', '65', '-1'],             expectedOutput: 'Higher: 0\nMiddle: 3\nLower: 0', description: null,                       sortOrder: 3, isHidden: true },
+      { inputs: ['49', '0', '1', '-1'],              expectedOutput: 'Higher: 0\nMiddle: 0\nLower: 3', description: null,                       sortOrder: 4, isHidden: true },
+    ],
+  },
+
+  {
+    title: 'Parking Booking Validator',
+    description: `A visitor car park booking system requires the user to input the day they want to book within a two-week period (days 1 to 14).
+
+Write a program that repeatedly takes an integer input. If the input is outside the valid range (1 to 14 inclusive), output "Invalid day" and ask again. Once a valid day is entered, output "Accepted: " followed by the day number and terminate.
+
+**Input:** A sequence of integers.
+**Output:** "Invalid day" for out-of-range inputs, then "Accepted: X" for the valid input.
+
+**Example:**
+\`\`\`
+Input:  0
+        15
+        14
+Output: Invalid day
+        Invalid day
+        Accepted: 14
+\`\`\``,
+    difficulty: 'EASY' as const,
+    topic: 'Validation',
+    tags: ['Past Paper', 'Adapted'],
+    year: 2022,
+    session: 'Oct/Nov',
+    variant: 2,
+    starterCode: `DECLARE Day : INTEGER
+INPUT Day
+
+// Add validation loop here
+
+OUTPUT "Accepted: " & Day`,
+    hints: [
+      'Use a WHILE loop to repeatedly check the value.',
+      'The loop condition should catch values that are out of range — use the OR operator.',
+      'The condition should be `Day < 1 OR Day > 14`.',
+    ],
+    solution: `DECLARE Day : INTEGER
+INPUT Day
+
+WHILE Day < 1 OR Day > 14 DO
+    OUTPUT "Invalid day"
+    INPUT Day
+ENDWHILE
+
+OUTPUT "Accepted: " & Day`,
+    solutionExplanation: 'A standard range-check validation loop. It uses a WHILE loop that executes as long as the input is out of bounds, preventing invalid data from passing further into the system.',
+    testCases: [
+      { inputs: ['0', '15', '14'],   expectedOutput: 'Invalid day\nInvalid day\nAccepted: 14', description: 'Testing boundaries',   sortOrder: 0 },
+      { inputs: ['1'],               expectedOutput: 'Accepted: 1',                            description: 'Valid day immediately', sortOrder: 1 },
+      { inputs: ['100', '-5', '7'], expectedOutput: 'Invalid day\nInvalid day\nAccepted: 7',  description: null,                   sortOrder: 2, isHidden: true },
+      { inputs: ['14'],             expectedOutput: 'Accepted: 14',                            description: null,                   sortOrder: 3, isHidden: true },
+      { inputs: ['2'],              expectedOutput: 'Accepted: 2',                             description: null,                   sortOrder: 4, isHidden: true },
+    ],
+  },
 ];
 
 // ─── Main seed function ────────────────────────────────────────────────────────
