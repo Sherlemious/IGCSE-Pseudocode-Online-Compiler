@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useCallback } from 'react';
-import { BookOpen, ChevronDown, ChevronRight, Lock, Eye, Loader2, Lightbulb } from 'lucide-react';
+import { useState, useCallback, useEffect, useRef } from 'react';
+import { BookOpen, ChevronDown, ChevronRight, Lock, Eye, Lightbulb, X } from 'lucide-react';
 
 interface Props {
   questionId: string;
@@ -22,6 +22,9 @@ export default function SolutionPanel({ questionId, isSolved, attemptCount }: Pr
   const [isOpen, setIsOpen] = useState(false);
   const [data, setData] = useState<SolutionData | null>(null);
   const [loading, setLoading] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [localIsSolved, setLocalIsSolved] = useState(isSolved);
+  const [localAttemptCount, setLocalAttemptCount] = useState(attemptCount);
   const [revealed, setRevealed] = useState<boolean>(() => {
     try {
       return localStorage.getItem(REVEALED_KEY(questionId)) === 'true';
@@ -29,6 +32,9 @@ export default function SolutionPanel({ questionId, isSolved, attemptCount }: Pr
       return false;
     }
   });
+
+  const isOpenRef = useRef(isOpen);
+  isOpenRef.current = isOpen;
 
   const fetchSolution = useCallback(async (giveUp = false) => {
     setLoading(true);
@@ -39,6 +45,7 @@ export default function SolutionPanel({ questionId, isSolved, attemptCount }: Pr
         const result: SolutionData = await res.json();
         setData(result);
         if (!result.locked) {
+          setLocalIsSolved(true);
           setRevealed(true);
           try { localStorage.setItem(REVEALED_KEY(questionId), 'true'); } catch { /* ignore */ }
         }
@@ -52,6 +59,23 @@ export default function SolutionPanel({ questionId, isSolved, attemptCount }: Pr
     }
   }, [questionId]);
 
+  // Listen for grade events from PracticeWorkspace
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const { isSolved: solved } = (e as CustomEvent<{ isSolved: boolean }>).detail;
+      if (solved) setLocalIsSolved(true);
+      setLocalAttemptCount((prev) => prev + 1);
+      // Clear cache so next open re-fetches fresh data
+      setData(null);
+      // If panel is already open, immediately refetch
+      if (isOpenRef.current) {
+        fetchSolution();
+      }
+    };
+    window.addEventListener('practice:graded', handler);
+    return () => window.removeEventListener('practice:graded', handler);
+  }, [fetchSolution]);
+
   const handleToggle = () => {
     const next = !isOpen;
     setIsOpen(next);
@@ -59,11 +83,8 @@ export default function SolutionPanel({ questionId, isSolved, attemptCount }: Pr
   };
 
   const handleGiveUp = () => {
-    if (!confirm('Are you sure? This will reveal the model solution.')) return;
-    fetchSolution(true);
+    setConfirmOpen(true);
   };
-
-  const canView = isSolved || attemptCount >= 3;
 
   return (
     <div className="mt-4">
@@ -74,17 +95,27 @@ export default function SolutionPanel({ questionId, isSolved, attemptCount }: Pr
         {isOpen ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
         <BookOpen size={13} className="text-primary" />
         <span>Model Solution</span>
-        {isSolved && (
+        {localIsSolved && (
           <span className="ml-auto text-[10px] text-success font-mono">unlocked</span>
         )}
       </button>
 
       {isOpen && (
         <div className="mt-2 animate-fade-in-up" style={{ animationDuration: '0.3s' }}>
+          {/* Skeleton loader */}
           {loading && (
-            <div className="flex items-center gap-2 text-xs text-dark-text py-2">
-              <Loader2 size={12} className="animate-spin" />
-              Loading...
+            <div className="animate-pulse">
+              <div className="bg-surface rounded-lg border border-border overflow-hidden">
+                <div className="flex items-center gap-1.5 px-3 py-1.5 border-b border-border/50 bg-primary/5">
+                  <div className="h-3 w-3 bg-background/60 rounded" />
+                  <div className="h-3 bg-background/60 rounded w-16" />
+                </div>
+                <div className="p-3 space-y-1.5">
+                  {[70, 100, 85, 60, 90, 75].map((w, i) => (
+                    <div key={i} className="h-3 bg-background/60 rounded" style={{ width: `${w}%` }} />
+                  ))}
+                </div>
+              </div>
             </div>
           )}
 
@@ -97,7 +128,7 @@ export default function SolutionPanel({ questionId, isSolved, attemptCount }: Pr
                   ? `Grade ${data.attemptsNeeded} more time${data.attemptsNeeded > 1 ? 's' : ''} to unlock, or solve the question.`
                   : 'Sign in and attempt the question to unlock.'}
               </p>
-              {attemptCount > 0 && (
+              {localAttemptCount > 0 && (
                 <button
                   onClick={handleGiveUp}
                   className="text-xs text-warning hover:text-light-text transition-colors flex items-center gap-1 mx-auto"
@@ -144,6 +175,49 @@ export default function SolutionPanel({ questionId, isSolved, attemptCount }: Pr
               )}
             </div>
           )}
+        </div>
+      )}
+
+      {/* Confirm reveal dialog */}
+      {confirmOpen && (
+        <div
+          className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4"
+          onClick={() => setConfirmOpen(false)}
+        >
+          <div
+            className="bg-surface border border-border rounded-xl p-5 max-w-sm w-full shadow-2xl animate-scale-in"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <Eye size={15} className="text-warning shrink-0" />
+                <h3 className="text-sm font-semibold text-light-text">Reveal Model Solution?</h3>
+              </div>
+              <button
+                onClick={() => setConfirmOpen(false)}
+                className="text-dark-text hover:text-light-text transition-colors p-0.5"
+              >
+                <X size={14} />
+              </button>
+            </div>
+            <p className="text-xs text-dark-text mb-4 leading-relaxed">
+              This will show the full model solution before you&apos;ve solved the question. You&apos;ll learn more by solving it first.
+            </p>
+            <div className="flex gap-2 justify-end">
+              <button
+                onClick={() => setConfirmOpen(false)}
+                className="px-3 py-1.5 text-xs text-dark-text hover:text-light-text transition-colors rounded-lg hover:bg-background"
+              >
+                Keep trying
+              </button>
+              <button
+                onClick={() => { setConfirmOpen(false); fetchSolution(true); }}
+                className="px-3 py-1.5 text-xs font-medium text-warning bg-warning/10 hover:bg-warning/20 rounded-lg border border-warning/30 transition-colors"
+              >
+                Reveal anyway
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

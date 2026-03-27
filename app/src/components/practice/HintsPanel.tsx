@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { Lightbulb, ChevronDown, ChevronRight, Loader2 } from 'lucide-react';
+import { Lightbulb, ChevronDown, ChevronRight } from 'lucide-react';
 
 interface Props {
   questionId: string;
@@ -75,9 +75,15 @@ export default function HintsPanel({ questionId }: Props) {
       {isOpen && (
         <div className="mt-2 space-y-2 animate-fade-in-up" style={{ animationDuration: '0.3s' }}>
           {loading && (
-            <div className="flex items-center gap-2 text-xs text-dark-text py-2">
-              <Loader2 size={12} className="animate-spin" />
-              Loading hints...
+            <div className="space-y-2 animate-pulse">
+              <div className="bg-surface rounded-lg border border-border p-3">
+                <div className="h-3 bg-background rounded w-3/4 mb-1.5" />
+                <div className="h-3 bg-background rounded w-1/2" />
+              </div>
+              <div className="bg-surface rounded-lg border border-border p-3">
+                <div className="h-3 bg-background rounded w-full mb-1.5" />
+                <div className="h-3 bg-background rounded w-2/3" />
+              </div>
             </div>
           )}
 

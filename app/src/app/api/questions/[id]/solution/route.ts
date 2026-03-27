@@ -32,12 +32,12 @@ export async function GET(
 
     const isSolved = progress?.status === 'SOLVED';
     const attempts = progress?.attempts ?? 0;
-    const canView = isSolved || attempts >= 3 || giveUp;
+    const canView = isSolved || attempts >= 2 || giveUp;
 
     if (!canView) {
       return NextResponse.json({
         locked: true,
-        attemptsNeeded: Math.max(0, 3 - attempts),
+        attemptsNeeded: Math.max(0, 2 - attempts),
       });
     }
 
