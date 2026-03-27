@@ -1,8 +1,9 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
+import Link from 'next/link';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
-import { BarChart3 } from 'lucide-react';
+import { BarChart3, BookOpen, ArrowRight } from 'lucide-react';
 import SummaryCards from '@/components/analytics/SummaryCards';
 import DifficultyBreakdown from '@/components/analytics/DifficultyBreakdown';
 import TopicBreakdown from '@/components/analytics/TopicBreakdown';
@@ -98,6 +99,25 @@ export default async function AnalyticsPage() {
           </div>
         </div>
 
+        {totalAttempted === 0 ? (
+          <div className="flex flex-col items-center justify-center py-24 text-center animate-fade-in-up">
+            <div className="w-16 h-16 rounded-2xl bg-surface border border-border flex items-center justify-center mb-4">
+              <BookOpen className="h-7 w-7 text-primary/60" />
+            </div>
+            <h2 className="text-lg font-semibold text-light-text mb-2">No activity yet</h2>
+            <p className="text-sm text-dark-text max-w-xs mb-6">
+              Attempt your first practice question to start tracking your progress here.
+            </p>
+            <Link
+              href="/practice"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary/15 text-primary font-medium text-sm hover:bg-primary/25 transition-colors group"
+            >
+              Try your first question
+              <ArrowRight size={15} className="group-hover:translate-x-0.5 transition-transform" />
+            </Link>
+          </div>
+        ) : (
+          <>
         <SummaryCards
           totalQuestions={totalQuestions}
           totalAttempted={totalAttempted}
@@ -119,6 +139,8 @@ export default async function AnalyticsPage() {
             completedAt: e.completedAt?.toISOString() ?? null,
           }))} />
         </div>
+          </>
+        )}
       </div>
     </div>
   );
