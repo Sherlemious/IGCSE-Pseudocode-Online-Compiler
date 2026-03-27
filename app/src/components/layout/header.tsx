@@ -22,8 +22,10 @@ import ShareButton from '../share/ShareButton';
 
 const SHORTCUTS = [
   { keys: 'Ctrl + Enter', desc: 'Run code' },
+  { keys: 'Ctrl + Shift + Enter', desc: 'Grade (practice / exam)' },
   { keys: 'Ctrl + Shift + K', desc: 'Stop execution' },
-  { keys: 'Tab', desc: 'Insert 4 spaces' },
+  { keys: 'Ctrl + /', desc: 'Toggle line comment' },
+  { keys: 'Tab', desc: 'Indent / insert spaces' },
   { keys: 'Ctrl + S', desc: 'Auto-saved' },
   { keys: 'Esc', desc: 'Close modals' },
 ];
@@ -53,10 +55,6 @@ const Header: React.FC = () => {
 
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === '/') {
-        e.preventDefault();
-        setShowShortcuts((v) => !v);
-      }
       if (e.key === 'Escape') setShowShortcuts(false);
     };
     window.addEventListener('keydown', handleKey);
