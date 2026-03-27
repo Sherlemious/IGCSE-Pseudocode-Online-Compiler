@@ -1,4 +1,3 @@
-// Generated from src/interpreter/grammar/Pseudocode.g4 by ANTLR 4.13.1
 
 import { ErrorNode, ParseTreeListener, ParserRuleContext, TerminalNode } from "antlr4ng";
 
@@ -6,6 +5,7 @@ import { ErrorNode, ParseTreeListener, ParserRuleContext, TerminalNode } from "a
 import { ProgramContext } from "./PseudocodeParser.js";
 import { StatementContext } from "./PseudocodeParser.js";
 import { DeclareStatementContext } from "./PseudocodeParser.js";
+import { IdentifierListContext } from "./PseudocodeParser.js";
 import { ConstantStatementContext } from "./PseudocodeParser.js";
 import { DataTypeContext } from "./PseudocodeParser.js";
 import { AssignmentStatementContext } from "./PseudocodeParser.js";
@@ -32,15 +32,15 @@ import { FileModeContext } from "./PseudocodeParser.js";
 import { ArgListContext } from "./PseudocodeParser.js";
 import { BlockContext } from "./PseudocodeParser.js";
 import { NotExprContext } from "./PseudocodeParser.js";
-import { PowerExprContext } from "./PseudocodeParser.js";
-import { AddSubExprContext } from "./PseudocodeParser.js";
 import { UnaryMinusExprContext } from "./PseudocodeParser.js";
 import { AtomExprContext } from "./PseudocodeParser.js";
-import { OrExprContext } from "./PseudocodeParser.js";
-import { ComparisonExprContext } from "./PseudocodeParser.js";
+import { PowerExprContext } from "./PseudocodeParser.js";
 import { MulDivExprContext } from "./PseudocodeParser.js";
+import { AddSubExprContext } from "./PseudocodeParser.js";
 import { ConcatExprContext } from "./PseudocodeParser.js";
+import { ComparisonExprContext } from "./PseudocodeParser.js";
 import { AndExprContext } from "./PseudocodeParser.js";
+import { OrExprContext } from "./PseudocodeParser.js";
 import { ParenAtomContext } from "./PseudocodeParser.js";
 import { FunctionCallAtomContext } from "./PseudocodeParser.js";
 import { ArrayAccess1DAtomContext } from "./PseudocodeParser.js";
@@ -91,6 +91,16 @@ export class PseudocodeListener implements ParseTreeListener {
      * @param ctx the parse tree
      */
     exitDeclareStatement?: (ctx: DeclareStatementContext) => void;
+    /**
+     * Enter a parse tree produced by `PseudocodeParser.identifierList`.
+     * @param ctx the parse tree
+     */
+    enterIdentifierList?: (ctx: IdentifierListContext) => void;
+    /**
+     * Exit a parse tree produced by `PseudocodeParser.identifierList`.
+     * @param ctx the parse tree
+     */
+    exitIdentifierList?: (ctx: IdentifierListContext) => void;
     /**
      * Enter a parse tree produced by `PseudocodeParser.constantStatement`.
      * @param ctx the parse tree
@@ -354,30 +364,6 @@ export class PseudocodeListener implements ParseTreeListener {
      */
     exitNotExpr?: (ctx: NotExprContext) => void;
     /**
-     * Enter a parse tree produced by the `powerExpr`
-     * labeled alternative in `PseudocodeParser.expr`.
-     * @param ctx the parse tree
-     */
-    enterPowerExpr?: (ctx: PowerExprContext) => void;
-    /**
-     * Exit a parse tree produced by the `powerExpr`
-     * labeled alternative in `PseudocodeParser.expr`.
-     * @param ctx the parse tree
-     */
-    exitPowerExpr?: (ctx: PowerExprContext) => void;
-    /**
-     * Enter a parse tree produced by the `addSubExpr`
-     * labeled alternative in `PseudocodeParser.expr`.
-     * @param ctx the parse tree
-     */
-    enterAddSubExpr?: (ctx: AddSubExprContext) => void;
-    /**
-     * Exit a parse tree produced by the `addSubExpr`
-     * labeled alternative in `PseudocodeParser.expr`.
-     * @param ctx the parse tree
-     */
-    exitAddSubExpr?: (ctx: AddSubExprContext) => void;
-    /**
      * Enter a parse tree produced by the `unaryMinusExpr`
      * labeled alternative in `PseudocodeParser.expr`.
      * @param ctx the parse tree
@@ -402,29 +388,17 @@ export class PseudocodeListener implements ParseTreeListener {
      */
     exitAtomExpr?: (ctx: AtomExprContext) => void;
     /**
-     * Enter a parse tree produced by the `orExpr`
+     * Enter a parse tree produced by the `powerExpr`
      * labeled alternative in `PseudocodeParser.expr`.
      * @param ctx the parse tree
      */
-    enterOrExpr?: (ctx: OrExprContext) => void;
+    enterPowerExpr?: (ctx: PowerExprContext) => void;
     /**
-     * Exit a parse tree produced by the `orExpr`
+     * Exit a parse tree produced by the `powerExpr`
      * labeled alternative in `PseudocodeParser.expr`.
      * @param ctx the parse tree
      */
-    exitOrExpr?: (ctx: OrExprContext) => void;
-    /**
-     * Enter a parse tree produced by the `comparisonExpr`
-     * labeled alternative in `PseudocodeParser.expr`.
-     * @param ctx the parse tree
-     */
-    enterComparisonExpr?: (ctx: ComparisonExprContext) => void;
-    /**
-     * Exit a parse tree produced by the `comparisonExpr`
-     * labeled alternative in `PseudocodeParser.expr`.
-     * @param ctx the parse tree
-     */
-    exitComparisonExpr?: (ctx: ComparisonExprContext) => void;
+    exitPowerExpr?: (ctx: PowerExprContext) => void;
     /**
      * Enter a parse tree produced by the `mulDivExpr`
      * labeled alternative in `PseudocodeParser.expr`.
@@ -438,6 +412,18 @@ export class PseudocodeListener implements ParseTreeListener {
      */
     exitMulDivExpr?: (ctx: MulDivExprContext) => void;
     /**
+     * Enter a parse tree produced by the `addSubExpr`
+     * labeled alternative in `PseudocodeParser.expr`.
+     * @param ctx the parse tree
+     */
+    enterAddSubExpr?: (ctx: AddSubExprContext) => void;
+    /**
+     * Exit a parse tree produced by the `addSubExpr`
+     * labeled alternative in `PseudocodeParser.expr`.
+     * @param ctx the parse tree
+     */
+    exitAddSubExpr?: (ctx: AddSubExprContext) => void;
+    /**
      * Enter a parse tree produced by the `concatExpr`
      * labeled alternative in `PseudocodeParser.expr`.
      * @param ctx the parse tree
@@ -450,6 +436,18 @@ export class PseudocodeListener implements ParseTreeListener {
      */
     exitConcatExpr?: (ctx: ConcatExprContext) => void;
     /**
+     * Enter a parse tree produced by the `comparisonExpr`
+     * labeled alternative in `PseudocodeParser.expr`.
+     * @param ctx the parse tree
+     */
+    enterComparisonExpr?: (ctx: ComparisonExprContext) => void;
+    /**
+     * Exit a parse tree produced by the `comparisonExpr`
+     * labeled alternative in `PseudocodeParser.expr`.
+     * @param ctx the parse tree
+     */
+    exitComparisonExpr?: (ctx: ComparisonExprContext) => void;
+    /**
      * Enter a parse tree produced by the `andExpr`
      * labeled alternative in `PseudocodeParser.expr`.
      * @param ctx the parse tree
@@ -461,6 +459,18 @@ export class PseudocodeListener implements ParseTreeListener {
      * @param ctx the parse tree
      */
     exitAndExpr?: (ctx: AndExprContext) => void;
+    /**
+     * Enter a parse tree produced by the `orExpr`
+     * labeled alternative in `PseudocodeParser.expr`.
+     * @param ctx the parse tree
+     */
+    enterOrExpr?: (ctx: OrExprContext) => void;
+    /**
+     * Exit a parse tree produced by the `orExpr`
+     * labeled alternative in `PseudocodeParser.expr`.
+     * @param ctx the parse tree
+     */
+    exitOrExpr?: (ctx: OrExprContext) => void;
     /**
      * Enter a parse tree produced by the `parenAtom`
      * labeled alternative in `PseudocodeParser.atom`.

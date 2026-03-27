@@ -80,8 +80,8 @@ exprList
 // ─── IF / ELSE ──────────────────────────────────────────────────────────────
 
 ifStatement
-    : IF expr THEN NEWLINE+ block
-      (NEWLINE+ ELSEIF expr THEN NEWLINE+ block)*
+    : IF expr NEWLINE* THEN NEWLINE+ block
+      (NEWLINE+ ELSEIF expr NEWLINE* THEN NEWLINE+ block)*
       (NEWLINE+ ELSE NEWLINE+ block)?
       NEWLINE+ ENDIF
     ;
