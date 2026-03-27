@@ -65,6 +65,7 @@ const CompilerPage: React.FC = () => {
   const [lineCount, setLineCount] = useState(1);
   const [showFeedback, setShowFeedback] = useState(false);
   const feedbackShownRef = useRef(false);
+  const [jumpToLine, setJumpToLine] = useState<number | null>(null);
 
   const {
     entries,
@@ -197,11 +198,27 @@ const CompilerPage: React.FC = () => {
     (tabId: string) => {
       if (tabId === 'main') return;
       setTabs((prev) => {
+        const closed = prev.find((t) => t.id === tabId);
         const newTabs = prev.filter((t) => t.id !== tabId);
         if (tabId === activeTabId) {
           const closedIndex = prev.findIndex((t) => t.id === tabId);
           const newActive = newTabs[Math.min(closedIndex, newTabs.length - 1)] ?? newTabs[0];
           setActiveTabId(newActive.id);
+        }
+        if (closed) {
+          toast(`Closed "${closed.name}"`, {
+            action: {
+              label: 'Undo',
+              onClick: () => {
+                setTabs((t) => {
+                  if (t.find((x) => x.id === closed.id)) return t;
+                  return [...t, closed];
+                });
+                setActiveTabId(closed.id);
+              },
+            },
+            duration: 5000,
+          });
         }
         return newTabs;
       });
@@ -271,6 +288,8 @@ const CompilerPage: React.FC = () => {
             onOpenFile={handleOpenFile}
             breakpoints={breakpoints}
             onBreakpointToggle={toggleBreakpoint}
+            jumpToLine={jumpToLine}
+            onJumpToLineConsumed={() => setJumpToLine(null)}
           />
         </div>
 
@@ -293,6 +312,7 @@ const CompilerPage: React.FC = () => {
             onClear={clearEntries}
             isStepping={isStepping}
             debugVariables={debugVariables}
+            onJumpToLine={(line) => setJumpToLine(line)}
           />
         </div>
       </div>

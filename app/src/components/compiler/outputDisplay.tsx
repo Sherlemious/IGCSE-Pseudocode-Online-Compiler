@@ -12,6 +12,7 @@ interface OutputDisplayProps {
   onClear: () => void;
   isStepping?: boolean;
   debugVariables?: DebugVariable[];
+  onJumpToLine?: (line: number) => void;
 }
 
 const WELCOME_ART = `  ___  ___  ___ _   _ ___   ___
@@ -27,6 +28,7 @@ const OutputDisplay: React.FC<OutputDisplayProps> = ({
   onClear,
   isStepping = false,
   debugVariables = [],
+  onJumpToLine,
 }) => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -241,8 +243,16 @@ const OutputDisplay: React.FC<OutputDisplayProps> = ({
           }
 
           if (entry.kind === 'error') {
+            const lineMatch = entry.text.match(/^Line (\d+)/);
+            const errLine = lineMatch ? parseInt(lineMatch[1], 10) : null;
+            const clickable = errLine !== null && onJumpToLine;
             return (
-              <div key={i} className="flex gap-2 whitespace-pre-wrap py-0.5">
+              <div
+                key={i}
+                className={`flex gap-2 whitespace-pre-wrap py-0.5 ${clickable ? 'cursor-pointer hover:opacity-80 transition-opacity' : ''}`}
+                onClick={clickable ? () => onJumpToLine!(errLine!) : undefined}
+                title={clickable ? `Click to jump to line ${errLine}` : undefined}
+              >
                 <span className="text-error shrink-0 font-bold">!</span>
                 <span className="text-error">{entry.text}</span>
               </div>

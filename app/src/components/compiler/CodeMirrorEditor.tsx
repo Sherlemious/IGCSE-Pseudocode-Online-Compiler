@@ -92,6 +92,8 @@ interface CodeMirrorEditorProps {
   onBreakpointToggle?: (line: number) => void;
   ariaLabel?: string;
   wordWrap?: boolean;
+  jumpToLine?: number | null;
+  onJumpToLineConsumed?: () => void;
 }
 
 const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
@@ -108,6 +110,8 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
   onBreakpointToggle,
   ariaLabel,
   wordWrap = true,
+  jumpToLine = null,
+  onJumpToLineConsumed,
 }) => {
   const { fontSize } = useTheme();
   const editorRef = useRef<HTMLDivElement>(null);
@@ -209,6 +213,20 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
     }
   }, [debugLine, errorLine, createGutter]);
 
+  const onJumpToLineConsumedRef = useRef(onJumpToLineConsumed);
+  useEffect(() => { onJumpToLineConsumedRef.current = onJumpToLineConsumed; }, [onJumpToLineConsumed]);
+
+  useEffect(() => {
+    if (!jumpToLine || !viewRef.current) return;
+    const view = viewRef.current;
+    const lineCount = view.state.doc.lines;
+    if (jumpToLine < 1 || jumpToLine > lineCount) return;
+    const pos = view.state.doc.line(jumpToLine).from;
+    view.dispatch({ effects: EditorView.scrollIntoView(pos, { y: 'center' }) });
+    view.focus();
+    onJumpToLineConsumedRef.current?.();
+  }, [jumpToLine]);
+
   useEffect(() => {
     if (!editorRef.current) return;
 
@@ -309,6 +327,27 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
 
     const highlightTheme = syntaxHighlighting(highlightStyle);
 
+    // Comment toggle helper
+    const toggleLineCommentCmd = (view: EditorView): boolean => {
+      const { from, to } = view.state.selection.main;
+      const startLine = view.state.doc.lineAt(from).number;
+      const endLine = view.state.doc.lineAt(to).number;
+      const lines = [];
+      for (let i = startLine; i <= endLine; i++) lines.push(view.state.doc.line(i));
+      const allCommented = lines.every((l) => l.text.trimStart().startsWith('//'));
+      const changes = lines.map((line) => {
+        if (allCommented) {
+          const idx = line.text.indexOf('//');
+          const removeLen = line.text[idx + 2] === ' ' ? 3 : 2;
+          return { from: line.from + idx, to: line.from + idx + removeLen, insert: '' };
+        }
+        const indent = line.text.match(/^\s*/)?.[0] ?? '';
+        return { from: line.from + indent.length, to: line.from + indent.length, insert: '// ' };
+      });
+      view.dispatch({ changes });
+      return true;
+    };
+
     // Custom keyboard shortcuts
     const customKeymap = keymap.of([
       {
@@ -332,6 +371,11 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
           }
           return false;
         },
+      },
+      {
+        key: 'Ctrl-/',
+        mac: 'Cmd-/',
+        run: toggleLineCommentCmd,
       },
       indentWithTab,
       ...defaultKeymap,

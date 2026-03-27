@@ -53,6 +53,8 @@ interface CodeInputProps {
   onOpenFile: (fileName: string, content: string) => void;
   breakpoints?: Set<number>;
   onBreakpointToggle?: (line: number) => void;
+  jumpToLine?: number | null;
+  onJumpToLineConsumed?: () => void;
 }
 
 const CodeInput: React.FC<CodeInputProps> = ({
@@ -76,6 +78,8 @@ const CodeInput: React.FC<CodeInputProps> = ({
   onOpenFile,
   breakpoints,
   onBreakpointToggle,
+  jumpToLine,
+  onJumpToLineConsumed,
 }) => {
   const tabsContainerRef = useRef<HTMLDivElement>(null);
   const [shareStatus, setShareStatus] = useState<'idle' | 'copied'>('idle');
@@ -301,6 +305,8 @@ const CodeInput: React.FC<CodeInputProps> = ({
           onBreakpointToggle={onBreakpointToggle}
           ariaLabel={`Code Editor for ${activeTabName}`}
           wordWrap={wordWrap}
+          jumpToLine={jumpToLine}
+          onJumpToLineConsumed={onJumpToLineConsumed}
         />
 
         {code.length === 0 && !isRunning && (
