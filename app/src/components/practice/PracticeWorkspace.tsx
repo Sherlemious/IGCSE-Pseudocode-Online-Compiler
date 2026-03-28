@@ -794,20 +794,22 @@ export default function PracticeWorkspace({ questionId, starterCode, savedCode, 
 
             {/* Expected vs Got (visible tests only) */}
             {!r.passed && !r.error && !r.hidden && (
-              <div className="mt-1.5 space-y-1 font-mono">
+              <div className="mt-2 font-mono text-xs space-y-1.5">
                 {r.inputs && r.inputs.length > 0 && (
-                  <div>
-                    <span className="text-dark-text">Inputs: </span>
+                  <div className="px-2 py-1 rounded bg-info/5 border border-info/20">
+                    <span className="text-dark-text/60">Input: </span>
                     <span className="text-info">{r.inputs.join(', ')}</span>
                   </div>
                 )}
-                <div>
-                  <span className="text-dark-text">Expected: </span>
-                  <span className="text-success whitespace-pre-wrap">{r.expectedOutput || '(empty)'}</span>
-                </div>
-                <div>
-                  <span className="text-dark-text">Got: </span>
-                  <span className="text-error whitespace-pre-wrap">{r.actualOutput || '(empty)'}</span>
+                <div className="grid grid-cols-2 gap-1.5">
+                  <div className="rounded border border-success/30 bg-success/5 overflow-hidden">
+                    <div className="px-2 py-1 border-b border-success/20 text-[9px] font-semibold text-success/70 uppercase tracking-wider">Expected</div>
+                    <pre className="px-2 py-1.5 text-success whitespace-pre-wrap break-all">{r.expectedOutput || '(empty)'}</pre>
+                  </div>
+                  <div className="rounded border border-error/30 bg-error/5 overflow-hidden">
+                    <div className="px-2 py-1 border-b border-error/20 text-[9px] font-semibold text-error/70 uppercase tracking-wider">Your Output</div>
+                    <pre className="px-2 py-1.5 text-error whitespace-pre-wrap break-all">{r.actualOutput || '(empty)'}</pre>
+                  </div>
                 </div>
               </div>
             )}
