@@ -21,6 +21,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Bug,
+  Bookmark,
 } from 'lucide-react';
 
 /* ── Types ──────────────────────────────────────────────── */
@@ -78,6 +79,12 @@ export default function ExamWorkspace({ examId, questions, timeLimitMin, started
   const [grading, setGrading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [timeUp, setTimeUp] = useState(false);
+  const [flagged, setFlagged] = useState<Set<string>>(() => {
+    try {
+      const stored = localStorage.getItem(`exam_flagged:${examId}`);
+      return stored ? new Set(JSON.parse(stored) as string[]) : new Set();
+    } catch { return new Set(); }
+  });
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   const question = questions[currentIndex];
@@ -187,24 +194,38 @@ export default function ExamWorkspace({ examId, questions, timeLimitMin, started
     setTimeout(() => handleSubmit(true), 3000);
   }, [handleSubmit]);
 
+  const goPrev = useCallback(() => {
+    setCurrentIndex((prev) => Math.max(0, prev - 1));
+  }, []);
+  const goNext = useCallback(() => {
+    setCurrentIndex((prev) => Math.min(questions.length - 1, prev + 1));
+  }, [questions.length]);
+
+  const toggleFlag = useCallback(() => {
+    const qId = questions[currentIndex].questionId;
+    setFlagged((prev) => {
+      const next = new Set(prev);
+      if (next.has(qId)) next.delete(qId);
+      else next.add(qId);
+      try { localStorage.setItem(`exam_flagged:${examId}`, JSON.stringify([...next])); } catch { /* ignore */ }
+      return next;
+    });
+  }, [questions, currentIndex, examId]);
+
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
         e.preventDefault();
         if (e.shiftKey) handleGrade();
         else handleRun();
+        return;
       }
+      if (e.altKey && e.key === 'ArrowLeft') { e.preventDefault(); goPrev(); }
+      if (e.altKey && e.key === 'ArrowRight') { e.preventDefault(); goNext(); }
     };
     window.addEventListener('keydown', handleKey);
     return () => window.removeEventListener('keydown', handleKey);
-  }, [handleRun, handleGrade]);
-
-  const goPrev = () => {
-    if (currentIndex > 0) setCurrentIndex(currentIndex - 1);
-  };
-  const goNext = () => {
-    if (currentIndex < questions.length - 1) setCurrentIndex(currentIndex + 1);
-  };
+  }, [handleRun, handleGrade, goPrev, goNext]);
 
   const result = gradeResults[question.questionId];
 
@@ -259,7 +280,7 @@ export default function ExamWorkspace({ examId, questions, timeLimitMin, started
               <button
                 key={q.questionId}
                 onClick={() => setCurrentIndex(i)}
-                className={`w-7 h-7 rounded-md text-[10px] font-mono font-bold shrink-0 transition-all duration-200 ${
+                className={`relative w-7 h-7 rounded-md text-[10px] font-mono font-bold shrink-0 transition-all duration-200 ${
                   isActive
                     ? 'bg-primary text-on-primary shadow-[0_0_12px_-2px_rgba(var(--color-primary-rgb),0.5)]'
                     : allPassed
@@ -271,6 +292,9 @@ export default function ExamWorkspace({ examId, questions, timeLimitMin, started
                 title={q.title}
               >
                 {i + 1}
+                {flagged.has(q.questionId) && (
+                  <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-warning border border-background" />
+                )}
               </button>
             );
           })}
@@ -411,6 +435,18 @@ export default function ExamWorkspace({ examId, questions, timeLimitMin, started
             >
               <RotateCcw size={11} />
               Reset
+            </button>
+            <button
+              onClick={toggleFlag}
+              className={`flex items-center gap-1 px-2 py-1 rounded-md text-xs transition-all duration-200 ${
+                flagged.has(question.questionId)
+                  ? 'text-warning bg-warning/10 hover:bg-warning/20'
+                  : 'text-dark-text hover:text-light-text hover:bg-background'
+              }`}
+              title="Flag for review (mark to revisit)"
+            >
+              <Bookmark size={11} fill={flagged.has(question.questionId) ? 'currentColor' : 'none'} />
+              {flagged.has(question.questionId) ? 'Flagged' : 'Flag'}
             </button>
 
             {result?.graded && (
