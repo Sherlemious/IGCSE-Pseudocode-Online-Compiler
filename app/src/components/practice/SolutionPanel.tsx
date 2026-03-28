@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { BookOpen, ChevronDown, ChevronRight, Lock, Eye, Lightbulb, X } from 'lucide-react';
+import { BookOpen, ChevronDown, ChevronRight, Lock, Eye, Lightbulb, X, Copy, Check } from 'lucide-react';
 
 interface Props {
   questionId: string;
@@ -25,6 +25,7 @@ export default function SolutionPanel({ questionId, isSolved, attemptCount }: Pr
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [localIsSolved, setLocalIsSolved] = useState(isSolved);
   const [localAttemptCount, setLocalAttemptCount] = useState(attemptCount);
+  const [copied, setCopied] = useState(false);
   const [revealed, setRevealed] = useState<boolean>(() => {
     try {
       return localStorage.getItem(REVEALED_KEY(questionId)) === 'true';
@@ -147,7 +148,19 @@ export default function SolutionPanel({ questionId, isSolved, attemptCount }: Pr
                 <div className="bg-surface rounded-lg border border-border overflow-hidden">
                   <div className="flex items-center gap-1.5 px-3 py-1.5 border-b border-border/50 bg-primary/5">
                     <BookOpen size={11} className="text-primary" />
-                    <span className="mono-label text-primary">Solution</span>
+                    <span className="mono-label text-primary flex-1">Solution</span>
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(data.solution!).then(() => {
+                          setCopied(true);
+                          setTimeout(() => setCopied(false), 2000);
+                        });
+                      }}
+                      className="text-dark-text/50 hover:text-primary transition-colors"
+                      title="Copy solution"
+                    >
+                      {copied ? <Check size={11} className="text-success" /> : <Copy size={11} />}
+                    </button>
                   </div>
                   <pre className="p-3 text-xs font-mono text-light-text overflow-x-auto whitespace-pre-wrap
                     scrollbar-thin scrollbar-thumb-primary scrollbar-track-background">
