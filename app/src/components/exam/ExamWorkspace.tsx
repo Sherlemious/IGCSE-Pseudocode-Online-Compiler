@@ -426,7 +426,7 @@ export default function ExamWorkspace({ examId, questions, timeLimitMin, started
                 bg-primary/15 text-primary hover:bg-primary/25 transition-all duration-200 disabled:opacity-40"
             >
               {grading ? <Loader2 size={11} className="animate-spin" /> : <ClipboardCheck size={11} />}
-              Grade
+              Check
             </button>
             <button
               onClick={() => handleCodeChange(question.starterCode)}
@@ -556,7 +556,7 @@ export default function ExamWorkspace({ examId, questions, timeLimitMin, started
                 <div>
                   {!result?.graded ? (
                     <div className="text-dark-text/40 text-center py-6">
-                      Press <kbd>Ctrl+Shift+Enter</kbd> to grade
+                      Press <kbd>Ctrl+Shift+Enter</kbd> to check
                     </div>
                   ) : (
                     <div className="text-center py-3 animate-scale-in">

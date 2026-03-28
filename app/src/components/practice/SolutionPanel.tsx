@@ -126,7 +126,7 @@ export default function SolutionPanel({ questionId, isSolved, attemptCount }: Pr
               <Lock size={16} className="text-dark-text/40 mx-auto mb-2" />
               <p className="text-xs text-dark-text mb-2">
                 {data.attemptsNeeded && data.attemptsNeeded > 0
-                  ? `Grade ${data.attemptsNeeded} more time${data.attemptsNeeded > 1 ? 's' : ''} to unlock, or solve the question.`
+                  ? `Check your answer ${data.attemptsNeeded} more time${data.attemptsNeeded > 1 ? 's' : ''} to unlock, or solve the question.`
                   : 'Sign in and attempt the question to unlock.'}
               </p>
               {localAttemptCount > 0 && (

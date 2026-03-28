@@ -22,7 +22,7 @@ import ShareButton from '../share/ShareButton';
 
 const SHORTCUTS = [
   { keys: 'Ctrl + Enter', desc: 'Run code' },
-  { keys: 'Ctrl + Shift + Enter', desc: 'Grade (practice / exam)' },
+  { keys: 'Ctrl + Shift + Enter', desc: 'Check My Answer (practice / exam)' },
   { keys: 'Ctrl + Shift + K', desc: 'Stop execution' },
   { keys: 'Ctrl + /', desc: 'Toggle line comment' },
   { keys: 'Tab', desc: 'Indent / insert spaces' },

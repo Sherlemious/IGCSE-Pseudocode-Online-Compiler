@@ -342,14 +342,14 @@ export default function PracticeWorkspace({ questionId, starterCode, savedCode, 
             className="flex items-center gap-1.5 px-3 py-1 text-xs font-medium rounded
               bg-primary/15 text-primary hover:bg-primary/25 transition-colors
               disabled:opacity-50 disabled:cursor-not-allowed"
-            title="Grade (Ctrl+Shift+Enter)"
+            title="Check My Answer (Ctrl+Shift+Enter)"
           >
             {isGrading ? (
               <span className="inline-block h-3.5 w-3.5 rounded-full border-2 border-primary/30 border-t-primary animate-spin" />
             ) : (
               <ClipboardCheck className="h-3.5 w-3.5" />
             )}
-            {isGrading ? 'Grading\u2026' : 'Grade'}
+            {isGrading ? 'Checking\u2026' : 'Check My Answer'}
           </button>
         </div>
       </div>
@@ -538,7 +538,7 @@ export default function PracticeWorkspace({ questionId, starterCode, savedCode, 
               Press <kbd>Ctrl+Enter</kbd> to run your code
             </div>
             <div className="text-xs text-dark-text/30">
-              or <kbd>Ctrl+Shift+Enter</kbd> to grade
+              or <kbd>Ctrl+Shift+Enter</kbd> to check
             </div>
           </div>
           {preloadedFileNames && preloadedFileNames.length > 0 && (
@@ -695,7 +695,7 @@ export default function PracticeWorkspace({ questionId, starterCode, savedCode, 
           <ClipboardCheck className="h-8 w-8 text-dark-text/20" />
           <div className="text-center space-y-1">
             <div className="text-xs text-dark-text/50">
-              Click <strong>Grade</strong> or press <kbd>Ctrl+Shift+Enter</kbd>
+              Click <strong>Check My Answer</strong> or press <kbd>Ctrl+Shift+Enter</kbd>
             </div>
             <div className="text-xs text-dark-text/30">
               Your code will be tested against all test cases, including hidden ones.
