@@ -1,7 +1,8 @@
 'use client';
 
+import { useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { X, SlidersHorizontal, FileText, Search } from 'lucide-react';
+import { X, SlidersHorizontal, FileText, Search, ChevronDown } from 'lucide-react';
 
 interface YearGroup {
   year: number;
@@ -31,7 +32,9 @@ export function PracticeFilters({
 }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const [filtersOpen, setFiltersOpen] = useState(true);
 
+  const activeFilterCount = [activeTopic, activeYear, activeTag].filter(Boolean).length;
   const hasActiveFilter = !!(activeTopic || activeYear || activeTag || activeQ);
 
   const activeSessions = activeYear
@@ -53,161 +56,188 @@ export function PracticeFilters({
   }
 
   return (
-    <div className="mb-6 space-y-2 sticky top-0 z-10 bg-background pb-1">
-      {/* ── Active filter pills ── */}
-      {hasActiveFilter && (
-        <div className="flex flex-wrap items-center gap-1.5">
-          <span className="text-[10px] font-semibold uppercase tracking-wider text-dark-text/50 shrink-0 flex items-center gap-1">
-            <SlidersHorizontal size={10} />
-            Active:
-          </span>
-          {activeTopic && (
-            <ActivePill
-              label={activeTopic}
-              onRemove={() => router.push(buildUrl({ topic: undefined }))}
-            />
-          )}
-          {activeYear && (
-            <ActivePill
-              label={activeSession ? `${activeYear} · ${activeSession}` : String(activeYear)}
-              onRemove={() => router.push(buildUrl({ year: undefined, session: undefined }))}
-            />
-          )}
-          {activeTag && (
-            <ActivePill
-              label={activeTag}
-              onRemove={() => router.push(buildUrl({ tag: undefined }))}
-              color="info"
-            />
-          )}
-          {activeQ && (
-            <ActivePill
-              label={`"${activeQ}"`}
-              onRemove={() => router.push(buildUrl({ q: undefined }))}
-            />
-          )}
-          <button
-            onClick={clearAll}
-            className="text-[10px] text-dark-text/40 hover:text-dark-text transition-colors cursor-pointer underline underline-offset-2 ml-1"
-          >
-            Clear all
-          </button>
-        </div>
-      )}
+    <div
+      className="mb-6 sticky top-0 z-20"
+      style={{ backgroundColor: 'var(--color-background)' }}
+    >
+      {/* bottom fade so content doesn't hard-cut under the panel */}
+      <div className="pb-3 [box-shadow:0_8px_16px_4px_var(--color-background)]">
 
-      {/* ── Unified filter panel ── */}
-      <div className="rounded-xl border border-border bg-surface overflow-hidden divide-y divide-border/40">
+        {/* ── Unified filter panel ── */}
+        <div className="rounded-xl border border-border bg-surface overflow-hidden divide-y divide-border/40">
 
-        {/* Search row */}
-        <div className="flex items-center gap-2 px-3 py-2">
-          <Search size={13} className="text-dark-text/50 shrink-0" />
-          <input
-            type="text"
-            placeholder="Search questions…"
-            value={activeQ ?? ''}
-            onChange={(e) => router.push(buildUrl({ q: e.target.value || undefined }))}
-            className="flex-1 bg-transparent text-xs text-light-text placeholder:text-dark-text/40 outline-none"
-          />
-          {activeQ && (
+          {/* Search + toggle row */}
+          <div className="flex items-center gap-2 px-3 py-2">
+            <Search size={13} className="text-dark-text/50 shrink-0" />
+            <input
+              type="text"
+              placeholder="Search questions…"
+              value={activeQ ?? ''}
+              onChange={(e) => router.push(buildUrl({ q: e.target.value || undefined }))}
+              className="flex-1 bg-transparent text-xs text-light-text placeholder:text-dark-text/40 outline-none min-w-0"
+            />
+            {activeQ && (
+              <button
+                onClick={() => router.push(buildUrl({ q: undefined }))}
+                className="text-dark-text/40 hover:text-dark-text transition-colors shrink-0"
+                aria-label="Clear search"
+              >
+                <X size={12} />
+              </button>
+            )}
+            <div className="w-px h-4 bg-border/60 shrink-0 mx-0.5" />
             <button
-              onClick={() => router.push(buildUrl({ q: undefined }))}
-              className="text-dark-text/40 hover:text-dark-text transition-colors"
-              aria-label="Clear search"
+              onClick={() => setFiltersOpen((v) => !v)}
+              className="flex items-center gap-1 text-[11px] font-medium text-dark-text/60 hover:text-light-text transition-colors shrink-0"
+              title={filtersOpen ? 'Hide filters' : 'Show filters'}
             >
-              <X size={12} />
+              <SlidersHorizontal size={12} />
+              <span className="hidden sm:inline">
+                {filtersOpen ? 'Filters' : `Filters${activeFilterCount > 0 ? ` (${activeFilterCount})` : ''}`}
+              </span>
+              <ChevronDown
+                size={12}
+                className={`transition-transform duration-200 ${filtersOpen ? '' : '-rotate-90'}`}
+              />
             </button>
+          </div>
+
+          {/* Collapsible filter rows */}
+          {filtersOpen && (
+            <>
+              {/* Topic row */}
+              {topics.length > 0 && (
+                <FilterRow label="Topic">
+                  <Chip
+                    active={!activeTopic}
+                    onClick={() => router.push(buildUrl({ topic: undefined }))}
+                  >
+                    All
+                  </Chip>
+                  {topics.map((t) => (
+                    <Chip
+                      key={t}
+                      active={activeTopic === t}
+                      onClick={() => router.push(buildUrl({ topic: activeTopic === t ? undefined : t }))}
+                    >
+                      {t === 'File Handling' && <FileText size={10} className="shrink-0" />}
+                      {t}
+                    </Chip>
+                  ))}
+                </FilterRow>
+              )}
+
+              {/* Year row */}
+              {yearGroups.length > 0 && (
+                <FilterRow label="Year">
+                  <Chip
+                    active={!activeYear}
+                    onClick={() => router.push(buildUrl({ year: undefined, session: undefined }))}
+                  >
+                    All
+                  </Chip>
+                  {yearGroups.map(({ year }) => (
+                    <Chip
+                      key={year}
+                      active={activeYear === year}
+                      onClick={() =>
+                        router.push(
+                          buildUrl(
+                            activeYear === year && !activeSession
+                              ? { year: undefined, session: undefined }
+                              : { year: String(year), session: undefined }
+                          )
+                        )
+                      }
+                    >
+                      {year}
+                    </Chip>
+                  ))}
+                </FilterRow>
+              )}
+
+              {/* Session sub-row */}
+              {activeYear && activeSessions.length > 0 && (
+                <FilterRow label="Session" indent>
+                  {activeSessions.map((s) => (
+                    <Chip
+                      key={s}
+                      active={activeSession === s}
+                      onClick={() =>
+                        router.push(
+                          buildUrl(
+                            activeSession === s
+                              ? { year: String(activeYear), session: undefined }
+                              : { year: String(activeYear), session: s }
+                          )
+                        )
+                      }
+                      size="sm"
+                    >
+                      {s}
+                    </Chip>
+                  ))}
+                </FilterRow>
+              )}
+
+              {/* Tags row */}
+              {allTags.length > 0 && (
+                <FilterRow label="Tags">
+                  {allTags.map((tag) => (
+                    <Chip
+                      key={tag}
+                      active={activeTag === tag}
+                      onClick={() => router.push(buildUrl({ tag: activeTag === tag ? undefined : tag }))}
+                      color="info"
+                    >
+                      {tag}
+                    </Chip>
+                  ))}
+                </FilterRow>
+              )}
+            </>
           )}
         </div>
 
-        {/* Topic row */}
-        {topics.length > 0 && (
-          <FilterRow label="Topic">
-            <Chip
-              active={!activeTopic}
-              onClick={() => router.push(buildUrl({ topic: undefined }))}
-            >
-              All
-            </Chip>
-            {topics.map((t) => (
-              <Chip
-                key={t}
-                active={activeTopic === t}
-                onClick={() => router.push(buildUrl({ topic: activeTopic === t ? undefined : t }))}
-              >
-                {t === 'File Handling' && <FileText size={10} className="shrink-0" />}
-                {t}
-              </Chip>
-            ))}
-          </FilterRow>
-        )}
-
-        {/* Year row */}
-        {yearGroups.length > 0 && (
-          <FilterRow label="Year">
-            <Chip
-              active={!activeYear}
-              onClick={() => router.push(buildUrl({ year: undefined, session: undefined }))}
-            >
-              All
-            </Chip>
-            {yearGroups.map(({ year }) => (
-              <Chip
-                key={year}
-                active={activeYear === year}
-                onClick={() =>
-                  router.push(
-                    buildUrl(
-                      activeYear === year && !activeSession
-                        ? { year: undefined, session: undefined }
-                        : { year: String(year), session: undefined }
-                    )
-                  )
-                }
-              >
-                {year}
-              </Chip>
-            ))}
-          </FilterRow>
-        )}
-
-        {/* Session sub-row — only when a year with multiple sessions is selected */}
-        {activeYear && activeSessions.length > 0 && (
-          <FilterRow label="Session" indent>
-            {activeSessions.map((s) => (
-              <Chip
-                key={s}
-                active={activeSession === s}
-                onClick={() =>
-                  router.push(
-                    buildUrl(
-                      activeSession === s
-                        ? { year: String(activeYear), session: undefined }
-                        : { year: String(activeYear), session: s }
-                    )
-                  )
-                }
-                size="sm"
-              >
-                {s}
-              </Chip>
-            ))}
-          </FilterRow>
-        )}
-
-        {/* Tags row */}
-        {allTags.length > 0 && (
-          <FilterRow label="Tags">
-            {allTags.map((tag) => (
-              <Chip
-                key={tag}
-                active={activeTag === tag}
-                onClick={() => router.push(buildUrl({ tag: activeTag === tag ? undefined : tag }))}
+        {/* ── Active filter pills (shown below panel when filters are collapsed) ── */}
+        {hasActiveFilter && (
+          <div className="flex flex-wrap items-center gap-1.5 mt-2 px-0.5">
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-dark-text/50 shrink-0 flex items-center gap-1">
+              <SlidersHorizontal size={10} />
+              Active:
+            </span>
+            {activeTopic && (
+              <ActivePill
+                label={activeTopic}
+                onRemove={() => router.push(buildUrl({ topic: undefined }))}
+              />
+            )}
+            {activeYear && (
+              <ActivePill
+                label={activeSession ? `${activeYear} · ${activeSession}` : String(activeYear)}
+                onRemove={() => router.push(buildUrl({ year: undefined, session: undefined }))}
+              />
+            )}
+            {activeTag && (
+              <ActivePill
+                label={activeTag}
+                onRemove={() => router.push(buildUrl({ tag: undefined }))}
                 color="info"
-              >
-                {tag}
-              </Chip>
-            ))}
-          </FilterRow>
+              />
+            )}
+            {activeQ && (
+              <ActivePill
+                label={`"${activeQ}"`}
+                onRemove={() => router.push(buildUrl({ q: undefined }))}
+              />
+            )}
+            <button
+              onClick={clearAll}
+              className="text-[10px] text-dark-text/40 hover:text-dark-text transition-colors cursor-pointer underline underline-offset-2 ml-1"
+            >
+              Clear all
+            </button>
+          </div>
         )}
       </div>
     </div>
@@ -226,7 +256,7 @@ function FilterRow({
   children: React.ReactNode;
 }) {
   return (
-    <div className={`flex items-start gap-3 px-3 py-2 ${indent ? 'bg-primary/[0.03]' : ''}`}>
+    <div className={`flex items-start gap-3 px-3 py-1.5 ${indent ? 'bg-primary/[0.03]' : ''}`}>
       <span
         className={`text-[10px] font-semibold uppercase tracking-wider shrink-0 pt-0.5 w-14 text-right ${
           indent ? 'text-primary/40' : 'text-dark-text/50'
