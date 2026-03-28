@@ -236,7 +236,7 @@ const OutputDisplay: React.FC<OutputDisplayProps> = ({
           if (entry.kind === 'output') {
             return (
               <div key={i} className="flex gap-2 whitespace-pre-wrap">
-                <ChevronRight size={14} className="text-primary/40 shrink-0 mt-0.5" />
+                <ChevronRight className="text-primary/40 shrink-0 mt-0.5 w-[1em] h-[1em]" />
                 <span className="text-light-text">{entry.text}</span>
               </div>
             );
