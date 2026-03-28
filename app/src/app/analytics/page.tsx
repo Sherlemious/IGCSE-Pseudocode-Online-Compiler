@@ -9,6 +9,7 @@ import DifficultyBreakdown from '@/components/analytics/DifficultyBreakdown';
 import TopicBreakdown from '@/components/analytics/TopicBreakdown';
 import RecentActivity from '@/components/analytics/RecentActivity';
 import ExamHistory from '@/components/analytics/ExamHistory';
+import ActivityHeatmap from '@/components/analytics/ActivityHeatmap';
 
 export const metadata: Metadata = { title: 'Analytics' };
 
@@ -68,6 +69,16 @@ export default async function AnalyticsPage() {
     if (p.status === 'SOLVED') topicMap[t].solved++;
   });
 
+  const activityByDate: Record<string, number> = {};
+  progressData.forEach((p) => {
+    const date = p.updatedAt.toISOString().split('T')[0];
+    activityByDate[date] = (activityByDate[date] ?? 0) + 1;
+  });
+  examData.forEach((e) => {
+    const date = e.startedAt.toISOString().split('T')[0];
+    activityByDate[date] = (activityByDate[date] ?? 0) + 1;
+  });
+
   const recentActivity = progressData.slice(0, 10).map((p) => ({
     questionTitle: p.question.title,
     difficulty: p.question.difficulty,
@@ -118,6 +129,7 @@ export default async function AnalyticsPage() {
           </div>
         ) : (
           <>
+        <ActivityHeatmap activityByDate={activityByDate} />
         <SummaryCards
           totalQuestions={totalQuestions}
           totalAttempted={totalAttempted}
