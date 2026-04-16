@@ -1,14 +1,30 @@
 'use client';
 
+import type { CSSProperties } from 'react';
+
 const MONTH_LABELS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const DAY_LABELS = ['', 'Mon', '', 'Wed', '', 'Fri', ''];
 
-function cellColor(count: number): string {
-  if (count === 0) return 'bg-surface border border-border/40';
-  if (count === 1) return 'bg-primary/25';
-  if (count === 2) return 'bg-primary/45';
-  if (count === 3) return 'bg-primary/65';
-  return 'bg-primary';
+// Alpha levels picked so that every step is visually distinct regardless of the
+// primary colour (works for yellow Monokai, light-cyan Nord, dark-blue GitHub Light, etc.)
+const ACTIVE_ALPHA = [0.28, 0.52, 0.75, 1] as const;
+
+/**
+ * Returns className + style for a heatmap cell.
+ * Empty cells get a surface background + border so they're always visible as a grid.
+ * Active cells use rgba(primary-rgb, alpha) via inline style — this correctly
+ * tracks the theme's primary colour because ThemeContext updates --color-primary-rgb
+ * whenever the theme changes.
+ */
+function cellProps(count: number): { className: string; style: CSSProperties } {
+  if (count === 0) {
+    return { className: 'bg-surface border border-border', style: {} };
+  }
+  const alpha = ACTIVE_ALPHA[Math.min(count, ACTIVE_ALPHA.length) - 1];
+  return {
+    className: '',
+    style: { backgroundColor: `rgba(var(--color-primary-rgb), ${alpha})` },
+  };
 }
 
 interface DayCell {
@@ -108,17 +124,18 @@ export default function ActivityHeatmap({ activityByDate }: { activityByDate: Re
             <div className="flex gap-[2px]">
               {weeks.map((week, w) => (
                 <div key={w} className="flex flex-col gap-[2px]">
-                  {week.map((cell, d) =>
-                    cell === null ? (
-                      <div key={d} className="w-3 h-3 shrink-0" />
-                    ) : (
+                  {week.map((cell, d) => {
+                    if (cell === null) return <div key={d} className="w-3 h-3 shrink-0" />;
+                    const { className, style } = cellProps(cell.count);
+                    return (
                       <div
                         key={d}
-                        className={`w-3 h-3 rounded-[2px] shrink-0 ${cellColor(cell.count)}`}
+                        className={`w-3 h-3 rounded-[2px] shrink-0 ${className}`}
+                        style={style}
                         title={`${cell.date}: ${cell.count} ${cell.count === 1 ? 'activity' : 'activities'}`}
                       />
-                    )
-                  )}
+                    );
+                  })}
                 </div>
               ))}
             </div>
@@ -129,9 +146,10 @@ export default function ActivityHeatmap({ activityByDate }: { activityByDate: Re
       {/* Legend */}
       <div className="flex items-center gap-1.5 mt-2 justify-end">
         <span className="text-[9px] text-dark-text/40">Less</span>
-        {[0, 1, 2, 3, 4].map((level) => (
-          <div key={level} className={`w-3 h-3 rounded-[2px] ${cellColor(level)}`} />
-        ))}
+        {[0, 1, 2, 3, 4].map((level) => {
+          const { className, style } = cellProps(level);
+          return <div key={level} className={`w-3 h-3 rounded-[2px] ${className}`} style={style} />;
+        })}
         <span className="text-[9px] text-dark-text/40">More</span>
       </div>
     </div>
