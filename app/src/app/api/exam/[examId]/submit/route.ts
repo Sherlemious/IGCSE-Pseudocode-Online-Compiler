@@ -27,9 +27,9 @@ export async function POST(req: Request, { params }: Context) {
     return NextResponse.json({ error: 'Exam not found or already completed' }, { status: 404 });
   }
 
-  // Calculate totals
-  const score = exam.answers.reduce((sum, a) => sum + a.passCount, 0);
-  const totalTests = exam.answers.reduce((sum, a) => sum + a.totalTests, 0);
+  // Score = questions where every test case passed; totalTests = total questions
+  const score = exam.answers.filter((a) => a.totalTests > 0 && a.passCount === a.totalTests).length;
+  const totalTests = exam.answers.length;
 
   // Mark completed
   await prisma.examAttempt.update({

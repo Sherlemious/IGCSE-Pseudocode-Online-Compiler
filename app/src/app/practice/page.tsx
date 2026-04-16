@@ -182,10 +182,10 @@ export default async function PracticePage({ searchParams }: PageProps) {
         {/* ── Two-column layout ── */}
         {/* On desktop: grid fills the remaining height; each column scrolls independently. */}
         {/* On mobile: normal block flow inside the outer scroll container.             */}
-        <div className="lg:grid lg:grid-cols-[240px_1fr] lg:gap-10 lg:flex-1 lg:min-h-0">
+        <div className="lg:grid lg:grid-cols-[240px_1fr] lg:gap-10 lg:flex-1 lg:min-h-0 lg:[grid-template-rows:1fr]">
 
           {/* Sidebar — desktop only, independently scrollable */}
-          <aside className="hidden lg:block lg:overflow-y-auto lg:pb-8 scrollbar-thin scrollbar-thumb-primary scrollbar-track-background pr-1">
+          <aside className="hidden lg:block lg:overflow-y-auto lg:pb-8 lg:min-h-0 scrollbar-thin scrollbar-thumb-border hover:scrollbar-thumb-primary/60 scrollbar-track-transparent pr-1">
             <Suspense fallback={null}>
               <PracticeFilters
                 topics={topics}
@@ -201,7 +201,7 @@ export default async function PracticePage({ searchParams }: PageProps) {
           </aside>
 
           {/* Main content */}
-          <div className="min-w-0 lg:overflow-y-auto lg:pb-8 scrollbar-thin scrollbar-thumb-primary/40 scrollbar-track-transparent">
+          <div className="min-w-0 lg:overflow-y-auto lg:pb-8 lg:min-h-0 scrollbar-thin scrollbar-thumb-border hover:scrollbar-thumb-primary/40 scrollbar-track-transparent">
             {/* Mobile filters — hidden on desktop (sidebar handles it there) */}
             <div className="lg:hidden">
               <Suspense fallback={null}>

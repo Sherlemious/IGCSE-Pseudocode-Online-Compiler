@@ -33,9 +33,9 @@ export default async function ExamResultsPage({ params }: Props) {
   if (!exam) notFound();
   if (exam.status === 'IN_PROGRESS') redirect(`/exam/${examId}`);
 
-  const totalPassed = exam.answers.reduce((s, a) => s + a.passCount, 0);
-  const totalTests = exam.answers.reduce((s, a) => s + a.totalTests, 0);
-  const percentage = totalTests > 0 ? Math.round((totalPassed / totalTests) * 100) : 0;
+  const passedQuestions = exam.answers.filter((a) => a.graded && a.totalTests > 0 && a.passCount === a.totalTests).length;
+  const totalQuestions = exam.answers.length;
+  const percentage = totalQuestions > 0 ? Math.round((passedQuestions / totalQuestions) * 100) : 0;
 
   const durationMs = exam.completedAt
     ? new Date(exam.completedAt).getTime() - new Date(exam.startedAt).getTime()
@@ -110,7 +110,7 @@ export default async function ExamResultsPage({ params }: Props) {
           <div className="flex items-center justify-center gap-5 text-xs text-dark-text mt-3">
             <span className="flex items-center gap-1.5 font-mono">
               <CheckCircle size={13} className="text-success" />
-              {totalPassed}/{totalTests} tests
+              {passedQuestions}/{totalQuestions} correct
             </span>
             <span className="flex items-center gap-1.5 font-mono">
               <Clock size={13} />
