@@ -3,7 +3,7 @@ grammar Pseudocode;
 // ─── Parser Rules ───────────────────────────────────────────────────────────
 
 program
-    : NEWLINE* (statement (NEWLINE+ statement)*)? NEWLINE* EOF
+    : NEWLINE* (statement (NEWLINE* statement)*)? NEWLINE* EOF
     ;
 
 statement
@@ -80,51 +80,51 @@ exprList
 // ─── IF / ELSE ──────────────────────────────────────────────────────────────
 
 ifStatement
-    : IF expr NEWLINE* THEN NEWLINE+ block
-      (NEWLINE+ ELSEIF expr NEWLINE* THEN NEWLINE+ block)*
-      (NEWLINE+ ELSE NEWLINE+ block)?
-      NEWLINE+ ENDIF
+    : IF expr NEWLINE* THEN? NEWLINE* block
+      (NEWLINE* ELSEIF expr NEWLINE* THEN? NEWLINE* block)*
+      (NEWLINE* ELSE NEWLINE* block)?
+      NEWLINE* ENDIF
     ;
 
 // ─── CASE / OTHERWISE ──────────────────────────────────────────────────────
 
 caseStatement
-    : CASE OF IDENTIFIER NEWLINE+
+    : CASE OF IDENTIFIER NEWLINE*
       caseClause+
-      (OTHERWISE COLON NEWLINE+ block NEWLINE+)?
-      ENDCASE
+      (OTHERWISE COLON NEWLINE* block NEWLINE*)?
+      NEWLINE* ENDCASE
     ;
 
 caseClause
-    : expr COLON NEWLINE+ block NEWLINE+
+    : expr COLON NEWLINE* block NEWLINE*
     ;
 
 // ─── FOR / NEXT ─────────────────────────────────────────────────────────────
 
 forStatement
-    : FOR IDENTIFIER (LARROW | EQUALS) expr TO expr (STEP expr)? NEWLINE+ block NEWLINE+ NEXT IDENTIFIER
+    : FOR IDENTIFIER (LARROW | EQUALS) expr TO expr (STEP expr)? NEWLINE* block NEWLINE* NEXT IDENTIFIER
     ;
 
 // ─── WHILE / ENDWHILE ──────────────────────────────────────────────────────
 
 whileStatement
-    : WHILE expr DO? NEWLINE+ block NEWLINE+ ENDWHILE
+    : WHILE expr DO? NEWLINE* block NEWLINE* ENDWHILE
     ;
 
 // ─── REPEAT / UNTIL ─────────────────────────────────────────────────────────
 
 repeatStatement
-    : REPEAT NEWLINE+ block NEWLINE+ UNTIL expr
+    : REPEAT NEWLINE* block NEWLINE* UNTIL expr
     ;
 
 // ─── PROCEDURE / FUNCTION ───────────────────────────────────────────────────
 
 procedureDeclaration
-    : PROCEDURE IDENTIFIER LPAREN paramList? RPAREN NEWLINE+ block NEWLINE+ ENDPROCEDURE
+    : PROCEDURE IDENTIFIER LPAREN paramList? RPAREN NEWLINE* block NEWLINE* ENDPROCEDURE
     ;
 
 functionDeclaration
-    : FUNCTION IDENTIFIER LPAREN paramList? RPAREN RETURNS dataType NEWLINE+ block NEWLINE+ ENDFUNCTION
+    : FUNCTION IDENTIFIER LPAREN paramList? RPAREN RETURNS dataType NEWLINE* block NEWLINE* ENDFUNCTION
     ;
 
 paramList
@@ -174,7 +174,7 @@ argList
 // ─── Block (sequence of statements) ────────────────────────────────────────
 
 block
-    : statement (NEWLINE+ statement)*
+    : statement (NEWLINE* statement)*
     ;
 
 // ─── Expressions ────────────────────────────────────────────────────────────

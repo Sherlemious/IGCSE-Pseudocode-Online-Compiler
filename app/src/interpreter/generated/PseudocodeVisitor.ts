@@ -1,4 +1,4 @@
-// Generated from src/interpreter/grammar/Pseudocode.g4 by ANTLR 4.13.1
+// Generated from grammar/Pseudocode.g4 by ANTLR 4.13.1
 
 import { AbstractParseTreeVisitor } from "antlr4ng";
 
@@ -6,6 +6,7 @@ import { AbstractParseTreeVisitor } from "antlr4ng";
 import { ProgramContext } from "./PseudocodeParser.js";
 import { StatementContext } from "./PseudocodeParser.js";
 import { DeclareStatementContext } from "./PseudocodeParser.js";
+import { IdentifierListContext } from "./PseudocodeParser.js";
 import { ConstantStatementContext } from "./PseudocodeParser.js";
 import { DataTypeContext } from "./PseudocodeParser.js";
 import { AssignmentStatementContext } from "./PseudocodeParser.js";
@@ -82,6 +83,12 @@ export class PseudocodeVisitor<Result> extends AbstractParseTreeVisitor<Result> 
      * @return the visitor result
      */
     visitDeclareStatement?: (ctx: DeclareStatementContext) => Result;
+    /**
+     * Visit a parse tree produced by `PseudocodeParser.identifierList`.
+     * @param ctx the parse tree
+     * @return the visitor result
+     */
+    visitIdentifierList?: (ctx: IdentifierListContext) => Result;
     /**
      * Visit a parse tree produced by `PseudocodeParser.constantStatement`.
      * @param ctx the parse tree

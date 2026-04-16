@@ -11,7 +11,8 @@
     "start": "next start",
     "db:migrate": "prisma migrate dev",
     "db:seed": "tsx prisma/seed.ts",
-    "db:studio": "prisma studio"
+    "db:studio": "prisma studio",
+    "antlr:generate": "antlr4ng-cli -Dlanguage=TypeScript -o src/interpreter/generated -visitor src/interpreter/grammar/Pseudocode.g4"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

@@ -32,7 +32,7 @@ const KEYWORDS = [
   'DECLARE', 'CONSTANT', 'IF', 'THEN', 'ELSE', 'ENDIF', 'CASE', 'OF',
   'OTHERWISE', 'ENDCASE', 'WHILE', 'DO', 'ENDWHILE', 'FOR', 'TO', 'STEP',
   'NEXT', 'REPEAT', 'UNTIL', 'PROCEDURE', 'ENDPROCEDURE', 'FUNCTION',
-  'RETURNS', 'ENDFUNCTION', 'RETURN', 'CALL', 'OUTPUT', 'INPUT', 'AND',
+  'RETURNS', 'ENDFUNCTION', 'RETURN', 'CALL', 'OUTPUT', 'PRINT', 'INPUT', 'AND',
   'OR', 'NOT', 'MOD', 'DIV', 'TRUE', 'FALSE', 'OPENFILE', 'READFILE',
   'WRITEFILE', 'CLOSEFILE', 'ARRAY', 'INTEGER', 'REAL', 'BOOLEAN', 'STRING', 'CHAR',
 ];
@@ -65,22 +65,19 @@ const SYNTAX_HINTS: Record<string, string> = {
   ENDFUNCTION:  'ENDFUNCTION — close your FUNCTION block\n  Example:\n    FUNCTION name() RETURNS INTEGER\n      ...\n    ENDFUNCTION',
   ENDPROCEDURE: 'ENDPROCEDURE — close your PROCEDURE block\n  Example:\n    PROCEDURE name()\n      ...\n    ENDPROCEDURE',
   ENDCASE:      'ENDCASE — every CASE block must close with ENDCASE',
-  THEN:         'THEN after the IF condition\n  Example: IF x > 0 THEN',
   DO:           'DO after the WHILE condition\n  Example: WHILE x < 10 DO',
 };
 
 /** Non-standard tokens students often write by accident */
 const WRONG_TOKENS: Record<string, string> = {
-  print:   'Use OUTPUT instead of "print"\n  Example: OUTPUT "Hello"',
-  console: 'Use OUTPUT instead of "console.log"\n  Example: OUTPUT value',
-  echo:    'Use OUTPUT instead of "echo"\n  Example: OUTPUT "Hello"',
-  log:     'Use OUTPUT instead of "log"\n  Example: OUTPUT value',
-  printf:  'Use OUTPUT instead of "printf"\n  Example: OUTPUT "Hello"',
+  console: 'Use OUTPUT or PRINT instead of "console.log"\n  Example: OUTPUT value',
+  echo:    'Use OUTPUT or PRINT instead of "echo"\n  Example: OUTPUT "Hello"',
+  log:     'Use OUTPUT or PRINT instead of "log"\n  Example: OUTPUT value',
+  printf:  'Use OUTPUT or PRINT instead of "printf"\n  Example: OUTPUT "Hello"',
   var:     'Use DECLARE instead of "var"\n  Example: DECLARE x : INTEGER',
   let:     'Use DECLARE instead of "let"\n  Example: DECLARE x : INTEGER',
   const:   'Use CONSTANT instead of "const"\n  Example: CONSTANT PI = 3.14',
   def:     'Use PROCEDURE or FUNCTION instead of "def"',
-  return:  'Use RETURN (uppercase)\n  Example: RETURN value',
   begin:   'No BEGIN needed — just write your statements directly',
   end:     'Use the specific closing keyword: ENDIF, ENDWHILE, ENDFUNCTION, etc.',
   loop:    'Use WHILE, FOR, or REPEAT instead of "loop"',
@@ -178,15 +175,11 @@ export function humanizeParseError(rawMessage: string): string {
 
       // Casing issue or near-misspelling
       const nearest = nearestKeyword(token);
-      if (nearest && nearest !== tokenUpper) {
-        return `"${token}" is not recognised — did you mean ${nearest}? Keywords must be uppercase.`;
-      }
-      if (nearest === tokenUpper && token !== nearest) {
-        return `"${token}" should be uppercase: ${nearest}`;
+      if (nearest) {
+        return `"${token}" is not recognised — did you mean ${nearest}?`;
       }
 
       // Expecting specific things
-      if (rawMessage.includes("'THEN'")) return `Missing THEN after the IF condition\n  Example: IF ${token} THEN`;
       if (rawMessage.includes("'DO'")) return `Missing DO after the WHILE condition\n  Example: WHILE ${token} DO`;
       if (rawMessage.includes("'OF'")) return `Missing OF in CASE statement\n  Example: CASE OF variable`;
     }
