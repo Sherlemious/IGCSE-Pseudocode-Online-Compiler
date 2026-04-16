@@ -96,7 +96,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           gtag('config', 'G-8DTBPF97YS');
         `}
       </Script>
-      <body className="h-screen flex flex-col overflow-hidden">
+      <body className="h-screen flex flex-col overflow-hidden" suppressHydrationWarning>
         <PostHogProvider>
           <SessionWrapper>
             <SessionIdentifier />

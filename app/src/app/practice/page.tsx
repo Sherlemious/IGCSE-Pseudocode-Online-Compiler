@@ -114,213 +114,243 @@ export default async function PracticePage({ searchParams }: PageProps) {
   })();
 
   return (
-    <div className="flex-1 min-h-0 overflow-y-auto px-6 py-8 bg-background bg-dot-grid text-light-text scrollbar-thin scrollbar-thumb-primary scrollbar-track-background relative">
+    <div className="flex-1 min-h-0 overflow-y-auto px-4 sm:px-6 lg:px-8 py-8 bg-background bg-dot-grid text-light-text scrollbar-thin scrollbar-thumb-primary scrollbar-track-background relative">
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
           background: 'radial-gradient(ellipse 80% 30% at 50% 0%, rgba(var(--color-primary-rgb), 0.04) 0%, transparent 50%)',
         }}
       />
-      <div className="max-w-3xl mx-auto relative">
-        {/* Resume banner */}
-        {resumeQuestion && (
-          <Link
-            href={`/practice/${resumeQuestion.id}`}
-            className="flex items-center justify-between gap-3 mb-5 px-4 py-3 rounded-xl border border-primary/25 bg-primary/5 hover:bg-primary/10 hover:border-primary/40 transition-all duration-200 group animate-fade-in-up"
-          >
-            <div className="min-w-0">
-              <div className="text-[10px] text-primary/60 font-semibold uppercase tracking-wider mb-0.5">Continue where you left off</div>
-              <div className="text-sm font-medium text-light-text truncate">{resumeQuestion.title}</div>
+      <div className="max-w-5xl mx-auto relative">
+        {/* ── Page header ── */}
+        <div className="mb-6">
+          <div className="flex items-start justify-between gap-4 mb-3">
+            <div>
+              <h1 className="text-xl font-bold">Practice Questions</h1>
+              <p className="text-sm text-dark-text mt-1">
+                Solve autograded pseudocode questions. Each submission is checked against hidden test cases.
+              </p>
             </div>
-            <ArrowRight size={15} className="text-primary/50 shrink-0 group-hover:translate-x-0.5 transition-transform" />
-          </Link>
-        )}
 
-        <div className="flex items-start justify-between gap-4 mb-2">
-          <div>
-            <h1 className="text-xl font-bold">Practice Questions</h1>
-            <p className="text-sm text-dark-text mt-1">
-              Solve autograded pseudocode questions. Each submission is checked against hidden test cases.
-            </p>
+            {session && totalQuestions > 0 && (
+              <div className="shrink-0 text-right">
+                <div className="text-2xl font-bold text-light-text">
+                  {totalSolved}
+                  <span className="text-dark-text text-base font-normal">/{totalQuestions}</span>
+                </div>
+                <div className="text-[10px] text-dark-text uppercase tracking-wider">solved</div>
+                {totalSolved > 0 && (
+                  <div className="mt-1 w-24 h-1.5 rounded-full bg-surface overflow-hidden">
+                    <div
+                      className="h-full rounded-full bg-success transition-all"
+                      style={{ width: `${(totalSolved / totalQuestions) * 100}%` }}
+                    />
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
-          {session && totalQuestions > 0 && (
-            <div className="shrink-0 text-right">
-              <div className="text-2xl font-bold text-light-text">
-                {totalSolved}
-                <span className="text-dark-text text-base font-normal">/{totalQuestions}</span>
-              </div>
-              <div className="text-[10px] text-dark-text uppercase tracking-wider">solved</div>
-              {totalSolved > 0 && (
-                <div className="mt-1 w-24 h-1.5 rounded-full bg-surface overflow-hidden">
-                  <div
-                    className="h-full rounded-full bg-success transition-all"
-                    style={{ width: `${(totalSolved / totalQuestions) * 100}%` }}
-                  />
-                </div>
-              )}
+          {/* Notices */}
+          {!PREMIUM_GATING_ENABLED && (
+            <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-primary/20 bg-primary/5 text-xs text-primary">
+              <Crown size={13} className="shrink-0" />
+              <span>Premium is coming soon. For now, all question difficulties are available to everyone.</span>
+            </div>
+          )}
+          {PREMIUM_GATING_ENABLED && session && !isPremium && (
+            <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-warning/20 bg-warning/5 text-xs text-warning">
+              <Crown size={13} className="shrink-0" />
+              <span>
+                Free plan — easy questions are fully available. <strong>Upgrade to Premium</strong> to unlock medium and hard questions.
+              </span>
+            </div>
+          )}
+          {!session && (
+            <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-primary/20 bg-primary/5 text-xs text-primary">
+              <Link href="/auth/signin" className="underline font-medium hover:text-light-text transition-colors">Sign in</Link>
+              <span className="text-dark-text">to track your progress.</span>
             </div>
           )}
         </div>
 
-        {/* Premium / sign-in notices */}
-        {!PREMIUM_GATING_ENABLED && (
-          <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-primary/20 bg-primary/5 text-xs text-primary mb-4">
-            <Crown size={13} className="shrink-0" />
-            <span>Premium is coming soon. For now, all question difficulties are available to everyone.</span>
-          </div>
-        )}
-        {PREMIUM_GATING_ENABLED && session && !isPremium && (
-          <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-warning/20 bg-warning/5 text-xs text-warning mb-4">
-            <Crown size={13} className="shrink-0" />
-            <span>
-              Free plan — easy questions are fully available. <strong>Upgrade to Premium</strong> to unlock medium and hard questions.
-            </span>
-          </div>
-        )}
-        {!session && (
-          <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-primary/20 bg-primary/5 text-xs text-primary mb-4">
-            <Link href="/auth/signin" className="underline font-medium hover:text-light-text transition-colors">Sign in</Link>
-            <span className="text-dark-text">to track your progress.</span>
-          </div>
-        )}
+        {/* ── Two-column layout ── */}
+        <div className="lg:grid lg:grid-cols-[220px_1fr] lg:gap-8 lg:items-start">
 
-        {/* Filters */}
-        <Suspense fallback={null}>
-          <PracticeFilters
-            topics={topics}
-            yearGroups={yearGroups}
-            allTags={allTags}
-            activeTopic={activeTopic}
-            activeYear={activeYear}
-            activeSession={activeSession}
-            activeTag={activeTag}
-            activeQ={activeQ}
-          />
-        </Suspense>
+          {/* Sidebar — desktop only */}
+          <aside className="hidden lg:block">
+            <div className="sticky top-8 max-h-[calc(100svh-7rem)] overflow-y-auto scrollbar-thin scrollbar-thumb-primary scrollbar-track-background pr-1">
+              <Suspense fallback={null}>
+                <PracticeFilters
+                  topics={topics}
+                  yearGroups={yearGroups}
+                  allTags={allTags}
+                  activeTopic={activeTopic}
+                  activeYear={activeYear}
+                  activeSession={activeSession}
+                  activeTag={activeTag}
+                  activeQ={activeQ}
+                />
+              </Suspense>
+            </div>
+          </aside>
 
-        {/* Question list */}
-        {questions.length === 0 ? (
-          <div className="rounded-lg border border-border bg-surface p-8 text-center text-dark-text">
-            <p className="text-sm">No questions yet. Add questions via the database.</p>
-          </div>
-        ) : filtered.length === 0 ? (
-          <div className="rounded-lg border border-border bg-surface p-8 text-center text-dark-text">
-            <p className="text-sm">No questions match the selected filter.</p>
-          </div>
-        ) : (
-          <div className="space-y-8">
-            {DIFFICULTIES.map((d) => {
-              const qs = grouped[d];
-              if (qs.length === 0) return null;
-              const isLocked = d !== 'EASY' && !hasFullAccess;
+          {/* Main content */}
+          <div className="min-w-0">
+            {/* Mobile filters — hidden on desktop (sidebar handles it there) */}
+            <div className="lg:hidden">
+              <Suspense fallback={null}>
+                <PracticeFilters
+                  topics={topics}
+                  yearGroups={yearGroups}
+                  allTags={allTags}
+                  activeTopic={activeTopic}
+                  activeYear={activeYear}
+                  activeSession={activeSession}
+                  activeTag={activeTag}
+                  activeQ={activeQ}
+                />
+              </Suspense>
+            </div>
 
-              return (
-                <div key={d}>
-                  <div className="flex items-center gap-2 mb-3">
-                    <span className={`text-xs font-bold tracking-wider ${DIFFICULTY_COLOR[d]}`}>{d}</span>
-                    <span className="text-xs text-dark-text">({qs.length})</span>
-                    {isLocked && (
-                      <span className="flex items-center gap-1 text-[10px] text-warning/70">
-                        <Crown size={10} />
-                        Premium
-                      </span>
-                    )}
-                    <div className="flex-1 h-px bg-border" />
-                  </div>
-                  <div className="space-y-2">
-                    {qs.map((q) => {
-                      const paperRef = q.year
-                        ? [
-                            q.year,
-                            q.session,
-                            q.variant ? `V${q.variant}` : null,
-                            q.questionNumber ? `Q${q.questionNumber}${q.part ? `(${q.part})` : ''}` : null,
-                          ].filter(Boolean).join(' ')
-                        : q.paper ?? null;
-                      const progress = progressMap.get(q.id);
-                      const solved = progress?.status === 'SOLVED';
-
-                      const cardContent = (
-                        <>
-                          <div className="flex items-center gap-3 min-w-0">
-                            {isLocked ? (
-                              <Lock className="h-4 w-4 text-dark-text/40 shrink-0" />
-                            ) : solved ? (
-                              <CheckCircle className="h-4 w-4 text-success shrink-0" />
-                            ) : progress ? (
-                              <div className="h-4 w-4 rounded-full border-2 border-warning shrink-0" title="Attempted" />
-                            ) : (
-                              <div className="h-4 w-4 rounded-full border-2 border-border shrink-0" />
-                            )}
-
-                            <div className="min-w-0">
-                              <div className="font-medium text-light-text truncate">{q.title}</div>
-                              {(q.topic || paperRef || q.tags.length > 0) && (
-                                <div className="flex flex-wrap items-center gap-1.5 mt-1">
-                                  {q.topic && (
-                                    <span className={`inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded border ${
-                                      q.topic === 'File Handling'
-                                        ? 'bg-info/10 border-info/30 text-info'
-                                        : 'bg-surface border-border text-dark-text'
-                                    }`}>
-                                      {q.topic === 'File Handling' && <FileText size={9} />}
-                                      {q.topic}
-                                    </span>
-                                  )}
-                                  {paperRef && (
-                                    <span className="text-[10px] text-dark-text/60 font-mono">{paperRef}</span>
-                                  )}
-                                  {q.marks && (
-                                    <span className="text-[10px] text-warning/70 font-mono">{q.marks}m</span>
-                                  )}
-                                  {q.tags.slice(0, 3).map((tag) => (
-                                    <span key={tag} className="text-[10px] px-1.5 py-0.5 rounded-full border border-border/60 text-dark-text/50">
-                                      {tag}
-                                    </span>
-                                  ))}
-                                </div>
-                              )}
-                            </div>
-                          </div>
-
-                          <div className="flex items-center gap-2 ml-4 shrink-0">
-                            {progress && !isLocked && (
-                              <span className="text-[10px] text-dark-text">
-                                {progress.bestScore}/{progress.totalTests}
-                              </span>
-                            )}
-                            <span className={`text-xs font-semibold px-2 py-0.5 rounded border ${DIFFICULTY_BADGE[q.difficulty] ?? 'border-border text-dark-text'}`}>
-                              {q.difficulty}
-                            </span>
-                          </div>
-                        </>
-                      );
-
-                      return isLocked ? (
-                        <div
-                          key={q.id}
-                          className="flex items-center justify-between p-4 rounded-lg border border-border bg-surface/50 opacity-60 cursor-not-allowed"
-                          aria-disabled="true"
-                        >
-                          {cardContent}
-                        </div>
-                      ) : (
-                        <Link
-                          key={q.id}
-                          href={`/practice/${q.id}`}
-                          className="flex items-center justify-between p-4 rounded-lg border border-border bg-surface transition-colors hover:border-primary/50 hover:bg-surface/80"
-                        >
-                          {cardContent}
-                        </Link>
-                      );
-                    })}
-                  </div>
+            {/* Resume banner */}
+            {resumeQuestion && (
+              <Link
+                href={`/practice/${resumeQuestion.id}`}
+                className="flex items-center justify-between gap-3 mb-5 px-4 py-3 rounded-xl border border-primary/25 bg-primary/5 hover:bg-primary/10 hover:border-primary/40 transition-all duration-200 group animate-fade-in-up"
+              >
+                <div className="min-w-0">
+                  <div className="text-[10px] text-primary/60 font-semibold uppercase tracking-wider mb-0.5">Continue where you left off</div>
+                  <div className="text-sm font-medium text-light-text truncate">{resumeQuestion.title}</div>
                 </div>
-              );
-            })}
+                <ArrowRight size={15} className="text-primary/50 shrink-0 group-hover:translate-x-0.5 transition-transform" />
+              </Link>
+            )}
+
+            {/* Question list */}
+            {questions.length === 0 ? (
+              <div className="rounded-lg border border-border bg-surface p-8 text-center text-dark-text">
+                <p className="text-sm">No questions yet. Add questions via the database.</p>
+              </div>
+            ) : filtered.length === 0 ? (
+              <div className="rounded-lg border border-border bg-surface p-8 text-center text-dark-text">
+                <p className="text-sm">No questions match the selected filter.</p>
+              </div>
+            ) : (
+              <div className="space-y-8">
+                {DIFFICULTIES.map((d) => {
+                  const qs = grouped[d];
+                  if (qs.length === 0) return null;
+                  const isLocked = d !== 'EASY' && !hasFullAccess;
+
+                  return (
+                    <div key={d}>
+                      <div className="flex items-center gap-2 mb-3">
+                        <span className={`text-xs font-bold tracking-wider ${DIFFICULTY_COLOR[d]}`}>{d}</span>
+                        <span className="text-xs text-dark-text">({qs.length})</span>
+                        {isLocked && (
+                          <span className="flex items-center gap-1 text-[10px] text-warning/70">
+                            <Crown size={10} />
+                            Premium
+                          </span>
+                        )}
+                        <div className="flex-1 h-px bg-border" />
+                      </div>
+                      <div className="space-y-2">
+                        {qs.map((q) => {
+                          const paperRef = q.year
+                            ? [
+                                q.year,
+                                q.session,
+                                q.variant ? `V${q.variant}` : null,
+                                q.questionNumber ? `Q${q.questionNumber}${q.part ? `(${q.part})` : ''}` : null,
+                              ].filter(Boolean).join(' ')
+                            : q.paper ?? null;
+                          const progress = progressMap.get(q.id);
+                          const solved = progress?.status === 'SOLVED';
+
+                          const cardContent = (
+                            <>
+                              <div className="flex items-center gap-3 min-w-0">
+                                {isLocked ? (
+                                  <Lock className="h-4 w-4 text-dark-text/40 shrink-0" />
+                                ) : solved ? (
+                                  <CheckCircle className="h-4 w-4 text-success shrink-0" />
+                                ) : progress ? (
+                                  <div className="h-4 w-4 rounded-full border-2 border-warning shrink-0" title="Attempted" />
+                                ) : (
+                                  <div className="h-4 w-4 rounded-full border-2 border-border shrink-0" />
+                                )}
+
+                                <div className="min-w-0">
+                                  <div className="font-medium text-light-text truncate">{q.title}</div>
+                                  {(q.topic || paperRef || q.tags.length > 0) && (
+                                    <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                                      {q.topic && (
+                                        <span className={`inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded border ${
+                                          q.topic === 'File Handling'
+                                            ? 'bg-info/10 border-info/30 text-info'
+                                            : 'bg-surface border-border text-dark-text'
+                                        }`}>
+                                          {q.topic === 'File Handling' && <FileText size={9} />}
+                                          {q.topic}
+                                        </span>
+                                      )}
+                                      {paperRef && (
+                                        <span className="text-[10px] text-dark-text/60 font-mono">{paperRef}</span>
+                                      )}
+                                      {q.marks && (
+                                        <span className="text-[10px] text-warning/70 font-mono">{q.marks}m</span>
+                                      )}
+                                      {q.tags.slice(0, 3).map((tag) => (
+                                        <span key={tag} className="text-[10px] px-1.5 py-0.5 rounded-full border border-border/60 text-dark-text/50">
+                                          {tag}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+
+                              <div className="flex items-center gap-2 ml-4 shrink-0">
+                                {progress && !isLocked && (
+                                  <span className="text-[10px] text-dark-text">
+                                    {progress.bestScore}/{progress.totalTests}
+                                  </span>
+                                )}
+                                <span className={`text-xs font-semibold px-2 py-0.5 rounded border ${DIFFICULTY_BADGE[q.difficulty] ?? 'border-border text-dark-text'}`}>
+                                  {q.difficulty}
+                                </span>
+                              </div>
+                            </>
+                          );
+
+                          return isLocked ? (
+                            <div
+                              key={q.id}
+                              className="flex items-center justify-between p-4 rounded-lg border border-border bg-surface/50 opacity-60 cursor-not-allowed"
+                              aria-disabled="true"
+                            >
+                              {cardContent}
+                            </div>
+                          ) : (
+                            <Link
+                              key={q.id}
+                              href={`/practice/${q.id}`}
+                              className="flex items-center justify-between p-4 rounded-lg border border-border bg-surface transition-colors hover:border-primary/50 hover:bg-surface/80"
+                            >
+                              {cardContent}
+                            </Link>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
-        )}
+        </div>
       </div>
     </div>
   );

@@ -32,7 +32,7 @@ export function PracticeFilters({
 }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [filtersOpen, setFiltersOpen] = useState(true);
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   const activeFilterCount = [activeTopic, activeYear, activeTag].filter(Boolean).length;
   const hasActiveFilter = !!(activeTopic || activeYear || activeTag || activeQ);
@@ -56,94 +56,220 @@ export function PracticeFilters({
   }
 
   return (
-    <div
-      className="mb-6 sticky top-0 z-20"
-      style={{ backgroundColor: 'var(--color-background)' }}
-    >
-      {/* bottom fade so content doesn't hard-cut under the panel */}
-      <div className="pb-3 [box-shadow:0_8px_16px_4px_var(--color-background)]">
+    <>
+      {/* ── Desktop Sidebar ───────────────────────────────────────── */}
+      <div className="hidden lg:flex flex-col gap-5">
+        {/* Search */}
+        <div className="relative">
+          <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-dark-text pointer-events-none" />
+          <input
+            type="text"
+            placeholder="Search questions…"
+            value={activeQ ?? ''}
+            onChange={(e) => router.push(buildUrl({ q: e.target.value || undefined }))}
+            className="w-full pl-8 pr-7 py-2 bg-surface border border-border rounded-lg text-xs text-light-text placeholder:text-dark-text outline-none focus:border-primary/50 transition-colors"
+          />
+          {activeQ && (
+            <button
+              onClick={() => router.push(buildUrl({ q: undefined }))}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-dark-text hover:text-light-text transition-colors"
+              aria-label="Clear search"
+            >
+              <X size={11} />
+            </button>
+          )}
+        </div>
 
-        {/* ── Unified filter panel ── */}
-        <div className="rounded-xl border border-border bg-surface overflow-hidden divide-y divide-border/40">
+        {/* Active filter pills */}
+        {hasActiveFilter && (
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[10px] uppercase tracking-wider font-semibold text-dark-text">Active filters</span>
+              <button
+                onClick={clearAll}
+                className="text-[10px] text-dark-text hover:text-error transition-colors cursor-pointer"
+              >
+                Clear all
+              </button>
+            </div>
+            <div className="flex flex-wrap gap-1">
+              {activeTopic && (
+                <ActivePill label={activeTopic} onRemove={() => router.push(buildUrl({ topic: undefined }))} />
+              )}
+              {activeYear && (
+                <ActivePill
+                  label={activeSession ? `${activeYear} · ${activeSession}` : String(activeYear)}
+                  onRemove={() => router.push(buildUrl({ year: undefined, session: undefined }))}
+                />
+              )}
+              {activeTag && (
+                <ActivePill label={activeTag} onRemove={() => router.push(buildUrl({ tag: undefined }))} color="info" />
+              )}
+              {activeQ && (
+                <ActivePill label={`"${activeQ}"`} onRemove={() => router.push(buildUrl({ q: undefined }))} />
+              )}
+            </div>
+          </div>
+        )}
 
+        {/* Topic section */}
+        {topics.length > 0 && (
+          <SidebarSection label="Topic">
+            <SidebarItem active={!activeTopic} onClick={() => router.push(buildUrl({ topic: undefined }))}>
+              All
+            </SidebarItem>
+            {topics.map((t) => (
+              <SidebarItem
+                key={t}
+                active={activeTopic === t}
+                onClick={() => router.push(buildUrl({ topic: activeTopic === t ? undefined : t }))}
+              >
+                {t === 'File Handling' && <FileText size={10} className="shrink-0 opacity-70" />}
+                {t}
+              </SidebarItem>
+            ))}
+          </SidebarSection>
+        )}
+
+        {/* Year section */}
+        {yearGroups.length > 0 && (
+          <SidebarSection label="Year">
+            <SidebarItem
+              active={!activeYear}
+              onClick={() => router.push(buildUrl({ year: undefined, session: undefined }))}
+            >
+              All
+            </SidebarItem>
+            {yearGroups.map(({ year }) => (
+              <SidebarItem
+                key={year}
+                active={activeYear === year}
+                onClick={() =>
+                  router.push(
+                    buildUrl(
+                      activeYear === year && !activeSession
+                        ? { year: undefined, session: undefined }
+                        : { year: String(year), session: undefined }
+                    )
+                  )
+                }
+              >
+                {year}
+              </SidebarItem>
+            ))}
+          </SidebarSection>
+        )}
+
+        {/* Session sub-section */}
+        {activeYear && activeSessions.length > 0 && (
+          <SidebarSection label="Session" indent>
+            {activeSessions.map((s) => (
+              <SidebarItem
+                key={s}
+                active={activeSession === s}
+                onClick={() =>
+                  router.push(
+                    buildUrl(
+                      activeSession === s
+                        ? { year: String(activeYear), session: undefined }
+                        : { year: String(activeYear), session: s }
+                    )
+                  )
+                }
+                small
+              >
+                {s}
+              </SidebarItem>
+            ))}
+          </SidebarSection>
+        )}
+
+        {/* Tags section */}
+        {allTags.length > 0 && (
+          <SidebarSection label="Tags">
+            <div className="flex flex-wrap gap-1">
+              {allTags.map((tag) => (
+                <button
+                  key={tag}
+                  onClick={() => router.push(buildUrl({ tag: activeTag === tag ? undefined : tag }))}
+                  className={`text-[10px] px-2 py-0.5 rounded border font-medium transition-all cursor-pointer ${
+                    activeTag === tag
+                      ? 'bg-info/15 border-info/40 text-info'
+                      : 'border-border/60 text-dark-text hover:border-info/30 hover:text-info/70 hover:bg-info/5'
+                  }`}
+                >
+                  {tag}
+                </button>
+              ))}
+            </div>
+          </SidebarSection>
+        )}
+      </div>
+
+      {/* ── Mobile Compact Bar ────────────────────────────────────── */}
+      <div className="lg:hidden mb-5">
+        <div className="rounded-xl border border-border bg-surface overflow-hidden">
           {/* Search + toggle row */}
           <div className="flex items-center gap-2 px-3 py-2">
-            <Search size={13} className="text-dark-text/50 shrink-0" />
+            <Search size={13} className="text-dark-text shrink-0" />
             <input
               type="text"
               placeholder="Search questions…"
               value={activeQ ?? ''}
               onChange={(e) => router.push(buildUrl({ q: e.target.value || undefined }))}
-              className="flex-1 bg-transparent text-xs text-light-text placeholder:text-dark-text/40 outline-none min-w-0"
+              className="flex-1 bg-transparent text-xs text-light-text placeholder:text-dark-text outline-none min-w-0"
             />
             {activeQ && (
               <button
                 onClick={() => router.push(buildUrl({ q: undefined }))}
-                className="text-dark-text/40 hover:text-dark-text transition-colors shrink-0"
+                className="text-dark-text hover:text-light-text transition-colors shrink-0"
                 aria-label="Clear search"
               >
-                <X size={12} />
+                <X size={11} />
               </button>
             )}
-            <div className="w-px h-4 bg-border/60 shrink-0 mx-0.5" />
+            <div className="w-px h-4 bg-border/60 mx-0.5 shrink-0" />
             <button
-              onClick={() => setFiltersOpen((v) => !v)}
-              className="flex items-center gap-1 text-[11px] font-medium text-dark-text/60 hover:text-light-text transition-colors shrink-0"
-              title={filtersOpen ? 'Hide filters' : 'Show filters'}
+              onClick={() => setMobileOpen((v) => !v)}
+              className="flex items-center gap-1 text-[11px] font-medium text-dark-text hover:text-light-text transition-colors shrink-0"
             >
               <SlidersHorizontal size={12} />
-              <span className="hidden sm:inline">
-                {filtersOpen ? 'Filters' : `Filters${activeFilterCount > 0 ? ` (${activeFilterCount})` : ''}`}
-              </span>
+              <span>Filters{activeFilterCount > 0 ? ` (${activeFilterCount})` : ''}</span>
               <ChevronDown
                 size={12}
-                className={`transition-transform duration-200 ${filtersOpen ? '' : '-rotate-90'}`}
+                className={`transition-transform duration-200 ${mobileOpen ? 'rotate-180' : ''}`}
               />
             </button>
           </div>
 
-          {/* Collapsible filter rows */}
-          {filtersOpen && (
-            <>
-              {/* Topic row */}
+          {/* Expandable filter rows */}
+          {mobileOpen && (
+            <div className="border-t border-border/40 p-3 space-y-3">
               {topics.length > 0 && (
-                <FilterRow label="Topic">
-                  <Chip
-                    active={!activeTopic}
-                    onClick={() => router.push(buildUrl({ topic: undefined }))}
-                  >
-                    All
-                  </Chip>
+                <MobileFilterRow label="Topic">
+                  <FilterChip active={!activeTopic} onClick={() => router.push(buildUrl({ topic: undefined }))}>All</FilterChip>
                   {topics.map((t) => (
-                    <Chip
+                    <FilterChip
                       key={t}
                       active={activeTopic === t}
                       onClick={() => router.push(buildUrl({ topic: activeTopic === t ? undefined : t }))}
                     >
-                      {t === 'File Handling' && <FileText size={10} className="shrink-0" />}
                       {t}
-                    </Chip>
+                    </FilterChip>
                   ))}
-                </FilterRow>
+                </MobileFilterRow>
               )}
-
-              {/* Year row */}
               {yearGroups.length > 0 && (
-                <FilterRow label="Year">
-                  <Chip
-                    active={!activeYear}
-                    onClick={() => router.push(buildUrl({ year: undefined, session: undefined }))}
-                  >
-                    All
-                  </Chip>
+                <MobileFilterRow label="Year">
+                  <FilterChip active={!activeYear} onClick={() => router.push(buildUrl({ year: undefined, session: undefined }))}>All</FilterChip>
                   {yearGroups.map(({ year }) => (
-                    <Chip
+                    <FilterChip
                       key={year}
                       active={activeYear === year}
                       onClick={() =>
                         router.push(
                           buildUrl(
-                            activeYear === year && !activeSession
+                            activeYear === year
                               ? { year: undefined, session: undefined }
                               : { year: String(year), session: undefined }
                           )
@@ -151,18 +277,17 @@ export function PracticeFilters({
                       }
                     >
                       {year}
-                    </Chip>
+                    </FilterChip>
                   ))}
-                </FilterRow>
+                </MobileFilterRow>
               )}
-
-              {/* Session sub-row */}
               {activeYear && activeSessions.length > 0 && (
-                <FilterRow label="Session" indent>
+                <MobileFilterRow label="Session" indent>
                   {activeSessions.map((s) => (
-                    <Chip
+                    <FilterChip
                       key={s}
                       active={activeSession === s}
+                      size="sm"
                       onClick={() =>
                         router.push(
                           buildUrl(
@@ -172,45 +297,45 @@ export function PracticeFilters({
                           )
                         )
                       }
-                      size="sm"
                     >
                       {s}
-                    </Chip>
+                    </FilterChip>
                   ))}
-                </FilterRow>
+                </MobileFilterRow>
               )}
-
-              {/* Tags row */}
               {allTags.length > 0 && (
-                <FilterRow label="Tags">
+                <MobileFilterRow label="Tags">
                   {allTags.map((tag) => (
-                    <Chip
+                    <FilterChip
                       key={tag}
                       active={activeTag === tag}
-                      onClick={() => router.push(buildUrl({ tag: activeTag === tag ? undefined : tag }))}
                       color="info"
+                      onClick={() => router.push(buildUrl({ tag: activeTag === tag ? undefined : tag }))}
                     >
                       {tag}
-                    </Chip>
+                    </FilterChip>
                   ))}
-                </FilterRow>
+                </MobileFilterRow>
               )}
-            </>
+              {hasActiveFilter && (
+                <div className="pt-1 flex justify-end border-t border-border/30">
+                  <button
+                    onClick={clearAll}
+                    className="text-[11px] text-dark-text hover:text-error transition-colors cursor-pointer"
+                  >
+                    Clear all filters
+                  </button>
+                </div>
+              )}
+            </div>
           )}
         </div>
 
-        {/* ── Active filter pills (shown below panel when filters are collapsed) ── */}
-        {hasActiveFilter && (
+        {/* Active filter pills (when collapsed) */}
+        {hasActiveFilter && !mobileOpen && (
           <div className="flex flex-wrap items-center gap-1.5 mt-2 px-0.5">
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-dark-text/50 shrink-0 flex items-center gap-1">
-              <SlidersHorizontal size={10} />
-              Active:
-            </span>
             {activeTopic && (
-              <ActivePill
-                label={activeTopic}
-                onRemove={() => router.push(buildUrl({ topic: undefined }))}
-              />
+              <ActivePill label={activeTopic} onRemove={() => router.push(buildUrl({ topic: undefined }))} />
             )}
             {activeYear && (
               <ActivePill
@@ -219,34 +344,27 @@ export function PracticeFilters({
               />
             )}
             {activeTag && (
-              <ActivePill
-                label={activeTag}
-                onRemove={() => router.push(buildUrl({ tag: undefined }))}
-                color="info"
-              />
+              <ActivePill label={activeTag} onRemove={() => router.push(buildUrl({ tag: undefined }))} color="info" />
             )}
             {activeQ && (
-              <ActivePill
-                label={`"${activeQ}"`}
-                onRemove={() => router.push(buildUrl({ q: undefined }))}
-              />
+              <ActivePill label={`"${activeQ}"`} onRemove={() => router.push(buildUrl({ q: undefined }))} />
             )}
             <button
               onClick={clearAll}
-              className="text-[10px] text-dark-text/40 hover:text-dark-text transition-colors cursor-pointer underline underline-offset-2 ml-1"
+              className="text-[10px] text-dark-text hover:text-dark-text transition-colors cursor-pointer underline underline-offset-2 ml-1"
             >
               Clear all
             </button>
           </div>
         )}
       </div>
-    </div>
+    </>
   );
 }
 
-// ── Sub-components ────────────────────────────────────────────────────────────
+// ── Sub-components ─────────────────────────────────────────────────────────────
 
-function FilterRow({
+function SidebarSection({
   label,
   indent,
   children,
@@ -256,20 +374,71 @@ function FilterRow({
   children: React.ReactNode;
 }) {
   return (
-    <div className={`flex items-start gap-3 px-3 py-1.5 ${indent ? 'bg-primary/[0.03]' : ''}`}>
-      <span
-        className={`text-[10px] font-semibold uppercase tracking-wider shrink-0 pt-0.5 w-14 text-right ${
-          indent ? 'text-primary/40' : 'text-dark-text/50'
+    <div>
+      <div
+        className={`text-[10px] uppercase tracking-wider font-semibold mb-1.5 ${
+          indent ? 'text-primary/50 pl-2' : 'text-dark-text'
         }`}
       >
         {label}
-      </span>
-      <div className="flex flex-wrap gap-1.5 flex-1">{children}</div>
+      </div>
+      <div className={`space-y-0.5 ${indent ? 'pl-2 border-l-2 border-border/30' : ''}`}>
+        {children}
+      </div>
     </div>
   );
 }
 
-function Chip({
+function SidebarItem({
+  active,
+  onClick,
+  children,
+  small,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+  small?: boolean;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={`w-full flex items-center gap-2 text-left rounded-md px-2 py-1 cursor-pointer transition-all duration-150 ${
+        small ? 'text-[11px]' : 'text-xs'
+      } ${
+        active
+          ? 'text-primary bg-primary/10'
+          : 'text-dark-text hover:text-light-text hover:bg-surface'
+      }`}
+    >
+      <span
+        className={`w-1.5 h-1.5 rounded-full shrink-0 transition-all duration-150 ${
+          active ? 'bg-primary' : 'bg-transparent'
+        }`}
+      />
+      <span className="flex items-center gap-1">{children}</span>
+    </button>
+  );
+}
+
+function MobileFilterRow({
+  label,
+  indent,
+  children,
+}: {
+  label: string;
+  indent?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className={indent ? 'pl-3 border-l border-border/40' : ''}>
+      <div className="text-[10px] uppercase tracking-wider font-semibold text-dark-text mb-1.5">{label}</div>
+      <div className="flex flex-wrap gap-1">{children}</div>
+    </div>
+  );
+}
+
+function FilterChip({
   active,
   onClick,
   children,
@@ -284,18 +453,16 @@ function Chip({
 }) {
   const base = 'inline-flex items-center gap-1 rounded-full border font-medium transition-all duration-150 cursor-pointer select-none';
   const sz = size === 'sm' ? 'px-2 py-0.5 text-[10px]' : 'px-2.5 py-0.5 text-[11px]';
-
-  const active_cls =
+  const activeCls =
     color === 'info'
       ? 'bg-info/15 border-info/40 text-info'
       : 'bg-primary/20 border-primary/50 text-primary';
-  const inactive_cls =
+  const inactiveCls =
     color === 'info'
-      ? 'border-border text-dark-text/60 hover:border-info/30 hover:text-info/80 hover:bg-info/5'
-      : 'border-border/70 text-dark-text/70 hover:border-primary/40 hover:text-light-text hover:bg-primary/5';
-
+      ? 'border-border text-dark-text hover:border-info/30 hover:text-info/80 hover:bg-info/5'
+      : 'border-border/70 text-dark-text hover:border-primary/40 hover:text-light-text hover:bg-primary/5';
   return (
-    <button onClick={onClick} className={`${base} ${sz} ${active ? active_cls : inactive_cls}`}>
+    <button onClick={onClick} className={`${base} ${sz} ${active ? activeCls : inactiveCls}`}>
       {children}
     </button>
   );
