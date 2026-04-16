@@ -116,7 +116,7 @@ export default async function PracticePage({ searchParams }: PageProps) {
   return (
     // On desktop: flex-col container that does NOT scroll — sidebar and content each scroll independently.
     // On mobile: single overflow-y-auto container so page header + filters + questions scroll together.
-    <div className="flex-1 min-h-0 overflow-y-auto lg:overflow-hidden lg:flex lg:flex-col bg-background bg-dot-grid text-light-text relative">
+    <div className="flex-1 min-h-0 overflow-y-auto lg:overflow-hidden lg:flex lg:flex-col bg-background bg-dot-grid text-light-text relative scrollbar-thin scrollbar-thumb-border hover:scrollbar-thumb-primary/60 scrollbar-track-transparent">
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
