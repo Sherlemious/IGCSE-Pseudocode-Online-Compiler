@@ -114,16 +114,19 @@ export default async function PracticePage({ searchParams }: PageProps) {
   })();
 
   return (
-    <div className="flex-1 min-h-0 overflow-y-auto px-4 sm:px-6 lg:px-8 py-8 bg-background bg-dot-grid text-light-text scrollbar-thin scrollbar-thumb-primary scrollbar-track-background relative">
+    // On desktop: flex-col container that does NOT scroll — sidebar and content each scroll independently.
+    // On mobile: single overflow-y-auto container so page header + filters + questions scroll together.
+    <div className="flex-1 min-h-0 overflow-y-auto lg:overflow-hidden lg:flex lg:flex-col bg-background bg-dot-grid text-light-text relative">
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
           background: 'radial-gradient(ellipse 80% 30% at 50% 0%, rgba(var(--color-primary-rgb), 0.04) 0%, transparent 50%)',
         }}
       />
-      <div className="max-w-7xl mx-auto relative">
-        {/* ── Page header ── */}
-        <div className="mb-6">
+      <div className="max-w-7xl w-full mx-auto relative px-4 sm:px-6 lg:px-8 lg:flex lg:flex-col lg:flex-1 lg:min-h-0">
+
+        {/* ── Page header — shrinks to its natural height on desktop ── */}
+        <div className="pt-8 mb-6 lg:shrink-0">
           <div className="flex items-start justify-between gap-4 mb-3">
             <div>
               <h1 className="text-xl font-bold">Practice Questions</h1>
@@ -177,28 +180,28 @@ export default async function PracticePage({ searchParams }: PageProps) {
         </div>
 
         {/* ── Two-column layout ── */}
-        <div className="lg:grid lg:grid-cols-[240px_1fr] lg:gap-10">
+        {/* On desktop: grid fills the remaining height; each column scrolls independently. */}
+        {/* On mobile: normal block flow inside the outer scroll container.             */}
+        <div className="lg:grid lg:grid-cols-[240px_1fr] lg:gap-10 lg:flex-1 lg:min-h-0">
 
-          {/* Sidebar — desktop only */}
-          <aside className="hidden lg:block">
-            <div className="sticky top-8 max-h-[calc(100svh-7rem)] overflow-y-auto scrollbar-thin scrollbar-thumb-primary scrollbar-track-background pr-1">
-              <Suspense fallback={null}>
-                <PracticeFilters
-                  topics={topics}
-                  yearGroups={yearGroups}
-                  allTags={allTags}
-                  activeTopic={activeTopic}
-                  activeYear={activeYear}
-                  activeSession={activeSession}
-                  activeTag={activeTag}
-                  activeQ={activeQ}
-                />
-              </Suspense>
-            </div>
+          {/* Sidebar — desktop only, independently scrollable */}
+          <aside className="hidden lg:block lg:overflow-y-auto lg:pb-8 scrollbar-thin scrollbar-thumb-primary scrollbar-track-background pr-1">
+            <Suspense fallback={null}>
+              <PracticeFilters
+                topics={topics}
+                yearGroups={yearGroups}
+                allTags={allTags}
+                activeTopic={activeTopic}
+                activeYear={activeYear}
+                activeSession={activeSession}
+                activeTag={activeTag}
+                activeQ={activeQ}
+              />
+            </Suspense>
           </aside>
 
           {/* Main content */}
-          <div className="min-w-0">
+          <div className="min-w-0 lg:overflow-y-auto lg:pb-8 scrollbar-thin scrollbar-thumb-primary/40 scrollbar-track-transparent">
             {/* Mobile filters — hidden on desktop (sidebar handles it there) */}
             <div className="lg:hidden">
               <Suspense fallback={null}>
