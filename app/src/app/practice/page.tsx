@@ -116,7 +116,7 @@ export default async function PracticePage({ searchParams }: PageProps) {
   return (
     // On desktop: flex-col container that does NOT scroll — sidebar and content each scroll independently.
     // On mobile: single overflow-y-auto container so page header + filters + questions scroll together.
-    <div className="flex-1 min-h-0 overflow-y-auto lg:overflow-hidden lg:flex lg:flex-col bg-background bg-dot-grid text-light-text relative scrollbar-thin scrollbar-thumb-border hover:scrollbar-thumb-primary/60 scrollbar-track-transparent">
+    <div className="flex-1 min-h-0 overflow-y-auto lg:overflow-hidden lg:flex lg:flex-col bg-background bg-dot-grid text-light-text relative scrollbar-pretty">
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
@@ -185,7 +185,7 @@ export default async function PracticePage({ searchParams }: PageProps) {
         <div className="lg:grid lg:grid-cols-[240px_1fr] lg:gap-10 lg:flex-1 lg:min-h-0 lg:[grid-template-rows:1fr]">
 
           {/* Sidebar — desktop only, independently scrollable */}
-          <aside className="hidden lg:block lg:overflow-y-auto lg:pb-8 lg:min-h-0 scrollbar-thin scrollbar-thumb-border hover:scrollbar-thumb-primary/60 scrollbar-track-transparent pr-1">
+          <aside className="hidden lg:block lg:overflow-y-auto lg:pb-8 lg:min-h-0 scrollbar-pretty pr-1">
             <Suspense fallback={null}>
               <PracticeFilters
                 topics={topics}
@@ -201,7 +201,7 @@ export default async function PracticePage({ searchParams }: PageProps) {
           </aside>
 
           {/* Main content */}
-          <div className="min-w-0 lg:overflow-y-auto lg:pb-8 lg:min-h-0 scrollbar-thin scrollbar-thumb-border hover:scrollbar-thumb-primary/40 scrollbar-track-transparent">
+          <div className="min-w-0 lg:overflow-y-auto lg:pb-8 lg:min-h-0 scrollbar-pretty">
             {/* Mobile filters — hidden on desktop (sidebar handles it there) */}
             <div className="lg:hidden">
               <Suspense fallback={null}>

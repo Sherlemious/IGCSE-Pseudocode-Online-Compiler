@@ -164,16 +164,6 @@ kbd {
   white-space: nowrap;
 }
 
-/* ── Hide scrollbar on tab strip ────────────────────────── */
-.scrollbar-none {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-
-.scrollbar-none::-webkit-scrollbar {
-  display: none;
-}
-
 /* ── Focus ring ─────────────────────────────────────────── */
 *:focus-visible {
   outline: 1px solid var(--color-primary);
@@ -338,6 +328,40 @@ textarea:focus-visible {
 }
 
 /* ── Custom scrollbars ───────────────────────────────────── */
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
+/* Subtle scrollbar: muted at rest, primary-tinted on hover */
+.scrollbar-pretty {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--color-dark-text) 30%, transparent) transparent;
+}
+
+.scrollbar-pretty::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+.scrollbar-pretty::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollbar-pretty::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--color-dark-text) 30%, transparent);
+  border-radius: 9999px;
+}
+
+.scrollbar-pretty::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, var(--color-primary) 55%, transparent);
+}
+
+/* Legacy named utilities kept for backward compat */
 .scrollbar-thin {
   scrollbar-width: thin;
 }
@@ -356,16 +380,8 @@ textarea:focus-visible {
   border-radius: 9999px;
 }
 
-.hover\:scrollbar-thumb-primary-hover:hover::-webkit-scrollbar-thumb {
-  background-color: var(--color-primary-hover);
-}
-
 .scrollbar-track-background::-webkit-scrollbar-track {
   background-color: var(--color-background);
-}
-
-.scrollbar-thumb-rounded-full::-webkit-scrollbar-thumb {
-  border-radius: 9999px;
 }
 
 /* ── Onboarding tour spotlight ─────────────────────────── */
