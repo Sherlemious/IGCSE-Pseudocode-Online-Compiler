@@ -72,7 +72,7 @@ export default async function ExamResultsPage({ params }: Props) {
         </Link>
 
         {/* Score ring */}
-        <div className="bg-surface/80 backdrop-blur-sm rounded-xl border border-border p-8 text-center mb-6 card-glow animate-fade-in-up">
+        <div className="bg-surface rounded-xl border border-border p-8 text-center mb-6 animate-fade-in-up">
           <div className="relative inline-block mb-4">
             <svg width={ringSize} height={ringSize} className="-rotate-90">
               <circle
@@ -93,10 +93,7 @@ export default async function ExamResultsPage({ params }: Props) {
                 strokeLinecap="round"
                 strokeDasharray={ringCircumference}
                 strokeDashoffset={ringOffset}
-                style={{
-                  animation: 'draw-progress 1.2s ease-out forwards',
-                  filter: `drop-shadow(0 0 8px ${scoreColor})`,
-                }}
+                style={{ animation: 'draw-progress 1.2s ease-out forwards' }}
               />
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center">
@@ -212,7 +209,6 @@ export default async function ExamResultsPage({ params }: Props) {
           className="flex items-center justify-center gap-2 px-4 py-3 rounded-lg
             bg-primary text-on-primary text-sm font-semibold
             hover:opacity-90 active:scale-[0.98] transition-all duration-200
-            shadow-[0_0_20px_-4px_rgba(var(--color-primary-rgb),0.4)]
             animate-fade-in-up"
           style={{ animationDelay: '250ms' }}
         >

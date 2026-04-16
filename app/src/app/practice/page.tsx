@@ -152,30 +152,32 @@ export default async function PracticePage({ searchParams }: PageProps) {
           </div>
 
           {/* Notices */}
-          {!PREMIUM_GATING_ENABLED && (
-            <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-primary/20 bg-primary/5 text-xs text-primary">
-              <Crown size={13} className="shrink-0" />
-              <span>Premium is coming soon. For now, all question difficulties are available to everyone.</span>
-            </div>
-          )}
-          {PREMIUM_GATING_ENABLED && session && !isPremium && (
-            <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-warning/20 bg-warning/5 text-xs text-warning">
-              <Crown size={13} className="shrink-0" />
-              <span>
-                Free plan — easy questions are fully available. <strong>Upgrade to Premium</strong> to unlock medium and hard questions.
-              </span>
-            </div>
-          )}
-          {!session && (
-            <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-primary/20 bg-primary/5 text-xs text-primary">
-              <Link href="/auth/signin" className="underline font-medium hover:text-light-text transition-colors">Sign in</Link>
-              <span className="text-dark-text">to track your progress.</span>
-            </div>
-          )}
+          <div className="space-y-2">
+            {!PREMIUM_GATING_ENABLED && (
+              <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-primary/20 bg-primary/5 text-xs text-primary">
+                <Crown size={13} className="shrink-0" />
+                <span>Premium is coming soon. For now, all question difficulties are available to everyone.</span>
+              </div>
+            )}
+            {PREMIUM_GATING_ENABLED && session && !isPremium && (
+              <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-warning/20 bg-warning/5 text-xs text-warning">
+                <Crown size={13} className="shrink-0" />
+                <span>
+                  Free plan — easy questions are fully available. <strong>Upgrade to Premium</strong> to unlock medium and hard questions.
+                </span>
+              </div>
+            )}
+            {!session && (
+              <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-primary/20 bg-primary/5 text-xs text-primary">
+                <Link href="/auth/signin" className="underline font-medium hover:text-light-text transition-colors">Sign in</Link>
+                <span className="text-dark-text">to track your progress.</span>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* ── Two-column layout ── */}
-        <div className="lg:grid lg:grid-cols-[240px_1fr] lg:gap-10 lg:items-start">
+        <div className="lg:grid lg:grid-cols-[240px_1fr] lg:gap-10">
 
           {/* Sidebar — desktop only */}
           <aside className="hidden lg:block">
