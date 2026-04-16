@@ -58,7 +58,7 @@ export function PracticeFilters({
   return (
     <>
       {/* ── Desktop Sidebar ───────────────────────────────────────── */}
-      <div className="hidden lg:flex flex-col gap-5">
+      <div className="hidden lg:flex flex-col gap-3.5">
         {/* Search */}
         <div className="relative">
           <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-dark-text pointer-events-none" />

@@ -121,7 +121,7 @@ export default async function PracticePage({ searchParams }: PageProps) {
           background: 'radial-gradient(ellipse 80% 30% at 50% 0%, rgba(var(--color-primary-rgb), 0.04) 0%, transparent 50%)',
         }}
       />
-      <div className="max-w-5xl mx-auto relative">
+      <div className="max-w-7xl mx-auto relative">
         {/* ── Page header ── */}
         <div className="mb-6">
           <div className="flex items-start justify-between gap-4 mb-3">
@@ -175,7 +175,7 @@ export default async function PracticePage({ searchParams }: PageProps) {
         </div>
 
         {/* ── Two-column layout ── */}
-        <div className="lg:grid lg:grid-cols-[220px_1fr] lg:gap-8 lg:items-start">
+        <div className="lg:grid lg:grid-cols-[240px_1fr] lg:gap-10 lg:items-start">
 
           {/* Sidebar — desktop only */}
           <aside className="hidden lg:block">
@@ -328,7 +328,7 @@ export default async function PracticePage({ searchParams }: PageProps) {
                           return isLocked ? (
                             <div
                               key={q.id}
-                              className="flex items-center justify-between p-4 rounded-lg border border-border bg-surface/50 opacity-60 cursor-not-allowed"
+                              className="flex items-center justify-between p-3 rounded-lg border border-border bg-surface/50 opacity-60 cursor-not-allowed"
                               aria-disabled="true"
                             >
                               {cardContent}
@@ -337,7 +337,7 @@ export default async function PracticePage({ searchParams }: PageProps) {
                             <Link
                               key={q.id}
                               href={`/practice/${q.id}`}
-                              className="flex items-center justify-between p-4 rounded-lg border border-border bg-surface transition-colors hover:border-primary/50 hover:bg-surface/80"
+                              className="flex items-center justify-between p-3 rounded-lg border border-border bg-surface transition-colors hover:border-primary/50 hover:bg-surface/80"
                             >
                               {cardContent}
                             </Link>
