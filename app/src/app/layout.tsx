@@ -22,11 +22,15 @@ export const metadata: Metadata = {
   description: DESCRIPTION,
   keywords: [
     // syllabus codes
-    '0478', '0984', '2210',
+    '0478', '0984', '2210', '9618',
     // exam boards & levels
     'IGCSE', 'IGCSE 9-1', 'O Level', 'Cambridge IGCSE', 'Cambridge O Level', 'CIE',
+    'A Level', 'A-Level', 'AS Level', 'Cambridge A Level', 'Cambridge A-Level',
     // subject names
     'Computer Science', 'IGCSE Computer Science', 'O Level Computer Science',
+    'A Level Computer Science', 'Cambridge A Level Computer Science',
+    // A-Level pseudocode
+    'A Level pseudocode', 'pseudocode A Level', 'pseudocode 9618', 'AS Level pseudocode',
     // core tool terms — spelling variants
     'pseudocode', 'pseudo code', 'pseudo-code',
     'pseudocode compiler', 'pseudocode interpreter', 'pseudocode online',
@@ -94,7 +98,8 @@ const jsonLd = {
   featureList: [
     'Browser-based pseudocode compiler — no installation required',
     'Interactive INPUT support — execution pauses and waits for user input',
-    'Full Cambridge IGCSE pseudocode syntax: IF/ELSEIF/ELSE, FOR/WHILE/REPEAT, CASE OF, PROCEDURE, FUNCTION, arrays, file handling',
+    'Supports Cambridge IGCSE (0478/0984/2210) and A-Level (9618) pseudocode syntax',
+    'Full pseudocode syntax: IF/ELSEIF/ELSE, FOR/WHILE/REPEAT, CASE OF, PROCEDURE, FUNCTION, arrays, file handling',
     'Built-in functions: LENGTH, SUBSTRING, ROUND, INT, RANDOM, ASC, CHR, NUM_TO_STRING, STRING_TO_NUM',
     'Syntax highlighting editor with error markers',
     'Practice questions sourced from IGCSE past papers with difficulty and topic filters',
