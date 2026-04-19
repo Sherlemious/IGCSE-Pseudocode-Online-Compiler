@@ -11,12 +11,12 @@ import OnboardingNudges from '../components/onboarding/OnboardingNudges';
 
 const SITE_URL = 'https://pseudocode-compiler.sherlemious.com';
 const DESCRIPTION =
-  'Write and run IGCSE pseudocode online. Free browser-based compiler for Cambridge Computer Science 0478 syllabus.';
+  'Write, run and debug Cambridge IGCSE pseudocode in your browser. Free compiler with interactive input, practice questions from past papers, timed exams and instant autograding.';
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: 'IGCSE Pseudocode Compiler',
+    default: 'IGCSE Pseudocode Compiler — Free Online Editor & Runner',
     template: '%s | IGCSE Pseudocode Compiler',
   },
   description: DESCRIPTION,
@@ -38,11 +38,24 @@ export const metadata: Metadata = {
     // algorithm & CS concepts students search
     'algorithm', 'flowchart', 'trace table', 'dry run', 'pseudocode algorithm',
     'pseudocode examples', 'pseudocode syntax', 'Cambridge pseudocode syntax',
+    // language features students look up
+    'pseudocode arrays', 'pseudocode functions', 'pseudocode procedures',
+    'pseudocode file handling', 'pseudocode INPUT OUTPUT',
+    'pseudocode IF ELSE', 'pseudocode FOR loop', 'pseudocode WHILE loop',
+    'pseudocode REPEAT UNTIL', 'pseudocode CASE OF',
+    'pseudocode DECLARE', 'pseudocode INTEGER REAL STRING BOOLEAN',
+    // practice & exam features
+    'pseudocode practice questions', 'pseudocode past paper questions',
+    'pseudocode exam simulator', 'timed pseudocode exam',
+    'pseudocode autograder', 'pseudocode autograding', 'pseudocode test cases',
+    'IGCSE CS practice questions', 'IGCSE computer science past papers',
     // student intent
     'learn pseudocode', 'IGCSE revision', 'IGCSE practice', 'IGCSE past papers',
     'Cambridge past papers', 'IGCSE CS revision', 'computer science revision',
+    'pseudocode help', 'pseudocode tutorial', 'pseudocode for beginners',
     // tool type
     'free pseudocode compiler', 'online pseudocode IDE', 'browser pseudocode',
+    'no install pseudocode', 'pseudocode without Python',
     // regional
     'Egypt', 'IGCSE Egypt', 'Cambridge Egypt',
     'UAE', 'Saudi Arabia', 'Pakistan', 'Nigeria', 'Kenya', 'international school',
@@ -53,13 +66,13 @@ export const metadata: Metadata = {
     type: 'website',
     siteName: 'IGCSE Pseudocode Compiler',
     url: SITE_URL,
-    title: 'IGCSE Pseudocode Compiler',
+    title: 'IGCSE Pseudocode Compiler — Free Online Editor & Runner',
     description: DESCRIPTION,
     locale: 'en_US',
   },
   twitter: {
     card: 'summary',
-    title: 'IGCSE Pseudocode Compiler',
+    title: 'IGCSE Pseudocode Compiler — Free Online Editor & Runner',
     description: DESCRIPTION,
   },
 };
@@ -70,8 +83,33 @@ const jsonLd = {
   name: 'IGCSE Pseudocode Compiler',
   url: SITE_URL,
   description: DESCRIPTION,
-  applicationCategory: 'DeveloperApplication',
+  applicationCategory: 'EducationalApplication',
   operatingSystem: 'Any',
+  browserRequirements: 'Requires a modern browser with JavaScript enabled',
+  inLanguage: 'en',
+  audience: {
+    '@type': 'EducationalAudience',
+    educationalRole: 'student',
+  },
+  featureList: [
+    'Browser-based pseudocode compiler — no installation required',
+    'Interactive INPUT support — execution pauses and waits for user input',
+    'Full Cambridge IGCSE pseudocode syntax: IF/ELSEIF/ELSE, FOR/WHILE/REPEAT, CASE OF, PROCEDURE, FUNCTION, arrays, file handling',
+    'Built-in functions: LENGTH, SUBSTRING, ROUND, INT, RANDOM, ASC, CHR, NUM_TO_STRING, STRING_TO_NUM',
+    'Syntax highlighting editor with error markers',
+    'Practice questions sourced from IGCSE past papers with difficulty and topic filters',
+    'Multi-step hints and model solutions per question',
+    'Instant autograder with visible and hidden test cases',
+    'Timed exam simulation with configurable duration and question count',
+    'Progress tracking: solved status, best score, attempt history',
+    'Analytics dashboard with activity heatmap and topic/difficulty breakdown',
+    'Comprehensive language reference documentation with searchable TOC',
+    'Share code via URL, clipboard, or WhatsApp',
+    'File handling simulation via browser localStorage',
+    'Google and GitHub OAuth sign-in',
+  ],
+  alternativeHeadline: 'IGCSE Pseudocode Editor, Runner & Interpreter',
+  alternativeName: ['pseudocode compiler', 'pseudocode editor', 'pseudocode runner', 'pseudocode interpreter', 'psuedocode compiler', 'pseudocode complier'],
   offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
 };
 

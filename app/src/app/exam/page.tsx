@@ -7,7 +7,11 @@ import { PREMIUM_GATING_ENABLED } from '@/lib/featureFlags';
 import { Clock, Trophy, ArrowRight, Hourglass } from 'lucide-react';
 import ExamConfigForm from '@/components/exam/ExamConfigForm';
 
-export const metadata: Metadata = { title: 'Exam Simulation' };
+export const metadata: Metadata = {
+  title: 'IGCSE Pseudocode Exam Simulator — Timed Practice',
+  description:
+    'Simulate a timed IGCSE Computer Science exam. Choose your topic, difficulty, and duration. Get scored results with per-question pass/fail feedback.',
+};
 
 export default async function ExamPage() {
   const session = await auth();
