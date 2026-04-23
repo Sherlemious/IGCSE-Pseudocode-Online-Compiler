@@ -2,12 +2,11 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, MessageSquare, AlertTriangle, Users, ArrowLeft } from 'lucide-react';
+import { LayoutDashboard, MessageSquare, Users, ArrowLeft } from 'lucide-react';
 
 const NAV = [
   { href: '/admin',          label: 'Overview', icon: LayoutDashboard },
   { href: '/admin/feedback', label: 'Feedback', icon: MessageSquare   },
-  { href: '/admin/errors',   label: 'Errors',   icon: AlertTriangle   },
   { href: '/admin/users',    label: 'Users',    icon: Users           },
 ];
 

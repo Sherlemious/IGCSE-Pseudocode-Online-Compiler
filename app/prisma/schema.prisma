@@ -30,7 +30,6 @@ model User {
   progress     Progress[]
   examAttempts ExamAttempt[]
   feedbackSubmissions FeedbackSubmission[]
-  errorLogs           ErrorLog[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -218,23 +217,6 @@ model FeedbackSubmission {
   user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   @@index([createdAt])
-  @@index([userId])
-}
-
-model ErrorLog {
-  id           String   @id @default(cuid())
-  userId       String?
-  email        String?
-  errorType    String
-  errorMessage String   @db.Text
-  line         Int?
-  codeLines    Int
-  createdAt    DateTime @default(now())
-
-  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
-
-  @@index([createdAt])
-  @@index([errorMessage])
   @@index([userId])
 }
 
