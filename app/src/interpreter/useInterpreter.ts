@@ -18,6 +18,11 @@ function captureError(
       code_lines: codeLines,
     });
   } catch { /* non-critical */ }
+  fetch('/api/errors', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ errorType, errorMessage: message, line: line ?? null, codeLines }),
+  }).catch(() => {});
 }
 
 export function useInterpreter() {

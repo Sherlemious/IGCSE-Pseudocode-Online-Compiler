@@ -90,6 +90,11 @@ export default function FeedbackSurvey({ onDismiss }: Props) {
       tags: tags.length ? tags : undefined,
       comment: comment.trim() || undefined,
     });
+    fetch('/api/feedback', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ rating, tier, tags: tags.length ? tags : [], comment: comment.trim() || null }),
+    }).catch(() => {});
     try { localStorage.setItem(LS_KEY, 'true'); } catch { /* ignore */ }
     setStep('done');
     setTimeout(onDismiss, 2000);
