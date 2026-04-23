@@ -18,7 +18,7 @@ export default function Home() {
        */}
       <section
         aria-label="About this compiler"
-        className="shrink-0 border-b border-border bg-background px-3 py-1.5 flex items-center justify-between gap-x-4 gap-y-1 flex-wrap"
+        className="sr-only"
       >
         <div className="flex items-center gap-2 min-w-0">
           <h1 className="text-xs font-semibold text-light-text whitespace-nowrap">
