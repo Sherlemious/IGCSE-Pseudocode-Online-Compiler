@@ -24,7 +24,7 @@ export default function Home() {
           <h1 className="text-xs font-semibold text-light-text whitespace-nowrap">
             IGCSE Pseudocode Compiler
           </h1>
-          <span className="hidden sm:block text-[11px] text-dark-text/60 truncate">
+          <span className="sr-only">
             — Free online editor &amp; runner for Cambridge Computer Science · 0478 · 0984 · 2210 · 9618
           </span>
         </div>
