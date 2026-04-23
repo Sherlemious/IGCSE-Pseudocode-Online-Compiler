@@ -393,12 +393,26 @@ OUTPUT "Sum = ", A + B`}
           </p>
           <CodeBlock
             code={`DECLARE Name : STRING
-OUTPUT "Enter your name:"
 INPUT Name
 OUTPUT "Hello, ", Name`}
           />
+          <p className="text-sm text-dark-text mt-3 mb-2">
+            You can display a prompt message inline by adding a string after a comma — the text appears in the
+            terminal before the input field:
+          </p>
+          <CodeBlock
+            code={`DECLARE Name : STRING
+INPUT Name, "Enter your name: "
+OUTPUT "Hello, ", Name
+
+// Same syntax works for array elements
+DECLARE Scores : ARRAY[1:5] OF INTEGER
+FOR i <- 1 TO 5
+    INPUT Scores[i], "Enter score " & NUM_TO_STRING(i) & ": "
+NEXT i`}
+          />
           <p className="text-xs text-dark-text mt-1 italic">
-            You can also input directly into an array element: <Kw>INPUT Scores[i]</Kw>
+            The prompt string is optional — plain <Kw>INPUT Name</Kw> still works as before.
           </p>
 
           {/* ──────────────────────────────────────────────── */}
@@ -1077,8 +1091,7 @@ UNTIL NOT Swapped`}
           <CodeBlock
             code={`DECLARE Mark : INTEGER
 REPEAT
-    OUTPUT "Enter a mark (0-100):"
-    INPUT Mark
+    INPUT Mark, "Enter a mark (0-100): "
 UNTIL Mark >= 0 AND Mark <= 100
 OUTPUT "Valid mark entered: ", Mark`}
           />
