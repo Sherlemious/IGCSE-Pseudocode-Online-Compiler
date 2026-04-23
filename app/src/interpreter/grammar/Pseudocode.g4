@@ -65,8 +65,8 @@ assignmentStatement
 // ─── INPUT / OUTPUT ─────────────────────────────────────────────────────────
 
 inputStatement
-    : INPUT IDENTIFIER
-    | INPUT IDENTIFIER LBRACKET expr RBRACKET
+    : INPUT IDENTIFIER (COMMA STRING_LITERAL)?
+    | INPUT IDENTIFIER LBRACKET expr RBRACKET (COMMA STRING_LITERAL)?
     ;
 
 outputStatement

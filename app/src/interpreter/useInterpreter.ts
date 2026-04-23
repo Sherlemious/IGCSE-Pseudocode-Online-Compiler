@@ -118,11 +118,11 @@ export function useInterpreter() {
               flushTimeout.current = requestAnimationFrame(flushOutput);
             }
           },
-          onInputRequest(variableName: string) {
+          onInputRequest(variableName: string, prompt?: string) {
             // Flush any pending output before requesting input
             flushOutputSync();
             setWaitingForInput(true);
-            setEntries((prev) => [...prev, { kind: 'input', variableName, value: '', submitted: false }]);
+            setEntries((prev) => [...prev, { kind: 'input', variableName, prompt, value: '', submitted: false }]);
           },
           onInputComplete() {
             setWaitingForInput(false);

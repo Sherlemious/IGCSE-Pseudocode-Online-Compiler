@@ -191,9 +191,9 @@ export class Interpreter {
     this.checkCancelled();
   }
 
-  private async requestInput(variableName: string): Promise<string> {
+  private async requestInput(variableName: string, prompt?: string): Promise<string> {
     this.checkCancelled();
-    this.callbacks.onInputRequest(variableName);
+    this.callbacks.onInputRequest(variableName, prompt);
     return new Promise<string>((resolve) => {
       this.inputResolver = resolve;
     });
@@ -344,7 +344,9 @@ export class Interpreter {
 
   private async visitInput(ctx: InputStatementContext): Promise<void> {
     const name = ctx.IDENTIFIER().getText();
-    const raw = await this.requestInput(name);
+    const promptToken = ctx.STRING_LITERAL();
+    const prompt = promptToken ? promptToken.getText().slice(1, -1) : undefined;
+    const raw = await this.requestInput(name, prompt);
     this.callbacks.onInputComplete();
     const value = smartParse(raw);
 

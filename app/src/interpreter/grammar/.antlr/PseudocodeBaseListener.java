@@ -52,6 +52,18 @@ public class PseudocodeBaseListener implements PseudocodeListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
+	@Override public void enterIdentifierList(PseudocodeParser.IdentifierListContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitIdentifierList(PseudocodeParser.IdentifierListContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
 	@Override public void enterConstantStatement(PseudocodeParser.ConstantStatementContext ctx) { }
 	/**
 	 * {@inheritDoc}

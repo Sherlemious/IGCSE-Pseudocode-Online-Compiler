@@ -66,6 +66,7 @@ const SYNTAX_HINTS: Record<string, string> = {
   ENDPROCEDURE: 'ENDPROCEDURE — close your PROCEDURE block\n  Example:\n    PROCEDURE name()\n      ...\n    ENDPROCEDURE',
   ENDCASE:      'ENDCASE — every CASE block must close with ENDCASE',
   DO:           'DO after the WHILE condition\n  Example: WHILE x < 10 DO',
+  ':':          'colon `:` — colons are used in DECLARE and CASE:\n  DECLARE x : INTEGER\n  DECLARE x : REAL\n  CASE clause →  value : action\n  Also check you\'re using ← (or <-) for assignment, not :=',
 };
 
 /** Non-standard tokens students often write by accident */
@@ -82,6 +83,7 @@ const WRONG_TOKENS: Record<string, string> = {
   end:     'Use the specific closing keyword: ENDIF, ENDWHILE, ENDFUNCTION, etc.',
   loop:    'Use WHILE, FOR, or REPEAT instead of "loop"',
   ':=':    'Use ← (or <-) for assignment, not :=\n  Example: x ← 5',
+  '(':     'Unexpected `(` at the start of a line.\n  To call a procedure: CALL name(args)\n  OUTPUT does not need brackets: OUTPUT value',
 };
 
 /**
@@ -138,6 +140,7 @@ export function humanizeParseError(rawMessage: string): string {
     if (ch === '==') return 'Use = for comparison in pseudocode, not ==\n  Example: IF x = 5 THEN';
     if (ch === '&&') return 'Use AND instead of &&\n  Example: IF a > 0 AND b > 0 THEN';
     if (ch === '||') return 'Use OR instead of ||\n  Example: IF a = 0 OR b = 0 THEN';
+    if (ch === '.') return 'The `.` character is not valid here. For decimal numbers just write them normally: `3.14`. To join strings, use `&`:\n  OUTPUT "Hello " & name';
     return `Unexpected character "${ch}"`;
   }
 
@@ -173,6 +176,30 @@ export function humanizeParseError(rawMessage: string): string {
       const wrongHint = WRONG_TOKENS[token.toLowerCase()] ?? WRONG_TOKENS[token];
       if (wrongHint) return wrongHint;
 
+      // UNTIL in a FOR loop (should be NEXT, or loop should be REPEAT)
+      if (token.toUpperCase() === 'UNTIL' && rawMessage.includes('NEXT'))
+        return 'UNTIL ends a REPEAT loop, not a FOR loop.\n  Use NEXT to close a FOR loop:\n    FOR i ← 1 TO 10\n      ...\n    NEXT i\n  Or change the loop to REPEAT ... UNTIL condition';
+
+      // ENDIF appearing where THEN was expected (IF missing THEN)
+      if (token.toUpperCase() === 'ENDIF' && rawMessage.includes('THEN'))
+        return 'ENDIF found where THEN was expected — your IF statement is missing THEN:\n  IF condition THEN\n    ...\n  ENDIF';
+
+      // Unexpected closing bracket
+      if (token === ']')
+        return 'Unexpected `]` — check that all your `[...]` brackets are properly matched and on the same line.';
+
+      // Comma inside single-dimension brackets (e.g. INPUT arr[i, j])
+      if (token === ',' && rawMessage.includes("']'"))
+        return 'Unexpected `,` inside `[...]`. For 2D arrays use `array[row, col]`; INPUT only supports 1D: `INPUT arr[i]`';
+
+      // Newline token = incomplete expression (the line ended before a value was given)
+      if (token === '\\n' || token === '\n')
+        return 'This line seems incomplete — a value or expression is expected here.';
+
+      // Known keyword on the same line as another statement
+      if (rawMessage.includes('NEWLINE') && KEYWORDS.includes(token.toUpperCase()))
+        return `${token.toUpperCase()} must be on its own line — put each statement on a separate line`;
+
       // Casing issue or near-misspelling
       const nearest = nearestKeyword(token);
       if (nearest) {
@@ -189,6 +216,9 @@ export function humanizeParseError(rawMessage: string): string {
   if (lower.includes('no viable alternative')) {
     const token = extractToken(rawMessage);
     if (token) {
+      // NEXT appearing outside a FOR loop (e.g. '\nNEXT' at top level)
+      if (/^(\\n)?NEXT$/i.test(token))
+        return 'NEXT must close a FOR loop. Make sure you have a matching `FOR ... TO ...` statement above it.';
       const phint = portugolHint(token);
       if (phint) return phint;
       const nearest = nearestKeyword(token);

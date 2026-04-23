@@ -1,6 +1,6 @@
 export type OutputEntry =
   | { kind: 'output'; text: string }
-  | { kind: 'input'; variableName: string; value: string; submitted: boolean }
+  | { kind: 'input'; variableName: string; prompt?: string; value: string; submitted: boolean }
   | { kind: 'error'; text: string };
 
 export interface DebugVariable {
@@ -12,7 +12,7 @@ export interface DebugVariable {
 
 export interface InterpreterCallbacks {
   onOutput(text: string): void;
-  onInputRequest(variableName: string): void;
+  onInputRequest(variableName: string, prompt?: string): void;
   onInputComplete(): void;
   onComplete(): void;
   onError(error: PseudocodeError): void;

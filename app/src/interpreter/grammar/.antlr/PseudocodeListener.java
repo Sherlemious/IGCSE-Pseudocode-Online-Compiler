@@ -37,6 +37,16 @@ public interface PseudocodeListener extends ParseTreeListener {
 	 */
 	void exitDeclareStatement(PseudocodeParser.DeclareStatementContext ctx);
 	/**
+	 * Enter a parse tree produced by {@link PseudocodeParser#identifierList}.
+	 * @param ctx the parse tree
+	 */
+	void enterIdentifierList(PseudocodeParser.IdentifierListContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link PseudocodeParser#identifierList}.
+	 * @param ctx the parse tree
+	 */
+	void exitIdentifierList(PseudocodeParser.IdentifierListContext ctx);
+	/**
 	 * Enter a parse tree produced by {@link PseudocodeParser#constantStatement}.
 	 * @param ctx the parse tree
 	 */

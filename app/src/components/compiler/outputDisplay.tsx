@@ -262,31 +262,41 @@ const OutputDisplay: React.FC<OutputDisplayProps> = ({
           if (entry.kind === 'input') {
             if (entry.submitted) {
               return (
-                <div key={i} className="flex gap-2 whitespace-pre-wrap">
-                  <span className="text-info/50 shrink-0">&larr;</span>
-                  <span className="text-dark-text/70">{entry.variableName}:</span>
-                  <span className="text-info">{entry.value}</span>
+                <div key={i} className="flex flex-col">
+                  {entry.prompt && (
+                    <span className="text-primary whitespace-pre-wrap">{entry.prompt}</span>
+                  )}
+                  <div className="flex gap-2 whitespace-pre-wrap">
+                    <span className="text-info/50 shrink-0">&larr;</span>
+                    <span className="text-dark-text/70">{entry.variableName}:</span>
+                    <span className="text-info">{entry.value}</span>
+                  </div>
                 </div>
               );
             }
 
             // Active input (last unsubmitted)
             return (
-              <form key={i} onSubmit={handleSubmit} className="flex items-center gap-2 my-1">
-                <span className="text-info terminal-cursor shrink-0">&gt;</span>
-                <span className="text-dark-text/70 shrink-0">{entry.variableName}:</span>
-                <input
-                  ref={inputRef}
-                  type="text"
-                  value={inputValue}
-                  onChange={(e) => setInputValue(e.target.value)}
-                  className="flex-1 bg-transparent border-b border-primary/50
-                    text-info outline-none font-mono py-0.5 px-0.5
-                    focus:border-info"
-                  style={{ fontSize: 'inherit' }}
-                  autoFocus
-                />
-              </form>
+              <div key={i} className="flex flex-col my-1">
+                {entry.prompt && (
+                  <span className="text-primary whitespace-pre-wrap">{entry.prompt}</span>
+                )}
+                <form onSubmit={handleSubmit} className="flex items-center gap-2">
+                  <span className="text-info terminal-cursor shrink-0">&gt;</span>
+                  <span className="text-dark-text/70 shrink-0">{entry.variableName}:</span>
+                  <input
+                    ref={inputRef}
+                    type="text"
+                    value={inputValue}
+                    onChange={(e) => setInputValue(e.target.value)}
+                    className="flex-1 bg-transparent border-b border-primary/50
+                      text-info outline-none font-mono py-0.5 px-0.5
+                      focus:border-info"
+                    style={{ fontSize: 'inherit' }}
+                    autoFocus
+                  />
+                </form>
+              </div>
             );
           }
 

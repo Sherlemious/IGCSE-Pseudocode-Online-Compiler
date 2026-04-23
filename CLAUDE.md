@@ -47,17 +47,38 @@ The app has two distinct halves:
 - Fully **async** — every visitor method is `async` to support `INPUT` pausing and UI responsiveness
 - **AbortController** for cancellation — checked at every loop iteration
 - **ReturnSignal** is thrown (not returned) to unwind the call stack from `RETURN` statements
-- `UserInput` is a special identifier that triggers the input prompt in the React hook
 - `filesystem.ts` = browser localStorage file I/O; `serverFilesystem.ts` = server-side (used during AI grading)
+
+### INPUT syntax
+
+Two forms are supported:
+```
+INPUT identifier                          // plain input
+INPUT identifier, "prompt text"          // displays prompt before the input field
+INPUT identifier[index]                   // array element input
+INPUT identifier[index], "prompt text"   // array element with prompt
+```
+
+The optional string literal is stripped of its quotes and passed to `onInputRequest(variableName, prompt?)` → stored in `OutputEntry.prompt?` → rendered in `OutputDisplay` as a `text-primary` line above the input field.
 
 ## Error Messages
 
 `errorMessages.ts` converts raw ANTLR parse errors and runtime errors into student-friendly messages. Raw messages are still sent to PostHog for analysis.
 
 Key maps:
-- `SYNTAX_HINTS` — missing closing keywords (ENDIF, ENDWHILE, etc.)
-- `WRONG_TOKENS` — non-IGCSE keywords (print, var, let, :=, etc.)
+- `SYNTAX_HINTS` — missing closing keywords (ENDIF, ENDWHILE, etc.) + missing `:` (colon in DECLARE/CASE)
+- `WRONG_TOKENS` — non-IGCSE keywords (print, var, let, :=, `(` at line start, etc.)
 - `PORTUGOL_TOKENS` — Portugol/VisualG keywords (escreval, leia, fimse, senao, etc.) — detects students writing Brazilian pseudocode and redirects them to the IGCSE equivalent
+
+Additional patterns (based on PostHog top-error analysis, Apr 2026):
+- `.` character → "not valid here, use `&` for string join"
+- Keyword on same line as previous statement → "must be on its own line"
+- `UNTIL` inside a FOR loop → directs to REPEAT or NEXT
+- `ENDIF` where `THEN` expected → missing THEN hint
+- `\nNEXT` at top level → missing FOR loop hint
+- `,` inside `[...]` in non-2D context → array indexing hint
+- Extraneous `]` → bracket-matching hint
+- Newline token as expression → "line seems incomplete"
 
 ## Database Schema (Prisma)
 
