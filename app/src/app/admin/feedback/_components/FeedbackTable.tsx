@@ -58,10 +58,10 @@ export default function FeedbackTable({ submissions }: Props) {
 
       {/* Table */}
       <div className="bg-surface border border-border rounded-xl overflow-hidden">
-        <div className="overflow-x-auto">
+        <div className="overflow-auto max-h-[calc(100vh-240px)]">
           <table className="w-full text-xs">
-            <thead>
-              <tr className="border-b border-border bg-background/40">
+            <thead className="sticky top-0 z-10">
+              <tr className="border-b border-border bg-surface">
                 <th className="text-left px-4 py-3 text-dark-text font-medium w-32">Date</th>
                 <th className="text-left px-4 py-3 text-dark-text font-medium w-44">Email</th>
                 <th className="text-left px-4 py-3 text-dark-text font-medium w-16">Rating</th>

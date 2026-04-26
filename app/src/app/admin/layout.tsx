@@ -9,9 +9,9 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   if (!isAdmin(session.user.email)) redirect('/');
 
   return (
-    <div className="min-h-screen bg-background text-light-text">
+    <div className="flex h-screen overflow-hidden bg-background text-light-text">
       <AdminSidebar />
-      <main className="ml-52 min-h-screen p-8">
+      <main className="flex-1 overflow-y-auto p-8">
         {children}
       </main>
     </div>
