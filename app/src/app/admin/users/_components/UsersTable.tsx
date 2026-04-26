@@ -31,7 +31,7 @@ export default function UsersTable({ users }: Props) {
   return (
     <div className="space-y-4">
       {/* Filters */}
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-3">
         <input
           type="text"
           value={search}
@@ -55,11 +55,11 @@ export default function UsersTable({ users }: Props) {
             </button>
           ))}
         </div>
-        <span className="ml-auto text-xs text-dark-text">{filtered.length} user{filtered.length !== 1 ? 's' : ''}</span>
+        <span className="sm:ml-auto text-xs text-dark-text">{filtered.length} user{filtered.length !== 1 ? 's' : ''}</span>
       </div>
 
       <div className="bg-surface border border-border rounded-xl overflow-hidden">
-        <div className="overflow-auto max-h-[calc(100vh-240px)]">
+        <div className="overflow-auto max-h-[calc(100vh-240px)] scrollbar-pretty">
           <table className="w-full text-xs">
             <thead className="sticky top-0 z-10">
               <tr className="border-b border-border bg-surface">

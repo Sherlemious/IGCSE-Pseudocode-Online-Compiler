@@ -31,7 +31,7 @@ export default async function AdminOverviewPage() {
       </div>
 
       {/* Stat cards */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {stats.map(({ label, value, icon: Icon, color }) => (
           <div key={label} className="bg-surface border border-border rounded-xl p-5">
             <div className={`mb-3 ${color}`}><Icon size={18} /></div>

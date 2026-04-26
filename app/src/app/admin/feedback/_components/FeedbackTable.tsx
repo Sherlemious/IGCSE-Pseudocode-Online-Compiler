@@ -10,6 +10,7 @@ interface Props {
 export default function FeedbackTable({ submissions }: Props) {
   const [ratingFilter, setRatingFilter] = useState<number | null>(null);
   const [tierFilter, setTierFilter] = useState<string>('all');
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const filtered = submissions.filter((s) => {
     if (ratingFilter !== null && s.rating !== ratingFilter) return false;
@@ -20,8 +21,8 @@ export default function FeedbackTable({ submissions }: Props) {
   return (
     <div className="space-y-4">
       {/* Filters */}
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="flex items-center gap-1.5">
+      <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-3">
+        <div className="flex flex-wrap items-center gap-1.5">
           <span className="text-xs text-dark-text">Rating:</span>
           {[null, 1, 2, 3, 4, 5].map((r) => (
             <button
@@ -37,7 +38,7 @@ export default function FeedbackTable({ submissions }: Props) {
             </button>
           ))}
         </div>
-        <div className="flex items-center gap-1.5">
+        <div className="flex flex-wrap items-center gap-1.5">
           <span className="text-xs text-dark-text">Tier:</span>
           {['all', 'low', 'mid', 'high'].map((t) => (
             <button
@@ -53,12 +54,12 @@ export default function FeedbackTable({ submissions }: Props) {
             </button>
           ))}
         </div>
-        <span className="ml-auto text-xs text-dark-text">{filtered.length} result{filtered.length !== 1 ? 's' : ''}</span>
+        <span className="sm:ml-auto text-xs text-dark-text">{filtered.length} result{filtered.length !== 1 ? 's' : ''}</span>
       </div>
 
       {/* Table */}
       <div className="bg-surface border border-border rounded-xl overflow-hidden">
-        <div className="overflow-auto max-h-[calc(100vh-240px)]">
+        <div className="overflow-auto max-h-[calc(100vh-240px)] scrollbar-pretty">
           <table className="w-full text-xs">
             <thead className="sticky top-0 z-10">
               <tr className="border-b border-border bg-surface">
@@ -103,8 +104,14 @@ export default function FeedbackTable({ submissions }: Props) {
                       ))}
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-dark-text max-w-xs">
-                    <p className="truncate">{s.comment ?? <span className="italic text-dark-text/40">—</span>}</p>
+                  <td
+                    className="px-4 py-3 text-dark-text max-w-xs cursor-pointer"
+                    onClick={() => setExpandedId(expandedId === s.id ? null : s.id)}
+                    title={s.comment ?? undefined}
+                  >
+                    {s.comment
+                      ? <p className={expandedId === s.id ? 'whitespace-pre-wrap break-words' : 'truncate'}>{s.comment}</p>
+                      : <span className="italic text-dark-text/40">—</span>}
                   </td>
                 </tr>
               ))}
