@@ -162,6 +162,104 @@ describe('execute — array assignment', () => {
 // ─── Error message tests ──────────────────────────────────────────────────────
 
 describe('humanizeParseError — new hints', () => {
+  it('array comma before a closing bracket points to valid 1D and 2D forms', () => {
+    const msg = humanizeParseError("missing ']' at ','");
+    expect(msg).toContain('ARRAY[1:10]');
+    expect(msg).toContain('ARRAY[1:3, 1:3]');
+    expect(msg).toContain('Grid[row, col]');
+  });
+
+  it('unclosed IF at end of program includes a complete IF example', () => {
+    const raw = "extraneous input '<EOF>' expecting {ENDIF, NEWLINE}";
+    const msg = humanizeParseError(raw);
+    expect(msg).toContain('IF block is not closed');
+    expect(msg).toContain('IF Score >= 50 THEN');
+    expect(msg).toContain('ENDIF');
+  });
+
+  it('ELSE without a matching IF explains the block shape', () => {
+    const msg = humanizeParseError("no viable alternative at input '\\nELSE'");
+    expect(msg).toContain('ELSE must belong to an open IF block');
+    expect(msg).toContain('ELSE');
+    expect(msg).toContain('ENDIF');
+  });
+
+  it('single quote lexer error explains STRING vs CHAR quotes', () => {
+    const msg = humanizeParseError("token recognition error at: '''");
+    expect(msg).toContain('double quotes for STRING');
+    expect(msg).toContain('OUTPUT "Hello"');
+    expect(msg).toContain("Letter <- 'A'");
+  });
+
+  it('assignment arrow at the start of a line asks for a variable on the left', () => {
+    const raw = "mismatched input '<-' expecting {DECLARE, CONSTANT, INPUT, OUTPUT, PRINT, IF, THEN, CASE, FOR, WHILE, REPEAT, PROCEDURE, FUNCTION, RETURN, CALL, OPENFILE, READFILE, WRITEFILE, CLOSEFILE, IDENTIFIER, NEWLINE}";
+    const msg = humanizeParseError(raw);
+    expect(msg).toContain('variable name before `<-`');
+    expect(msg).toContain('Total <- Total + 1');
+  });
+
+  it('dot lexer error calls out copied language syntax', () => {
+    const msg = humanizeParseError("token recognition error at: '.'");
+    expect(msg).toContain('not Cambridge IGCSE syntax');
+    expect(msg).toContain('console.log');
+    expect(msg).toContain('OUTPUT "Hello"');
+  });
+
+  it('DECLARE followed directly by colon shows correct declaration syntax', () => {
+    const msg = humanizeParseError("no viable alternative at input 'DECLARE:'");
+    expect(msg).toContain('Do not put `:` immediately after DECLARE');
+    expect(msg).toContain('DECLARE Count : INTEGER');
+  });
+
+  it('missing declaration colon before OUTPUT points to the previous DECLARE', () => {
+    const msg = humanizeParseError("missing ':' at 'OUTPUT'");
+    expect(msg).toContain('previous DECLARE line');
+    expect(msg).toContain('DECLARE Count : INTEGER');
+  });
+
+  it('TO where a colon is expected separates declaration and loop examples', () => {
+    const msg = humanizeParseError("mismatched input 'TO' expecting ':'");
+    expect(msg).toContain('Declarations need a colon');
+    expect(msg).toContain('DECLARE i : INTEGER');
+    expect(msg).toContain('FOR i <- 1 TO 10');
+  });
+
+  it('INPUT prompt without a string literal shows quoted prompt syntax', () => {
+    const msg = humanizeParseError("missing STRING_LITERAL at 'numCustomers'");
+    expect(msg).toContain('INPUT prompts must be text in double quotes');
+    expect(msg).toContain('INPUT NumCustomers, "Enter number of customers"');
+  });
+
+  it('START and STOP wrapper keywords explain that no wrapper is needed', () => {
+    const startMsg = humanizeParseError("no viable alternative at input 'START\\n'");
+    const stopMsg = humanizeParseError("no viable alternative at input 'STOP\\n'");
+    expect(startMsg).toContain('does not need START, STOP, BEGIN');
+    expect(stopMsg).toContain('specific closers');
+  });
+
+  it('number at statement start suggests assignment or output', () => {
+    const raw = "extraneous input '1' expecting {<EOF>, DECLARE, CONSTANT, INPUT, OUTPUT, PRINT, IF, CASE, FOR, WHILE, REPEAT, PROCEDURE, FUNCTION, RETURN, CALL, OPENFILE, READFILE, WRITEFILE, CLOSEFILE, IDENTIFIER, NEWLINE}";
+    const msg = humanizeParseError(raw);
+    expect(msg).toContain('A statement cannot start with 1');
+    expect(msg).toContain('Total <- 1');
+    expect(msg).toContain('OUTPUT 1');
+  });
+
+  it('comparison operator without a left operand shows a complete IF condition', () => {
+    const raw = "extraneous input '>=' expecting {NOT, TRUE, FALSE, MOD, DIV, '-', '(', REAL_LITERAL, INTEGER_LITERAL, STRING_LITERAL, CHAR_LITERAL, IDENTIFIER}";
+    const msg = humanizeParseError(raw);
+    expect(msg).toContain('needs a value on both sides');
+    expect(msg).toContain('IF Score >= 50 THEN');
+  });
+
+  it('bare identifier line suggests assignment, output, or quoted text', () => {
+    const msg = humanizeParseError("no viable alternative at input 'sum\\n'");
+    expect(msg).toContain('not a complete statement');
+    expect(msg).toContain('sum <- value');
+    expect(msg).toContain('OUTPUT sum');
+    expect(msg).toContain('OUTPUT "sum"');
+  });
+
   it('INPUT used as expression', () => {
     const raw = "mismatched input 'INPUT' expecting";
     const msg = humanizeParseError(raw);

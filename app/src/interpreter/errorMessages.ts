@@ -14,6 +14,99 @@ function extractToken(msg: string): string | null {
   return m ? m[1] : null;
 }
 
+/** Remove escaped/real newlines that ANTLR sometimes includes in offending tokens. */
+function cleanToken(token: string): string {
+  return token
+    .replace(/^(?:\\n|\r|\n|\s)+/g, '')
+    .replace(/(?:\\n|\r|\n|\s)+$/g, '');
+}
+
+function isExpressionExpected(rawMessage: string): boolean {
+  return rawMessage.includes('REAL_LITERAL')
+    || rawMessage.includes('INTEGER_LITERAL')
+    || rawMessage.includes('STRING_LITERAL')
+    || rawMessage.includes('IDENTIFIER')
+    || rawMessage.includes('{NOT');
+}
+
+function commonParseHint(rawMessage: string): string | null {
+  if (rawMessage === "missing ']' at ','") {
+    return (
+      'Check the array brackets and dimensions around the comma.\n' +
+      '  1D declaration: DECLARE Scores : ARRAY[1:10] OF INTEGER\n' +
+      '  2D declaration: DECLARE Grid : ARRAY[1:3, 1:3] OF INTEGER\n' +
+      '  2D access: Grid[row, col]\n' +
+      '  Every `[` needs a matching `]`.'
+    );
+  }
+
+  if (rawMessage.includes("extraneous input '<EOF>'") && rawMessage.includes('ENDIF')) {
+    return (
+      'Your IF block is not closed. Add ENDIF after the last statement in the block.\n' +
+      '  Example:\n' +
+      '    IF Score >= 50 THEN\n' +
+      '      OUTPUT "Pass"\n' +
+      '    ENDIF'
+    );
+  }
+
+  if (/no viable alternative at input '(?:\\n|\n)?ELSE'/.test(rawMessage)) {
+    return (
+      'ELSE must belong to an open IF block. Check the IF line and close the block with ENDIF.\n' +
+      '  Example:\n' +
+      '    IF Mark >= 50 THEN\n' +
+      '      OUTPUT "Pass"\n' +
+      '    ELSE\n' +
+      '      OUTPUT "Try again"\n' +
+      '    ENDIF'
+    );
+  }
+
+  if (rawMessage === "token recognition error at: '''") {
+    return (
+      'Use double quotes for STRING text, such as OUTPUT "Hello".\n' +
+      "Single quotes are only for one CHAR, such as Letter <- 'A'."
+    );
+  }
+
+  if (rawMessage.includes("missing ':' at 'OUTPUT'") || rawMessage.includes("missing ':' at 'INPUT'")) {
+    return (
+      'The previous DECLARE line is probably missing `: <type>`.\n' +
+      '  Example:\n' +
+      '    DECLARE Count : INTEGER\n' +
+      '    OUTPUT Count'
+    );
+  }
+
+  if (rawMessage.includes("mismatched input 'TO' expecting ':'")) {
+    return (
+      'TO is used in FOR loops. Declarations need a colon before the type.\n' +
+      '  Declaration: DECLARE i : INTEGER\n' +
+      '  Loop:        FOR i <- 1 TO 10'
+    );
+  }
+
+  if (rawMessage.includes('missing STRING_LITERAL at')) {
+    return (
+      'INPUT prompts must be text in double quotes after the comma.\n' +
+      '  Example:\n' +
+      '    INPUT NumCustomers, "Enter number of customers"\n' +
+      '  Or remove the comma and just write: INPUT NumCustomers'
+    );
+  }
+
+  const missingAssignmentValue = rawMessage.match(/missing \{LARROW, '='\} at '([^']+)'/);
+  if (missingAssignmentValue) {
+    return (
+      `A value like ${missingAssignmentValue[1]} needs a variable name and assignment operator before it.\n` +
+      '  Example:\n' +
+      `    Total <- ${missingAssignmentValue[1]}`
+    );
+  }
+
+  return null;
+}
+
 /** Levenshtein distance — used to suggest the nearest keyword. */
 function levenshtein(a: string, b: string): number {
   const m = a.length, n = b.length;
@@ -128,6 +221,8 @@ function portugolHint(token: string): string | null {
 
 export function humanizeParseError(rawMessage: string): string {
   const lower = rawMessage.toLowerCase();
+  const commonHint = commonParseHint(rawMessage);
+  if (commonHint) return commonHint;
 
   // ── token recognition error (lexer — truly unknown chars) ──────────────
   const tokenRecog = rawMessage.match(/token recognition error at: '([^']+)'/);
@@ -140,7 +235,8 @@ export function humanizeParseError(rawMessage: string): string {
     if (ch === '==') return 'Use = for comparison in pseudocode, not ==\n  Example: IF x = 5 THEN';
     if (ch === '&&') return 'Use AND instead of &&\n  Example: IF a > 0 AND b > 0 THEN';
     if (ch === '||') return 'Use OR instead of ||\n  Example: IF a = 0 OR b = 0 THEN';
-    if (ch === '.') return 'The `.` character is not valid here. For decimal numbers just write them normally: `3.14`. To join strings, use `&`:\n  OUTPUT "Hello " & name';
+    if (ch === '.') return 'The `.` character is not Cambridge IGCSE syntax here. Avoid code like `console.log` or `name.length`.\n  Use OUTPUT for printing: OUTPUT "Hello"\n  Decimal numbers are still valid when written as one number, such as 3.14.';
+    if (ch.charCodeAt(0) === 0xf0ac) return 'Use <- for assignment. Some copied arrow symbols are not recognised.\n  Example: Total <- Total + 1';
     return `Unexpected character "${ch}"`;
   }
 
@@ -155,7 +251,8 @@ export function humanizeParseError(rawMessage: string): string {
 
   // ── mismatched / extraneous input ─────────────────────────────────────
   if (lower.includes('mismatched input') || lower.includes('extraneous input')) {
-    const token = extractToken(rawMessage);
+    const rawToken = extractToken(rawMessage);
+    const token = rawToken ? cleanToken(rawToken) || rawToken : null;
 
     // EOF mismatches → missing closing keyword
     if (token === '<EOF>') {
@@ -176,6 +273,24 @@ export function humanizeParseError(rawMessage: string): string {
       const wrongHint = WRONG_TOKENS[token.toLowerCase()] ?? WRONG_TOKENS[token];
       if (wrongHint) return wrongHint;
 
+      if (token === '<-')
+        return 'An assignment needs a variable name before `<-`.\n  Example:\n    Total <- Total + 1\n  Do not start a line with `<-`.';
+
+      if (/^\d+(?:\.\d+)?$/.test(token) && rawMessage.includes('<EOF>'))
+        return `A statement cannot start with ${token} by itself.\n  To store it: Total <- ${token}\n  To display it: OUTPUT ${token}`;
+
+      if (tokenUpper === 'DECLARE' && rawMessage.includes('expecting IDENTIFIER'))
+        return 'DECLARE was found where a variable name was expected.\n  Declaration: DECLARE Count : INTEGER\n  Input:       INPUT Count\n  FOR loop:    NEXT i';
+
+      if (token === '[')
+        return 'Array access needs the array name before `[`.\n  Example:\n    Scores[i] <- 10\n    OUTPUT Scores[i]';
+
+      if (['>=', '<=', '>', '<', '=', '<>'].includes(token) && isExpressionExpected(rawMessage))
+        return `A comparison operator like ${token} needs a value on both sides.\n  Example:\n    IF Score ${token} 50 THEN\n      OUTPUT "OK"\n    ENDIF`;
+
+      if (token === ':' && isExpressionExpected(rawMessage))
+        return 'A colon is only used in DECLARE statements and CASE clauses.\n  Declaration: DECLARE Count : INTEGER\n  Assignment:  Count <- 0\n  CASE clause: 1 : OUTPUT "One"';
+
       // INPUT used as an expression value (e.g. x <- INPUT x)
       if (tokenUpper === 'INPUT')
         return 'INPUT is a statement, not a value — write it on its own line:\n  INPUT variableName\n  (not: variable ← INPUT variable)';
@@ -190,7 +305,7 @@ export function humanizeParseError(rawMessage: string): string {
 
       // Unexpected closing bracket
       if (token === ']')
-        return 'Unexpected `]` — check that all your `[...]` brackets are properly matched and on the same line.';
+        return 'Unexpected `]` — check that every `[` has one matching `]` on the same array access.\n  Example: Scores[i] <- 10\n  For loops close with NEXT i, not a bracket.';
 
       // Comma where colon expected — most likely ARRAY[1,6] instead of ARRAY[1:6]
       if (token === ',' && rawMessage.includes("':'"))
@@ -222,15 +337,39 @@ export function humanizeParseError(rawMessage: string): string {
 
   // ── no viable alternative ──────────────────────────────────────────────
   if (lower.includes('no viable alternative')) {
-    const token = extractToken(rawMessage);
+    const rawToken = extractToken(rawMessage);
+    const token = rawToken ? cleanToken(rawToken) || rawToken : null;
     if (token) {
+      const tokenUpper = token.toUpperCase();
+
       // NEXT appearing outside a FOR loop (e.g. '\nNEXT' at top level)
-      if (/^(\\n)?NEXT$/i.test(token))
-        return 'NEXT must close a FOR loop. Make sure you have a matching `FOR ... TO ...` statement above it.';
+      if (tokenUpper === 'NEXT')
+        return 'NEXT must close a FOR loop. Make sure you have a matching `FOR ... TO ...` statement above it.\n  Example:\n    FOR i <- 1 TO 10\n      OUTPUT i\n    NEXT i';
+
+      if (tokenUpper === 'ENDIF')
+        return 'ENDIF closes an IF block. Check that there is a matching `IF ... THEN` above it.\n  Example:\n    IF Score >= 50 THEN\n      OUTPUT "Pass"\n    ENDIF';
+
+      if (tokenUpper === 'UNTIL')
+        return 'UNTIL closes a REPEAT loop. Check that there is a matching REPEAT above it.\n  Example:\n    REPEAT\n      INPUT Answer\n    UNTIL Answer = "Y"';
+
+      if (['START', 'STOP', 'END'].includes(tokenUpper))
+        return 'Cambridge IGCSE pseudocode does not need START, STOP, BEGIN, or a general END wrapper.\n  Write statements directly, and use specific closers such as ENDIF, NEXT i, ENDWHILE, and ENDFUNCTION.';
+
+      if (tokenUpper === 'DECLARE:')
+        return 'Do not put `:` immediately after DECLARE.\n  Example:\n    DECLARE Count : INTEGER';
+
       const phint = portugolHint(token);
       if (phint) return phint;
       const nearest = nearestKeyword(token);
       if (nearest) return `"${token}" is not recognised — did you mean ${nearest}?`;
+
+      if (/^[A-Za-z][A-Za-z0-9_]*$/.test(token))
+        return (
+          `The line starts with "${token}", but it is not a complete statement.\n` +
+          `  To assign a value: ${token} <- value\n` +
+          `  To display it:     OUTPUT ${token}\n` +
+          `  To display text:   OUTPUT "${token}"`
+        );
     }
     return 'Unexpected input — check the syntax on this line';
   }
