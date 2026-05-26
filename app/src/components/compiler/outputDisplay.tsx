@@ -35,11 +35,15 @@ const OutputDisplay: React.FC<OutputDisplayProps> = ({
   const [inputValue, setInputValue] = useState('');
   const [varsExpanded, setVarsExpanded] = useState(true);
   const [copied, setCopied] = useState(false);
+  const [expandedErrors, setExpandedErrors] = useState<Set<number>>(new Set());
 
   // Resizable split between variables panel and terminal
   const [varsPanelHeight, setVarsPanelHeight] = useState(35); // percentage
   const varsContainerRef = useRef<HTMLDivElement>(null);
   const varsDragging = useRef(false);
+
+  // Reset expanded errors when a new run starts (entries array replaced)
+  useEffect(() => { setExpandedErrors(new Set()); }, [entries]);
 
   // Auto-scroll to bottom on new entries
   useEffect(() => {
@@ -246,15 +250,43 @@ const OutputDisplay: React.FC<OutputDisplayProps> = ({
             const lineMatch = entry.text.match(/^Line (\d+)/);
             const errLine = lineMatch ? parseInt(lineMatch[1], 10) : null;
             const clickable = errLine !== null && onJumpToLine;
+            const newlineIdx = entry.text.indexOf('\n');
+            const summary = newlineIdx === -1 ? entry.text : entry.text.slice(0, newlineIdx);
+            const detail = newlineIdx === -1 ? null : entry.text.slice(newlineIdx + 1);
+            const isExpanded = expandedErrors.has(i);
+            const toggleExpand = (e: React.MouseEvent) => {
+              e.stopPropagation();
+              setExpandedErrors(prev => {
+                const next = new Set(prev);
+                next.has(i) ? next.delete(i) : next.add(i);
+                return next;
+              });
+            };
             return (
               <div
                 key={i}
-                className={`flex gap-2 whitespace-pre-wrap py-0.5 ${clickable ? 'cursor-pointer hover:opacity-80 transition-opacity' : ''}`}
+                className={`flex gap-2 py-0.5 ${clickable ? 'cursor-pointer hover:opacity-80 transition-opacity' : ''}`}
                 onClick={clickable ? () => onJumpToLine!(errLine!) : undefined}
                 title={clickable ? `Click to jump to line ${errLine}` : undefined}
               >
                 <span className="text-error shrink-0 font-bold">!</span>
-                <span className="text-error">{entry.text}</span>
+                <span className="text-error">
+                  <span className="whitespace-pre-wrap">{summary}</span>
+                  {detail && (
+                    <>
+                      {' '}
+                      <button
+                        onClick={toggleExpand}
+                        className="text-error/60 hover:text-error text-xs underline underline-offset-2 transition-colors"
+                      >
+                        {isExpanded ? 'hide example ▲' : 'show example ▼'}
+                      </button>
+                      {isExpanded && (
+                        <pre className="mt-1 whitespace-pre-wrap text-error/80">{detail}</pre>
+                      )}
+                    </>
+                  )}
+                </span>
               </div>
             );
           }
