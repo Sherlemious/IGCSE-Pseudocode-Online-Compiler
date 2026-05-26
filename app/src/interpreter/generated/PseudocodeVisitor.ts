@@ -10,6 +10,7 @@ import { IdentifierListContext } from "./PseudocodeParser.js";
 import { ConstantStatementContext } from "./PseudocodeParser.js";
 import { DataTypeContext } from "./PseudocodeParser.js";
 import { AssignmentStatementContext } from "./PseudocodeParser.js";
+import { SingleAssignmentContext } from "./PseudocodeParser.js";
 import { InputStatementContext } from "./PseudocodeParser.js";
 import { OutputStatementContext } from "./PseudocodeParser.js";
 import { ExprListContext } from "./PseudocodeParser.js";
@@ -107,6 +108,12 @@ export class PseudocodeVisitor<Result> extends AbstractParseTreeVisitor<Result> 
      * @return the visitor result
      */
     visitAssignmentStatement?: (ctx: AssignmentStatementContext) => Result;
+    /**
+     * Visit a parse tree produced by `PseudocodeParser.singleAssignment`.
+     * @param ctx the parse tree
+     * @return the visitor result
+     */
+    visitSingleAssignment?: (ctx: SingleAssignmentContext) => Result;
     /**
      * Visit a parse tree produced by `PseudocodeParser.inputStatement`.
      * @param ctx the parse tree

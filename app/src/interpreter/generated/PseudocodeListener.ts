@@ -10,6 +10,7 @@ import { IdentifierListContext } from "./PseudocodeParser.js";
 import { ConstantStatementContext } from "./PseudocodeParser.js";
 import { DataTypeContext } from "./PseudocodeParser.js";
 import { AssignmentStatementContext } from "./PseudocodeParser.js";
+import { SingleAssignmentContext } from "./PseudocodeParser.js";
 import { InputStatementContext } from "./PseudocodeParser.js";
 import { OutputStatementContext } from "./PseudocodeParser.js";
 import { ExprListContext } from "./PseudocodeParser.js";
@@ -132,6 +133,16 @@ export class PseudocodeListener implements ParseTreeListener {
      * @param ctx the parse tree
      */
     exitAssignmentStatement?: (ctx: AssignmentStatementContext) => void;
+    /**
+     * Enter a parse tree produced by `PseudocodeParser.singleAssignment`.
+     * @param ctx the parse tree
+     */
+    enterSingleAssignment?: (ctx: SingleAssignmentContext) => void;
+    /**
+     * Exit a parse tree produced by `PseudocodeParser.singleAssignment`.
+     * @param ctx the parse tree
+     */
+    exitSingleAssignment?: (ctx: SingleAssignmentContext) => void;
     /**
      * Enter a parse tree produced by `PseudocodeParser.inputStatement`.
      * @param ctx the parse tree

@@ -11,7 +11,9 @@
     "db:migrate": "prisma migrate dev",
     "db:seed": "tsx prisma/seed.ts",
     "db:studio": "prisma studio",
-    "antlr:generate": "antlr4ng-cli -Dlanguage=TypeScript -o src/interpreter/generated -visitor src/interpreter/grammar/Pseudocode.g4"
+    "antlr:generate": "antlr4ng-cli -Dlanguage=TypeScript -o src/interpreter/generated -visitor src/interpreter/grammar/Pseudocode.g4",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
@@ -55,10 +57,12 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "antlr4ng-cli": "^2.0.0",
     "eslint": "^9.38.0",
     "eslint-config-next": "^16.2.1",
     "tailwindcss": "^4",
     "tsx": "^4.21.0",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^4.1.7"
   }
 }

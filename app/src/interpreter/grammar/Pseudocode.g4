@@ -53,7 +53,12 @@ dataType
 
 // ─── Assignment ─────────────────────────────────────────────────────────────
 
+// Supports: x <- 1   or   x <- 1, y <- 2, z <- 3  (comma-separated on one line)
 assignmentStatement
+    : singleAssignment (COMMA singleAssignment)*
+    ;
+
+singleAssignment
     : IDENTIFIER EQUALS expr
     | IDENTIFIER LBRACKET expr RBRACKET EQUALS expr
     | IDENTIFIER LBRACKET expr COMMA expr RBRACKET EQUALS expr

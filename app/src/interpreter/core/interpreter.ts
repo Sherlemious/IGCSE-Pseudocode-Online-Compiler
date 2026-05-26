@@ -4,6 +4,7 @@ import {
   DeclareStatementContext,
   ConstantStatementContext,
   AssignmentStatementContext,
+  SingleAssignmentContext,
   InputStatementContext,
   OutputStatementContext,
   IfStatementContext,
@@ -313,28 +314,29 @@ export class Interpreter {
   // ─── Assignment ─────────────────────────────────────────────────
 
   private async visitAssignment(ctx: AssignmentStatementContext): Promise<void> {
+    for (const sa of ctx.singleAssignment()) {
+      await this.visitSingleAssignment(sa);
+    }
+  }
+
+  private async visitSingleAssignment(ctx: SingleAssignmentContext): Promise<void> {
     const name = ctx.IDENTIFIER().getText();
     const exprs = ctx.expr();
 
     if (ctx.LBRACKET()) {
-      // Array element assignment
-      // Auto-create array with 1-indexed bounds if it doesn't exist
       const dimensions = exprs.length === 3 ? 2 : 1;
       const arr = this.env.getOrCreateArray(name, dimensions as 1 | 2);
       if (exprs.length === 3) {
-        // 2D: arr[i, j] = expr
         const i = toNumber(await this.evalExpr(exprs[0]));
         const j = toNumber(await this.evalExpr(exprs[1]));
         const value = await this.evalExpr(exprs[2]);
         arr.set([i, j], value);
       } else {
-        // 1D: arr[i] = expr
         const idx = toNumber(await this.evalExpr(exprs[0]));
         const value = await this.evalExpr(exprs[1]);
         arr.set([idx], value);
       }
     } else {
-      // Simple assignment
       const value = await this.evalExpr(exprs[0]);
       this.env.set(name, value);
     }

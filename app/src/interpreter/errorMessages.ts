@@ -83,7 +83,7 @@ const WRONG_TOKENS: Record<string, string> = {
   end:     'Use the specific closing keyword: ENDIF, ENDWHILE, ENDFUNCTION, etc.',
   loop:    'Use WHILE, FOR, or REPEAT instead of "loop"',
   ':=':    'Use ← (or <-) for assignment, not :=\n  Example: x ← 5',
-  '(':     'Unexpected `(` at the start of a line.\n  To call a procedure: CALL name(args)\n  OUTPUT does not need brackets: OUTPUT value',
+  '(':     'Unexpected `(`.\n  To call a procedure: CALL name(args)\n  OUTPUT does not need brackets: OUTPUT value\n  If you meant to call a function here, check it is not a reserved word (e.g. ARRAY)',
 };
 
 /**
@@ -176,6 +176,10 @@ export function humanizeParseError(rawMessage: string): string {
       const wrongHint = WRONG_TOKENS[token.toLowerCase()] ?? WRONG_TOKENS[token];
       if (wrongHint) return wrongHint;
 
+      // INPUT used as an expression value (e.g. x <- INPUT x)
+      if (tokenUpper === 'INPUT')
+        return 'INPUT is a statement, not a value — write it on its own line:\n  INPUT variableName\n  (not: variable ← INPUT variable)';
+
       // UNTIL in a FOR loop (should be NEXT, or loop should be REPEAT)
       if (token.toUpperCase() === 'UNTIL' && rawMessage.includes('NEXT'))
         return 'UNTIL ends a REPEAT loop, not a FOR loop.\n  Use NEXT to close a FOR loop:\n    FOR i ← 1 TO 10\n      ...\n    NEXT i\n  Or change the loop to REPEAT ... UNTIL condition';
@@ -187,6 +191,10 @@ export function humanizeParseError(rawMessage: string): string {
       // Unexpected closing bracket
       if (token === ']')
         return 'Unexpected `]` — check that all your `[...]` brackets are properly matched and on the same line.';
+
+      // Comma where colon expected — most likely ARRAY[1,6] instead of ARRAY[1:6]
+      if (token === ',' && rawMessage.includes("':'"))
+        return 'Use `:` not `,` for array bounds in a declaration:\n  DECLARE mylist : ARRAY[1:6] OF INTEGER\n  For 2D: DECLARE grid : ARRAY[1:3, 1:3] OF INTEGER';
 
       // Comma inside single-dimension brackets (e.g. INPUT arr[i, j])
       if (token === ',' && rawMessage.includes("']'"))
