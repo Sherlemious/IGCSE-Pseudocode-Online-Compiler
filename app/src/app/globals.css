@@ -71,6 +71,7 @@
   --color-syntax-operator: #56B6C2;
   --color-syntax-comment: #5C6370;
   --color-syntax-variable: #E06C75;
+  --editor-font-family: "Fira Code Variable", "Fira Code", monospace;
   --editor-font-size: 14px;
 }
 

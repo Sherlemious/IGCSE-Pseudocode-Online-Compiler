@@ -3,6 +3,15 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 import { themes, type ThemeId } from './themes';
 
+export const FONT_FAMILIES = {
+  'fira-code':       { label: 'Fira Code',       css: '"Fira Code Variable", "Fira Code", monospace' },
+  'jetbrains-mono':  { label: 'JetBrains Mono',  css: 'var(--font-jetbrains-mono), monospace' },
+  'source-code-pro': { label: 'Source Code Pro',  css: 'var(--font-source-code-pro), monospace' },
+  'inconsolata':     { label: 'Inconsolata',      css: 'var(--font-inconsolata), monospace' },
+} as const;
+
+export type FontFamilyId = keyof typeof FONT_FAMILIES;
+
 interface ThemeContextValue {
   themeId: ThemeId;
   setTheme: (id: ThemeId) => void;
@@ -10,6 +19,8 @@ interface ThemeContextValue {
   setFontSize: (size: number) => void;
   wordWrap: boolean;
   setWordWrap: (v: boolean) => void;
+  fontFamilyId: FontFamilyId;
+  setFontFamily: (id: FontFamilyId) => void;
 }
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
@@ -17,10 +28,12 @@ const ThemeContext = createContext<ThemeContextValue | null>(null);
 const STORAGE_KEY_THEME = 'pseudocode-theme';
 const STORAGE_KEY_FONT_SIZE = 'pseudocode-font-size';
 const STORAGE_KEY_WORD_WRAP = 'pseudocode-word-wrap';
+const STORAGE_KEY_FONT_FAMILY = 'pseudocode-font-family';
 const DEFAULT_THEME: ThemeId = 'one-dark-pro';
 const DEFAULT_FONT_SIZE = 14;
 const MIN_FONT_SIZE = 12;
 const MAX_FONT_SIZE = 24;
+const DEFAULT_FONT_FAMILY: FontFamilyId = 'fira-code';
 
 function applyTheme(themeId: ThemeId) {
   const theme = themes[themeId];
@@ -29,14 +42,9 @@ function applyTheme(themeId: ThemeId) {
     root.style.setProperty(`--color-${key}`, value);
   }
 
-  // Add RGB versions for transparent backgrounds in CodeMirror
   const hexToRgb = (hex: string) => {
-    // Expand shorthand form (e.g. "03F") to full form (e.g. "0033FF")
     const shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
-    hex = hex.replace(shorthandRegex, (m, r, g, b) => {
-      return r + r + g + g + b + b;
-    });
-
+    hex = hex.replace(shorthandRegex, (m, r, g, b) => r + r + g + g + b + b);
     const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
     return result ? `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}` : '0, 0, 0';
   };
@@ -48,6 +56,10 @@ function applyTheme(themeId: ThemeId) {
 
 function applyFontSize(size: number) {
   document.documentElement.style.setProperty('--editor-font-size', `${size}px`);
+}
+
+function applyFontFamily(id: FontFamilyId) {
+  document.documentElement.style.setProperty('--editor-font-family', FONT_FAMILIES[id].css);
 }
 
 function loadTheme(): ThemeId {
@@ -71,16 +83,23 @@ function loadWordWrap(): boolean {
   return true;
 }
 
+function loadFontFamily(): FontFamilyId {
+  const stored = localStorage.getItem(STORAGE_KEY_FONT_FAMILY);
+  if (stored && stored in FONT_FAMILIES) return stored as FontFamilyId;
+  return DEFAULT_FONT_FAMILY;
+}
+
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [themeId, setThemeId] = useState<ThemeId>(DEFAULT_THEME);
   const [fontSize, setFontSizeState] = useState<number>(DEFAULT_FONT_SIZE);
   const [wordWrap, setWordWrapState] = useState<boolean>(true);
+  const [fontFamilyId, setFontFamilyId] = useState<FontFamilyId>(DEFAULT_FONT_FAMILY);
 
-  // Load from localStorage on mount
   useEffect(() => {
     setThemeId(loadTheme());
     setFontSizeState(loadFontSize());
     setWordWrapState(loadWordWrap());
+    setFontFamilyId(loadFontFamily());
   }, []);
 
   useEffect(() => {
@@ -92,6 +111,11 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     applyFontSize(fontSize);
     localStorage.setItem(STORAGE_KEY_FONT_SIZE, String(fontSize));
   }, [fontSize]);
+
+  useEffect(() => {
+    applyFontFamily(fontFamilyId);
+    localStorage.setItem(STORAGE_KEY_FONT_FAMILY, fontFamilyId);
+  }, [fontFamilyId]);
 
   const setTheme = (id: ThemeId) => {
     if (id in themes) setThemeId(id);
@@ -107,7 +131,15 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     localStorage.setItem(STORAGE_KEY_WORD_WRAP, String(v));
   };
 
-  return <ThemeContext.Provider value={{ themeId, setTheme, fontSize, setFontSize, wordWrap, setWordWrap }}>{children}</ThemeContext.Provider>;
+  const setFontFamily = (id: FontFamilyId) => {
+    if (id in FONT_FAMILIES) setFontFamilyId(id);
+  };
+
+  return (
+    <ThemeContext.Provider value={{ themeId, setTheme, fontSize, setFontSize, wordWrap, setWordWrap, fontFamilyId, setFontFamily }}>
+      {children}
+    </ThemeContext.Provider>
+  );
 }
 
 export function useTheme() {

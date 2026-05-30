@@ -241,7 +241,7 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
         minWidth: '0',
       },
       '.cm-content': {
-        fontFamily: '"Fira Code Variable", "Fira Code", monospace',
+        fontFamily: 'var(--editor-font-family)',
         padding: '1rem 0',
         caretColor: 'var(--color-primary)',
         color: 'var(--color-light-text)',
