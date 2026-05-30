@@ -1,11 +1,6 @@
 import type { Metadata } from 'next';
 import Script from 'next/script';
-import { JetBrains_Mono, Source_Code_Pro, Inconsolata } from 'next/font/google';
 import './globals.css';
-
-const jetbrainsMono = JetBrains_Mono({ subsets: ['latin'], variable: '--font-jetbrains-mono', display: 'swap' });
-const sourceCodePro = Source_Code_Pro({ subsets: ['latin'], variable: '--font-source-code-pro', display: 'swap' });
-const inconsolata = Inconsolata({ subsets: ['latin'], variable: '--font-inconsolata', display: 'swap' });
 import { ThemeProvider } from '../theme/ThemeContext';
 import SessionWrapper from '../components/auth/SessionWrapper';
 import Header from '../components/layout/header';
@@ -131,6 +126,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Inconsolata:wght@400;500&family=JetBrains+Mono:wght@400;500&family=Source+Code+Pro:wght@400;500&display=swap"
+          rel="stylesheet"
+        />
       </head>
       <Script
         src="https://www.googletagmanager.com/gtag/js?id=G-8DTBPF97YS"
@@ -144,7 +145,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           gtag('config', 'G-8DTBPF97YS');
         `}
       </Script>
-      <body className={`h-screen flex flex-col overflow-hidden ${jetbrainsMono.variable} ${sourceCodePro.variable} ${inconsolata.variable}`} suppressHydrationWarning>
+      <body className="h-screen flex flex-col overflow-hidden" suppressHydrationWarning>
         <PostHogProvider>
           <SessionWrapper>
             <SessionIdentifier />

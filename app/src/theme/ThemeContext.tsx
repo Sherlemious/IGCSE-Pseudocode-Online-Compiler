@@ -5,9 +5,9 @@ import { themes, type ThemeId } from './themes';
 
 export const FONT_FAMILIES = {
   'fira-code':       { label: 'Fira Code',       css: '"Fira Code Variable", "Fira Code", monospace' },
-  'jetbrains-mono':  { label: 'JetBrains Mono',  css: 'var(--font-jetbrains-mono), monospace' },
-  'source-code-pro': { label: 'Source Code Pro',  css: 'var(--font-source-code-pro), monospace' },
-  'inconsolata':     { label: 'Inconsolata',      css: 'var(--font-inconsolata), monospace' },
+  'jetbrains-mono':  { label: 'JetBrains Mono',  css: '"JetBrains Mono", monospace' },
+  'source-code-pro': { label: 'Source Code Pro',  css: '"Source Code Pro", monospace' },
+  'inconsolata':     { label: 'Inconsolata',      css: '"Inconsolata", monospace' },
 } as const;
 
 export type FontFamilyId = keyof typeof FONT_FAMILIES;
