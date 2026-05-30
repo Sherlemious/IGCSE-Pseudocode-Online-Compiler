@@ -6,7 +6,7 @@ import AdminSidebar from './_components/AdminSidebar';
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
   if (!session?.user?.email) redirect('/auth/signin');
-  if (!isAdmin(session.user.email)) redirect('/');
+  if (!isAdmin(session.user.email, session.user.role)) redirect('/');
 
   return (
     <div className="flex h-screen overflow-hidden bg-background text-light-text">

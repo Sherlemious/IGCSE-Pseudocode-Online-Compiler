@@ -384,6 +384,42 @@ export function humanizeParseError(rawMessage: string): string {
   return cleaned || rawMessage;
 }
 
+// ── Built-in function registry (for typo suggestions) ──────────────────────
+
+const BUILTIN_SIGNATURES: Record<string, string> = {
+  LENGTH:          'LENGTH(str)',
+  LCASE:           'LCASE(str)',
+  UCASE:           'UCASE(str)',
+  SUBSTRING:       'SUBSTRING(str, startPos, length)  // 1-based',
+  MID:             'MID(str, startPos, length)         // 1-based',
+  LEFT:            'LEFT(str, length)',
+  RIGHT:           'RIGHT(str, length)',
+  ROUND:           'ROUND(num)  or  ROUND(num, decimalPlaces)',
+  INT:             'INT(num)',
+  RANDOM:          'RANDOM()',
+  NUM_TO_STRING:   'NUM_TO_STRING(num)',
+  STRING_TO_NUM:   'STRING_TO_NUM(str)',
+  ASC:             'ASC(char)',
+  CHR:             'CHR(asciiCode)',
+  IS_NUM:          'IS_NUM(str)',
+  EOF:             'EOF(filename)',
+};
+
+const BUILTIN_NAMES = Object.keys(BUILTIN_SIGNATURES);
+
+function nearestBuiltin(name: string): string | null {
+  const upper = name.toUpperCase();
+  if (BUILTIN_SIGNATURES[upper]) return upper;
+  if (name.length < 3) return null;
+  let best: string | null = null;
+  let bestDist = Infinity;
+  for (const fn of BUILTIN_NAMES) {
+    const d = levenshtein(upper, fn);
+    if (d < bestDist && d <= 2) { bestDist = d; best = fn; }
+  }
+  return best;
+}
+
 // ── Runtime error humanization ──────────────────────────────────────────────
 
 export function humanizeRuntimeError(rawMessage: string): string {
@@ -441,13 +477,31 @@ export function humanizeRuntimeError(rawMessage: string): string {
   // Procedure not defined
   const procUndef = rawMessage.match(/Procedure '([^']+)' is not defined/);
   if (procUndef) {
-    return `Procedure '${procUndef[1]}' is not defined. Check the spelling, or define it:\n  PROCEDURE ${procUndef[1]}()\n    ...\n  ENDPROCEDURE`;
+    const name = procUndef[1];
+    const near = nearestBuiltin(name);
+    if (near) {
+      return (
+        `Procedure '${name}' is not defined — did you mean the built-in function \`${near}\`?\n` +
+        `  ${BUILTIN_SIGNATURES[near]}\n` +
+        `  Built-in functions are called directly, not with CALL.\n` +
+        `  Example: OUTPUT ${near.split('(')[0]}(...)`
+      );
+    }
+    return `Procedure '${name}' is not defined. Check the spelling, or define it:\n  PROCEDURE ${name}()\n    ...\n  ENDPROCEDURE`;
   }
 
   // Function not defined
   const funcUndef = rawMessage.match(/Function '([^']+)' is not defined/);
   if (funcUndef) {
-    return `Function '${funcUndef[1]}' is not defined. Check the spelling, or define it:\n  FUNCTION ${funcUndef[1]}() RETURNS INTEGER\n    ...\n  ENDFUNCTION`;
+    const name = funcUndef[1];
+    const near = nearestBuiltin(name);
+    if (near) {
+      return (
+        `Function '${name}' is not defined — did you mean the built-in \`${near}\`?\n` +
+        `  ${BUILTIN_SIGNATURES[near]}`
+      );
+    }
+    return `Function '${name}' is not defined. Check the spelling, or define it:\n  FUNCTION ${name}() RETURNS INTEGER\n    ...\n  ENDFUNCTION`;
   }
 
   // CASE on array

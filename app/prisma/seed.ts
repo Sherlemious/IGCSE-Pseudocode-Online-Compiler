@@ -5925,6 +5925,19 @@ OUTPUT "18 and over: " & Count18Over`,
 
 // ─── Main seed function ────────────────────────────────────────────────────────
 async function main() {
+  // ── Admin email → DB role migration ───────────────────────────────────────
+  const adminEmails = (process.env.ADMIN_EMAILS ?? '')
+    .split(',')
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean);
+  if (adminEmails.length > 0) {
+    const result = await prisma.user.updateMany({
+      where: { email: { in: adminEmails, mode: 'insensitive' }, role: { not: 'ADMIN' } },
+      data: { role: 'ADMIN' },
+    });
+    if (result.count > 0) console.log(`  ✓ Promoted ${result.count} user(s) to ADMIN role`);
+  }
+
   // ── Examples ──────────────────────────────────────────────────────────────
   console.log('Seeding examples...');
   await prisma.example.deleteMany();

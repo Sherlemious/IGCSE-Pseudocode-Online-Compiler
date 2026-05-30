@@ -15,6 +15,12 @@ enum Plan {
   PREMIUM
 }
 
+enum Role {
+  STUDENT
+  TEACHER
+  ADMIN
+}
+
 model User {
   id            String    @id @default(cuid())
   name          String?
@@ -23,6 +29,7 @@ model User {
   image         String?
   password      String?   @db.Text
   plan          Plan      @default(FREE)
+  role          Role      @default(STUDENT)
   nudgesShown   String[]  @default([])
 
   accounts     Account[]

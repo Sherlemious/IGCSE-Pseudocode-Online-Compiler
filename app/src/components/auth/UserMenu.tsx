@@ -4,7 +4,7 @@ import { useSession, signIn, signOut } from 'next-auth/react';
 import { useState, useRef, useEffect } from 'react';
 import { usePostHog } from 'posthog-js/react';
 import Image from 'next/image';
-import { LogIn, LogOut, User, Crown, BarChart3 } from 'lucide-react';
+import { LogIn, LogOut, User, Crown, BarChart3, LayoutDashboard } from 'lucide-react';
 import Link from 'next/link';
 import { PREMIUM_GATING_ENABLED } from '@/lib/featureFlags';
 
@@ -48,6 +48,7 @@ export default function UserMenu() {
   }
 
   const isPremium = session.user.plan === 'PREMIUM';
+  const isAdminUser = session.user.role === 'ADMIN';
   const hasValidImage = Boolean(session.user.image) && !avatarLoadFailed;
 
   return (
@@ -114,6 +115,24 @@ export default function UserMenu() {
                   Premium coming soon
                 </div>
               ))}
+            {isAdminUser && (
+              <Link
+                href="/admin"
+                onClick={() => setOpen(false)}
+                className="w-full flex items-center gap-2 px-3 py-2 text-xs text-error hover:bg-error/10 transition-colors"
+              >
+                <LayoutDashboard size={13} />
+                Admin Dashboard
+              </Link>
+            )}
+            <Link
+              href="/profile"
+              onClick={() => setOpen(false)}
+              className="w-full flex items-center gap-2 px-3 py-2 text-xs text-dark-text hover:text-light-text hover:bg-background transition-colors"
+            >
+              <User size={13} />
+              Profile
+            </Link>
             <Link
               href="/analytics"
               onClick={() => setOpen(false)}
