@@ -128,6 +128,10 @@ const KEYWORDS = [
   'RETURNS', 'ENDFUNCTION', 'RETURN', 'CALL', 'OUTPUT', 'PRINT', 'INPUT', 'AND',
   'OR', 'NOT', 'MOD', 'DIV', 'TRUE', 'FALSE', 'OPENFILE', 'READFILE',
   'WRITEFILE', 'CLOSEFILE', 'ARRAY', 'INTEGER', 'REAL', 'BOOLEAN', 'STRING', 'CHAR',
+  // A Level (9618)
+  'TYPE', 'ENDTYPE', 'SET', 'DEFINE', 'DATE', 'BYREF', 'BYVAL', 'RANDOM',
+  'SEEK', 'GETRECORD', 'PUTRECORD', 'CLASS', 'ENDCLASS', 'INHERITS',
+  'PUBLIC', 'PRIVATE', 'NEW', 'SUPER',
 ];
 
 /** If `token` looks like a misspelled keyword, return the closest match. */
@@ -158,6 +162,8 @@ const SYNTAX_HINTS: Record<string, string> = {
   ENDFUNCTION:  'ENDFUNCTION — close your FUNCTION block\n  Example:\n    FUNCTION name() RETURNS INTEGER\n      ...\n    ENDFUNCTION',
   ENDPROCEDURE: 'ENDPROCEDURE — close your PROCEDURE block\n  Example:\n    PROCEDURE name()\n      ...\n    ENDPROCEDURE',
   ENDCASE:      'ENDCASE — every CASE block must close with ENDCASE',
+  ENDTYPE:      'ENDTYPE — every record TYPE must close with ENDTYPE\n  Example:\n    TYPE StudentRecord\n      DECLARE Name : STRING\n    ENDTYPE',
+  ENDCLASS:     'ENDCLASS — every CLASS must close with ENDCLASS\n  Example:\n    CLASS Pet\n      PRIVATE Name : STRING\n    ENDCLASS',
   DO:           'DO after the WHILE condition\n  Example: WHILE x < 10 DO',
   ':':          'colon `:` — colons are used in DECLARE and CASE:\n  DECLARE x : INTEGER\n  DECLARE x : REAL\n  CASE clause →  value : action\n  Also check you\'re using ← (or <-) for assignment, not :=',
 };
@@ -235,7 +241,6 @@ export function humanizeParseError(rawMessage: string): string {
     if (ch === '==') return 'Use = for comparison in pseudocode, not ==\n  Example: IF x = 5 THEN';
     if (ch === '&&') return 'Use AND instead of &&\n  Example: IF a > 0 AND b > 0 THEN';
     if (ch === '||') return 'Use OR instead of ||\n  Example: IF a = 0 OR b = 0 THEN';
-    if (ch === '.') return 'The `.` character is not Cambridge IGCSE syntax here. Avoid code like `console.log` or `name.length`.\n  Use OUTPUT for printing: OUTPUT "Hello"\n  Decimal numbers are still valid when written as one number, such as 3.14.';
     if (ch.charCodeAt(0) === 0xf0ac) return 'Use <- for assignment. Some copied arrow symbols are not recognised.\n  Example: Total <- Total + 1';
     return `Unexpected character "${ch}"`;
   }
@@ -311,9 +316,9 @@ export function humanizeParseError(rawMessage: string): string {
       if (token === ',' && rawMessage.includes("':'"))
         return 'Use `:` not `,` for array bounds in a declaration:\n  DECLARE mylist : ARRAY[1:6] OF INTEGER\n  For 2D: DECLARE grid : ARRAY[1:3, 1:3] OF INTEGER';
 
-      // Comma inside single-dimension brackets (e.g. INPUT arr[i, j])
+      // Comma inside brackets where an index list was not expected
       if (token === ',' && rawMessage.includes("']'"))
-        return 'Unexpected `,` inside `[...]`. For 2D arrays use `array[row, col]`; INPUT only supports 1D: `INPUT arr[i]`';
+        return 'Unexpected `,` inside `[...]`. For 2D arrays use `array[row, col]`, and check each `[` has one matching `]`.';
 
       // Newline token = incomplete expression (the line ended before a value was given)
       if (token === '\\n' || token === '\n')
@@ -403,6 +408,7 @@ const BUILTIN_SIGNATURES: Record<string, string> = {
   CHR:             'CHR(asciiCode)',
   IS_NUM:          'IS_NUM(str)',
   EOF:             'EOF(filename)',
+  RAND:            'RAND(x)  // random real from 0 up to x',
 };
 
 const BUILTIN_NAMES = Object.keys(BUILTIN_SIGNATURES);
@@ -427,6 +433,10 @@ export function humanizeRuntimeError(rawMessage: string): string {
   const notDefined = rawMessage.match(/Variable '([^']+)' is not defined/);
   if (notDefined) {
     const name = notDefined[1];
+    // console.log(...) now parses as a method call and fails here instead of at parse time
+    if (name.toLowerCase() === 'console') {
+      return 'Use OUTPUT instead of console.log\n  Example: OUTPUT "Hello"';
+    }
     return (
       `'${name}' has not been declared. Add a DECLARE statement before using it:\n` +
       `  DECLARE ${name} : INTEGER   // whole numbers\n` +
@@ -507,6 +517,22 @@ export function humanizeRuntimeError(rawMessage: string): string {
   // CASE on array
   if (rawMessage.includes('CASE cannot operate on array')) {
     return 'CASE cannot be used directly on an array. Access an element first.\n  Example: CASE OF arr[i]';
+  }
+
+  // Private class member access (A Level OOP)
+  const privateAccess = rawMessage.match(/Cannot access private (method|property) '([^']+)' of class '([^']+)'/);
+  if (privateAccess) {
+    return (
+      `${rawMessage}\n` +
+      `  PRIVATE members can only be used inside the class.\n` +
+      `  Make '${privateAccess[2]}' PUBLIC, or add a PUBLIC method that uses it.`
+    );
+  }
+
+  // Record field missing (A Level records)
+  const noField = rawMessage.match(/Record type '([^']+)' has no field '([^']+)'/);
+  if (noField) {
+    return `${rawMessage}\n  Check the field names declared between TYPE ${noField[1]} and ENDTYPE.`;
   }
 
   return rawMessage;

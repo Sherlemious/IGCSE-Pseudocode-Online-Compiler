@@ -1,10 +1,13 @@
 import { describe, it, expect } from 'vitest';
 import { parse } from '../parser';
 import { Interpreter } from '../core/interpreter';
+import { ServerVirtualFileSystem } from '../core/serverFilesystem';
 import { humanizeParseError } from '../errorMessages';
 import type { PseudocodeError } from '../core/types';
 
 // Runs pseudocode and collects outputs. Provide `inputs` in order for INPUT statements.
+// File I/O uses the server filesystem (vitest's node env has no localStorage),
+// which also exercises the same path the autograder uses.
 async function runCode(
   source: string,
   inputs: string[] = [],
@@ -25,6 +28,7 @@ async function runCode(
       onError: () => {},
     },
     controller.signal,
+    new ServerVirtualFileSystem(),
   );
 
   // Feed queued inputs automatically
@@ -198,11 +202,9 @@ describe('humanizeParseError — new hints', () => {
     expect(msg).toContain('Total <- Total + 1');
   });
 
-  it('dot lexer error calls out copied language syntax', () => {
-    const msg = humanizeParseError("token recognition error at: '.'");
-    expect(msg).toContain('not Cambridge IGCSE syntax');
-    expect(msg).toContain('console.log');
-    expect(msg).toContain('OUTPUT "Hello"');
+  it('dot notation now parses as a designator (A Level records)', () => {
+    expect(parseErrors('Pupil.LastName <- "Johnson"\n')).toEqual([]);
+    expect(parseErrors('OUTPUT Pupil.LastName\n')).toEqual([]);
   });
 
   it('DECLARE followed directly by colon shows correct declaration syntax', () => {
@@ -279,5 +281,634 @@ describe('humanizeParseError — new hints', () => {
     const msg = humanizeParseError(raw);
     expect(msg).toContain('CALL name(args)');
     expect(msg).toContain('ARRAY');
+  });
+});
+
+// ─── Characterization tests (pin behavior through the A Level refactor) ──────
+
+describe('execute — power operator', () => {
+  it('computes integer power with literals', async () => {
+    const { outputs } = await runCode('OUTPUT 2 ^ 3\n');
+    expect(outputs).toEqual(['8']);
+  });
+
+  it('computes power with an identifier base', async () => {
+    const { outputs } = await runCode('x <- 5\nOUTPUT x ^ 2\n');
+    expect(outputs).toEqual(['25']);
+  });
+
+  it('power is right-associative', async () => {
+    const { outputs } = await runCode('OUTPUT 2 ^ 3 ^ 2\n');
+    expect(outputs).toEqual(['512']);
+  });
+});
+
+describe('execute — division chains', () => {
+  it('evaluates spaced division left to right', async () => {
+    const { outputs } = await runCode('OUTPUT 100 / 2 / 5\n');
+    expect(outputs).toEqual(['10']);
+  });
+});
+
+describe('execute — CASE with OTHERWISE', () => {
+  it('matches a clause and skips OTHERWISE', async () => {
+    const code = [
+      'x <- 5',
+      'CASE OF x',
+      '  1 : OUTPUT "one"',
+      '  5 : OUTPUT "five"',
+      '  OTHERWISE : OUTPUT "other"',
+      'ENDCASE',
+    ].join('\n') + '\n';
+    const { outputs } = await runCode(code);
+    expect(outputs).toEqual(['five']);
+  });
+
+  it('falls back to OTHERWISE when nothing matches', async () => {
+    const code = [
+      'x <- 99',
+      'CASE OF x',
+      '  1 : OUTPUT "one"',
+      '  OTHERWISE : OUTPUT "other"',
+      'ENDCASE',
+    ].join('\n') + '\n';
+    const { outputs } = await runCode(code);
+    expect(outputs).toEqual(['other']);
+  });
+});
+
+describe('execute — INPUT into array element', () => {
+  it('stores input into a 1D element', async () => {
+    const { outputs } = await runCode('INPUT arr[2]\nOUTPUT arr[2]\n', ['42']);
+    expect(outputs).toEqual(['42']);
+  });
+});
+
+describe('execute — parameter passing', () => {
+  it('passes scalars by value (caller unchanged)', async () => {
+    const code = [
+      'PROCEDURE Double(x : INTEGER)',
+      '  x <- x * 2',
+      '  OUTPUT x',
+      'ENDPROCEDURE',
+      'n <- 5',
+      'CALL Double(n)',
+      'OUTPUT n',
+    ].join('\n') + '\n';
+    const { outputs } = await runCode(code);
+    expect(outputs).toEqual(['10', '5']);
+  });
+
+  it('calls a user function in an expression', async () => {
+    const code = [
+      'FUNCTION Add(a : INTEGER, b : INTEGER) RETURNS INTEGER',
+      '  RETURN a + b',
+      'ENDFUNCTION',
+      'OUTPUT Add(2, 3)',
+    ].join('\n') + '\n';
+    const { outputs } = await runCode(code);
+    expect(outputs).toEqual(['5']);
+  });
+});
+
+describe('execute — RANDOM builtin', () => {
+  it('RANDOM() returns a real in [0, 1)', async () => {
+    const { outputs } = await runCode('x <- RANDOM()\nOUTPUT x >= 0 AND x < 1\n');
+    expect(outputs).toEqual(['TRUE']);
+  });
+});
+
+describe('execute — whole-array misuse', () => {
+  it('OUTPUT of a whole array raises a friendly error', async () => {
+    await expect(
+      runCode('DECLARE arr : ARRAY[1:3] OF INTEGER\nOUTPUT arr\n'),
+    ).rejects.toThrow(/is an array/);
+  });
+});
+
+// ─── A Level (9618): records, enums, sets, DATE ──────────────────────────────
+
+describe('A Level — record types', () => {
+  it('declares a record type and uses dot notation (guide example)', async () => {
+    const code = [
+      'TYPE StudentRecord',
+      '  DECLARE LastName : STRING',
+      '  DECLARE FirstName : STRING',
+      '  DECLARE YearGroup : INTEGER',
+      '  DECLARE FormGroup : CHAR',
+      'ENDTYPE',
+      'DECLARE Pupil1 : StudentRecord',
+      'Pupil1.LastName <- "Johnson"',
+      'Pupil1.Firstname <- "Leroy"',
+      'Pupil1.YearGroup <- 6',
+      "Pupil1.FormGroup <- 'A'",
+      'OUTPUT Pupil1.LastName & " " & Pupil1.FirstName',
+      'OUTPUT Pupil1.YearGroup',
+      'OUTPUT Pupil1.FormGroup',
+    ].join('\n') + '\n';
+    const { outputs } = await runCode(code);
+    expect(outputs).toEqual(['Johnson Leroy', '6', 'A']);
+  });
+
+  it('records are copied by value on assignment', async () => {
+    const code = [
+      'TYPE StudentRecord',
+      '  DECLARE LastName : STRING',
+      '  DECLARE YearGroup : INTEGER',
+      'ENDTYPE',
+      'DECLARE Pupil1 : StudentRecord',
+      'DECLARE Pupil2 : StudentRecord',
+      'Pupil1.LastName <- "Johnson"',
+      'Pupil1.YearGroup <- 6',
+      'Pupil2 <- Pupil1',
+      'Pupil1.LastName <- "Smith"',
+      'OUTPUT Pupil2.LastName',
+      'OUTPUT Pupil2.YearGroup',
+    ].join('\n') + '\n';
+    const { outputs } = await runCode(code);
+    expect(outputs).toEqual(['Johnson', '6']);
+  });
+
+  it('supports arrays of records with chained designators (guide example)', async () => {
+    const code = [
+      'TYPE StudentRecord',
+      '  DECLARE YearGroup : INTEGER',
+      'ENDTYPE',
+      'DECLARE Form : ARRAY[1:30] OF StudentRecord',
+      'FOR Index <- 1 TO 30',
+      '  Form[Index].YearGroup <- Form[Index].YearGroup + 1',
+      'NEXT Index',
+      'OUTPUT Form[15].YearGroup',
+    ].join('\n') + '\n';
+    const { outputs } = await runCode(code);
+    expect(outputs).toEqual(['1']);
+  });
+
+  it('INPUT can target a record field', async () => {
+    const code = [
+      'TYPE R',
+      '  DECLARE Name : STRING',
+      'ENDTYPE',
+      'DECLARE p : R',
+      'INPUT p.Name',
+      'OUTPUT p.Name',
+    ].join('\n') + '\n';
+    const { outputs } = await runCode(code, ['Alice']);
+    expect(outputs).toEqual(['Alice']);
+  });
+
+  it('unknown record field raises a friendly error', async () => {
+    const code = [
+      'TYPE R',
+      '  DECLARE Name : STRING',
+      'ENDTYPE',
+      'DECLARE p : R',
+      'p.Age <- 5',
+    ].join('\n') + '\n';
+    await expect(runCode(code)).rejects.toThrow(/no field 'Age'/);
+  });
+});
+
+describe('A Level — enumerated types', () => {
+  it('declares an enum and assigns members (guide example)', async () => {
+    const code = [
+      'TYPE Season = (Spring, Summer, Autumn, Winter)',
+      'DECLARE ThisSeason : Season',
+      'ThisSeason <- Spring',
+      'OUTPUT ThisSeason',
+    ].join('\n') + '\n';
+    const { outputs } = await runCode(code);
+    expect(outputs).toEqual(['Spring']);
+  });
+
+  it('supports ordinal arithmetic on enum values', async () => {
+    const code = [
+      'TYPE Season = (Spring, Summer, Autumn, Winter)',
+      'ThisSeason <- Spring',
+      'NextSeason <- ThisSeason + 1',
+      'OUTPUT NextSeason',
+    ].join('\n') + '\n';
+    const { outputs } = await runCode(code);
+    expect(outputs).toEqual(['Summer']);
+  });
+
+  it('compares enum values by position', async () => {
+    const code = [
+      'TYPE Season = (Spring, Summer, Autumn, Winter)',
+      'a <- Spring',
+      'b <- Winter',
+      'OUTPUT a < b',
+      'OUTPUT a = Spring',
+    ].join('\n') + '\n';
+    const { outputs } = await runCode(code);
+    expect(outputs).toEqual(['TRUE', 'TRUE']);
+  });
+
+  it('stepping outside the enum range raises an error', async () => {
+    const code = [
+      'TYPE Season = (Spring, Summer, Autumn, Winter)',
+      'a <- Winter',
+      'b <- a + 1',
+    ].join('\n') + '\n';
+    await expect(runCode(code)).rejects.toThrow(/outside the values of 'Season'/);
+  });
+});
+
+describe('A Level — sets', () => {
+  it('declares a set type and DEFINEs a set value (guide example)', async () => {
+    const code = [
+      'TYPE LetterSet = SET OF CHAR',
+      "DEFINE Vowels ('A', 'E', 'I', 'O', 'U') : LetterSet",
+      'OUTPUT "ok"',
+    ].join('\n') + '\n';
+    const { outputs } = await runCode(code);
+    expect(outputs).toEqual(['ok']);
+  });
+});
+
+describe('A Level — DATE type', () => {
+  it('parses date literals and formats them as dd/mm/yyyy', async () => {
+    const { outputs } = await runCode('d <- 02/01/2005\nOUTPUT d\n');
+    expect(outputs).toEqual(['02/01/2005']);
+  });
+
+  it('compares dates chronologically', async () => {
+    const code = [
+      'a <- 02/01/2005',
+      'b <- 15/06/2010',
+      'OUTPUT a < b',
+      'OUTPUT a = 02/01/2005',
+    ].join('\n') + '\n';
+    const { outputs } = await runCode(code);
+    expect(outputs).toEqual(['TRUE', 'TRUE']);
+  });
+
+  it('DECLARE with DATE gives a default date', async () => {
+    const { outputs } = await runCode('DECLARE d : DATE\nOUTPUT d\n');
+    expect(outputs).toEqual(['01/01/1900']);
+  });
+
+  it('rejects impossible dates', async () => {
+    await expect(runCode('d <- 31/02/2005\nOUTPUT d\n')).rejects.toThrow(/not a valid date/);
+  });
+
+  it('spaced division is not parsed as a date', async () => {
+    const { outputs } = await runCode('OUTPUT 10 / 02 / 2005\n');
+    expect(outputs).toEqual([String(10 / 2 / 2005)]);
+  });
+});
+
+describe('A Level — whole-array and 2D INPUT', () => {
+  it('whole arrays are copied by value on assignment', async () => {
+    const code = [
+      'DECLARE a : ARRAY[1:3] OF INTEGER',
+      'a[1] <- 5',
+      'b <- a',
+      'b[1] <- 9',
+      'OUTPUT a[1] & " " & b[1]',
+    ].join('\n') + '\n';
+    const { outputs } = await runCode(code);
+    expect(outputs).toEqual(['5 9']);
+  });
+
+  it('INPUT can target a 2D array element', async () => {
+    const code = [
+      'DECLARE g : ARRAY[1:2, 1:2] OF INTEGER',
+      'INPUT g[1, 2]',
+      'OUTPUT g[1, 2]',
+    ].join('\n') + '\n';
+    const { outputs } = await runCode(code, ['7']);
+    expect(outputs).toEqual(['7']);
+  });
+});
+
+// ─── A Level (9618): pointers ────────────────────────────────────────────────
+
+describe('A Level — pointers', () => {
+  it('address-of and dereference read/write (guide example)', async () => {
+    const code = [
+      'TYPE TIntPointer = ^INTEGER',
+      'DECLARE MyPointer : TIntPointer',
+      'DECLARE Num : INTEGER',
+      'Num <- 5',
+      'MyPointer <- ^Num',
+      'OUTPUT MyPointer^',
+      'MyPointer^ <- 10',
+      'OUTPUT Num',
+      'OUTPUT MyPointer^ + 1',
+    ].join('\n') + '\n';
+    const { outputs } = await runCode(code);
+    expect(outputs).toEqual(['5', '10', '11']);
+  });
+
+  it('pointer to an enum variable advances via deref arithmetic (guide example)', async () => {
+    const code = [
+      'TYPE Season = (Spring, Summer, Autumn, Winter)',
+      'DECLARE ThisSeason : Season',
+      'DECLARE NextSeason : Season',
+      'ThisSeason <- Spring',
+      'MyPointer <- ^ThisSeason',
+      'NextSeason <- MyPointer^ + 1',
+      'OUTPUT NextSeason',
+    ].join('\n') + '\n';
+    const { outputs } = await runCode(code);
+    expect(outputs).toEqual(['Summer']);
+  });
+
+  it('deref binds tighter than subtraction (p^ - 1 means (p^) - 1)', async () => {
+    const code = [
+      'x <- 5',
+      'p <- ^x',
+      'OUTPUT p^ - 1',
+    ].join('\n') + '\n';
+    const { outputs } = await runCode(code);
+    expect(outputs).toEqual(['4']);
+  });
+
+  it('dereferencing an unassigned pointer raises a friendly error', async () => {
+    const code = [
+      'TYPE TIntPointer = ^INTEGER',
+      'DECLARE p : TIntPointer',
+      'OUTPUT p^',
+    ].join('\n') + '\n';
+    await expect(runCode(code)).rejects.toThrow(/does not point anywhere yet/);
+  });
+});
+
+// ─── A Level (9618): CASE ranges and BYREF/BYVAL ─────────────────────────────
+
+describe('A Level — CASE enhancements', () => {
+  it('matches range labels (value TO value)', async () => {
+    const code = [
+      'x <- 7',
+      'CASE OF x',
+      '  1 TO 5 : OUTPUT "low"',
+      '  6 TO 10 : OUTPUT "high"',
+      '  OTHERWISE : OUTPUT "other"',
+      'ENDCASE',
+    ].join('\n') + '\n';
+    const { outputs } = await runCode(code);
+    expect(outputs).toEqual(['high']);
+  });
+
+  it('matches char ranges', async () => {
+    const code = [
+      "c <- 'm'",
+      'CASE OF c',
+      "  'a' TO 'z' : OUTPUT \"lower\"",
+      '  OTHERWISE : OUTPUT "other"',
+      'ENDCASE',
+    ].join('\n') + '\n';
+    const { outputs } = await runCode(code);
+    expect(outputs).toEqual(['lower']);
+  });
+
+  it('matches multi-value labels', async () => {
+    const code = [
+      "c <- 'w'",
+      'CASE OF c',
+      "  'W', 'w' : OUTPUT \"up\"",
+      '  OTHERWISE : OUTPUT "?"',
+      'ENDCASE',
+    ].join('\n') + '\n';
+    const { outputs } = await runCode(code);
+    expect(outputs).toEqual(['up']);
+  });
+
+  it('CASE OF works on an array element designator', async () => {
+    const code = [
+      'DECLARE a : ARRAY[1:3] OF INTEGER',
+      'a[2] <- 2',
+      'CASE OF a[2]',
+      '  1 : OUTPUT "one"',
+      '  2 : OUTPUT "two"',
+      'ENDCASE',
+    ].join('\n') + '\n';
+    const { outputs } = await runCode(code);
+    expect(outputs).toEqual(['two']);
+  });
+});
+
+describe('A Level — BYREF / BYVAL parameters', () => {
+  it('SWAP with sticky BYREF swaps both arguments (guide example)', async () => {
+    const code = [
+      'PROCEDURE SWAP(BYREF X : INTEGER, Y : INTEGER)',
+      '  Temp <- X',
+      '  X <- Y',
+      '  Y <- Temp',
+      'ENDPROCEDURE',
+      'a <- 1',
+      'b <- 2',
+      'CALL SWAP(a, b)',
+      'OUTPUT a',
+      'OUTPUT b',
+    ].join('\n') + '\n';
+    const { outputs } = await runCode(code);
+    expect(outputs).toEqual(['2', '1']);
+  });
+
+  it('BYVAL after BYREF switches back to copying', async () => {
+    const code = [
+      'PROCEDURE P(BYREF X : INTEGER, BYVAL Y : INTEGER)',
+      '  X <- 100',
+      '  Y <- 100',
+      'ENDPROCEDURE',
+      'a <- 1',
+      'b <- 2',
+      'CALL P(a, b)',
+      'OUTPUT a',
+      'OUTPUT b',
+    ].join('\n') + '\n';
+    const { outputs } = await runCode(code);
+    expect(outputs).toEqual(['100', '2']);
+  });
+
+  it('BYREF works with array elements', async () => {
+    const code = [
+      'PROCEDURE Reset(BYREF n : INTEGER)',
+      '  n <- 0',
+      'ENDPROCEDURE',
+      'DECLARE arr : ARRAY[1:3] OF INTEGER',
+      'arr[2] <- 9',
+      'CALL Reset(arr[2])',
+      'OUTPUT arr[2]',
+    ].join('\n') + '\n';
+    const { outputs } = await runCode(code);
+    expect(outputs).toEqual(['0']);
+  });
+
+  it('BYVAL arrays are copied — the caller array is untouched', async () => {
+    const code = [
+      'PROCEDURE Wipe(a : ARRAY[1:3] OF INTEGER)',
+      '  a[1] <- 0',
+      'ENDPROCEDURE',
+      'DECLARE arr : ARRAY[1:3] OF INTEGER',
+      'arr[1] <- 5',
+      'CALL Wipe(arr)',
+      'OUTPUT arr[1]',
+    ].join('\n') + '\n';
+    const { outputs } = await runCode(code);
+    expect(outputs).toEqual(['5']);
+  });
+
+  it('passing an expression to a BYREF parameter raises a friendly error', async () => {
+    const code = [
+      'PROCEDURE Reset(BYREF n : INTEGER)',
+      '  n <- 0',
+      'ENDPROCEDURE',
+      'CALL Reset(1 + 2)',
+    ].join('\n') + '\n';
+    await expect(runCode(code)).rejects.toThrow(/needs a variable/);
+  });
+});
+
+// ─── A Level (9618): random-access files ─────────────────────────────────────
+
+describe('A Level — random-access files', () => {
+  it('round-trips a record with SEEK / PUTRECORD / GETRECORD (guide pattern)', async () => {
+    const code = [
+      'TYPE Student',
+      '  DECLARE Name : STRING',
+      '  DECLARE YearGroup : INTEGER',
+      'ENDTYPE',
+      'DECLARE Pupil : Student',
+      'DECLARE Found : Student',
+      'Pupil.Name <- "Leroy"',
+      'Pupil.YearGroup <- 6',
+      'OPENFILE "students.dat" FOR RANDOM',
+      'SEEK "students.dat", 10',
+      'PUTRECORD "students.dat", Pupil',
+      'CLOSEFILE "students.dat"',
+      'OPENFILE "students.dat" FOR RANDOM',
+      'SEEK "students.dat", 10',
+      'GETRECORD "students.dat", Found',
+      'CLOSEFILE "students.dat"',
+      'OUTPUT Found.Name',
+      'OUTPUT Found.YearGroup',
+    ].join('\n') + '\n';
+    const { outputs } = await runCode(code);
+    expect(outputs).toEqual(['Leroy', '6']);
+  });
+
+  it('reading an empty record slot raises a friendly error', async () => {
+    const code = [
+      'DECLARE x : INTEGER',
+      'OPENFILE "f.dat" FOR RANDOM',
+      'SEEK "f.dat", 3',
+      'GETRECORD "f.dat", x',
+    ].join('\n') + '\n';
+    await expect(runCode(code)).rejects.toThrow(/No record at position 3/);
+  });
+
+  it('text files still work end to end', async () => {
+    const code = [
+      'OPENFILE "notes.txt" FOR WRITE',
+      'WRITEFILE "notes.txt", "hello"',
+      'CLOSEFILE "notes.txt"',
+      'OPENFILE "notes.txt" FOR READ',
+      'READFILE "notes.txt", line',
+      'CLOSEFILE "notes.txt"',
+      'OUTPUT line',
+    ].join('\n') + '\n';
+    const { outputs } = await runCode(code);
+    expect(outputs).toEqual(['hello']);
+  });
+});
+
+// ─── A Level (9618): classes and inheritance ─────────────────────────────────
+
+describe('A Level — classes', () => {
+  it('runs the guide Pet/Cat inheritance example end to end', async () => {
+    const code = [
+      'CLASS Pet',
+      '  PRIVATE Name : STRING',
+      '  PUBLIC PROCEDURE NEW(GivenName : STRING)',
+      '    Name <- GivenName',
+      '  ENDPROCEDURE',
+      '  PUBLIC FUNCTION GetName() RETURNS STRING',
+      '    RETURN Name',
+      '  ENDFUNCTION',
+      'ENDCLASS',
+      'CLASS Cat INHERITS Pet',
+      '  PRIVATE Breed : STRING',
+      '  PUBLIC PROCEDURE NEW(GivenName : STRING, GivenBreed : STRING)',
+      '    SUPER.NEW(GivenName)',
+      '    Breed <- GivenBreed',
+      '  ENDPROCEDURE',
+      '  PUBLIC FUNCTION Describe() RETURNS STRING',
+      '    RETURN GetName() & " is a " & Breed',
+      '  ENDFUNCTION',
+      'ENDCLASS',
+      'MyCat <- NEW Cat("Kitty", "Shorthaired")',
+      'OUTPUT MyCat.Describe()',
+    ].join('\n') + '\n';
+    const { outputs } = await runCode(code);
+    expect(outputs).toEqual(['Kitty is a Shorthaired']);
+  });
+
+  it('supports bare and CALL method-call statements (guide example)', async () => {
+    const code = [
+      'CLASS Player',
+      '  PRIVATE Attempts : INTEGER',
+      '  PUBLIC PROCEDURE SetAttempts(Number : INTEGER)',
+      '    Attempts <- Number',
+      '  ENDPROCEDURE',
+      '  PUBLIC FUNCTION GetAttempts() RETURNS INTEGER',
+      '    RETURN Attempts',
+      '  ENDFUNCTION',
+      'ENDCLASS',
+      'P1 <- NEW Player()',
+      'P1.SetAttempts(5)',
+      'OUTPUT P1.GetAttempts()',
+      'CALL P1.SetAttempts(3)',
+      'OUTPUT P1.GetAttempts()',
+    ].join('\n') + '\n';
+    const { outputs } = await runCode(code);
+    expect(outputs).toEqual(['5', '3']);
+  });
+
+  it('fields default per their declared type', async () => {
+    const code = [
+      'CLASS Counter',
+      '  PUBLIC Count : INTEGER',
+      '  PUBLIC PROCEDURE Increment()',
+      '    Count <- Count + 1',
+      '  ENDPROCEDURE',
+      'ENDCLASS',
+      'c <- NEW Counter()',
+      'c.Increment()',
+      'c.Increment()',
+      'OUTPUT c.Count',
+    ].join('\n') + '\n';
+    const { outputs } = await runCode(code);
+    expect(outputs).toEqual(['2']);
+  });
+
+  it('private fields cannot be read from outside the class', async () => {
+    const code = [
+      'CLASS Pet',
+      '  PRIVATE Name : STRING',
+      'ENDCLASS',
+      'p <- NEW Pet()',
+      'OUTPUT p.Name',
+    ].join('\n') + '\n';
+    await expect(runCode(code)).rejects.toThrow(/private property 'Name'/);
+  });
+
+  it('private methods cannot be called from outside the class', async () => {
+    const code = [
+      'CLASS Pet',
+      '  PRIVATE FUNCTION Secret() RETURNS INTEGER',
+      '    RETURN 42',
+      '  ENDFUNCTION',
+      'ENDCLASS',
+      'p <- NEW Pet()',
+      'OUTPUT p.Secret()',
+    ].join('\n') + '\n';
+    await expect(runCode(code)).rejects.toThrow(/private method 'Secret'/);
+  });
+
+  it('SUPER outside a class raises a friendly error', async () => {
+    await expect(runCode('SUPER.NEW(1)\n')).rejects.toThrow(/inside a class method/);
   });
 });

@@ -84,6 +84,18 @@ const toc: TocEntry[] = [
       { id: 'file-read', label: 'Reading Files' },
     ],
   },
+  {
+    id: 'alevel',
+    label: 'A Level (9618)',
+    children: [
+      { id: 'alevel-types', label: 'User-Defined Types' },
+      { id: 'alevel-date', label: 'DATE Type' },
+      { id: 'alevel-byref', label: 'BYREF & BYVAL' },
+      { id: 'alevel-case-ranges', label: 'CASE Ranges' },
+      { id: 'alevel-random-files', label: 'Random-Access Files' },
+      { id: 'alevel-oop', label: 'Classes & Objects' },
+    ],
+  },
   { id: 'patterns', label: 'Common Patterns' },
 ];
 

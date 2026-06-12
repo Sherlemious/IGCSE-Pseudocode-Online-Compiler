@@ -5,7 +5,7 @@ import { tags } from '@lezer/highlight';
 // Create a simple parser for pseudocode
 // This is a fallback approach using StreamLanguage API
 
-const types = ['INTEGER', 'REAL', 'CHAR', 'STRING', 'BOOLEAN'];
+const types = ['INTEGER', 'REAL', 'CHAR', 'STRING', 'BOOLEAN', 'DATE'];
 const booleans = ['TRUE', 'FALSE'];
 // Define pseudocode keywords based on ANTLR grammar
 const keywords = [
@@ -52,6 +52,24 @@ const keywords = [
   'READ',
   'WRITE',
   'APPEND',
+  // A Level (9618)
+  'TYPE',
+  'ENDTYPE',
+  'SET',
+  'DEFINE',
+  'BYREF',
+  'BYVAL',
+  'RANDOM',
+  'SEEK',
+  'GETRECORD',
+  'PUTRECORD',
+  'CLASS',
+  'ENDCLASS',
+  'INHERITS',
+  'PUBLIC',
+  'PRIVATE',
+  'NEW',
+  'SUPER',
 ];
 
 interface PseudocodeState {
@@ -104,12 +122,13 @@ const pseudocodeParser: StreamParser<PseudocodeState> = {
       return 'string';
     }
 
-    // Handle numbers
+    // Handle numbers (date literals like 02/01/2005 first, then reals, then integers)
+    if (stream.match(/^\d{2}\/\d{2}\/\d{4}/)) return 'number';
     if (stream.match(/^\d+\.\d+/)) return 'number';
     if (stream.match(/^\d+/)) return 'number';
 
     // Handle operators
-    if (stream.match(/^(<-|←|<>|<=|>=|[=<>+\-*/^&(),[\]:])/)) {
+    if (stream.match(/^(<-|←|<>|<=|>=|[=<>+\-*/^&(),[\]:.])/)) {
       return 'operator';
     }
 

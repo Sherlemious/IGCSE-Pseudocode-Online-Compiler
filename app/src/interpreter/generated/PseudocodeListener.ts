@@ -9,6 +9,18 @@ import { DeclareStatementContext } from "./PseudocodeParser.js";
 import { IdentifierListContext } from "./PseudocodeParser.js";
 import { ConstantStatementContext } from "./PseudocodeParser.js";
 import { DataTypeContext } from "./PseudocodeParser.js";
+import { EnumTypeDefContext } from "./PseudocodeParser.js";
+import { PointerTypeDefContext } from "./PseudocodeParser.js";
+import { SetTypeDefContext } from "./PseudocodeParser.js";
+import { RecordTypeDefContext } from "./PseudocodeParser.js";
+import { DefineStatementContext } from "./PseudocodeParser.js";
+import { ClassDeclarationContext } from "./PseudocodeParser.js";
+import { ClassFieldMemberContext } from "./PseudocodeParser.js";
+import { ClassProcMemberContext } from "./PseudocodeParser.js";
+import { ClassFuncMemberContext } from "./PseudocodeParser.js";
+import { DesignatorContext } from "./PseudocodeParser.js";
+import { DesignatorPartContext } from "./PseudocodeParser.js";
+import { MemberNameContext } from "./PseudocodeParser.js";
 import { AssignmentStatementContext } from "./PseudocodeParser.js";
 import { SingleAssignmentContext } from "./PseudocodeParser.js";
 import { InputStatementContext } from "./PseudocodeParser.js";
@@ -17,6 +29,7 @@ import { ExprListContext } from "./PseudocodeParser.js";
 import { IfStatementContext } from "./PseudocodeParser.js";
 import { CaseStatementContext } from "./PseudocodeParser.js";
 import { CaseClauseContext } from "./PseudocodeParser.js";
+import { CaseLabelContext } from "./PseudocodeParser.js";
 import { ForStatementContext } from "./PseudocodeParser.js";
 import { WhileStatementContext } from "./PseudocodeParser.js";
 import { RepeatStatementContext } from "./PseudocodeParser.js";
@@ -25,11 +38,16 @@ import { FunctionDeclarationContext } from "./PseudocodeParser.js";
 import { ParamListContext } from "./PseudocodeParser.js";
 import { ParamContext } from "./PseudocodeParser.js";
 import { CallStatementContext } from "./PseudocodeParser.js";
+import { MethodCallContext } from "./PseudocodeParser.js";
+import { MethodCallStatementContext } from "./PseudocodeParser.js";
 import { ReturnStatementContext } from "./PseudocodeParser.js";
 import { OpenFileStatementContext } from "./PseudocodeParser.js";
 import { ReadFileStatementContext } from "./PseudocodeParser.js";
 import { WriteFileStatementContext } from "./PseudocodeParser.js";
 import { CloseFileStatementContext } from "./PseudocodeParser.js";
+import { SeekStatementContext } from "./PseudocodeParser.js";
+import { GetRecordStatementContext } from "./PseudocodeParser.js";
+import { PutRecordStatementContext } from "./PseudocodeParser.js";
 import { FileModeContext } from "./PseudocodeParser.js";
 import { ArgListContext } from "./PseudocodeParser.js";
 import { BlockContext } from "./PseudocodeParser.js";
@@ -45,13 +63,15 @@ import { ConcatExprContext } from "./PseudocodeParser.js";
 import { AndExprContext } from "./PseudocodeParser.js";
 import { ParenAtomContext } from "./PseudocodeParser.js";
 import { FunctionCallAtomContext } from "./PseudocodeParser.js";
-import { ArrayAccess1DAtomContext } from "./PseudocodeParser.js";
-import { ArrayAccess2DAtomContext } from "./PseudocodeParser.js";
+import { NewInstanceAtomContext } from "./PseudocodeParser.js";
+import { AddressOfAtomContext } from "./PseudocodeParser.js";
 import { DivFunctionAtomContext } from "./PseudocodeParser.js";
 import { ModFunctionAtomContext } from "./PseudocodeParser.js";
-import { IdentifierAtomContext } from "./PseudocodeParser.js";
+import { RandomFunctionAtomContext } from "./PseudocodeParser.js";
+import { DesignatorAtomContext } from "./PseudocodeParser.js";
 import { IntegerAtomContext } from "./PseudocodeParser.js";
 import { RealAtomContext } from "./PseudocodeParser.js";
+import { DateAtomContext } from "./PseudocodeParser.js";
 import { StringAtomContext } from "./PseudocodeParser.js";
 import { CharAtomContext } from "./PseudocodeParser.js";
 import { TrueAtomContext } from "./PseudocodeParser.js";
@@ -123,6 +143,140 @@ export class PseudocodeListener implements ParseTreeListener {
      * @param ctx the parse tree
      */
     exitDataType?: (ctx: DataTypeContext) => void;
+    /**
+     * Enter a parse tree produced by the `enumTypeDef`
+     * labeled alternative in `PseudocodeParser.typeDefinition`.
+     * @param ctx the parse tree
+     */
+    enterEnumTypeDef?: (ctx: EnumTypeDefContext) => void;
+    /**
+     * Exit a parse tree produced by the `enumTypeDef`
+     * labeled alternative in `PseudocodeParser.typeDefinition`.
+     * @param ctx the parse tree
+     */
+    exitEnumTypeDef?: (ctx: EnumTypeDefContext) => void;
+    /**
+     * Enter a parse tree produced by the `pointerTypeDef`
+     * labeled alternative in `PseudocodeParser.typeDefinition`.
+     * @param ctx the parse tree
+     */
+    enterPointerTypeDef?: (ctx: PointerTypeDefContext) => void;
+    /**
+     * Exit a parse tree produced by the `pointerTypeDef`
+     * labeled alternative in `PseudocodeParser.typeDefinition`.
+     * @param ctx the parse tree
+     */
+    exitPointerTypeDef?: (ctx: PointerTypeDefContext) => void;
+    /**
+     * Enter a parse tree produced by the `setTypeDef`
+     * labeled alternative in `PseudocodeParser.typeDefinition`.
+     * @param ctx the parse tree
+     */
+    enterSetTypeDef?: (ctx: SetTypeDefContext) => void;
+    /**
+     * Exit a parse tree produced by the `setTypeDef`
+     * labeled alternative in `PseudocodeParser.typeDefinition`.
+     * @param ctx the parse tree
+     */
+    exitSetTypeDef?: (ctx: SetTypeDefContext) => void;
+    /**
+     * Enter a parse tree produced by the `recordTypeDef`
+     * labeled alternative in `PseudocodeParser.typeDefinition`.
+     * @param ctx the parse tree
+     */
+    enterRecordTypeDef?: (ctx: RecordTypeDefContext) => void;
+    /**
+     * Exit a parse tree produced by the `recordTypeDef`
+     * labeled alternative in `PseudocodeParser.typeDefinition`.
+     * @param ctx the parse tree
+     */
+    exitRecordTypeDef?: (ctx: RecordTypeDefContext) => void;
+    /**
+     * Enter a parse tree produced by `PseudocodeParser.defineStatement`.
+     * @param ctx the parse tree
+     */
+    enterDefineStatement?: (ctx: DefineStatementContext) => void;
+    /**
+     * Exit a parse tree produced by `PseudocodeParser.defineStatement`.
+     * @param ctx the parse tree
+     */
+    exitDefineStatement?: (ctx: DefineStatementContext) => void;
+    /**
+     * Enter a parse tree produced by `PseudocodeParser.classDeclaration`.
+     * @param ctx the parse tree
+     */
+    enterClassDeclaration?: (ctx: ClassDeclarationContext) => void;
+    /**
+     * Exit a parse tree produced by `PseudocodeParser.classDeclaration`.
+     * @param ctx the parse tree
+     */
+    exitClassDeclaration?: (ctx: ClassDeclarationContext) => void;
+    /**
+     * Enter a parse tree produced by the `classFieldMember`
+     * labeled alternative in `PseudocodeParser.classMember`.
+     * @param ctx the parse tree
+     */
+    enterClassFieldMember?: (ctx: ClassFieldMemberContext) => void;
+    /**
+     * Exit a parse tree produced by the `classFieldMember`
+     * labeled alternative in `PseudocodeParser.classMember`.
+     * @param ctx the parse tree
+     */
+    exitClassFieldMember?: (ctx: ClassFieldMemberContext) => void;
+    /**
+     * Enter a parse tree produced by the `classProcMember`
+     * labeled alternative in `PseudocodeParser.classMember`.
+     * @param ctx the parse tree
+     */
+    enterClassProcMember?: (ctx: ClassProcMemberContext) => void;
+    /**
+     * Exit a parse tree produced by the `classProcMember`
+     * labeled alternative in `PseudocodeParser.classMember`.
+     * @param ctx the parse tree
+     */
+    exitClassProcMember?: (ctx: ClassProcMemberContext) => void;
+    /**
+     * Enter a parse tree produced by the `classFuncMember`
+     * labeled alternative in `PseudocodeParser.classMember`.
+     * @param ctx the parse tree
+     */
+    enterClassFuncMember?: (ctx: ClassFuncMemberContext) => void;
+    /**
+     * Exit a parse tree produced by the `classFuncMember`
+     * labeled alternative in `PseudocodeParser.classMember`.
+     * @param ctx the parse tree
+     */
+    exitClassFuncMember?: (ctx: ClassFuncMemberContext) => void;
+    /**
+     * Enter a parse tree produced by `PseudocodeParser.designator`.
+     * @param ctx the parse tree
+     */
+    enterDesignator?: (ctx: DesignatorContext) => void;
+    /**
+     * Exit a parse tree produced by `PseudocodeParser.designator`.
+     * @param ctx the parse tree
+     */
+    exitDesignator?: (ctx: DesignatorContext) => void;
+    /**
+     * Enter a parse tree produced by `PseudocodeParser.designatorPart`.
+     * @param ctx the parse tree
+     */
+    enterDesignatorPart?: (ctx: DesignatorPartContext) => void;
+    /**
+     * Exit a parse tree produced by `PseudocodeParser.designatorPart`.
+     * @param ctx the parse tree
+     */
+    exitDesignatorPart?: (ctx: DesignatorPartContext) => void;
+    /**
+     * Enter a parse tree produced by `PseudocodeParser.memberName`.
+     * @param ctx the parse tree
+     */
+    enterMemberName?: (ctx: MemberNameContext) => void;
+    /**
+     * Exit a parse tree produced by `PseudocodeParser.memberName`.
+     * @param ctx the parse tree
+     */
+    exitMemberName?: (ctx: MemberNameContext) => void;
     /**
      * Enter a parse tree produced by `PseudocodeParser.assignmentStatement`.
      * @param ctx the parse tree
@@ -204,6 +358,16 @@ export class PseudocodeListener implements ParseTreeListener {
      */
     exitCaseClause?: (ctx: CaseClauseContext) => void;
     /**
+     * Enter a parse tree produced by `PseudocodeParser.caseLabel`.
+     * @param ctx the parse tree
+     */
+    enterCaseLabel?: (ctx: CaseLabelContext) => void;
+    /**
+     * Exit a parse tree produced by `PseudocodeParser.caseLabel`.
+     * @param ctx the parse tree
+     */
+    exitCaseLabel?: (ctx: CaseLabelContext) => void;
+    /**
      * Enter a parse tree produced by `PseudocodeParser.forStatement`.
      * @param ctx the parse tree
      */
@@ -284,6 +448,26 @@ export class PseudocodeListener implements ParseTreeListener {
      */
     exitCallStatement?: (ctx: CallStatementContext) => void;
     /**
+     * Enter a parse tree produced by `PseudocodeParser.methodCall`.
+     * @param ctx the parse tree
+     */
+    enterMethodCall?: (ctx: MethodCallContext) => void;
+    /**
+     * Exit a parse tree produced by `PseudocodeParser.methodCall`.
+     * @param ctx the parse tree
+     */
+    exitMethodCall?: (ctx: MethodCallContext) => void;
+    /**
+     * Enter a parse tree produced by `PseudocodeParser.methodCallStatement`.
+     * @param ctx the parse tree
+     */
+    enterMethodCallStatement?: (ctx: MethodCallStatementContext) => void;
+    /**
+     * Exit a parse tree produced by `PseudocodeParser.methodCallStatement`.
+     * @param ctx the parse tree
+     */
+    exitMethodCallStatement?: (ctx: MethodCallStatementContext) => void;
+    /**
      * Enter a parse tree produced by `PseudocodeParser.returnStatement`.
      * @param ctx the parse tree
      */
@@ -333,6 +517,36 @@ export class PseudocodeListener implements ParseTreeListener {
      * @param ctx the parse tree
      */
     exitCloseFileStatement?: (ctx: CloseFileStatementContext) => void;
+    /**
+     * Enter a parse tree produced by `PseudocodeParser.seekStatement`.
+     * @param ctx the parse tree
+     */
+    enterSeekStatement?: (ctx: SeekStatementContext) => void;
+    /**
+     * Exit a parse tree produced by `PseudocodeParser.seekStatement`.
+     * @param ctx the parse tree
+     */
+    exitSeekStatement?: (ctx: SeekStatementContext) => void;
+    /**
+     * Enter a parse tree produced by `PseudocodeParser.getRecordStatement`.
+     * @param ctx the parse tree
+     */
+    enterGetRecordStatement?: (ctx: GetRecordStatementContext) => void;
+    /**
+     * Exit a parse tree produced by `PseudocodeParser.getRecordStatement`.
+     * @param ctx the parse tree
+     */
+    exitGetRecordStatement?: (ctx: GetRecordStatementContext) => void;
+    /**
+     * Enter a parse tree produced by `PseudocodeParser.putRecordStatement`.
+     * @param ctx the parse tree
+     */
+    enterPutRecordStatement?: (ctx: PutRecordStatementContext) => void;
+    /**
+     * Exit a parse tree produced by `PseudocodeParser.putRecordStatement`.
+     * @param ctx the parse tree
+     */
+    exitPutRecordStatement?: (ctx: PutRecordStatementContext) => void;
     /**
      * Enter a parse tree produced by `PseudocodeParser.fileMode`.
      * @param ctx the parse tree
@@ -508,29 +722,29 @@ export class PseudocodeListener implements ParseTreeListener {
      */
     exitFunctionCallAtom?: (ctx: FunctionCallAtomContext) => void;
     /**
-     * Enter a parse tree produced by the `arrayAccess1DAtom`
+     * Enter a parse tree produced by the `newInstanceAtom`
      * labeled alternative in `PseudocodeParser.atom`.
      * @param ctx the parse tree
      */
-    enterArrayAccess1DAtom?: (ctx: ArrayAccess1DAtomContext) => void;
+    enterNewInstanceAtom?: (ctx: NewInstanceAtomContext) => void;
     /**
-     * Exit a parse tree produced by the `arrayAccess1DAtom`
+     * Exit a parse tree produced by the `newInstanceAtom`
      * labeled alternative in `PseudocodeParser.atom`.
      * @param ctx the parse tree
      */
-    exitArrayAccess1DAtom?: (ctx: ArrayAccess1DAtomContext) => void;
+    exitNewInstanceAtom?: (ctx: NewInstanceAtomContext) => void;
     /**
-     * Enter a parse tree produced by the `arrayAccess2DAtom`
+     * Enter a parse tree produced by the `addressOfAtom`
      * labeled alternative in `PseudocodeParser.atom`.
      * @param ctx the parse tree
      */
-    enterArrayAccess2DAtom?: (ctx: ArrayAccess2DAtomContext) => void;
+    enterAddressOfAtom?: (ctx: AddressOfAtomContext) => void;
     /**
-     * Exit a parse tree produced by the `arrayAccess2DAtom`
+     * Exit a parse tree produced by the `addressOfAtom`
      * labeled alternative in `PseudocodeParser.atom`.
      * @param ctx the parse tree
      */
-    exitArrayAccess2DAtom?: (ctx: ArrayAccess2DAtomContext) => void;
+    exitAddressOfAtom?: (ctx: AddressOfAtomContext) => void;
     /**
      * Enter a parse tree produced by the `divFunctionAtom`
      * labeled alternative in `PseudocodeParser.atom`.
@@ -556,17 +770,29 @@ export class PseudocodeListener implements ParseTreeListener {
      */
     exitModFunctionAtom?: (ctx: ModFunctionAtomContext) => void;
     /**
-     * Enter a parse tree produced by the `identifierAtom`
+     * Enter a parse tree produced by the `randomFunctionAtom`
      * labeled alternative in `PseudocodeParser.atom`.
      * @param ctx the parse tree
      */
-    enterIdentifierAtom?: (ctx: IdentifierAtomContext) => void;
+    enterRandomFunctionAtom?: (ctx: RandomFunctionAtomContext) => void;
     /**
-     * Exit a parse tree produced by the `identifierAtom`
+     * Exit a parse tree produced by the `randomFunctionAtom`
      * labeled alternative in `PseudocodeParser.atom`.
      * @param ctx the parse tree
      */
-    exitIdentifierAtom?: (ctx: IdentifierAtomContext) => void;
+    exitRandomFunctionAtom?: (ctx: RandomFunctionAtomContext) => void;
+    /**
+     * Enter a parse tree produced by the `designatorAtom`
+     * labeled alternative in `PseudocodeParser.atom`.
+     * @param ctx the parse tree
+     */
+    enterDesignatorAtom?: (ctx: DesignatorAtomContext) => void;
+    /**
+     * Exit a parse tree produced by the `designatorAtom`
+     * labeled alternative in `PseudocodeParser.atom`.
+     * @param ctx the parse tree
+     */
+    exitDesignatorAtom?: (ctx: DesignatorAtomContext) => void;
     /**
      * Enter a parse tree produced by the `integerAtom`
      * labeled alternative in `PseudocodeParser.atom`.
@@ -591,6 +817,18 @@ export class PseudocodeListener implements ParseTreeListener {
      * @param ctx the parse tree
      */
     exitRealAtom?: (ctx: RealAtomContext) => void;
+    /**
+     * Enter a parse tree produced by the `dateAtom`
+     * labeled alternative in `PseudocodeParser.atom`.
+     * @param ctx the parse tree
+     */
+    enterDateAtom?: (ctx: DateAtomContext) => void;
+    /**
+     * Exit a parse tree produced by the `dateAtom`
+     * labeled alternative in `PseudocodeParser.atom`.
+     * @param ctx the parse tree
+     */
+    exitDateAtom?: (ctx: DateAtomContext) => void;
     /**
      * Enter a parse tree produced by the `stringAtom`
      * labeled alternative in `PseudocodeParser.atom`.

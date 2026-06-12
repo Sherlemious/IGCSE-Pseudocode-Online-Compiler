@@ -1,9 +1,12 @@
-import { RuntimeValue, mkNone } from './values';
+import { RuntimeValue, mkNone, mkArray } from './values';
 import { RuntimeError } from './types';
 import { PseudocodeArray } from './arrays';
+import type { Reference } from './references';
 
 interface Variable {
-  value: RuntimeValue | PseudocodeArray;
+  value?: RuntimeValue;
+  /** When present, the variable is an alias (BYREF parameter or bound object field). */
+  ref?: Reference;
   constant: boolean;
 }
 
@@ -15,7 +18,7 @@ export class Environment {
     this.parent = parent;
   }
 
-  declare(name: string, value: RuntimeValue | PseudocodeArray = mkNone()): void {
+  declare(name: string, value: RuntimeValue = mkNone()): void {
     this.variables.set(name, { value, constant: false });
   }
 
@@ -23,18 +26,27 @@ export class Environment {
     this.variables.set(name, { value, constant: true });
   }
 
-  get(name: string): RuntimeValue | PseudocodeArray {
+  /** Declare a name as an alias for an existing storage location (BYREF / object fields). */
+  declareRef(name: string, ref: Reference): void {
+    this.variables.set(name, { ref, constant: false });
+  }
+
+  get(name: string): RuntimeValue {
     const entry = this.variables.get(name);
-    if (entry) return entry.value;
+    if (entry) return entry.ref ? entry.ref.get() : entry.value!;
     if (this.parent) return this.parent.get(name);
     throw new RuntimeError(`Variable '${name}' is not defined`);
   }
 
-  set(name: string, value: RuntimeValue | PseudocodeArray): void {
+  set(name: string, value: RuntimeValue): void {
     const entry = this.variables.get(name);
     if (entry) {
       if (entry.constant) {
         throw new RuntimeError(`Cannot assign to constant '${name}'`);
+      }
+      if (entry.ref) {
+        entry.ref.set(value);
+        return;
       }
       entry.value = value;
       return;
@@ -59,7 +71,7 @@ export class Environment {
 
   getArray(name: string): PseudocodeArray {
     const val = this.get(name);
-    if (val instanceof PseudocodeArray) return val;
+    if (val.type === 'ARRAY') return val.value as PseudocodeArray;
     throw new RuntimeError(`'${name}' is not an array`);
   }
 
@@ -73,7 +85,7 @@ export class Environment {
     // Check if variable exists
     if (this.has(name)) {
       const val = this.get(name);
-      if (val instanceof PseudocodeArray) return val;
+      if (val.type === 'ARRAY') return val.value as PseudocodeArray;
       throw new RuntimeError(`'${name}' is not an array`);
     }
 
@@ -81,22 +93,22 @@ export class Environment {
     const bounds = dimensions === 1
       ? [{ lower: 1, upper: 10000 }]
       : [{ lower: 1, upper: 10000 }, { lower: 1, upper: 10000 }];
-    
+
     const arr = new PseudocodeArray(bounds, defaultType);
-    this.declare(name, arr);
+    this.declare(name, mkArray(arr));
     return arr;
   }
 
   /** Collect all variables from current scope chain (child overrides parent). */
-  getAllVariables(): Map<string, { value: RuntimeValue | PseudocodeArray; constant: boolean }> {
-    const result = new Map<string, { value: RuntimeValue | PseudocodeArray; constant: boolean }>();
+  getAllVariables(): Map<string, { value: RuntimeValue; constant: boolean }> {
+    const result = new Map<string, { value: RuntimeValue; constant: boolean }>();
     if (this.parent) {
       for (const [k, v] of this.parent.getAllVariables()) {
         result.set(k, v);
       }
     }
     for (const [k, v] of this.variables) {
-      result.set(k, { value: v.value, constant: v.constant });
+      result.set(k, { value: v.ref ? v.ref.get() : v.value!, constant: v.constant });
     }
     return result;
   }

@@ -1,5 +1,8 @@
 grammar Pseudocode;
 
+// Superset grammar covering Cambridge IGCSE (0478) and AS & A Level (9618)
+// pseudocode. IGCSE is a subset — every IGCSE program remains valid.
+
 // ─── Parser Rules ───────────────────────────────────────────────────────────
 
 program
@@ -9,6 +12,9 @@ program
 statement
     : declareStatement
     | constantStatement
+    | typeDefinition
+    | defineStatement
+    | classDeclaration
     | assignmentStatement
     | inputStatement
     | outputStatement
@@ -20,11 +26,15 @@ statement
     | procedureDeclaration
     | functionDeclaration
     | callStatement
+    | methodCallStatement
     | returnStatement
     | openFileStatement
     | readFileStatement
     | writeFileStatement
     | closeFileStatement
+    | seekStatement
+    | getRecordStatement
+    | putRecordStatement
     ;
 
 // ─── DECLARE / CONSTANT ────────────────────────────────────────────────────
@@ -49,6 +59,53 @@ dataType
     | CHAR_TYPE
     | STRING_TYPE
     | BOOLEAN_TYPE
+    | DATE_TYPE
+    | ARRAY (LBRACKET expr COLON expr (COMMA expr COLON expr)? RBRACKET)? OF dataType
+    | IDENTIFIER
+    ;
+
+// ─── User-defined types (A Level) ──────────────────────────────────────────
+
+typeDefinition
+    : TYPE IDENTIFIER EQUALS LPAREN identifierList RPAREN                  # enumTypeDef
+    | TYPE IDENTIFIER EQUALS CARET dataType                                # pointerTypeDef
+    | TYPE IDENTIFIER EQUALS SET OF dataType                               # setTypeDef
+    | TYPE IDENTIFIER NEWLINE+ (declareStatement NEWLINE+)* ENDTYPE        # recordTypeDef
+    ;
+
+defineStatement
+    : DEFINE IDENTIFIER LPAREN exprList? RPAREN COLON IDENTIFIER
+    ;
+
+// ─── Classes (A Level OOP) ─────────────────────────────────────────────────
+
+classDeclaration
+    : CLASS IDENTIFIER (INHERITS IDENTIFIER)? NEWLINE+
+      (classMember NEWLINE+)*
+      ENDCLASS
+    ;
+
+classMember
+    : (PUBLIC | PRIVATE)? DECLARE? identifierList COLON dataType           # classFieldMember
+    | (PUBLIC | PRIVATE)? procedureDeclaration                             # classProcMember
+    | (PUBLIC | PRIVATE)? functionDeclaration                              # classFuncMember
+    ;
+
+// ─── Designators (variables, array elements, record fields, dereferences) ──
+
+designator
+    : (IDENTIFIER | SUPER) designatorPart*
+    ;
+
+designatorPart
+    : LBRACKET expr (COMMA expr)* RBRACKET
+    | DOT memberName (LPAREN argList? RPAREN)?
+    | CARET
+    ;
+
+memberName
+    : IDENTIFIER
+    | NEW
     ;
 
 // ─── Assignment ─────────────────────────────────────────────────────────────
@@ -59,19 +116,13 @@ assignmentStatement
     ;
 
 singleAssignment
-    : IDENTIFIER EQUALS expr
-    | IDENTIFIER LBRACKET expr RBRACKET EQUALS expr
-    | IDENTIFIER LBRACKET expr COMMA expr RBRACKET EQUALS expr
-    | IDENTIFIER LARROW expr
-    | IDENTIFIER LBRACKET expr RBRACKET LARROW expr
-    | IDENTIFIER LBRACKET expr COMMA expr RBRACKET LARROW expr
+    : designator (LARROW | EQUALS) expr
     ;
 
 // ─── INPUT / OUTPUT ─────────────────────────────────────────────────────────
 
 inputStatement
-    : INPUT IDENTIFIER (COMMA STRING_LITERAL)?
-    | INPUT IDENTIFIER LBRACKET expr RBRACKET (COMMA STRING_LITERAL)?
+    : INPUT designator (COMMA STRING_LITERAL)?
     ;
 
 outputStatement
@@ -94,14 +145,18 @@ ifStatement
 // ─── CASE / OTHERWISE ──────────────────────────────────────────────────────
 
 caseStatement
-    : CASE OF IDENTIFIER NEWLINE*
+    : CASE OF designator NEWLINE*
       caseClause+
-      (OTHERWISE COLON NEWLINE* block NEWLINE*)?
+      (OTHERWISE COLON? NEWLINE* block NEWLINE*)?
       NEWLINE* ENDCASE
     ;
 
 caseClause
-    : expr COLON NEWLINE* block NEWLINE*
+    : caseLabel (COMMA caseLabel)* COLON NEWLINE* block NEWLINE*
+    ;
+
+caseLabel
+    : expr (TO expr)?
     ;
 
 // ─── FOR / NEXT ─────────────────────────────────────────────────────────────
@@ -125,7 +180,7 @@ repeatStatement
 // ─── PROCEDURE / FUNCTION ───────────────────────────────────────────────────
 
 procedureDeclaration
-    : PROCEDURE IDENTIFIER LPAREN paramList? RPAREN NEWLINE* block NEWLINE* ENDPROCEDURE
+    : PROCEDURE name=(IDENTIFIER | NEW) LPAREN paramList? RPAREN NEWLINE* block NEWLINE* ENDPROCEDURE
     ;
 
 functionDeclaration
@@ -137,11 +192,20 @@ paramList
     ;
 
 param
-    : IDENTIFIER COLON dataType
+    : (BYREF | BYVAL)? IDENTIFIER COLON dataType
     ;
 
 callStatement
     : CALL IDENTIFIER LPAREN argList? RPAREN
+    | CALL methodCall
+    ;
+
+methodCall
+    : (IDENTIFIER | SUPER) designatorPart* DOT memberName LPAREN argList? RPAREN
+    ;
+
+methodCallStatement
+    : methodCall
     ;
 
 returnStatement
@@ -155,7 +219,7 @@ openFileStatement
     ;
 
 readFileStatement
-    : READFILE expr COMMA IDENTIFIER
+    : READFILE expr COMMA designator
     ;
 
 writeFileStatement
@@ -166,10 +230,23 @@ closeFileStatement
     : CLOSEFILE expr
     ;
 
+seekStatement
+    : SEEK expr COMMA expr
+    ;
+
+getRecordStatement
+    : GETRECORD expr COMMA designator
+    ;
+
+putRecordStatement
+    : PUTRECORD expr COMMA designator
+    ;
+
 fileMode
     : READ_MODE
     | WRITE_MODE
     | APPEND_MODE
+    | RANDOM
     ;
 
 argList
@@ -200,13 +277,15 @@ expr
 atom
     : LPAREN expr RPAREN                                # parenAtom
     | IDENTIFIER LPAREN argList? RPAREN                 # functionCallAtom
-    | IDENTIFIER LBRACKET expr RBRACKET                 # arrayAccess1DAtom
-    | IDENTIFIER LBRACKET expr COMMA expr RBRACKET      # arrayAccess2DAtom
+    | NEW IDENTIFIER LPAREN argList? RPAREN             # newInstanceAtom
+    | CARET designator                                  # addressOfAtom
     | DIV LPAREN expr COMMA expr RPAREN                 # divFunctionAtom
     | MOD LPAREN expr COMMA expr RPAREN                 # modFunctionAtom
-    | IDENTIFIER                                        # identifierAtom
+    | RANDOM LPAREN RPAREN                              # randomFunctionAtom
+    | designator                                        # designatorAtom
     | INTEGER_LITERAL                                   # integerAtom
     | REAL_LITERAL                                      # realAtom
+    | DATE_LITERAL                                      # dateAtom
     | STRING_LITERAL                                    # stringAtom
     | CHAR_LITERAL                                      # charAtom
     | TRUE                                              # trueAtom
@@ -261,6 +340,23 @@ CLOSEFILE   : C L O S E F I L E ;
 READ_MODE   : R E A D ;
 WRITE_MODE  : W R I T E ;
 APPEND_MODE : A P P E N D ;
+RANDOM      : R A N D O M ;
+SEEK        : S E E K ;
+GETRECORD   : G E T R E C O R D ;
+PUTRECORD   : P U T R E C O R D ;
+TYPE        : T Y P E ;
+ENDTYPE     : E N D T Y P E ;
+SET         : S E T ;
+DEFINE      : D E F I N E ;
+BYREF       : B Y R E F ;
+BYVAL       : B Y V A L ;
+CLASS       : C L A S S ;
+ENDCLASS    : E N D C L A S S ;
+INHERITS    : I N H E R I T S ;
+PUBLIC      : P U B L I C ;
+PRIVATE     : P R I V A T E ;
+NEW         : N E W ;
+SUPER       : S U P E R ;
 
 // Data type keywords
 INTEGER_TYPE : I N T E G E R ;
@@ -268,9 +364,10 @@ REAL_TYPE    : R E A L ;
 CHAR_TYPE    : C H A R ;
 STRING_TYPE  : S T R I N G ;
 BOOLEAN_TYPE : B O O L E A N ;
+DATE_TYPE    : D A T E ;
 
 // Operators and punctuation
-LARROW      : '<-' | '\u2190' ;
+LARROW      : '<-' | '←' ;
 EQUALS      : '=' ;
 NOTEQUAL    : '<>' ;
 LTE         : '<=' ;
@@ -289,8 +386,10 @@ LBRACKET    : '[' ;
 RBRACKET    : ']' ;
 COMMA       : ',' ;
 COLON       : ':' ;
+DOT         : '.' ;
 
 // Literals
+DATE_LITERAL    : DIGIT DIGIT '/' DIGIT DIGIT '/' DIGIT DIGIT DIGIT DIGIT ;
 REAL_LITERAL    : DIGIT+ '.' DIGIT+ ;
 INTEGER_LITERAL : DIGIT+ ;
 STRING_LITERAL  : '"' (~["\r\n])* '"' ;

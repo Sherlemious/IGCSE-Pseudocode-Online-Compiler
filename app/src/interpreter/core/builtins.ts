@@ -33,6 +33,14 @@ builtins.set('RANDOM', (_args) => {
   return mkReal(Math.random());
 });
 
+// A Level (9618): RAND(x) returns a real in the range 0 to x (not inclusive of x)
+builtins.set('RAND', (args) => {
+  if (args.length !== 1) throw new RuntimeError('RAND expects 1 argument (upper limit)');
+  const x = toNumber(args[0]);
+  if (x <= 0) throw new RuntimeError('RAND expects a number greater than 0');
+  return mkReal(Math.random() * x);
+});
+
 builtins.set('ROUND', (args) => {
   if (args.length < 1 || args.length > 2) throw new RuntimeError('ROUND expects 1 or 2 arguments');
   const num = toNumber(args[0]);

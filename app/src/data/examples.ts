@@ -1259,4 +1259,151 @@ FOR i <- 1 TO 10
     OUTPUT Merged[i], " "
 NEXT i`,
   },
+
+  // A Level (9618)
+  {
+    title: 'Records (TYPE ... ENDTYPE)',
+    category: 'A Level (9618)',
+    code: `// A record groups related data under one identifier
+TYPE StudentRecord
+    DECLARE LastName : STRING
+    DECLARE FirstName : STRING
+    DECLARE YearGroup : INTEGER
+    DECLARE FormGroup : CHAR
+ENDTYPE
+
+DECLARE Pupil1 : StudentRecord
+DECLARE Pupil2 : StudentRecord
+
+Pupil1.LastName <- "Johnson"
+Pupil1.FirstName <- "Leroy"
+Pupil1.YearGroup <- 6
+Pupil1.FormGroup <- 'A'
+
+// Records are copied by value
+Pupil2 <- Pupil1
+Pupil2.FirstName <- "Leona"
+
+OUTPUT Pupil1.FirstName, " ", Pupil1.LastName, " (", Pupil1.YearGroup, Pupil1.FormGroup, ")"
+OUTPUT Pupil2.FirstName, " ", Pupil2.LastName, " (", Pupil2.YearGroup, Pupil2.FormGroup, ")"`,
+  },
+  {
+    title: 'Enumerated Types & Pointers',
+    category: 'A Level (9618)',
+    code: `// Enumerated type: a fixed list of named values
+TYPE Season = (Spring, Summer, Autumn, Winter)
+
+// Pointer type: holds the address of another variable
+TYPE TSeasonPointer = ^Season
+
+DECLARE ThisSeason : Season
+DECLARE NextSeason : Season
+DECLARE MyPointer : TSeasonPointer
+
+ThisSeason <- Spring
+MyPointer <- ^ThisSeason       // ^ takes the address of ThisSeason
+
+// MyPointer^ reads the value at the address; + 1 moves to the next enum value
+NextSeason <- MyPointer^ + 1
+
+OUTPUT "This season: ", ThisSeason
+OUTPUT "Next season: ", NextSeason
+
+// Writing through the pointer changes ThisSeason itself
+MyPointer^ <- Winter
+OUTPUT "Now: ", ThisSeason`,
+  },
+  {
+    title: 'BYREF and BYVAL Parameters',
+    category: 'A Level (9618)',
+    code: `// BYREF passes a reference: the procedure changes the caller's variables.
+// BYREF applies to the following parameters too, until BYVAL appears.
+PROCEDURE SWAP(BYREF X : INTEGER, Y : INTEGER)
+    DECLARE Temp : INTEGER
+    Temp <- X
+    X <- Y
+    Y <- Temp
+ENDPROCEDURE
+
+DECLARE a : INTEGER
+DECLARE b : INTEGER
+a <- 1
+b <- 2
+
+OUTPUT "Before: a = ", a, ", b = ", b
+CALL SWAP(a, b)
+OUTPUT "After:  a = ", a, ", b = ", b`,
+  },
+  {
+    title: 'CASE with Ranges',
+    category: 'A Level (9618)',
+    code: `DECLARE Mark : INTEGER
+OUTPUT "Enter a mark (0-100):"
+INPUT Mark
+
+CASE OF Mark
+    80 TO 100 : OUTPUT "Grade A"
+    60 TO 79  : OUTPUT "Grade B"
+    40 TO 59  : OUTPUT "Grade C"
+    OTHERWISE : OUTPUT "Ungraded"
+ENDCASE`,
+  },
+  {
+    title: 'Random-Access Files',
+    category: 'A Level (9618)',
+    code: `// Random files store fixed records at numbered positions
+TYPE Student
+    DECLARE Name : STRING
+    DECLARE YearGroup : INTEGER
+ENDTYPE
+
+DECLARE Pupil : Student
+DECLARE Found : Student
+
+Pupil.Name <- "Leroy Johnson"
+Pupil.YearGroup <- 6
+
+OPENFILE "StudentFile.dat" FOR RANDOM
+SEEK "StudentFile.dat", 10            // move the file pointer to position 10
+PUTRECORD "StudentFile.dat", Pupil    // write the record there
+CLOSEFILE "StudentFile.dat"
+
+OPENFILE "StudentFile.dat" FOR RANDOM
+SEEK "StudentFile.dat", 10
+GETRECORD "StudentFile.dat", Found    // read the record back
+CLOSEFILE "StudentFile.dat"
+
+OUTPUT "Found: ", Found.Name, " (Year ", Found.YearGroup, ")"`,
+  },
+  {
+    title: 'Classes & Inheritance (OOP)',
+    category: 'A Level (9618)',
+    code: `CLASS Pet
+    PRIVATE Name : STRING
+
+    PUBLIC PROCEDURE NEW(GivenName : STRING)
+        Name <- GivenName
+    ENDPROCEDURE
+
+    PUBLIC FUNCTION GetName() RETURNS STRING
+        RETURN Name
+    ENDFUNCTION
+ENDCLASS
+
+CLASS Cat INHERITS Pet
+    PRIVATE Breed : STRING
+
+    PUBLIC PROCEDURE NEW(GivenName : STRING, GivenBreed : STRING)
+        SUPER.NEW(GivenName)          // call the parent constructor
+        Breed <- GivenBreed
+    ENDPROCEDURE
+
+    PUBLIC FUNCTION Describe() RETURNS STRING
+        RETURN GetName() & " is a " & Breed & " cat"
+    ENDFUNCTION
+ENDCLASS
+
+MyCat <- NEW Cat("Kitty", "Shorthaired")
+OUTPUT MyCat.Describe()`,
+  },
 ];

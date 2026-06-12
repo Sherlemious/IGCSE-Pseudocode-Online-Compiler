@@ -9,6 +9,18 @@ import { DeclareStatementContext } from "./PseudocodeParser.js";
 import { IdentifierListContext } from "./PseudocodeParser.js";
 import { ConstantStatementContext } from "./PseudocodeParser.js";
 import { DataTypeContext } from "./PseudocodeParser.js";
+import { EnumTypeDefContext } from "./PseudocodeParser.js";
+import { PointerTypeDefContext } from "./PseudocodeParser.js";
+import { SetTypeDefContext } from "./PseudocodeParser.js";
+import { RecordTypeDefContext } from "./PseudocodeParser.js";
+import { DefineStatementContext } from "./PseudocodeParser.js";
+import { ClassDeclarationContext } from "./PseudocodeParser.js";
+import { ClassFieldMemberContext } from "./PseudocodeParser.js";
+import { ClassProcMemberContext } from "./PseudocodeParser.js";
+import { ClassFuncMemberContext } from "./PseudocodeParser.js";
+import { DesignatorContext } from "./PseudocodeParser.js";
+import { DesignatorPartContext } from "./PseudocodeParser.js";
+import { MemberNameContext } from "./PseudocodeParser.js";
 import { AssignmentStatementContext } from "./PseudocodeParser.js";
 import { SingleAssignmentContext } from "./PseudocodeParser.js";
 import { InputStatementContext } from "./PseudocodeParser.js";
@@ -17,6 +29,7 @@ import { ExprListContext } from "./PseudocodeParser.js";
 import { IfStatementContext } from "./PseudocodeParser.js";
 import { CaseStatementContext } from "./PseudocodeParser.js";
 import { CaseClauseContext } from "./PseudocodeParser.js";
+import { CaseLabelContext } from "./PseudocodeParser.js";
 import { ForStatementContext } from "./PseudocodeParser.js";
 import { WhileStatementContext } from "./PseudocodeParser.js";
 import { RepeatStatementContext } from "./PseudocodeParser.js";
@@ -25,11 +38,16 @@ import { FunctionDeclarationContext } from "./PseudocodeParser.js";
 import { ParamListContext } from "./PseudocodeParser.js";
 import { ParamContext } from "./PseudocodeParser.js";
 import { CallStatementContext } from "./PseudocodeParser.js";
+import { MethodCallContext } from "./PseudocodeParser.js";
+import { MethodCallStatementContext } from "./PseudocodeParser.js";
 import { ReturnStatementContext } from "./PseudocodeParser.js";
 import { OpenFileStatementContext } from "./PseudocodeParser.js";
 import { ReadFileStatementContext } from "./PseudocodeParser.js";
 import { WriteFileStatementContext } from "./PseudocodeParser.js";
 import { CloseFileStatementContext } from "./PseudocodeParser.js";
+import { SeekStatementContext } from "./PseudocodeParser.js";
+import { GetRecordStatementContext } from "./PseudocodeParser.js";
+import { PutRecordStatementContext } from "./PseudocodeParser.js";
 import { FileModeContext } from "./PseudocodeParser.js";
 import { ArgListContext } from "./PseudocodeParser.js";
 import { BlockContext } from "./PseudocodeParser.js";
@@ -45,13 +63,15 @@ import { ConcatExprContext } from "./PseudocodeParser.js";
 import { AndExprContext } from "./PseudocodeParser.js";
 import { ParenAtomContext } from "./PseudocodeParser.js";
 import { FunctionCallAtomContext } from "./PseudocodeParser.js";
-import { ArrayAccess1DAtomContext } from "./PseudocodeParser.js";
-import { ArrayAccess2DAtomContext } from "./PseudocodeParser.js";
+import { NewInstanceAtomContext } from "./PseudocodeParser.js";
+import { AddressOfAtomContext } from "./PseudocodeParser.js";
 import { DivFunctionAtomContext } from "./PseudocodeParser.js";
 import { ModFunctionAtomContext } from "./PseudocodeParser.js";
-import { IdentifierAtomContext } from "./PseudocodeParser.js";
+import { RandomFunctionAtomContext } from "./PseudocodeParser.js";
+import { DesignatorAtomContext } from "./PseudocodeParser.js";
 import { IntegerAtomContext } from "./PseudocodeParser.js";
 import { RealAtomContext } from "./PseudocodeParser.js";
+import { DateAtomContext } from "./PseudocodeParser.js";
 import { StringAtomContext } from "./PseudocodeParser.js";
 import { CharAtomContext } from "./PseudocodeParser.js";
 import { TrueAtomContext } from "./PseudocodeParser.js";
@@ -103,6 +123,85 @@ export class PseudocodeVisitor<Result> extends AbstractParseTreeVisitor<Result> 
      */
     visitDataType?: (ctx: DataTypeContext) => Result;
     /**
+     * Visit a parse tree produced by the `enumTypeDef`
+     * labeled alternative in `PseudocodeParser.typeDefinition`.
+     * @param ctx the parse tree
+     * @return the visitor result
+     */
+    visitEnumTypeDef?: (ctx: EnumTypeDefContext) => Result;
+    /**
+     * Visit a parse tree produced by the `pointerTypeDef`
+     * labeled alternative in `PseudocodeParser.typeDefinition`.
+     * @param ctx the parse tree
+     * @return the visitor result
+     */
+    visitPointerTypeDef?: (ctx: PointerTypeDefContext) => Result;
+    /**
+     * Visit a parse tree produced by the `setTypeDef`
+     * labeled alternative in `PseudocodeParser.typeDefinition`.
+     * @param ctx the parse tree
+     * @return the visitor result
+     */
+    visitSetTypeDef?: (ctx: SetTypeDefContext) => Result;
+    /**
+     * Visit a parse tree produced by the `recordTypeDef`
+     * labeled alternative in `PseudocodeParser.typeDefinition`.
+     * @param ctx the parse tree
+     * @return the visitor result
+     */
+    visitRecordTypeDef?: (ctx: RecordTypeDefContext) => Result;
+    /**
+     * Visit a parse tree produced by `PseudocodeParser.defineStatement`.
+     * @param ctx the parse tree
+     * @return the visitor result
+     */
+    visitDefineStatement?: (ctx: DefineStatementContext) => Result;
+    /**
+     * Visit a parse tree produced by `PseudocodeParser.classDeclaration`.
+     * @param ctx the parse tree
+     * @return the visitor result
+     */
+    visitClassDeclaration?: (ctx: ClassDeclarationContext) => Result;
+    /**
+     * Visit a parse tree produced by the `classFieldMember`
+     * labeled alternative in `PseudocodeParser.classMember`.
+     * @param ctx the parse tree
+     * @return the visitor result
+     */
+    visitClassFieldMember?: (ctx: ClassFieldMemberContext) => Result;
+    /**
+     * Visit a parse tree produced by the `classProcMember`
+     * labeled alternative in `PseudocodeParser.classMember`.
+     * @param ctx the parse tree
+     * @return the visitor result
+     */
+    visitClassProcMember?: (ctx: ClassProcMemberContext) => Result;
+    /**
+     * Visit a parse tree produced by the `classFuncMember`
+     * labeled alternative in `PseudocodeParser.classMember`.
+     * @param ctx the parse tree
+     * @return the visitor result
+     */
+    visitClassFuncMember?: (ctx: ClassFuncMemberContext) => Result;
+    /**
+     * Visit a parse tree produced by `PseudocodeParser.designator`.
+     * @param ctx the parse tree
+     * @return the visitor result
+     */
+    visitDesignator?: (ctx: DesignatorContext) => Result;
+    /**
+     * Visit a parse tree produced by `PseudocodeParser.designatorPart`.
+     * @param ctx the parse tree
+     * @return the visitor result
+     */
+    visitDesignatorPart?: (ctx: DesignatorPartContext) => Result;
+    /**
+     * Visit a parse tree produced by `PseudocodeParser.memberName`.
+     * @param ctx the parse tree
+     * @return the visitor result
+     */
+    visitMemberName?: (ctx: MemberNameContext) => Result;
+    /**
      * Visit a parse tree produced by `PseudocodeParser.assignmentStatement`.
      * @param ctx the parse tree
      * @return the visitor result
@@ -150,6 +249,12 @@ export class PseudocodeVisitor<Result> extends AbstractParseTreeVisitor<Result> 
      * @return the visitor result
      */
     visitCaseClause?: (ctx: CaseClauseContext) => Result;
+    /**
+     * Visit a parse tree produced by `PseudocodeParser.caseLabel`.
+     * @param ctx the parse tree
+     * @return the visitor result
+     */
+    visitCaseLabel?: (ctx: CaseLabelContext) => Result;
     /**
      * Visit a parse tree produced by `PseudocodeParser.forStatement`.
      * @param ctx the parse tree
@@ -199,6 +304,18 @@ export class PseudocodeVisitor<Result> extends AbstractParseTreeVisitor<Result> 
      */
     visitCallStatement?: (ctx: CallStatementContext) => Result;
     /**
+     * Visit a parse tree produced by `PseudocodeParser.methodCall`.
+     * @param ctx the parse tree
+     * @return the visitor result
+     */
+    visitMethodCall?: (ctx: MethodCallContext) => Result;
+    /**
+     * Visit a parse tree produced by `PseudocodeParser.methodCallStatement`.
+     * @param ctx the parse tree
+     * @return the visitor result
+     */
+    visitMethodCallStatement?: (ctx: MethodCallStatementContext) => Result;
+    /**
      * Visit a parse tree produced by `PseudocodeParser.returnStatement`.
      * @param ctx the parse tree
      * @return the visitor result
@@ -228,6 +345,24 @@ export class PseudocodeVisitor<Result> extends AbstractParseTreeVisitor<Result> 
      * @return the visitor result
      */
     visitCloseFileStatement?: (ctx: CloseFileStatementContext) => Result;
+    /**
+     * Visit a parse tree produced by `PseudocodeParser.seekStatement`.
+     * @param ctx the parse tree
+     * @return the visitor result
+     */
+    visitSeekStatement?: (ctx: SeekStatementContext) => Result;
+    /**
+     * Visit a parse tree produced by `PseudocodeParser.getRecordStatement`.
+     * @param ctx the parse tree
+     * @return the visitor result
+     */
+    visitGetRecordStatement?: (ctx: GetRecordStatementContext) => Result;
+    /**
+     * Visit a parse tree produced by `PseudocodeParser.putRecordStatement`.
+     * @param ctx the parse tree
+     * @return the visitor result
+     */
+    visitPutRecordStatement?: (ctx: PutRecordStatementContext) => Result;
     /**
      * Visit a parse tree produced by `PseudocodeParser.fileMode`.
      * @param ctx the parse tree
@@ -331,19 +466,19 @@ export class PseudocodeVisitor<Result> extends AbstractParseTreeVisitor<Result> 
      */
     visitFunctionCallAtom?: (ctx: FunctionCallAtomContext) => Result;
     /**
-     * Visit a parse tree produced by the `arrayAccess1DAtom`
+     * Visit a parse tree produced by the `newInstanceAtom`
      * labeled alternative in `PseudocodeParser.atom`.
      * @param ctx the parse tree
      * @return the visitor result
      */
-    visitArrayAccess1DAtom?: (ctx: ArrayAccess1DAtomContext) => Result;
+    visitNewInstanceAtom?: (ctx: NewInstanceAtomContext) => Result;
     /**
-     * Visit a parse tree produced by the `arrayAccess2DAtom`
+     * Visit a parse tree produced by the `addressOfAtom`
      * labeled alternative in `PseudocodeParser.atom`.
      * @param ctx the parse tree
      * @return the visitor result
      */
-    visitArrayAccess2DAtom?: (ctx: ArrayAccess2DAtomContext) => Result;
+    visitAddressOfAtom?: (ctx: AddressOfAtomContext) => Result;
     /**
      * Visit a parse tree produced by the `divFunctionAtom`
      * labeled alternative in `PseudocodeParser.atom`.
@@ -359,12 +494,19 @@ export class PseudocodeVisitor<Result> extends AbstractParseTreeVisitor<Result> 
      */
     visitModFunctionAtom?: (ctx: ModFunctionAtomContext) => Result;
     /**
-     * Visit a parse tree produced by the `identifierAtom`
+     * Visit a parse tree produced by the `randomFunctionAtom`
      * labeled alternative in `PseudocodeParser.atom`.
      * @param ctx the parse tree
      * @return the visitor result
      */
-    visitIdentifierAtom?: (ctx: IdentifierAtomContext) => Result;
+    visitRandomFunctionAtom?: (ctx: RandomFunctionAtomContext) => Result;
+    /**
+     * Visit a parse tree produced by the `designatorAtom`
+     * labeled alternative in `PseudocodeParser.atom`.
+     * @param ctx the parse tree
+     * @return the visitor result
+     */
+    visitDesignatorAtom?: (ctx: DesignatorAtomContext) => Result;
     /**
      * Visit a parse tree produced by the `integerAtom`
      * labeled alternative in `PseudocodeParser.atom`.
@@ -379,6 +521,13 @@ export class PseudocodeVisitor<Result> extends AbstractParseTreeVisitor<Result> 
      * @return the visitor result
      */
     visitRealAtom?: (ctx: RealAtomContext) => Result;
+    /**
+     * Visit a parse tree produced by the `dateAtom`
+     * labeled alternative in `PseudocodeParser.atom`.
+     * @param ctx the parse tree
+     * @return the visitor result
+     */
+    visitDateAtom?: (ctx: DateAtomContext) => Result;
     /**
      * Visit a parse tree produced by the `stringAtom`
      * labeled alternative in `PseudocodeParser.atom`.

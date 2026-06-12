@@ -42,21 +42,34 @@ The app has two distinct halves:
 - Case-insensitive keywords are implemented via letter fragments (e.g. `D E C L A R E`)
 - Generated files live in `src/interpreter/generated/` — regenerate with `npm run antlr:generate` after editing the grammar
 
+## Language Coverage
+
+One **superset grammar** covers both Cambridge IGCSE (0478) and AS & A Level (9618) pseudocode — there is **no mode toggle**; all syntax is always available. A Level additions: `TYPE` definitions (records with dot notation, enums with ordinal arithmetic, pointers `^x`/`ptr^`, `SET OF` + `DEFINE`), `DATE` type with `dd/mm/yyyy` literals, CASE ranges (`1 TO 5 :`) and multi-value labels, `BYREF`/`BYVAL` (sticky across following params), random-access files (`OPENFILE ... FOR RANDOM`, `SEEK`, `GETRECORD`, `PUTRECORD`), and OOP (`CLASS`/`ENDCLASS`, `INHERITS`, `PUBLIC`/`PRIVATE` with runtime enforcement, constructor `NEW`, `SUPER`, `obj <- NEW ClassName(...)`).
+
+Deliberate parse edges (documented in /docs — do not "fix"):
+- Contiguous `dd/dd/dddd` lexes as a DATE_LITERAL; spaced division (`10 / 02 / 2005`) still works
+- `p^ - 1` parses as pointer-deref-then-subtract; negative exponents on identifiers need parens: `x ^ (-1)`
+- A Level keywords (TYPE, SET, DATE, NEW, CLASS, RANDOM, …) are reserved words; the `RANDOM()` builtin survives via a dedicated `randomFunctionAtom` grammar alternative
+
 ## Interpreter Design
 
 - Fully **async** — every visitor method is `async` to support `INPUT` pausing and UI responsiveness
 - **AbortController** for cancellation — checked at every loop iteration
 - **ReturnSignal** is thrown (not returned) to unwind the call stack from `RETURN` statements
-- `filesystem.ts` = browser localStorage file I/O; `serverFilesystem.ts` = server-side (used during AI grading)
+- **Designators** — lvalues (`x`, `arr[i,j]`, `rec.Field`, `ptr^`, chains thereof) resolve to `Reference` objects (`core/references.ts`); the same mechanism backs assignment, INPUT/READFILE/GETRECORD targets, BYREF parameters and pointers
+- **Value semantics** — arrays and records deep-copy on assignment (`core/copy.ts`); objects stay references
+- Record/class member names are **case-insensitive** (the Cambridge guide itself mixes `FirstName`/`Firstname`); variable names remain case-sensitive
+- `filesystem.ts` = browser localStorage file I/O; `serverFilesystem.ts` = server-side (used during AI grading and vitest) — both implement the same API including random-access records, and must change together
+- New core modules: `records.ts`, `references.ts`, `classes.ts`, `copy.ts`, `serialize.ts` (record ↔ JSON for random files)
 
 ### INPUT syntax
 
-Two forms are supported:
+INPUT targets any designator, with an optional prompt:
 ```
 INPUT identifier                          // plain input
 INPUT identifier, "prompt text"          // displays prompt before the input field
-INPUT identifier[index]                   // array element input
-INPUT identifier[index], "prompt text"   // array element with prompt
+INPUT identifier[row, col]                // array element (1D or 2D)
+INPUT record.Field, "prompt text"        // record field with prompt
 ```
 
 The optional string literal is stripped of its quotes and passed to `onInputRequest(variableName, prompt?)` → stored in `OutputEntry.prompt?` → rendered in `OutputDisplay` as a `text-primary` line above the input field.
@@ -71,7 +84,7 @@ Key maps:
 - `PORTUGOL_TOKENS` — Portugol/VisualG keywords (escreval, leia, fimse, senao, etc.) — detects students writing Brazilian pseudocode and redirects them to the IGCSE equivalent
 
 Additional patterns (based on PostHog top-error analysis, Apr 2026):
-- `.` character → "not valid here, use `&` for string join"
+- `console.log(...)` now parses (dot notation is valid A Level syntax) and is caught at runtime → "Use OUTPUT instead"
 - Keyword on same line as previous statement → "must be on its own line"
 - `UNTIL` inside a FOR loop → directs to REPEAT or NEXT
 - `ENDIF` where `THEN` expected → missing THEN hint

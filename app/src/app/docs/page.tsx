@@ -270,9 +270,11 @@ const DocsPage = () => {
         <div className="max-w-3xl mx-auto">
           {/* Title */}
           <div className="pt-6 pb-4">
-            <h1 className="text-xl font-bold text-light-text">IGCSE Pseudocode Reference</h1>
+            <h1 className="text-xl font-bold text-light-text">Cambridge Pseudocode Reference</h1>
             <p className="text-sm text-dark-text mt-1">
-              Complete language reference for the Cambridge IGCSE (0478) pseudocode syntax supported by this compiler.
+              Complete language reference for Cambridge IGCSE (0478) and AS &amp; A Level (9618) pseudocode.
+              IGCSE syntax is a subset — everything below works for both courses unless marked{' '}
+              <span className="text-primary font-medium">A Level</span>.
             </p>
           </div>
 
@@ -1007,6 +1009,166 @@ CLOSEFILE "scores.txt"`}
 WRITEFILE "log.txt", "New entry"
 CLOSEFILE "log.txt"`}
           />
+
+          {/* ──────────────────────────────────────────────── */}
+          {/*  A Level (9618)                                  */}
+          {/* ──────────────────────────────────────────────── */}
+          <H2 id="alevel">A Level (9618) Extensions</H2>
+          <p className="text-sm text-dark-text mb-2">
+            The AS &amp; A Level (9618) course extends IGCSE pseudocode with user-defined types, reference
+            parameters, random-access files and object-oriented programming. All of these run in this
+            compiler — IGCSE students can simply ignore them.
+          </p>
+
+          <H3 id="alevel-types">User-Defined Types</H3>
+          <p className="text-sm text-dark-text mb-2">
+            <strong className="text-light-text">Records</strong> group related values under one identifier.
+            Access fields with dot notation; assigning a record copies it:
+          </p>
+          <CodeBlock
+            code={`TYPE StudentRecord
+    DECLARE LastName : STRING
+    DECLARE YearGroup : INTEGER
+ENDTYPE
+
+DECLARE Pupil1 : StudentRecord
+DECLARE Form : ARRAY[1:30] OF StudentRecord
+
+Pupil1.LastName <- "Johnson"
+Pupil1.YearGroup <- 6
+Form[1] <- Pupil1
+Form[1].YearGroup <- Form[1].YearGroup + 1`}
+          />
+          <p className="text-sm text-dark-text mt-3 mb-2">
+            <strong className="text-light-text">Enumerated types</strong> list their possible values.
+            Adding or subtracting an integer moves through the list:
+          </p>
+          <CodeBlock
+            code={`TYPE Season = (Spring, Summer, Autumn, Winter)
+DECLARE ThisSeason : Season
+ThisSeason <- Spring
+ThisSeason <- ThisSeason + 1   // Summer`}
+          />
+          <p className="text-sm text-dark-text mt-3 mb-2">
+            <strong className="text-light-text">Pointers</strong> hold the address of another variable.
+            <Kw>^x</Kw> takes the address of <Kw>x</Kw>; <Kw>ptr^</Kw> reads or writes the value at that
+            address:
+          </p>
+          <CodeBlock
+            code={`TYPE TIntPointer = ^INTEGER
+DECLARE MyPointer : TIntPointer
+DECLARE Num : INTEGER
+Num <- 5
+MyPointer <- ^Num
+OUTPUT MyPointer^        // 5
+MyPointer^ <- 10         // Num is now 10`}
+          />
+          <p className="text-sm text-dark-text mt-2">
+            Note: <Kw>^</Kw> is also the power operator. <Kw>x ^ 2</Kw> is still x squared — but to raise a
+            variable to a <em>negative</em> exponent, write it in brackets: <Kw>x ^ (-1)</Kw>.
+          </p>
+          <p className="text-sm text-dark-text mt-3 mb-2">
+            <strong className="text-light-text">Sets</strong> are declared with <Kw>SET OF</Kw> and given
+            values with <Kw>DEFINE</Kw>:
+          </p>
+          <CodeBlock
+            code={`TYPE LetterSet = SET OF CHAR
+DEFINE Vowels ('A', 'E', 'I', 'O', 'U') : LetterSet`}
+          />
+
+          <H3 id="alevel-date">DATE Type</H3>
+          <p className="text-sm text-dark-text mb-2">
+            <Kw>DATE</Kw> values are written as <Kw>dd/mm/yyyy</Kw> and compare chronologically:
+          </p>
+          <CodeBlock
+            code={`DECLARE Birthday : DATE
+Birthday <- 02/01/2005
+IF Birthday < 01/01/2010 THEN
+    OUTPUT "Born before 2010"
+ENDIF`}
+          />
+          <p className="text-sm text-dark-text mt-2">
+            A run of digits shaped exactly like <Kw>dd/mm/yyyy</Kw> is read as a date — write division with
+            spaces (<Kw>10 / 02 / 2005</Kw>) if you really mean arithmetic.
+          </p>
+
+          <H3 id="alevel-byref">BYREF &amp; BYVAL Parameters</H3>
+          <p className="text-sm text-dark-text mb-2">
+            By default parameters are passed <strong className="text-light-text">by value</strong> (the
+            procedure gets a copy). <Kw>BYREF</Kw> passes a reference so the procedure changes the
+            caller&apos;s variable. The keyword applies to the parameters after it too, until{' '}
+            <Kw>BYVAL</Kw> switches back:
+          </p>
+          <CodeBlock
+            code={`PROCEDURE SWAP(BYREF X : INTEGER, Y : INTEGER)
+    DECLARE Temp : INTEGER
+    Temp <- X
+    X <- Y        // changes the caller's variable
+    Y <- Temp     // Y is also BYREF (sticky)
+ENDPROCEDURE
+
+CALL SWAP(a, b)`}
+          />
+
+          <H3 id="alevel-case-ranges">CASE Ranges</H3>
+          <p className="text-sm text-dark-text mb-2">
+            CASE labels can be ranges (<Kw>value1 TO value2</Kw>, inclusive) or several values separated by
+            commas:
+          </p>
+          <CodeBlock
+            code={`CASE OF Mark
+    80 TO 100 : OUTPUT "Grade A"
+    60 TO 79  : OUTPUT "Grade B"
+    'x', 'X'  : OUTPUT "Absent"
+    OTHERWISE : OUTPUT "Ungraded"
+ENDCASE`}
+          />
+
+          <H3 id="alevel-random-files">Random-Access Files</H3>
+          <p className="text-sm text-dark-text mb-2">
+            Random files store records at numbered positions. <Kw>SEEK</Kw> moves the file pointer,{' '}
+            <Kw>PUTRECORD</Kw> writes the record there and <Kw>GETRECORD</Kw> reads it back:
+          </p>
+          <CodeBlock
+            code={`OPENFILE "StudentFile.dat" FOR RANDOM
+SEEK "StudentFile.dat", 10
+PUTRECORD "StudentFile.dat", Pupil
+SEEK "StudentFile.dat", 10
+GETRECORD "StudentFile.dat", Found
+CLOSEFILE "StudentFile.dat"`}
+          />
+
+          <H3 id="alevel-oop">Classes &amp; Objects</H3>
+          <p className="text-sm text-dark-text mb-2">
+            Classes group properties and methods. The constructor is a procedure named <Kw>NEW</Kw>;{' '}
+            <Kw>INHERITS</Kw> creates a subclass and <Kw>SUPER</Kw> calls the parent&apos;s methods.
+            Members marked <Kw>PRIVATE</Kw> can only be used inside the class:
+          </p>
+          <CodeBlock
+            code={`CLASS Pet
+    PRIVATE Name : STRING
+    PUBLIC PROCEDURE NEW(GivenName : STRING)
+        Name <- GivenName
+    ENDPROCEDURE
+ENDCLASS
+
+CLASS Cat INHERITS Pet
+    PRIVATE Breed : STRING
+    PUBLIC PROCEDURE NEW(GivenName : STRING, GivenBreed : STRING)
+        SUPER.NEW(GivenName)
+        Breed <- GivenBreed
+    ENDPROCEDURE
+ENDCLASS
+
+MyCat <- NEW Cat("Kitty", "Shorthaired")
+Player.SetAttempts(5)              // method call
+OUTPUT Player.GetAttempts()        // method in an expression`}
+          />
+          <p className="text-sm text-dark-text mt-2">
+            Note: A Level keywords such as <Kw>TYPE</Kw>, <Kw>SET</Kw>, <Kw>DATE</Kw>, <Kw>NEW</Kw>,{' '}
+            <Kw>CLASS</Kw>, <Kw>PUBLIC</Kw> and <Kw>PRIVATE</Kw> are reserved and cannot be used as
+            variable names.
+          </p>
 
           {/* ──────────────────────────────────────────────── */}
           {/*  Common Patterns                                 */}

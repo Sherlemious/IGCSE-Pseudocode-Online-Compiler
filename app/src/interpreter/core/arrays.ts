@@ -6,14 +6,21 @@ export class PseudocodeArray {
   private lowerBounds: number[];
   private upperBounds: number[];
   private defaultType: string;
+  private defaultFactory?: () => RuntimeValue;
 
-  constructor(bounds: { lower: number; upper: number }[], elementType: string) {
+  constructor(
+    bounds: { lower: number; upper: number }[],
+    elementType: string,
+    defaultFactory?: () => RuntimeValue,
+  ) {
     this.lowerBounds = bounds.map((b) => b.lower);
     this.upperBounds = bounds.map((b) => b.upper);
     this.defaultType = elementType;
+    this.defaultFactory = defaultFactory;
   }
 
   private makeDefault(): RuntimeValue {
+    if (this.defaultFactory) return this.defaultFactory();
     switch (this.defaultType.toUpperCase()) {
       case 'INTEGER':
         return mkInteger(0);
@@ -59,5 +66,29 @@ export class PseudocodeArray {
     this.checkBounds(indices);
     const key = this.makeKey(indices);
     this.storage.set(key, value);
+  }
+
+  getBounds(): { lower: number; upper: number }[] {
+    return this.lowerBounds.map((l, i) => ({ lower: l, upper: this.upperBounds[i] }));
+  }
+
+  getElementTypeName(): string {
+    return this.defaultType;
+  }
+
+  entries(): IterableIterator<[string, RuntimeValue]> {
+    return this.storage.entries();
+  }
+
+  setRaw(key: string, value: RuntimeValue): void {
+    this.storage.set(key, value);
+  }
+
+  clone(copyFn: (v: RuntimeValue) => RuntimeValue): PseudocodeArray {
+    const copy = new PseudocodeArray(this.getBounds(), this.defaultType, this.defaultFactory);
+    for (const [k, v] of this.storage) {
+      copy.storage.set(k, copyFn(v));
+    }
+    return copy;
   }
 }
