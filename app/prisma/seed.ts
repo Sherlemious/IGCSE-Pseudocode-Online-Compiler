@@ -5925,7 +5925,7 @@ OUTPUT "18 and over: " & Count18Over`,
   // ═══ CAMBRIDGE AS & A LEVEL 9618 MAY/JUNE 2024 ═══════════════════════════
 
   {
-    title: '9618 Paper 41: Initialise DataStored',
+    title: 'Initialise DataStored',
     description: `Adapted from Cambridge International AS & A Level Computer Science (9618), May/June 2024 Paper 41, Question 1.
 
 Declare a global 1D array \`DataStored\` with space for up to 20 integers and a global variable \`NumberItems\`.
@@ -6021,7 +6021,7 @@ NEXT Index`,
   },
 
   {
-    title: '9618 Paper 41: Bubble Sort and Binary Search',
+    title: 'Bubble Sort and Binary Search',
     description: `Adapted from Cambridge International AS & A Level Computer Science (9618), May/June 2024 Paper 41, Question 1.
 
 The global array \`DataStored\` contains up to 20 integers. Write:
@@ -6154,7 +6154,7 @@ OUTPUT BinarySearch(SearchValue)`,
   },
 
   {
-    title: '9618 Paper 41: Tree Class Summary',
+    title: 'Tree Class Summary',
     description: `Adapted from Cambridge International AS & A Level Computer Science (9618), May/June 2024 Paper 41, Question 2.
 
 Declare class \`Tree\` with private attributes:
@@ -6286,7 +6286,7 @@ CALL PrintTree(MyTree)`,
   },
 
   {
-    title: '9618 Paper 41: Linear Queue Operations',
+    title: 'Linear Queue Operations',
     description: `Adapted from Cambridge International AS & A Level Computer Science (9618), May/June 2024 Paper 41, Question 3.
 
 A linear queue stores up to 20 strings in \`QueueData\`. \`QueueHead\` and \`QueueTail\` both start at \`-1\`.
@@ -6414,7 +6414,7 @@ NEXT Count`,
   },
 
   {
-    title: '9618 Paper 21: Odd and Even Index Totals',
+    title: 'Odd and Even Index Totals',
     description: `Adapted from Cambridge International AS & A Level Computer Science (9618), May/June 2024 Paper 21, Question 4.
 
 A global array \`Data\` stores integer elements. Write function \`Check()\` to total the elements in odd index locations and even index locations. Return:
@@ -6510,7 +6510,7 @@ OUTPUT Check()`,
   },
 
   {
-    title: '9618 Paper 21: Right-Angled Triangle Function',
+    title: 'Right-Angled Triangle Function',
     description: `Adapted from Cambridge International AS & A Level Computer Science (9618), May/June 2024 Paper 21, Question 6.
 
 Write function \`ISRA()\` that takes six integers representing the coordinates of three triangle vertices:
@@ -6595,7 +6595,7 @@ OUTPUT ISRA(x1, y1, x2, y2, x3, y3)`,
   },
 
   {
-    title: '9618 Paper 21: Remove Comments from Source File',
+    title: 'Remove Comments from Source File',
     description: `Adapted from Cambridge International AS & A Level Computer Science (9618), May/June 2024 Paper 21, Question 8.
 
 Write:
