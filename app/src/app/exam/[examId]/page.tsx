@@ -4,7 +4,13 @@ import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import ExamWorkspace from '@/components/exam/ExamWorkspace';
 
-export const metadata: Metadata = { title: 'Exam in Progress' };
+export const metadata: Metadata = {
+  title: 'Exam in Progress',
+  robots: {
+    index: false,
+    follow: false,
+  },
+};
 
 interface Props {
   params: Promise<{ examId: string }>;

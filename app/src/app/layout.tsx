@@ -8,117 +8,112 @@ import { Toaster } from 'sonner';
 import PostHogProvider from '../components/analytics/PostHogProvider';
 import SessionIdentifier from '../components/analytics/SessionIdentifier';
 import OnboardingNudges from '../components/onboarding/OnboardingNudges';
-
-const SITE_URL = 'https://pseudocode-compiler.sherlemious.com';
-const DESCRIPTION =
-  'Write, run and debug Cambridge IGCSE and Cambridge International AS & A Level Computer Science pseudocode in your browser. Free compiler for 0478/0984/2210 and 9618 with interactive input, practice questions, timed exams and instant autograding.';
+import {
+  DEFAULT_DESCRIPTION,
+  DEFAULT_TITLE,
+  SEO_KEYWORDS,
+  SITE_NAME,
+  SITE_URL,
+} from '@/lib/seo';
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
+  applicationName: SITE_NAME,
   title: {
-    default: 'IGCSE and AS & A Level Pseudocode Compiler — Free Online Editor & Runner',
-    template: '%s | IGCSE and AS & A Level Pseudocode Compiler',
+    default: DEFAULT_TITLE,
+    template: `%s | ${SITE_NAME}`,
   },
-  description: DESCRIPTION,
-  keywords: [
-    // syllabus codes
-    '0478', '0984', '2210', '9618',
-    // exam boards & levels
-    'IGCSE', 'IGCSE 9-1', 'O Level', 'Cambridge IGCSE', 'Cambridge O Level', 'CIE',
-    'A Level', 'A-Level', 'AS Level', 'AS & A Level', 'Cambridge A Level', 'Cambridge A-Level',
-    'Cambridge International AS & A Level', 'Cambridge International AS Level', 'Cambridge International A Level',
-    // subject names
-    'Computer Science', 'IGCSE Computer Science', 'O Level Computer Science',
-    'A Level Computer Science', 'AS & A Level Computer Science',
-    'Cambridge A Level Computer Science', 'Cambridge International AS & A Level Computer Science',
-    '9618 Computer Science', 'Cambridge 9618',
-    // A-Level pseudocode
-    'A Level pseudocode', 'AS & A Level pseudocode', 'pseudocode A Level', 'pseudocode 9618',
-    'AS Level pseudocode', '9618 pseudocode guide', '2026 Pseudocode Guide', '2027 2029 Pseudocode Guide',
-    // core tool terms — spelling variants
-    'pseudocode', 'pseudo code', 'pseudo-code',
-    'pseudocode compiler', 'pseudocode interpreter', 'pseudocode online',
-    'run pseudocode', 'pseudocode editor', 'pseudocode runner',
-    'pseudocode checker', 'pseudocode tester', 'pseudocode simulator',
-    // translator / converter
-    'pseudocode translator', 'pseudocode to Python', 'pseudocode to code',
-    'convert pseudocode', 'pseudocode converter', 'translate pseudocode',
-    // algorithm & CS concepts students search
-    'algorithm', 'flowchart', 'trace table', 'dry run', 'pseudocode algorithm',
-    'pseudocode examples', 'pseudocode syntax', 'Cambridge pseudocode syntax',
-    // language features students look up
-    'pseudocode arrays', 'pseudocode functions', 'pseudocode procedures',
-    'pseudocode file handling', 'pseudocode INPUT OUTPUT',
-    'pseudocode IF ELSE', 'pseudocode FOR loop', 'pseudocode WHILE loop',
-    'pseudocode REPEAT UNTIL', 'pseudocode CASE OF',
-    'pseudocode DECLARE', 'pseudocode INTEGER REAL STRING BOOLEAN',
-    // practice & exam features
-    'pseudocode practice questions', 'pseudocode past paper questions',
-    'pseudocode exam simulator', 'timed pseudocode exam',
-    'pseudocode autograder', 'pseudocode autograding', 'pseudocode test cases',
-    'IGCSE CS practice questions', 'IGCSE computer science past papers',
-    // student intent
-    'learn pseudocode', 'IGCSE revision', 'IGCSE practice', 'IGCSE past papers',
-    'Cambridge past papers', 'IGCSE CS revision', 'computer science revision',
-    'pseudocode help', 'pseudocode tutorial', 'pseudocode for beginners',
-    // tool type
-    'free pseudocode compiler', 'online pseudocode IDE', 'browser pseudocode',
-    'no install pseudocode', 'pseudocode without Python',
-    // regional
-    'Egypt', 'IGCSE Egypt', 'Cambridge Egypt',
-    'UAE', 'Saudi Arabia', 'Pakistan', 'Nigeria', 'Kenya', 'international school',
-  ],
+  description: DEFAULT_DESCRIPTION,
+  keywords: [...SEO_KEYWORDS],
   authors: [{ name: 'Sherlemious' }],
+  creator: 'Sherlemious',
+  publisher: 'Sherlemious',
+  category: 'education',
+  alternates: {
+    canonical: '/',
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
   icons: { icon: '/favicon.svg', shortcut: '/favicon.svg' },
   openGraph: {
     type: 'website',
-    siteName: 'IGCSE and AS & A Level Pseudocode Compiler',
+    siteName: SITE_NAME,
     url: SITE_URL,
-    title: 'IGCSE and AS & A Level Pseudocode Compiler — Free Online Editor & Runner',
-    description: DESCRIPTION,
+    title: DEFAULT_TITLE,
+    description: DEFAULT_DESCRIPTION,
     locale: 'en_US',
   },
   twitter: {
     card: 'summary',
-    title: 'IGCSE and AS & A Level Pseudocode Compiler — Free Online Editor & Runner',
-    description: DESCRIPTION,
+    title: DEFAULT_TITLE,
+    description: DEFAULT_DESCRIPTION,
   },
 };
 
 const jsonLd = {
   '@context': 'https://schema.org',
   '@type': 'WebApplication',
-  name: 'IGCSE and AS & A Level Pseudocode Compiler',
+  name: SITE_NAME,
   url: SITE_URL,
-  description: DESCRIPTION,
+  description: DEFAULT_DESCRIPTION,
   applicationCategory: 'EducationalApplication',
   operatingSystem: 'Any',
   browserRequirements: 'Requires a modern browser with JavaScript enabled',
   inLanguage: 'en',
+  isAccessibleForFree: true,
+  educationalUse: ['practice', 'revision', 'exam preparation'],
+  learningResourceType: ['compiler', 'code editor', 'practice questions', 'exam simulator'],
+  teaches: [
+    'Cambridge IGCSE Computer Science pseudocode',
+    'Cambridge O Level Computer Science pseudocode',
+    'Cambridge International AS & A Level Computer Science 9618 pseudocode',
+    'trace tables',
+    'classes and object-oriented pseudocode',
+  ],
   audience: {
     '@type': 'EducationalAudience',
     educationalRole: 'student',
   },
+  accessibilityFeature: [
+    'adjustableText',
+    'alternativeText',
+    'highContrastDisplay',
+    'readingOrder',
+  ],
   featureList: [
-    'Browser-based pseudocode compiler — no installation required',
-    'Interactive INPUT support — execution pauses and waits for user input',
+    'Browser-based pseudocode compiler with no installation required',
+    'Interactive INPUT support where execution pauses and waits for user input',
     'Supports Cambridge IGCSE (0478/0984/2210) and Cambridge International AS & A Level Computer Science (9618) pseudocode syntax',
-    'Full pseudocode syntax: IF/ELSEIF/ELSE, FOR/WHILE/REPEAT, CASE OF, PROCEDURE, FUNCTION, arrays, file handling',
+    'Full IGCSE pseudocode syntax: IF/ELSEIF/ELSE, FOR/WHILE/REPEAT, CASE OF, PROCEDURE, FUNCTION, arrays and file handling',
+    'AS & A Level features including records, enums, pointers, SET OF, DATE, random-access files, classes, objects, inheritance, constructors and SUPER',
     'Built-in functions: LENGTH, SUBSTRING, ROUND, INT, RANDOM, ASC, CHR, NUM_TO_STRING, STRING_TO_NUM',
+    'Trace table support for dry-running algorithms and checking variable changes',
+    'Dyslexia-friendly editor option with OpenDyslexic typography',
     'Syntax highlighting editor with error markers',
-    'Practice questions sourced from IGCSE past papers with difficulty and topic filters',
+    'Practice questions sourced from Cambridge past papers with difficulty, topic, year and session filters',
     'Multi-step hints and model solutions per question',
     'Instant autograder with visible and hidden test cases',
-    'Timed exam simulation with configurable duration and question count',
+    'Timed practice exams with configurable duration and question count',
     'Progress tracking: solved status, best score, attempt history',
     'Analytics dashboard with activity heatmap and topic/difficulty breakdown',
     'Comprehensive language reference documentation with searchable TOC',
     'Share code via URL, clipboard, or WhatsApp',
     'File handling simulation via browser localStorage',
-    'Google and GitHub OAuth sign-in',
+    'Google OAuth sign-in',
   ],
-  alternativeHeadline: 'IGCSE and AS & A Level Pseudocode Editor, Runner & Interpreter',
-  alternativeName: ['pseudocode compiler', 'pseudocode editor', 'pseudocode runner', 'pseudocode interpreter', 'psuedocode compiler', 'pseudocode complier'],
+  alternativeHeadline: 'Cambridge IGCSE, O Level and AS & A Level Pseudocode Editor, Runner & Interpreter',
+  alternativeName: [
+    'pseudocode compiler',
+    'pseudocode editor',
+    'pseudocode runner',
+    'pseudocode interpreter',
+    'IGCSE pseudocode compiler',
+    'A Level pseudocode compiler',
+    'psuedocode compiler',
+    'pseudocode complier',
+  ],
   offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
 };
 

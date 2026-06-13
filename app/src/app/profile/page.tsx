@@ -8,7 +8,13 @@ import { User, Crown, Shield, GraduationCap, BarChart3, LayoutDashboard, LogOut,
 import ProfileNameEditor from './_components/ProfileNameEditor';
 import ThemeManager from './_components/ThemeManager';
 
-export const metadata: Metadata = { title: 'Profile' };
+export const metadata: Metadata = {
+  title: 'Profile',
+  robots: {
+    index: false,
+    follow: false,
+  },
+};
 
 const ROLE_CONFIG = {
   ADMIN:   { label: 'Admin',   className: 'text-error border-error/40 bg-error/10',       Icon: Shield },

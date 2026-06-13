@@ -8,9 +8,13 @@ import { Clock, Trophy, ArrowRight, Hourglass } from 'lucide-react';
 import ExamConfigForm from '@/components/exam/ExamConfigForm';
 
 export const metadata: Metadata = {
-  title: 'IGCSE Pseudocode Exam Simulator — Timed Practice',
+  title: 'Pseudocode Practice Exam Simulator - Timed Cambridge CS',
   description:
-    'Simulate a timed IGCSE Computer Science exam. Choose your topic, difficulty, and duration. Get scored results with per-question pass/fail feedback.',
+    'Run timed Cambridge IGCSE, O Level and AS & A Level pseudocode practice exams with autograded questions, scored results and progress analytics.',
+  robots: {
+    index: false,
+    follow: false,
+  },
 };
 
 export default async function ExamPage() {

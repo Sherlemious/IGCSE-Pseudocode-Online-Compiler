@@ -5,9 +5,17 @@ const FEATURE_LINKS = [
   { label: 'Practice Questions', href: '/practice' },
   { label: 'Language Docs', href: '/docs' },
   { label: 'Timed Exams', href: '/exam' },
+  { label: 'Progress Analytics', href: '/analytics' },
 ] as const;
 
-const FEATURE_TAGS = ['Interactive INPUT', 'Autograded', 'No install'] as const;
+const FEATURE_TAGS = [
+  'Interactive INPUT',
+  'Trace Tables',
+  'Classes & OOP',
+  'Dyslexia Friendly',
+  'Autograded',
+  'No install',
+] as const;
 
 export default function Home() {
   return (
@@ -25,8 +33,11 @@ export default function Home() {
             IGCSE and AS &amp; A Level Pseudocode Compiler
           </h1>
           <span className="sr-only">
-            — Free online editor &amp; runner for Cambridge IGCSE Computer Science and Cambridge
-            International AS &amp; A Level Computer Science (9618) · 0478 · 0984 · 2210 · 9618
+            - Free online editor and runner for Cambridge IGCSE Computer Science, Cambridge O Level
+            Computer Science, and Cambridge International AS &amp; A Level Computer Science (9618).
+            Supports 0478, 0984, 2210 and 9618 pseudocode, including trace tables, records,
+            pointers, classes, object-oriented programming, dyslexia-friendly editor settings,
+            analytics, timed practice exams, and Cambridge past-paper questions.
           </span>
         </div>
 

@@ -6,7 +6,13 @@ import { Braces } from 'lucide-react';
 // import { Terminal } from 'lucide-react';
 // import AuthForm from '@/components/auth/AuthForm';
 
-export const metadata: Metadata = { title: 'Sign In' };
+export const metadata: Metadata = {
+  title: 'Sign In',
+  robots: {
+    index: false,
+    follow: false,
+  },
+};
 
 const ERROR_MESSAGES: Record<string, string> = {
   OAuthAccountNotLinked:

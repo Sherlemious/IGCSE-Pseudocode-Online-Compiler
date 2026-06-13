@@ -10,6 +10,13 @@ import { PREMIUM_GATING_ENABLED } from '../../../lib/featureFlags';
 import PracticeWorkspace from '../../../components/practice/PracticeWorkspace';
 import HintsPanel from '../../../components/practice/HintsPanel';
 import SolutionPanel from '../../../components/practice/SolutionPanel';
+import {
+  absoluteUrl,
+  paperReference,
+  SITE_NAME,
+  stripMarkdown,
+  truncateDescription,
+} from '@/lib/seo';
 
 interface Props {
   params: Promise<{ questionId: string }>;
@@ -18,10 +25,78 @@ interface Props {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { questionId } = await params;
   try {
-    const q = await prisma.question.findUnique({ where: { id: questionId }, select: { title: true } });
-    return { title: q?.title ?? 'Question' };
+    const q = await prisma.question.findUnique({
+      where: { id: questionId },
+      select: {
+        title: true,
+        description: true,
+        difficulty: true,
+        topic: true,
+        tags: true,
+        year: true,
+        session: true,
+        variant: true,
+        questionNumber: true,
+        part: true,
+        paper: true,
+      },
+    });
+
+    if (!q) {
+      return {
+        title: 'Question',
+        robots: {
+          index: false,
+          follow: false,
+        },
+      };
+    }
+
+    const ref = paperReference(q);
+    const title = `${q.title}${ref ? ` - ${ref}` : ''}`;
+    const description = truncateDescription(
+      `${stripMarkdown(q.description)} Practice this Cambridge pseudocode question with instant autograding, hints, model solutions and trace-table friendly feedback.`
+    );
+    const url = `/practice/${questionId}`;
+
+    return {
+      title,
+      description,
+      alternates: {
+        canonical: url,
+      },
+      keywords: [
+        q.title,
+        q.topic,
+        q.difficulty,
+        ref,
+        ...q.tags,
+        'Cambridge pseudocode practice question',
+        'pseudocode past paper question',
+        'trace table practice',
+        'A Level pseudocode classes',
+      ].filter(Boolean) as string[],
+      openGraph: {
+        type: 'article',
+        title,
+        description,
+        url: absoluteUrl(url),
+        siteName: SITE_NAME,
+      },
+      twitter: {
+        card: 'summary',
+        title,
+        description,
+      },
+    };
   } catch {
-    return { title: 'Question' };
+    return {
+      title: 'Question',
+      robots: {
+        index: false,
+        follow: false,
+      },
+    };
   }
 }
 
@@ -51,6 +126,31 @@ export default async function QuestionPage({ params }: Props) {
 
   // Access control applies only when premium gating is enabled.
   const isLocked = question.difficulty !== 'EASY' && !hasFullAccess;
+  const ref = paperReference(question);
+  const questionJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'LearningResource',
+    name: question.title,
+    description: truncateDescription(stripMarkdown(question.description), 280),
+    url: absoluteUrl(`/practice/${question.id}`),
+    inLanguage: 'en',
+    isAccessibleForFree: !isLocked,
+    learningResourceType: 'practice problem',
+    educationalUse: ['practice', 'revision', 'exam preparation'],
+    educationalLevel: question.tags.includes('AS & A Level') ? 'AS & A Level' : 'IGCSE/O Level',
+    teaches: [
+      question.topic,
+      'Cambridge pseudocode',
+      'trace tables',
+      question.tags.includes('Classes') || question.tags.includes('OOP') ? 'classes and object-oriented programming' : null,
+    ].filter(Boolean),
+    about: [question.topic, ref, ...question.tags].filter(Boolean),
+    isPartOf: {
+      '@type': 'WebApplication',
+      name: SITE_NAME,
+      url: absoluteUrl('/'),
+    },
+  };
 
   // Load saved code for authenticated users
   let savedCode: string | null = null;
@@ -82,6 +182,10 @@ export default async function QuestionPage({ params }: Props) {
 
   return (
     <div className="flex-1 min-h-0 overflow-hidden bg-background text-light-text flex flex-col lg:flex-row">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(questionJsonLd) }}
+      />
       {/* Left: Question description */}
       <div className="lg:w-96 shrink-0 border-r border-border overflow-y-auto p-6 scrollbar-thin scrollbar-thumb-primary">
         <Link

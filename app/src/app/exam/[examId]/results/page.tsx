@@ -6,7 +6,13 @@ import { prisma } from '@/lib/prisma';
 import { Clock, ArrowLeft, CheckCircle, XCircle, RotateCcw, Minus } from 'lucide-react';
 import ExamShareButton from '@/components/share/ExamShareButton';
 
-export const metadata: Metadata = { title: 'Exam Results' };
+export const metadata: Metadata = {
+  title: 'Exam Results',
+  robots: {
+    index: false,
+    follow: false,
+  },
+};
 
 interface Props {
   params: Promise<{ examId: string }>;

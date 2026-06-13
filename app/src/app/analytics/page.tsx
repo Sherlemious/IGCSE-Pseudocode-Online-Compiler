@@ -11,7 +11,13 @@ import RecentActivity from '@/components/analytics/RecentActivity';
 import ExamHistory from '@/components/analytics/ExamHistory';
 import ActivityHeatmap from '@/components/analytics/ActivityHeatmap';
 
-export const metadata: Metadata = { title: 'Analytics' };
+export const metadata: Metadata = {
+  title: 'Analytics',
+  robots: {
+    index: false,
+    follow: false,
+  },
+};
 
 export default async function AnalyticsPage() {
   const session = await auth();

@@ -6,7 +6,13 @@ import { Braces } from 'lucide-react';
 // import { Terminal } from 'lucide-react';
 // import AuthForm from '@/components/auth/AuthForm';
 
-export const metadata: Metadata = { title: 'Sign Up' };
+export const metadata: Metadata = {
+  title: 'Sign Up',
+  robots: {
+    index: false,
+    follow: false,
+  },
+};
 
 export default async function SignUpPage() {
   const session = await auth();

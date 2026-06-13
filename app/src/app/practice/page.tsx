@@ -8,9 +8,12 @@ import { PREMIUM_GATING_ENABLED } from '../../lib/featureFlags';
 import { PracticeFilters } from './PracticeFilters';
 
 export const metadata: Metadata = {
-  title: 'IGCSE Pseudocode Practice Questions — Cambridge Past Papers',
+  title: 'Cambridge Pseudocode Practice Questions - Past Papers',
   description:
-    'Solve IGCSE pseudocode questions from Cambridge past papers. Filter by topic and difficulty. Get instant autograded feedback, multi-step hints, and model solutions.',
+    'Solve Cambridge IGCSE, O Level and AS & A Level pseudocode past-paper questions. Practice trace tables, classes/OOP and algorithms with instant autograding, hints and analytics.',
+  alternates: {
+    canonical: '/practice',
+  },
 };
 
 const DIFFICULTY_COLOR: Record<string, string> = {
