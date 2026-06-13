@@ -10,8 +10,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   return (
     <div className="flex h-screen overflow-hidden bg-background text-light-text">
-      <AdminSidebar />
-      <main className="flex-1 overflow-y-auto p-4 pt-16 md:pt-4 md:p-8 scrollbar-pretty">
+      <AdminSidebar user={{ name: session.user.name, email: session.user.email, image: session.user.image }} />
+      <main className="flex-1 overflow-y-auto p-4 md:p-8 pb-20 md:pb-8 scrollbar-pretty">
         {children}
       </main>
     </div>

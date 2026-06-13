@@ -1,15 +1,16 @@
 import { prisma } from '@/lib/prisma';
-import { Users, MessageSquare, BookOpen } from 'lucide-react';
+import { Users, MessageSquare, BookOpen, BookOpenCheck } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Admin — Overview' };
 
 export default async function AdminOverviewPage() {
-  const [userCount, feedbackCount, examCount, recentFeedback] =
+  const [userCount, feedbackCount, examCount, questionCount, recentFeedback] =
     await Promise.all([
       prisma.user.count(),
       prisma.feedbackSubmission.count(),
       prisma.examAttempt.count(),
+      prisma.question.count(),
       prisma.feedbackSubmission.findMany({
         orderBy: { createdAt: 'desc' },
         take: 5,
@@ -18,9 +19,10 @@ export default async function AdminOverviewPage() {
     ]);
 
   const stats = [
-    { label: 'Total users',    value: userCount,     icon: Users,         color: 'text-primary' },
-    { label: 'Feedback items', value: feedbackCount, icon: MessageSquare, color: 'text-success' },
-    { label: 'Exam attempts',  value: examCount,     icon: BookOpen,      color: 'text-warning' },
+    { label: 'Total users',    value: userCount,     icon: Users,          color: 'text-primary' },
+    { label: 'Feedback items', value: feedbackCount, icon: MessageSquare,  color: 'text-success' },
+    { label: 'Exam attempts',  value: examCount,     icon: BookOpen,       color: 'text-warning' },
+    { label: 'Questions',      value: questionCount, icon: BookOpenCheck,  color: 'text-error'   },
   ];
 
   return (
@@ -31,7 +33,7 @@ export default async function AdminOverviewPage() {
       </div>
 
       {/* Stat cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map(({ label, value, icon: Icon, color }) => (
           <div key={label} className="bg-surface border border-border rounded-xl p-5">
             <div className={`mb-3 ${color}`}><Icon size={18} /></div>
