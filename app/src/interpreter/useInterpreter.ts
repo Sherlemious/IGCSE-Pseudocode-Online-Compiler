@@ -93,7 +93,7 @@ export function useInterpreter() {
   }, [flushTrace]);
 
   const startExecution = useCallback(
-    async (sourceCode: string, stepMode: boolean, traceMode = false) => {
+    async (sourceCode: string, stepMode: boolean) => {
       // Clean up any previous run
       if (abortRef.current) {
         abortRef.current.abort();
@@ -110,7 +110,10 @@ export function useInterpreter() {
       traceBuffer.current = [];
       traceOutputBuffer.current = [];
       traceStepRef.current = 0;
-      traceModeRef.current = traceMode;
+      // Trace is always collected now (no separate "Trace" action) — both Run
+      // and Debug build the dry-run table, IDE-style. It's still capped at
+      // MAX_TRACE_ROWS, so the per-statement snapshot overhead stays bounded.
+      traceModeRef.current = true;
 
       setEntries([]);
       setTraceRows([]);
@@ -226,9 +229,8 @@ export function useInterpreter() {
       );
 
       interpreter.setStepMode(stepMode);
-      interpreter.setTraceMode(traceMode);
-      // Trace runs straight through — ignore breakpoints so the table is complete.
-      interpreter.setBreakpoints(traceMode ? new Set() : breakpoints);
+      interpreter.setTraceMode(true);
+      interpreter.setBreakpoints(breakpoints);
       interpreterRef.current = interpreter;
 
       try {
@@ -272,13 +274,6 @@ export function useInterpreter() {
   const debugRun = useCallback(
     async (sourceCode: string) => {
       await startExecution(sourceCode, true);
-    },
-    [startExecution]
-  );
-
-  const traceRun = useCallback(
-    async (sourceCode: string) => {
-      await startExecution(sourceCode, false, true);
     },
     [startExecution]
   );
@@ -380,7 +375,6 @@ export function useInterpreter() {
     // Actions
     run,
     debugRun,
-    traceRun,
     step,
     continueExecution,
     provideInput,

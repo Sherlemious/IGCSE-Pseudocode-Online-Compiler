@@ -81,7 +81,6 @@ const CompilerPage: React.FC = () => {
     maxTraceRows,
     run,
     debugRun,
-    traceRun,
     step,
     continueExecution,
     provideInput,
@@ -107,6 +106,19 @@ const CompilerPage: React.FC = () => {
   useEffect(() => {
     setIsRunning(interpreterRunning);
   }, [interpreterRunning]);
+
+  // The INPUT field lives in the Terminal tab. If the student is watching the
+  // Trace table when the program asks for input, pull them back to the Terminal
+  // so they can actually type their answer. Fire only on the false→true edge so
+  // we don't fight a student who deliberately flips to Trace while paused.
+  const outputTabRef = useRef(outputTab);
+  useEffect(() => { outputTabRef.current = outputTab; }, [outputTab]);
+  useEffect(() => {
+    if (waitingForInput && outputTabRef.current !== 'terminal') {
+      setOutputTab('terminal');
+      toast.info('Input needed — switched to the Terminal tab');
+    }
+  }, [waitingForInput]);
 
   // Update line count when active tab content changes
   useEffect(() => {
@@ -272,12 +284,6 @@ const CompilerPage: React.FC = () => {
     await debugRun(activeTab.content);
   };
 
-  const handleTraceCode = async () => {
-    if (!activeTab.content.trim()) return;
-    setOutputTab('trace');
-    await traceRun(activeTab.content);
-  };
-
   return (
     <div className="flex-1 min-h-0 flex flex-col bg-background text-light-text overflow-hidden">
       <div ref={containerRef} className="flex-1 min-h-0 flex flex-col lg:flex-row">
@@ -288,7 +294,6 @@ const CompilerPage: React.FC = () => {
             onCodeChange={handleCodeChange}
             onRunCode={handleRunCode}
             onDebugCode={handleDebugCode}
-            onTraceCode={handleTraceCode}
             isRunning={interpreterRunning}
             isStepping={isStepping}
             debugLine={debugLine}

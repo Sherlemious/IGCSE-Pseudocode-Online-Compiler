@@ -8,7 +8,6 @@ import {
   Keyboard,
   X,
   Bug,
-  Table2,
   SkipForward,
   FastForward,
   Download,
@@ -38,7 +37,6 @@ interface CodeInputProps {
   onCodeChange: (code: string) => void;
   onRunCode: () => void;
   onDebugCode: () => void;
-  onTraceCode: () => void;
   isRunning: boolean;
   isStepping: boolean;
   debugLine: number | null;
@@ -64,7 +62,6 @@ const CodeInput: React.FC<CodeInputProps> = ({
   onCodeChange,
   onRunCode,
   onDebugCode,
-  onTraceCode,
   isRunning,
   isStepping,
   debugLine,
@@ -255,14 +252,6 @@ const CodeInput: React.FC<CodeInputProps> = ({
 
           {!isRunning && (
             <>
-              <button
-                onClick={onTraceCode}
-                className="flex items-center gap-1 px-2 py-1 text-xs text-primary hover:bg-primary/10 rounded transition-colors"
-                title="Trace (generate a dry-run table)"
-              >
-                <Table2 className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">Trace</span>
-              </button>
               <button
                 onClick={onDebugCode}
                 className="flex items-center gap-1 px-2 py-1 text-xs text-warning hover:bg-warning/10 rounded transition-colors"

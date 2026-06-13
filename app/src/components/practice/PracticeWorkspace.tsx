@@ -5,6 +5,7 @@ import CodeMirrorEditor from '../compiler/CodeMirrorEditor';
 import TraceTable from '../compiler/TraceTable';
 import { useInterpreter } from '../../interpreter/useInterpreter';
 import { AUTOSAVE_DELAY, SPLIT_PRACTICE_KEY, loadSplitPercent } from '../../utils/constants';
+import { toast } from 'sonner';
 import {
   Play,
   Square,
@@ -93,7 +94,7 @@ export default function PracticeWorkspace({ questionId, starterCode, savedCode, 
     entries, isRunning, waitingForInput,
     isStepping, debugLine, debugVariables, errorLine, breakpoints,
     traceRows, maxTraceRows,
-    run, debugRun, traceRun, step, continueExecution, provideInput, stop, clearEntries, toggleBreakpoint,
+    run, debugRun, step, continueExecution, provideInput, stop, clearEntries, toggleBreakpoint,
   } = useInterpreter();
 
   /* ── Output panel ───────────────────────────────────── */
@@ -145,6 +146,20 @@ export default function PracticeWorkspace({ questionId, starterCode, savedCode, 
     if (waitingForInput && inputRef.current) inputRef.current.focus();
   }, [waitingForInput]);
 
+  /* ── Pull back to Output when input is needed ──────────
+     The INPUT field is only rendered in the Output tab, so if the student is on
+     the Trace (or Results) tab when the program asks for input, switch them back
+     so they can type. Fire only on the false→true edge to avoid fighting a
+     deliberate tab switch while paused. */
+  const activeTabRef = useRef(activeTab);
+  useEffect(() => { activeTabRef.current = activeTab; }, [activeTab]);
+  useEffect(() => {
+    if (waitingForInput && activeTabRef.current !== 'output') {
+      setActiveTab('output');
+      toast.info('Input needed — switched to the Output tab');
+    }
+  }, [waitingForInput]);
+
   /* ── Handlers ───────────────────────────────────────── */
   const handleRun = useCallback(async () => {
     if (!code.trim() || isRunning) return;
@@ -157,13 +172,6 @@ export default function PracticeWorkspace({ questionId, starterCode, savedCode, 
     setActiveTab('output');
     await debugRun(code);
   }, [code, isRunning, debugRun]);
-
-  const handleTrace = useCallback(async () => {
-    if (!code.trim() || isRunning) return;
-    setActiveTab('trace');
-    setMobileView('output');
-    await traceRun(code);
-  }, [code, isRunning, traceRun]);
 
   const handleGrade = useCallback(async () => {
     if (!code.trim() || isGrading || isRunning) return;
@@ -326,19 +334,9 @@ export default function PracticeWorkspace({ questionId, starterCode, savedCode, 
             </button>
           )}
 
-          {/* Trace, Debug & Run */}
+          {/* Debug & Run */}
           {!isRunning && !isGrading && (
             <>
-              <button
-                onClick={handleTrace}
-                disabled={!code.trim()}
-                className="flex items-center gap-1 px-2 py-1 text-xs text-primary hover:bg-primary/10 rounded
-                  transition-colors disabled:opacity-50 disabled:pointer-events-none"
-                title="Trace (generate a dry-run table)"
-              >
-                <Table2 className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">Trace</span>
-              </button>
               <button
                 onClick={handleDebug}
                 disabled={!code.trim()}
