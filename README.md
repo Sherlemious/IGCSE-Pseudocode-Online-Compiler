@@ -1,12 +1,13 @@
-# IGCSE Pseudocode Online Compiler
+# IGCSE and AS & A Level Pseudocode Online Compiler
 
-A browser-based pseudocode interpreter for the **Cambridge IGCSE Computer Science (0478/2210)** syllabus. Write and run pseudocode, practice past-paper questions, and simulate timed exams — all in one place.
+A browser-based pseudocode interpreter for **Cambridge IGCSE Computer Science (0478/0984/2210)** and **Cambridge International AS & A Level Computer Science (9618)**. Write and run pseudocode, practice past-paper questions, and simulate timed exams — all in one place.
 
 **Live:** [pseudocode-compiler.sherlemious.com](https://pseudocode-compiler.sherlemious.com)
 
 ## Features
 
 - **Browser-based Interpreter** — Pseudocode is parsed and executed entirely in the browser via an ANTLR4 grammar and a custom tree-walking interpreter. No transpilation. No server round-trip.
+- **Cambridge 9618 Support** — AS & A Level additions include user-defined types, `DATE`, pointers, sets, `BYREF`/`BYVAL`, random-access files, CASE ranges, and classes.
 - **Interactive Editor** — CodeMirror 6 with syntax highlighting, line numbers, error markers, and autocomplete.
 - **I/O & File Handling** — `INPUT` support with interactive prompts, and `OPENFILE`, `READFILE`, `WRITEFILE` simulated in browser storage.
 - **Practice Mode** — Curated past-paper questions with hints, automated test case grading, and model solutions.
@@ -20,20 +21,20 @@ A browser-based pseudocode interpreter for the **Cambridge IGCSE Computer Scienc
 
 ## Tech Stack
 
-| Layer | Technology |
-|-------|-----------|
-| **Framework** | Next.js 16 (App Router), React 19 |
-| **Language** | TypeScript 5 |
-| **Styling** | Tailwind CSS v4, tailwind-scrollbar |
+| Layer          | Technology                                      |
+| -------------- | ----------------------------------------------- |
+| **Framework**  | Next.js 16 (App Router), React 19               |
+| **Language**   | TypeScript 5                                    |
+| **Styling**    | Tailwind CSS v4, tailwind-scrollbar             |
 | **Components** | Radix UI, lucide-react (Icons), sonner (Toasts) |
-| **Editor** | CodeMirror 6 |
-| **Parser** | antlr4ng v3 (custom ANTLR4 grammar) |
-| **Database** | PostgreSQL via [Neon](https://neon.tech) |
-| **ORM** | Prisma 6 |
-| **Auth** | Auth.js (NextAuth v5) |
-| **Email** | Resend |
-| **Analytics** | PostHog |
-| **Markdown** | react-markdown, remark-gfm |
+| **Editor**     | CodeMirror 6                                    |
+| **Parser**     | antlr4ng v3 (custom ANTLR4 grammar)             |
+| **Database**   | PostgreSQL via [Neon](https://neon.tech)        |
+| **ORM**        | Prisma 6                                        |
+| **Auth**       | Auth.js (NextAuth v5)                           |
+| **Email**      | Resend                                          |
+| **Analytics**  | PostHog                                         |
+| **Markdown**   | react-markdown, remark-gfm                      |
 
 ## File Structure
 
@@ -153,20 +154,21 @@ npm run dev            # http://localhost:3000
 
 See `.env.example` for the full list. Required variables:
 
-| Variable | Description |
-|----------|-------------|
-| `DATABASE_URL` | PostgreSQL connection string (pooled) |
-| `DIRECT_URL` | PostgreSQL direct connection string |
-| `AUTH_SECRET` | Random secret for NextAuth session signing (`openssl rand -base64 32`) |
-| `AUTH_URL` | Your app origin (e.g. `http://localhost:3000`) |
-| `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET` | Google OAuth credentials |
-| `AUTH_GITHUB_ID` / `AUTH_GITHUB_SECRET` | GitHub OAuth credentials |
-| `NEXT_PUBLIC_POSTHOG_KEY` | PostHog project key (leave blank to disable) |
-| `NEXT_PUBLIC_PREMIUM_GATING_ENABLED` | Set to `true` to enforce premium restrictions (`false` by default) |
+| Variable                                | Description                                                            |
+| --------------------------------------- | ---------------------------------------------------------------------- |
+| `DATABASE_URL`                          | PostgreSQL connection string (pooled)                                  |
+| `DIRECT_URL`                            | PostgreSQL direct connection string                                    |
+| `AUTH_SECRET`                           | Random secret for NextAuth session signing (`openssl rand -base64 32`) |
+| `AUTH_URL`                              | Your app origin (e.g. `http://localhost:3000`)                         |
+| `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET` | Google OAuth credentials                                               |
+| `AUTH_GITHUB_ID` / `AUTH_GITHUB_SECRET` | GitHub OAuth credentials                                               |
+| `NEXT_PUBLIC_POSTHOG_KEY`               | PostHog project key (leave blank to disable)                           |
+| `NEXT_PUBLIC_PREMIUM_GATING_ENABLED`    | Set to `true` to enforce premium restrictions (`false` by default)     |
 
 #### Google OAuth Redirect URI Setup
 
 If you see `redirect_uri_mismatch`, add the exact callback URL in Google Cloud Console:
+
 - Production: `https://pseudocode-compiler.sherlemious.com/api/auth/callback/google`
 - Local: `http://localhost:3000/api/auth/callback/google`
 
