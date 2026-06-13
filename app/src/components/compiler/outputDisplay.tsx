@@ -386,7 +386,7 @@ const OutputDisplay: React.FC<OutputDisplayProps> = ({
           {entries.length > 0 && (
             <button
               onClick={handleCopyOutput}
-              className="text-dark-text hover:text-light-text transition-colors p-1 rounded hover:bg-background"
+              className="opacity-60 hover:opacity-100 transition-opacity p-1 rounded hover:bg-background"
               title="Copy output"
             >
               {copied ? <Check className="h-3.5 w-3.5 text-success" /> : <Copy className="h-3.5 w-3.5" />}
@@ -394,7 +394,7 @@ const OutputDisplay: React.FC<OutputDisplayProps> = ({
           )}
           <button
             onClick={onClear}
-            className="text-dark-text hover:text-light-text transition-colors p-1 rounded hover:bg-background"
+            className="opacity-60 hover:opacity-100 transition-opacity p-1 rounded hover:bg-background"
             title="Clear terminal"
           >
             <Trash2 className="h-3.5 w-3.5" />

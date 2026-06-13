@@ -389,17 +389,27 @@ textarea:focus-visible {
 @keyframes spotlight-ring {
   0%,
   100% {
-    box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb), 0.3),
-      0 0 0 9999px rgba(0, 0, 0, 0.6);
+    opacity: 0.35;
   }
 
   50% {
-    box-shadow: 0 0 0 5px rgba(var(--color-primary-rgb), 0.5),
-      0 0 0 9999px rgba(0, 0, 0, 0.6);
+    opacity: 1;
   }
 }
 
 .tour-spotlight {
-  animation: spotlight-ring 2s ease-in-out infinite;
+  /* Static overlay — not animated, so the browser can composite it */
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.6);
   border-radius: 8px;
+}
+
+/* Pulsing ring uses only opacity (GPU-composited) */
+.tour-spotlight::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: 10px;
+  border: 2px solid rgb(var(--color-primary-rgb));
+  animation: spotlight-ring 2s ease-in-out infinite;
+  pointer-events: none;
 }

@@ -201,16 +201,14 @@ const CodeInput: React.FC<CodeInputProps> = ({
             <FileViewer onOpenFile={onOpenFile} />
             <button
               onClick={handleDownload}
-              className="flex items-center justify-center w-7 h-7 text-dark-text hover:text-light-text
-                hover:bg-background rounded transition-colors"
+              className="flex items-center justify-center w-7 h-7 opacity-60 hover:opacity-100 hover:bg-background rounded transition-opacity"
               title="Download code"
             >
               <Download size={14} />
             </button>
             <button
               onClick={handleShare}
-              className="flex items-center justify-center w-7 h-7 text-dark-text hover:text-light-text
-                hover:bg-background rounded transition-colors"
+              className="flex items-center justify-center w-7 h-7 opacity-60 hover:opacity-100 hover:bg-background rounded transition-opacity"
               title="Copy share link"
             >
               {shareStatus === 'copied' ? <Check size={14} className="text-success" /> : <Share2 size={14} />}
