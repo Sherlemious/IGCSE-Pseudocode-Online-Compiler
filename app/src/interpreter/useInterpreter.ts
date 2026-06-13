@@ -87,12 +87,13 @@ export function useInterpreter() {
       const { tree, errors } = parse(sourceCode);
 
       if (errors.length > 0) {
-        const codeLines = sourceCode.split('\n').length;
+        const sourceLines = sourceCode.split('\n');
+        const codeLines = sourceLines.length;
         errors.forEach((e) => captureError('parse', e.message, e.line, codeLines));
         setEntries(
           errors.map((e) => ({
             kind: 'error' as const,
-            text: `Line ${e.line ?? '?'} — ${humanizeParseError(e.message)}`,
+            text: `Line ${e.line ?? '?'} — ${humanizeParseError(e.message, e.line != null ? sourceLines[e.line - 1] : undefined)}`,
           }))
         );
         // Mark first error line

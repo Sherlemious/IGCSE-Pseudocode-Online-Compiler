@@ -287,6 +287,43 @@ describe('humanizeParseError — new hints', () => {
   });
 });
 
+describe('humanizeParseError — misspelled block closers', () => {
+  // ANTLR reports a botched closer as a stray-newline symptom on that line; the
+  // source-line argument lets the humanizer surface the real cause.
+  const NEWLINE_SYMPTOM = "mismatched input '\\n' expecting ':'";
+
+  it('truncated ENDCLASS (ENDCLA) is identified as the root cause', () => {
+    const msg = humanizeParseError(NEWLINE_SYMPTOM, 'ENDCLA');
+    expect(msg).toContain('did you mean ENDCLASS?');
+    expect(msg).toContain('leaves its block open');
+  });
+
+  it('truncated ENDPROCEDURE (ENDPROC) maps to ENDPROCEDURE', () => {
+    expect(humanizeParseError(NEWLINE_SYMPTOM, 'ENDPROC')).toContain('did you mean ENDPROCEDURE?');
+  });
+
+  it('misspelled closers within edit distance 2 are caught', () => {
+    expect(humanizeParseError(NEWLINE_SYMPTOM, '    ENDWHILEE')).toContain('did you mean ENDWHILE?');
+    expect(humanizeParseError(NEWLINE_SYMPTOM, 'ENDFuncton')).toContain('did you mean ENDFUNCTION?');
+  });
+
+  it('does not fire for a correctly spelled closer', () => {
+    expect(humanizeParseError(NEWLINE_SYMPTOM, 'ENDCLASS')).not.toContain('did you mean');
+  });
+
+  it('stays quiet for ambiguous or unrelated lone words (non-greedy)', () => {
+    // bare END is ambiguous; ENDPOINT is a real identifier; both fall through.
+    expect(humanizeParseError("no viable alternative at input 'END\\n'", 'END')).not.toContain('did you mean END');
+    expect(humanizeParseError("no viable alternative at input 'ENDPOINT\\n'", 'ENDPOINT')).not.toContain('did you mean');
+  });
+
+  it('does not touch lines that are not a lone bareword', () => {
+    const msg = humanizeParseError("mismatched input '<-' expecting ':'", 'MyCat <- NEW Cat("Kitty")');
+    expect(msg).not.toContain('did you mean');
+    expect(msg).toContain('variable name before `<-`');
+  });
+});
+
 // ─── Characterization tests (pin behavior through the A Level refactor) ──────
 
 describe('execute — power operator', () => {

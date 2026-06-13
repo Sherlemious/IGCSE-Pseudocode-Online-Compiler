@@ -225,7 +225,61 @@ function portugolHint(token: string): string | null {
   );
 }
 
-export function humanizeParseError(rawMessage: string): string {
+/** Block-closing keywords. A misspelled one alone on a line silently lexes as an
+ *  identifier, leaving the block open and cascading confusing errors onto later lines. */
+const BLOCK_CLOSERS = [
+  'ENDIF', 'ENDWHILE', 'ENDCASE', 'ENDPROCEDURE', 'ENDFUNCTION', 'ENDTYPE', 'ENDCLASS',
+];
+
+/**
+ * High-precision detector for a *misspelled or truncated block-closing keyword on
+ * its own line* (e.g. `ENDCLA` → ENDCLASS, `ENDPROC` → ENDPROCEDURE, `ENDWHILEE`).
+ *
+ * Deliberately narrow so it never "corrects" ordinary identifiers:
+ *   - the line must be a single bareword (a lone identifier is never a valid
+ *     statement, so flagging it costs nothing), and
+ *   - it must start with `END` and resolve to exactly one closer — either as a
+ *     unique prefix (truncation) or within edit distance 2 (misspelling).
+ * Anything ambiguous (bare `END`, a word equally near two closers) returns null
+ * and falls through to the normal error path rather than guessing.
+ */
+function closerSuggestion(sourceLine: string | undefined): string | null {
+  if (!sourceLine) return null;
+  const word = sourceLine.trim();
+  if (!/^[A-Za-z][A-Za-z0-9_]*$/.test(word)) return null;
+  const upper = word.toUpperCase();
+  if (!upper.startsWith('END') || upper === 'END') return null;
+  if (BLOCK_CLOSERS.includes(upper)) return null; // already spelled correctly
+
+  // 1) Truncation: a prefix of exactly one closer (ENDPROC, ENDCLA, ENDFUN…)
+  const prefixMatches = BLOCK_CLOSERS.filter((kw) => kw.startsWith(upper));
+  let best: string | null = prefixMatches.length === 1 ? prefixMatches[0] : null;
+
+  // 2) Misspelling: the single nearest closer within edit distance 2
+  if (!best) {
+    let bestDist = Infinity;
+    let tie = false;
+    for (const kw of BLOCK_CLOSERS) {
+      const d = levenshtein(upper, kw);
+      if (d < bestDist) { bestDist = d; best = kw; tie = false; }
+      else if (d === bestDist) tie = true;
+    }
+    if (best === null || bestDist > 2 || tie) return null; // ambiguous → stay quiet
+  }
+
+  return (
+    `"${word}" is not recognised — did you mean ${best}?\n` +
+    `  A misspelled closing keyword leaves its block open, so the lines below are misread as part of it.\n` +
+    `  ${SYNTAX_HINTS[best]}`
+  );
+}
+
+export function humanizeParseError(rawMessage: string, sourceLine?: string): string {
+  // Root-cause check: a botched closer (e.g. ENDCLA) is the real error even though
+  // ANTLR reports the symptom (a stray newline) — surface it before anything else.
+  const closer = closerSuggestion(sourceLine);
+  if (closer) return closer;
+
   const lower = rawMessage.toLowerCase();
   const commonHint = commonParseHint(rawMessage);
   if (commonHint) return commonHint;
