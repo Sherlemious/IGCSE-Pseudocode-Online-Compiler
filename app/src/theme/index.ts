@@ -2,6 +2,8 @@ export {
   themes,
   type PresetThemeId,
   type ThemeId,
+  type ActiveThemeId,
+  type SavedTheme,
   type ThemeColors,
   type Theme,
   type CustomColors,

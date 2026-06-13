@@ -1,6 +1,16 @@
 export type PresetThemeId = 'one-dark-pro' | 'dracula' | 'nord' | 'monokai' | 'github-light';
 export type ThemeId = PresetThemeId | 'custom';
 
+/** Active theme selection: a built-in preset id, or a saved custom theme's id (cuid). */
+export type ActiveThemeId = PresetThemeId | string;
+
+/** A user's saved custom theme, as returned by the API / held in context. */
+export interface SavedTheme {
+  id: string;
+  name: string;
+  colors: CustomColors;
+}
+
 export interface ThemeColors {
   primary: string;
   'primary-hover': string;

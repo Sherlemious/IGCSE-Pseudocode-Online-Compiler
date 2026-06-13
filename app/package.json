@@ -39,6 +39,7 @@
     "posthog-js": "^1.371.2",
     "prisma": "^6.19.2",
     "react": "19.2.3",
+    "react-colorful": "^5.7.0",
     "react-dom": "19.2.3",
     "react-markdown": "^10.1.0",
     "remark-gfm": "^4.0.1",

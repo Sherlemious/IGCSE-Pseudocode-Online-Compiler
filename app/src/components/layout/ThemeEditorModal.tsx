@@ -2,7 +2,9 @@
 
 import { useState, useEffect, useId, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { X, RotateCcw, Check } from 'lucide-react';
+import * as Popover from '@radix-ui/react-popover';
+import { HexColorPicker, HexColorInput } from 'react-colorful';
+import { X, RotateCcw, Check, Pipette } from 'lucide-react';
 import {
   type CustomColors,
   type CustomColorKey,
@@ -13,8 +15,11 @@ import {
 } from '../../theme/themes';
 
 interface Props {
-  colors: CustomColors;
-  onSave: (colors: CustomColors) => void;
+  mode: 'create' | 'edit';
+  initialName: string;
+  initialColors: CustomColors;
+  /** Persist the theme. Returns true on success so the modal can close. */
+  onSubmit: (name: string, colors: CustomColors) => Promise<boolean>;
   onClose: () => void;
 }
 
@@ -39,23 +44,33 @@ const SYNTAX_COLORS: Array<{ key: CustomColorKey; label: string }> = [
   { key: 'syntax-variable', label: 'Variable' },
 ];
 
-export default function ThemeEditorModal({ colors, onSave, onClose }: Props) {
-  const [draft, setDraft] = useState<CustomColors>(colors);
+// A small palette of useful starting colours shown beneath each picker.
+const SUGGESTED_SWATCHES = [
+  '#282C34', '#21252B', '#181A1F', '#FFFFFF',
+  '#61AFEF', '#C678DD', '#98C379', '#E5C07B',
+  '#E06C75', '#56B6C2', '#D19A66', '#ABB2BF',
+];
 
-  // Sync draft when colors prop changes (e.g. switching to custom while modal is open)
-  useEffect(() => { setDraft(colors); }, [colors]);
+export default function ThemeEditorModal({ mode, initialName, initialColors, onSubmit, onClose }: Props) {
+  const [name, setName] = useState(initialName);
+  const [draft, setDraft] = useState<CustomColors>(initialColors);
+  const [saving, setSaving] = useState(false);
 
   const setColor = useCallback((key: CustomColorKey, value: string) => {
-    setDraft(prev => ({ ...prev, [key]: value }));
+    setDraft((prev) => ({ ...prev, [key]: value }));
   }, []);
 
   function handleImport(id: string) {
     if (id && id in themes) setDraft(presetToCustomColors(id as PresetThemeId));
   }
 
-  function handleApply() {
-    onSave(draft);
-    onClose();
+  async function handleSave() {
+    const trimmed = name.trim();
+    if (!trimmed || saving) return;
+    setSaving(true);
+    const ok = await onSubmit(trimmed, draft);
+    setSaving(false);
+    if (ok) onClose();
   }
 
   const modal = (
@@ -63,7 +78,7 @@ export default function ThemeEditorModal({ colors, onSave, onClose }: Props) {
       className="fixed inset-0 z-[200] flex items-center justify-center p-4"
       role="dialog"
       aria-modal="true"
-      aria-label="Custom theme editor"
+      aria-label={mode === 'create' ? 'Create custom theme' : 'Edit custom theme'}
     >
       {/* Backdrop */}
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
@@ -76,7 +91,9 @@ export default function ThemeEditorModal({ colors, onSave, onClose }: Props) {
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-border flex-shrink-0">
           <div>
-            <h2 className="text-sm font-semibold text-light-text">Custom Theme</h2>
+            <h2 className="text-sm font-semibold text-light-text">
+              {mode === 'create' ? 'New Theme' : 'Edit Theme'}
+            </h2>
             <p className="text-xs text-dark-text mt-0.5">Pick colors, see the preview update live</p>
           </div>
           <div className="flex items-center gap-2">
@@ -86,7 +103,7 @@ export default function ThemeEditorModal({ colors, onSave, onClose }: Props) {
               className="text-xs bg-background border border-border text-dark-text rounded-lg px-2.5 py-1.5 outline-none focus:border-primary/50 transition-colors cursor-pointer"
             >
               <option value="" disabled>Import from preset…</option>
-              {PRESET_ORDER.map(id => (
+              {PRESET_ORDER.map((id) => (
                 <option key={id} value={id}>{themes[id].label}</option>
               ))}
             </select>
@@ -102,6 +119,21 @@ export default function ThemeEditorModal({ colors, onSave, onClose }: Props) {
 
         {/* Body */}
         <div className="flex-1 overflow-y-auto p-5 scrollbar-pretty">
+          {/* Name */}
+          <div className="mb-5">
+            <label className="block text-[10px] font-semibold text-dark-text uppercase tracking-wider mb-1.5">
+              Theme name
+            </label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              maxLength={40}
+              placeholder="e.g. Midnight"
+              className="w-full px-3 py-1.5 rounded-lg bg-background border border-border text-sm text-light-text placeholder-dark-text/40 outline-none focus:border-primary/50 transition-colors"
+            />
+          </div>
+
           <div className="flex flex-col lg:flex-row gap-6">
             {/* Color pickers */}
             <div className="flex-1 min-w-0 space-y-5">
@@ -127,11 +159,12 @@ export default function ThemeEditorModal({ colors, onSave, onClose }: Props) {
             Reset
           </button>
           <button
-            onClick={handleApply}
-            className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-semibold bg-primary text-on-primary hover:bg-primary-hover transition-colors"
+            onClick={() => void handleSave()}
+            disabled={saving || name.trim().length === 0}
+            className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-semibold bg-primary text-on-primary hover:bg-primary-hover disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
           >
             <Check size={12} />
-            Apply Theme
+            {saving ? 'Saving…' : 'Save Theme'}
           </button>
         </div>
       </div>
@@ -162,7 +195,6 @@ function ColorSection({
         {items.map(({ key, label }) => (
           <ColorSwatch
             key={key}
-            colorKey={key}
             label={label}
             value={draft[key]}
             onChange={(v) => setColor(key, v)}
@@ -173,15 +205,16 @@ function ColorSection({
   );
 }
 
-// ── Color swatch with native color picker ────────────────────
+// ── Color swatch with react-colorful picker in a popover ─────
+
+interface EyeDropperResult { sRGBHex: string; }
+interface EyeDropperConstructor { new (): { open: () => Promise<EyeDropperResult> }; }
 
 function ColorSwatch({
-  colorKey,
   label,
   value,
   onChange,
 }: {
-  colorKey: string;
   label: string;
   value: string;
   onChange: (v: string) => void;
@@ -191,32 +224,92 @@ function ColorSwatch({
 
   useEffect(() => { setText(value); }, [value]);
 
-  function handleTextChange(v: string) {
+  function commitText(v: string) {
     setText(v);
     if (/^#[0-9a-fA-F]{6}$/.test(v)) onChange(v);
   }
 
+  const hasEyeDropper = typeof window !== 'undefined' && 'EyeDropper' in window;
+
+  async function pickWithEyeDropper() {
+    try {
+      const Ctor = (window as unknown as { EyeDropper: EyeDropperConstructor }).EyeDropper;
+      const result = await new Ctor().open();
+      onChange(result.sRGBHex);
+    } catch {
+      /* user cancelled */
+    }
+  }
+
   return (
     <div className="flex items-center gap-2 bg-background border border-border rounded-lg px-2.5 py-2 hover:border-border/60 transition-colors">
-      <label htmlFor={inputId} className="relative cursor-pointer flex-shrink-0" aria-label={`Pick ${label} color`}>
-        <div
-          className="w-7 h-7 rounded-md border border-white/15 shadow-sm transition-transform hover:scale-105"
-          style={{ backgroundColor: value }}
-        />
-        <input
-          id={inputId}
-          type="color"
-          value={value}
-          onChange={(e) => { onChange(e.target.value); setText(e.target.value); }}
-          className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
-        />
-      </label>
+      <Popover.Root>
+        <Popover.Trigger asChild>
+          <button
+            type="button"
+            className="relative flex-shrink-0 cursor-pointer"
+            aria-label={`Pick ${label} color`}
+          >
+            <span
+              className="block w-7 h-7 rounded-md border border-white/15 shadow-sm transition-transform hover:scale-105"
+              style={{ backgroundColor: value }}
+            />
+          </button>
+        </Popover.Trigger>
+        <Popover.Portal>
+          <Popover.Content
+            sideOffset={8}
+            align="start"
+            className="z-[300] w-56 rounded-xl bg-surface border border-border p-3 shadow-intense space-y-3"
+          >
+            <HexColorPicker color={value} onChange={onChange} style={{ width: '100%', height: 140 }} />
+
+            <div className="flex items-center gap-1.5">
+              <span className="text-dark-text text-xs font-mono">#</span>
+              <HexColorInput
+                color={value}
+                onChange={onChange}
+                className="flex-1 min-w-0 bg-background border border-border rounded-md px-2 py-1 text-xs font-mono text-light-text uppercase outline-none focus:border-primary/50 transition-colors"
+                aria-label={`${label} hex value`}
+              />
+              {hasEyeDropper && (
+                <button
+                  type="button"
+                  onClick={() => void pickWithEyeDropper()}
+                  className="p-1.5 rounded-md border border-border bg-background text-dark-text hover:text-light-text hover:border-border/60 transition-colors"
+                  aria-label="Pick color from screen"
+                  title="Pick from screen"
+                >
+                  <Pipette size={13} />
+                </button>
+              )}
+            </div>
+
+            <div className="grid grid-cols-6 gap-1.5">
+              {SUGGESTED_SWATCHES.map((hex) => (
+                <button
+                  key={hex}
+                  type="button"
+                  onClick={() => onChange(hex)}
+                  className="w-full aspect-square rounded-md border border-white/15 hover:scale-110 transition-transform"
+                  style={{ backgroundColor: hex }}
+                  aria-label={`Use ${hex}`}
+                />
+              ))}
+            </div>
+
+            <Popover.Arrow className="fill-surface" />
+          </Popover.Content>
+        </Popover.Portal>
+      </Popover.Root>
+
       <div className="min-w-0 flex-1">
         <p className="text-[10px] text-dark-text leading-none mb-1 truncate">{label}</p>
         <input
+          id={inputId}
           type="text"
           value={text}
-          onChange={(e) => handleTextChange(e.target.value)}
+          onChange={(e) => commitText(e.target.value)}
           onBlur={() => setText(value)} // reset if invalid on blur
           className="w-full bg-transparent text-[11px] font-mono text-light-text outline-none"
           maxLength={7}
@@ -260,7 +353,7 @@ function CodePreview({ colors: c }: { colors: CustomColors }) {
       <Line>
         <T k="light-text" c={c}>{'   '}</T>
         <T k="syntax-keyword" c={c}>OUTPUT</T>
-        <T k="syntax-string" c={c}> "hello"</T>
+        <T k="syntax-string" c={c}>{' "hello"'}</T>
       </Line>
       <Line>
         <T k="syntax-keyword" c={c}>ENDIF</T>

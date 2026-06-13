@@ -37,9 +37,23 @@ model User {
   progress     Progress[]
   examAttempts ExamAttempt[]
   feedbackSubmissions FeedbackSubmission[]
+  customThemes CustomTheme[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model CustomTheme {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  colors    String   @db.Text // JSON-serialized CustomColors (13 hex strings)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
 }
 
 model Account {

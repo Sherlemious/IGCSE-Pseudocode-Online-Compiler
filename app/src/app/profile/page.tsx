@@ -4,8 +4,9 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { auth, signOut } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
-import { User, Crown, Shield, GraduationCap, BarChart3, LayoutDashboard, LogOut } from 'lucide-react';
+import { User, Crown, Shield, GraduationCap, BarChart3, LayoutDashboard, LogOut, ChevronRight } from 'lucide-react';
 import ProfileNameEditor from './_components/ProfileNameEditor';
+import ThemeManager from './_components/ThemeManager';
 
 export const metadata: Metadata = { title: 'Profile' };
 
@@ -81,24 +82,35 @@ export default async function ProfilePage() {
           </div>
         </div>
 
+        {/* Admin access — prominent for admins */}
+        {isAdminUser && (
+          <Link
+            href="/admin"
+            className="group flex items-center gap-3.5 rounded-xl border border-error/30 bg-error/10 px-5 py-4 hover:bg-error/15 transition-colors"
+          >
+            <span className="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-error/15 text-error shrink-0">
+              <LayoutDashboard size={18} />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-sm font-semibold text-error leading-tight">Admin Dashboard</span>
+              <span className="block text-xs text-error/70 leading-tight mt-0.5">Manage users, feedback &amp; analytics</span>
+            </span>
+            <ChevronRight size={16} className="text-error/60 shrink-0 group-hover:translate-x-0.5 transition-transform" />
+          </Link>
+        )}
+
         {/* Edit name */}
         <div className="bg-surface border border-border rounded-xl p-5">
           <h2 className="text-xs font-semibold text-light-text mb-3">Edit Profile</h2>
           <ProfileNameEditor currentName={user.name ?? ''} />
         </div>
 
+        {/* Custom themes */}
+        <ThemeManager />
+
         {/* Quick actions */}
         <div className="bg-surface border border-border rounded-xl overflow-hidden">
           <div className="divide-y divide-border">
-            {isAdminUser && (
-              <Link
-                href="/admin"
-                className="flex items-center gap-3 px-5 py-3.5 text-sm text-error hover:bg-error/5 transition-colors"
-              >
-                <LayoutDashboard size={15} />
-                Admin Dashboard
-              </Link>
-            )}
             <Link
               href="/analytics"
               className="flex items-center gap-3 px-5 py-3.5 text-sm text-dark-text hover:text-light-text hover:bg-background transition-colors"

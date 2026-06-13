@@ -4,7 +4,7 @@ import { useSession, signIn, signOut } from 'next-auth/react';
 import { useState, useRef, useEffect } from 'react';
 import { usePostHog } from 'posthog-js/react';
 import Image from 'next/image';
-import { LogIn, LogOut, User, Crown, BarChart3, LayoutDashboard } from 'lucide-react';
+import { LogIn, LogOut, User, Crown, BarChart3, LayoutDashboard, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
 import { PREMIUM_GATING_ENABLED } from '@/lib/featureFlags';
 
@@ -98,6 +98,25 @@ export default function UserMenu() {
 
           {/* Actions */}
           <div className="py-1">
+            {isAdminUser && (
+              <>
+                <Link
+                  href="/admin"
+                  onClick={() => setOpen(false)}
+                  className="group mx-2 mt-1.5 mb-1 flex items-center gap-2.5 px-2.5 py-2 rounded-lg bg-error/10 border border-error/30 text-error hover:bg-error/15 transition-colors"
+                >
+                  <span className="inline-flex items-center justify-center w-7 h-7 rounded-md bg-error/15 shrink-0">
+                    <LayoutDashboard size={14} />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-xs font-semibold leading-tight">Admin Dashboard</span>
+                    <span className="block text-[10px] text-error/70 leading-tight">Manage the platform</span>
+                  </span>
+                  <ChevronRight size={14} className="shrink-0 group-hover:translate-x-0.5 transition-transform" />
+                </Link>
+                <div className="my-1 border-t border-border/40" />
+              </>
+            )}
             {!isPremium &&
               (PREMIUM_GATING_ENABLED ? (
                 <button
@@ -115,16 +134,6 @@ export default function UserMenu() {
                   Premium coming soon
                 </div>
               ))}
-            {isAdminUser && (
-              <Link
-                href="/admin"
-                onClick={() => setOpen(false)}
-                className="w-full flex items-center gap-2 px-3 py-2 text-xs text-error hover:bg-error/10 transition-colors"
-              >
-                <LayoutDashboard size={13} />
-                Admin Dashboard
-              </Link>
-            )}
             <Link
               href="/profile"
               onClick={() => setOpen(false)}
