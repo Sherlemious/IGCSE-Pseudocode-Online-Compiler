@@ -523,12 +523,12 @@ export default function ExamWorkspace({ examId, questions, timeLimitMin, started
 
           {/* Output panel */}
           <div className="border-t border-border flex flex-col" style={{ flex: '0 0 35%', minHeight: '120px' }}>
-            <div className="h-8 border-b border-border bg-surface flex items-center gap-0.5 px-2 shrink-0">
+            <div className="h-9 border-b border-border bg-surface flex items-center gap-0.5 px-2 shrink-0">
               {(['terminal', 'results'] as const).map((tab) => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
-                  className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-medium transition-all duration-200 ${
+                  className={`flex h-6 items-center gap-1 rounded-md px-2.5 py-0 text-[11px] font-medium leading-none transition-all duration-200 ${
                     activeTab === tab
                       ? 'bg-background text-light-text shadow-sm'
                       : 'text-dark-text hover:text-light-text'
@@ -536,8 +536,12 @@ export default function ExamWorkspace({ examId, questions, timeLimitMin, started
                   title={tab === 'terminal' ? 'Show program output and input' : 'Show grading results'}
                   aria-label={tab === 'terminal' ? 'Show program output and input' : 'Show grading results'}
                 >
-                  {tab === 'terminal' ? <Terminal size={11} /> : <ClipboardCheck size={11} />}
-                  {tab === 'terminal' ? 'Terminal' : 'Results'}
+                  {tab === 'terminal' ? (
+                    <Terminal size={11} className="shrink-0" />
+                  ) : (
+                    <ClipboardCheck size={11} className="shrink-0" />
+                  )}
+                  <span className="leading-none">{tab === 'terminal' ? 'Terminal' : 'Results'}</span>
                 </button>
               ))}
             </div>
