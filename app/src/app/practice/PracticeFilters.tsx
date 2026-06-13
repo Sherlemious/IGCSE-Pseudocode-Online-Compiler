@@ -1,497 +1,531 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { X, SlidersHorizontal, FileText, Search, ChevronDown } from 'lucide-react';
-
-interface YearGroup {
-  year: number;
-  sessions: string[];
-}
+import {
+  buildPracticeUrl,
+  DIFF_META,
+  STATUS_META,
+  type ActiveFilters,
+  type DiffFacet,
+  type NamedFacet,
+  type StatusFacet,
+  type YearFacet,
+} from './filterUtils';
 
 interface Props {
-  topics: string[];
-  yearGroups: YearGroup[];
-  allTags: string[];
-  activeTopic?: string;
-  activeYear?: number;
-  activeSession?: string;
-  activeTag?: string;
-  activeQ?: string;
+  variant: 'desktop' | 'mobile';
+  topics: NamedFacet[];
+  years: YearFacet[];
+  tags: NamedFacet[];
+  difficulties: DiffFacet[];
+  statuses: StatusFacet[];
+  statusAllCount: number;
+  active: ActiveFilters;
+  showStatus: boolean;
 }
 
-export function PracticeFilters({
-  topics,
-  yearGroups,
-  allTags,
-  activeTopic,
-  activeYear,
-  activeSession,
-  activeTag,
-  activeQ,
-}: Props) {
+const TAG_COLLAPSED_LIMIT = 14;
+
+export function PracticeFilters(props: Props) {
+  const { variant, active } = props;
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [mobileOpen, setMobileOpen] = useState(false);
 
-  const activeFilterCount = [activeTopic, activeYear, activeTag].filter(Boolean).length;
-  const hasActiveFilter = !!(activeTopic || activeYear || activeTag || activeQ);
+  const go = (overrides: Record<string, string | undefined>) =>
+    router.push(buildPracticeUrl(searchParams.toString(), overrides));
 
-  const activeSessions = activeYear
-    ? (yearGroups.find((g) => g.year === activeYear)?.sessions ?? [])
-    : [];
+  // ── Local-first search with debounced navigation ──────────────────────────
+  const [query, setQuery] = useState(active.q ?? '');
+  const searchRef = useRef<HTMLInputElement>(null);
+  const skipFirst = useRef(true);
 
-  function buildUrl(overrides: Record<string, string | undefined>) {
-    const params = new URLSearchParams(searchParams.toString());
-    for (const [key, val] of Object.entries(overrides)) {
-      if (val === undefined) params.delete(key);
-      else params.set(key, val);
+  useEffect(() => {
+    setQuery(active.q ?? '');
+  }, [active.q]);
+
+  useEffect(() => {
+    if (skipFirst.current) {
+      skipFirst.current = false;
+      return;
     }
-    const qs = params.toString();
-    return qs ? `/practice?${qs}` : '/practice';
-  }
+    const id = setTimeout(() => {
+      if ((query || undefined) !== (active.q || undefined)) {
+        router.replace(buildPracticeUrl(searchParams.toString(), { q: query || undefined }));
+      }
+    }, 250);
+    return () => clearTimeout(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query]);
 
-  function clearAll() {
-    router.push('/practice');
-  }
+  // Press "/" anywhere to focus the search (desktop only — single listener).
+  useEffect(() => {
+    if (variant !== 'desktop') return;
+    function onKey(e: KeyboardEvent) {
+      if (e.key !== '/' || e.metaKey || e.ctrlKey || e.altKey) return;
+      const t = e.target as HTMLElement | null;
+      const tag = t?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || t?.isContentEditable) return;
+      e.preventDefault();
+      searchRef.current?.focus();
+    }
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [variant]);
 
-  return (
-    <>
-      {/* ── Desktop Sidebar ───────────────────────────────────────── */}
-      <div className="hidden lg:flex flex-col gap-3.5">
-        {/* Search */}
+  const facets = <Facets {...props} go={go} />;
+
+  // ── Desktop sidebar ───────────────────────────────────────────────────────
+  if (variant === 'desktop') {
+    return (
+      <div className="flex flex-col gap-5">
         <div className="relative">
           <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-dark-text pointer-events-none" />
           <input
+            ref={searchRef}
             type="text"
             placeholder="Search questions…"
-            value={activeQ ?? ''}
-            onChange={(e) => router.push(buildUrl({ q: e.target.value || undefined }))}
-            className="w-full pl-8 pr-7 py-2 bg-surface border border-border rounded-lg text-xs text-light-text placeholder:text-dark-text outline-none focus:border-primary/50 transition-colors"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            className="w-full pl-8 pr-9 py-2 bg-surface border border-border rounded-lg text-xs text-light-text placeholder:text-dark-text outline-none focus:border-primary/50 transition-colors"
           />
-          {activeQ && (
+          {query ? (
             <button
-              onClick={() => router.push(buildUrl({ q: undefined }))}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-dark-text hover:text-light-text transition-colors"
+              onClick={() => setQuery('')}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-dark-text hover:text-light-text transition-colors cursor-pointer"
               aria-label="Clear search"
             >
-              <X size={11} />
+              <X size={12} />
             </button>
+          ) : (
+            <kbd className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none">/</kbd>
           )}
         </div>
+        {facets}
+      </div>
+    );
+  }
 
-        {/* Active filter pills */}
-        {hasActiveFilter && (
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-[10px] uppercase tracking-wider font-semibold text-dark-text">Active filters</span>
-              <button
-                onClick={clearAll}
-                className="text-[10px] text-dark-text hover:text-error transition-colors cursor-pointer"
-              >
-                Clear all
-              </button>
-            </div>
-            <div className="flex flex-wrap gap-1">
-              {activeTopic && (
-                <ActivePill label={activeTopic} onRemove={() => router.push(buildUrl({ topic: undefined }))} />
-              )}
-              {activeYear && (
-                <ActivePill
-                  label={activeSession ? `${activeYear} · ${activeSession}` : String(activeYear)}
-                  onRemove={() => router.push(buildUrl({ year: undefined, session: undefined }))}
-                />
-              )}
-              {activeTag && (
-                <ActivePill label={activeTag} onRemove={() => router.push(buildUrl({ tag: undefined }))} color="info" />
-              )}
-              {activeQ && (
-                <ActivePill label={`"${activeQ}"`} onRemove={() => router.push(buildUrl({ q: undefined }))} />
-              )}
-            </div>
-          </div>
-        )}
+  // ── Mobile compact bar ──────────────────────────────────────────────────────
+  return <MobileBar {...props} go={go} query={query} setQuery={setQuery} facets={facets} />;
+}
 
-        {/* Topic section */}
-        {topics.length > 0 && (
-          <SidebarSection label="Topic">
-            <SidebarItem active={!activeTopic} onClick={() => router.push(buildUrl({ topic: undefined }))}>
-              All
-            </SidebarItem>
-            {topics.map((t) => (
-              <SidebarItem
-                key={t}
-                active={activeTopic === t}
-                onClick={() => router.push(buildUrl({ topic: activeTopic === t ? undefined : t }))}
-              >
-                {t === 'File Handling' && <FileText size={10} className="shrink-0 opacity-70" />}
-                {t}
-              </SidebarItem>
-            ))}
-          </SidebarSection>
-        )}
+// ── Mobile wrapper ────────────────────────────────────────────────────────────
 
-        {/* Year section */}
-        {yearGroups.length > 0 && (
-          <SidebarSection label="Year">
-            <SidebarItem
-              active={!activeYear}
-              onClick={() => router.push(buildUrl({ year: undefined, session: undefined }))}
+function MobileBar({
+  active,
+  difficulties,
+  statuses,
+  showStatus,
+  go,
+  query,
+  setQuery,
+  facets,
+}: Props & {
+  go: (o: Record<string, string | undefined>) => void;
+  query: string;
+  setQuery: (v: string) => void;
+  facets: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(false);
+  const activeCount = [active.topic, active.year, active.tag, active.diff, active.status].filter(Boolean).length;
+
+  return (
+    <div className="mb-5">
+      <div className="rounded-xl border border-border bg-surface overflow-hidden">
+        {/* Search + toggle */}
+        <div className="flex items-center gap-2 px-3 py-2">
+          <Search size={13} className="text-dark-text shrink-0" />
+          <input
+            type="text"
+            placeholder="Search questions…"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            className="flex-1 bg-transparent text-xs text-light-text placeholder:text-dark-text outline-none min-w-0"
+          />
+          {query && (
+            <button
+              onClick={() => setQuery('')}
+              className="text-dark-text hover:text-light-text transition-colors shrink-0 cursor-pointer"
+              aria-label="Clear search"
             >
-              All
-            </SidebarItem>
-            {yearGroups.map(({ year }) => (
-              <SidebarItem
-                key={year}
-                active={activeYear === year}
-                onClick={() =>
-                  router.push(
-                    buildUrl(
-                      activeYear === year && !activeSession
+              <X size={12} />
+            </button>
+          )}
+          <div className="w-px h-4 bg-border/60 mx-0.5 shrink-0" />
+          <button
+            onClick={() => setOpen((v) => !v)}
+            className="flex items-center gap-1 text-[11px] font-medium text-dark-text hover:text-light-text transition-colors shrink-0 cursor-pointer"
+          >
+            <SlidersHorizontal size={12} />
+            <span>Filters{activeCount > 0 ? ` (${activeCount})` : ''}</span>
+            <ChevronDown size={12} className={`transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
+          </button>
+        </div>
+
+        {open && <div className="border-t border-border/40 p-3.5">{facets}</div>}
+      </div>
+
+      {/* Quick difficulty / status row stays visible when collapsed */}
+      {!open && (
+        <div className="flex flex-wrap gap-1.5 mt-2">
+          {difficulties.map((d) => {
+            const isActive = active.diff === d.value;
+            const m = DIFF_META[d.value];
+            return (
+              <button
+                key={d.value}
+                onClick={() => go({ diff: isActive ? undefined : d.value })}
+                style={
+                  isActive
+                    ? {
+                        backgroundColor: `color-mix(in srgb, ${m.color} 16%, transparent)`,
+                        borderColor: `color-mix(in srgb, ${m.color} 45%, transparent)`,
+                        color: m.color,
+                      }
+                    : undefined
+                }
+                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[11px] font-medium cursor-pointer transition-colors ${
+                  isActive ? '' : 'border-border text-dark-text'
+                }`}
+              >
+                <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: m.color }} />
+                {m.label}
+                <span className="font-mono tabular-nums opacity-70">{d.count}</span>
+              </button>
+            );
+          })}
+          {showStatus &&
+            statuses
+              .filter((s) => s.value !== 'todo')
+              .map((s) => {
+                const isActive = active.status === s.value;
+                const m = STATUS_META[s.value];
+                return (
+                  <button
+                    key={s.value}
+                    onClick={() => go({ status: isActive ? undefined : s.value })}
+                    style={
+                      isActive
+                        ? {
+                            backgroundColor: `color-mix(in srgb, ${m.color} 16%, transparent)`,
+                            borderColor: `color-mix(in srgb, ${m.color} 45%, transparent)`,
+                            color: m.color,
+                          }
+                        : undefined
+                    }
+                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[11px] font-medium cursor-pointer transition-colors ${
+                      isActive ? '' : 'border-border text-dark-text'
+                    }`}
+                  >
+                    {m.label}
+                    <span className="font-mono tabular-nums opacity-70">{s.count}</span>
+                  </button>
+                );
+              })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Shared facet stack ──────────────────────────────────────────────────────
+
+function Facets({
+  topics,
+  years,
+  tags,
+  difficulties,
+  statuses,
+  statusAllCount,
+  active,
+  showStatus,
+  go,
+}: Props & { go: (o: Record<string, string | undefined>) => void }) {
+  const [tagsExpanded, setTagsExpanded] = useState(false);
+  const maxTopic = topics.reduce((m, t) => Math.max(m, t.count), 0);
+  const visibleTags = tagsExpanded ? tags : tags.slice(0, TAG_COLLAPSED_LIMIT);
+
+  return (
+    <div className="flex flex-col gap-5">
+      {/* Status */}
+      {showStatus && (
+        <Section label="Status" onClear={active.status ? () => go({ status: undefined }) : undefined}>
+          <div className="grid grid-cols-2 gap-1.5">
+            <ChipStat
+              label="All"
+              count={statusAllCount}
+              active={!active.status}
+              onClick={() => go({ status: undefined })}
+            />
+            {statuses.map((s) => {
+              const m = STATUS_META[s.value];
+              const isActive = active.status === s.value;
+              return (
+                <ChipStat
+                  key={s.value}
+                  label={m.label}
+                  count={s.count}
+                  color={m.color}
+                  active={isActive}
+                  onClick={() => go({ status: isActive ? undefined : s.value })}
+                />
+              );
+            })}
+          </div>
+        </Section>
+      )}
+
+      {/* Difficulty */}
+      <Section label="Difficulty" onClear={active.diff ? () => go({ diff: undefined }) : undefined}>
+        <div className="grid grid-cols-3 gap-1.5">
+          {difficulties.map((d) => {
+            const m = DIFF_META[d.value];
+            const isActive = active.diff === d.value;
+            return (
+              <button
+                key={d.value}
+                onClick={() => go({ diff: isActive ? undefined : d.value })}
+                style={
+                  isActive
+                    ? {
+                        backgroundColor: `color-mix(in srgb, ${m.color} 15%, transparent)`,
+                        borderColor: `color-mix(in srgb, ${m.color} 45%, transparent)`,
+                      }
+                    : undefined
+                }
+                className={`flex flex-col items-start gap-1 rounded-lg border px-2 py-1.5 cursor-pointer transition-colors ${
+                  isActive ? '' : 'border-border hover:border-dark-text/40'
+                }`}
+              >
+                <span className="flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: m.color }} />
+                  <span className="text-[11px] font-medium" style={{ color: isActive ? m.color : 'var(--color-light-text)' }}>
+                    {m.label}
+                  </span>
+                </span>
+                <span className="text-[10px] font-mono tabular-nums text-dark-text">{d.count}</span>
+              </button>
+            );
+          })}
+        </div>
+      </Section>
+
+      {/* Topic — rendered as a compact horizontal bar chart */}
+      {topics.length > 0 && (
+        <Section label="Topic" onClear={active.topic ? () => go({ topic: undefined }) : undefined}>
+          <div className="space-y-0.5">
+            {topics.map((t) => {
+              const isActive = active.topic === t.name;
+              const barPct = maxTopic > 0 && t.count > 0 ? Math.max(8, Math.round((t.count / maxTopic) * 100)) : 0;
+              return (
+                <button
+                  key={t.name}
+                  onClick={() => go({ topic: isActive ? undefined : t.name })}
+                  className={`group relative w-full flex items-center justify-between gap-2 rounded-md px-2 py-1.5 overflow-hidden text-left cursor-pointer transition-colors ${
+                    t.count === 0 && !isActive ? 'opacity-40' : ''
+                  }`}
+                >
+                  <span
+                    aria-hidden
+                    className="absolute inset-y-0.5 left-0 rounded-md transition-all duration-300 ease-out"
+                    style={{
+                      width: `${barPct}%`,
+                      background: isActive
+                        ? 'rgba(var(--color-primary-rgb), 0.18)'
+                        : 'color-mix(in srgb, var(--color-border) 60%, transparent)',
+                    }}
+                  />
+                  <span
+                    className={`relative z-10 flex items-center gap-1.5 min-w-0 text-xs transition-colors ${
+                      isActive ? 'text-primary font-medium' : 'text-light-text/90 group-hover:text-light-text'
+                    }`}
+                  >
+                    {t.name === 'File Handling' && <FileText size={10} className="shrink-0 opacity-70" />}
+                    <span className="truncate">{t.name}</span>
+                  </span>
+                  <span
+                    className={`relative z-10 text-[10px] font-mono tabular-nums shrink-0 ${
+                      isActive ? 'text-primary' : 'text-dark-text'
+                    }`}
+                  >
+                    {t.count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </Section>
+      )}
+
+      {/* Year + sessions */}
+      {years.length > 0 && (
+        <Section
+          label="Year"
+          onClear={active.year ? () => go({ year: undefined, session: undefined }) : undefined}
+        >
+          <div className="flex flex-wrap gap-1">
+            {years.map(({ year, count }) => {
+              const isActive = active.year === year;
+              return (
+                <button
+                  key={year}
+                  onClick={() =>
+                    go(
+                      isActive && !active.session
                         ? { year: undefined, session: undefined }
                         : { year: String(year), session: undefined }
                     )
-                  )
-                }
-              >
-                {year}
-              </SidebarItem>
-            ))}
-          </SidebarSection>
-        )}
-
-        {/* Session sub-section */}
-        {activeYear && activeSessions.length > 0 && (
-          <SidebarSection label="Session" indent>
-            {activeSessions.map((s) => (
-              <SidebarItem
-                key={s}
-                active={activeSession === s}
-                onClick={() =>
-                  router.push(
-                    buildUrl(
-                      activeSession === s
-                        ? { year: String(activeYear), session: undefined }
-                        : { year: String(activeYear), session: s }
-                    )
-                  )
-                }
-                small
-              >
-                {s}
-              </SidebarItem>
-            ))}
-          </SidebarSection>
-        )}
-
-        {/* Tags section */}
-        {allTags.length > 0 && (
-          <SidebarSection label="Tags">
-            <div className="flex flex-wrap gap-1">
-              {allTags.map((tag) => (
-                <button
-                  key={tag}
-                  onClick={() => router.push(buildUrl({ tag: activeTag === tag ? undefined : tag }))}
-                  className={`text-[10px] px-2 py-0.5 rounded border font-medium transition-all cursor-pointer ${
-                    activeTag === tag
-                      ? 'bg-info/15 border-info/40 text-info'
-                      : 'border-border/60 text-dark-text hover:border-info/30 hover:text-info/70 hover:bg-info/5'
+                  }
+                  className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md border text-[11px] font-mono tabular-nums cursor-pointer transition-colors ${
+                    isActive
+                      ? 'bg-primary/15 border-primary/40 text-primary'
+                      : 'border-border text-dark-text hover:border-primary/30 hover:text-light-text'
                   }`}
                 >
-                  {tag}
+                  {year}
+                  <span className="opacity-60">{count}</span>
                 </button>
-              ))}
-            </div>
-          </SidebarSection>
-        )}
-      </div>
+              );
+            })}
+          </div>
 
-      {/* ── Mobile Compact Bar ────────────────────────────────────── */}
-      <div className="lg:hidden mb-5">
-        <div className="rounded-xl border border-border bg-surface overflow-hidden">
-          {/* Search + toggle row */}
-          <div className="flex items-center gap-2 px-3 py-2">
-            <Search size={13} className="text-dark-text shrink-0" />
-            <input
-              type="text"
-              placeholder="Search questions…"
-              value={activeQ ?? ''}
-              onChange={(e) => router.push(buildUrl({ q: e.target.value || undefined }))}
-              className="flex-1 bg-transparent text-xs text-light-text placeholder:text-dark-text outline-none min-w-0"
-            />
-            {activeQ && (
+          {/* Sessions for the selected year */}
+          {active.year &&
+            (() => {
+              const yg = years.find((y) => y.year === active.year);
+              if (!yg || yg.sessions.length === 0) return null;
+              return (
+                <div className="flex flex-wrap gap-1 mt-2 pl-2 border-l-2 border-primary/20">
+                  {yg.sessions.map((s) => {
+                    const isActive = active.session === s.name;
+                    return (
+                      <button
+                        key={s.name}
+                        onClick={() =>
+                          go(
+                            isActive
+                              ? { year: String(active.year), session: undefined }
+                              : { year: String(active.year), session: s.name }
+                          )
+                        }
+                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[10px] font-medium cursor-pointer transition-colors ${
+                          isActive
+                            ? 'bg-primary/15 border-primary/40 text-primary'
+                            : 'border-border/70 text-dark-text hover:text-light-text'
+                        }`}
+                      >
+                        {s.name}
+                        <span className="font-mono opacity-60">{s.count}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              );
+            })()}
+        </Section>
+      )}
+
+      {/* Tags */}
+      {tags.length > 0 && (
+        <Section label="Tags" onClear={active.tag ? () => go({ tag: undefined }) : undefined}>
+          <div className="flex flex-wrap gap-1">
+            {visibleTags.map((tag) => {
+              const isActive = active.tag === tag.name;
+              return (
+                <button
+                  key={tag.name}
+                  onClick={() => go({ tag: isActive ? undefined : tag.name })}
+                  className={`text-[10px] px-2 py-0.5 rounded-full border font-medium cursor-pointer transition-colors ${
+                    isActive
+                      ? 'bg-info/15 border-info/40 text-info'
+                      : 'border-border/60 text-dark-text hover:border-info/30 hover:text-info/80 hover:bg-info/5'
+                  }`}
+                >
+                  {tag.name}
+                </button>
+              );
+            })}
+            {tags.length > TAG_COLLAPSED_LIMIT && (
               <button
-                onClick={() => router.push(buildUrl({ q: undefined }))}
-                className="text-dark-text hover:text-light-text transition-colors shrink-0"
-                aria-label="Clear search"
+                onClick={() => setTagsExpanded((v) => !v)}
+                className="text-[10px] px-2 py-0.5 rounded-full text-primary/80 hover:text-primary font-medium cursor-pointer transition-colors"
               >
-                <X size={11} />
+                {tagsExpanded ? 'Show less' : `+${tags.length - TAG_COLLAPSED_LIMIT} more`}
               </button>
             )}
-            <div className="w-px h-4 bg-border/60 mx-0.5 shrink-0" />
-            <button
-              onClick={() => setMobileOpen((v) => !v)}
-              className="flex items-center gap-1 text-[11px] font-medium text-dark-text hover:text-light-text transition-colors shrink-0"
-            >
-              <SlidersHorizontal size={12} />
-              <span>Filters{activeFilterCount > 0 ? ` (${activeFilterCount})` : ''}</span>
-              <ChevronDown
-                size={12}
-                className={`transition-transform duration-200 ${mobileOpen ? 'rotate-180' : ''}`}
-              />
-            </button>
           </div>
-
-          {/* Expandable filter rows */}
-          {mobileOpen && (
-            <div className="border-t border-border/40 p-3 space-y-3">
-              {topics.length > 0 && (
-                <MobileFilterRow label="Topic">
-                  <FilterChip active={!activeTopic} onClick={() => router.push(buildUrl({ topic: undefined }))}>All</FilterChip>
-                  {topics.map((t) => (
-                    <FilterChip
-                      key={t}
-                      active={activeTopic === t}
-                      onClick={() => router.push(buildUrl({ topic: activeTopic === t ? undefined : t }))}
-                    >
-                      {t}
-                    </FilterChip>
-                  ))}
-                </MobileFilterRow>
-              )}
-              {yearGroups.length > 0 && (
-                <MobileFilterRow label="Year">
-                  <FilterChip active={!activeYear} onClick={() => router.push(buildUrl({ year: undefined, session: undefined }))}>All</FilterChip>
-                  {yearGroups.map(({ year }) => (
-                    <FilterChip
-                      key={year}
-                      active={activeYear === year}
-                      onClick={() =>
-                        router.push(
-                          buildUrl(
-                            activeYear === year
-                              ? { year: undefined, session: undefined }
-                              : { year: String(year), session: undefined }
-                          )
-                        )
-                      }
-                    >
-                      {year}
-                    </FilterChip>
-                  ))}
-                </MobileFilterRow>
-              )}
-              {activeYear && activeSessions.length > 0 && (
-                <MobileFilterRow label="Session" indent>
-                  {activeSessions.map((s) => (
-                    <FilterChip
-                      key={s}
-                      active={activeSession === s}
-                      size="sm"
-                      onClick={() =>
-                        router.push(
-                          buildUrl(
-                            activeSession === s
-                              ? { year: String(activeYear), session: undefined }
-                              : { year: String(activeYear), session: s }
-                          )
-                        )
-                      }
-                    >
-                      {s}
-                    </FilterChip>
-                  ))}
-                </MobileFilterRow>
-              )}
-              {allTags.length > 0 && (
-                <MobileFilterRow label="Tags">
-                  {allTags.map((tag) => (
-                    <FilterChip
-                      key={tag}
-                      active={activeTag === tag}
-                      color="info"
-                      onClick={() => router.push(buildUrl({ tag: activeTag === tag ? undefined : tag }))}
-                    >
-                      {tag}
-                    </FilterChip>
-                  ))}
-                </MobileFilterRow>
-              )}
-              {hasActiveFilter && (
-                <div className="pt-1 flex justify-end border-t border-border/30">
-                  <button
-                    onClick={clearAll}
-                    className="text-[11px] text-dark-text hover:text-error transition-colors cursor-pointer"
-                  >
-                    Clear all filters
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* Active filter pills (when collapsed) */}
-        {hasActiveFilter && !mobileOpen && (
-          <div className="flex flex-wrap items-center gap-1.5 mt-2 px-0.5">
-            {activeTopic && (
-              <ActivePill label={activeTopic} onRemove={() => router.push(buildUrl({ topic: undefined }))} />
-            )}
-            {activeYear && (
-              <ActivePill
-                label={activeSession ? `${activeYear} · ${activeSession}` : String(activeYear)}
-                onRemove={() => router.push(buildUrl({ year: undefined, session: undefined }))}
-              />
-            )}
-            {activeTag && (
-              <ActivePill label={activeTag} onRemove={() => router.push(buildUrl({ tag: undefined }))} color="info" />
-            )}
-            {activeQ && (
-              <ActivePill label={`"${activeQ}"`} onRemove={() => router.push(buildUrl({ q: undefined }))} />
-            )}
-            <button
-              onClick={clearAll}
-              className="text-[10px] text-dark-text hover:text-dark-text transition-colors cursor-pointer underline underline-offset-2 ml-1"
-            >
-              Clear all
-            </button>
-          </div>
-        )}
-      </div>
-    </>
+        </Section>
+      )}
+    </div>
   );
 }
 
 // ── Sub-components ─────────────────────────────────────────────────────────────
 
-function SidebarSection({
+function Section({
   label,
-  indent,
+  onClear,
   children,
 }: {
   label: string;
-  indent?: boolean;
+  onClear?: () => void;
   children: React.ReactNode;
 }) {
   return (
     <div>
-      <div
-        className={`text-[10px] uppercase tracking-wider font-semibold mb-1.5 ${
-          indent ? 'text-primary/50 pl-2' : 'text-dark-text'
-        }`}
-      >
-        {label}
+      <div className="flex items-center justify-between mb-2 px-0.5">
+        <span className="mono-label text-dark-text">{label}</span>
+        {onClear && (
+          <button
+            onClick={onClear}
+            className="text-[10px] text-dark-text hover:text-error transition-colors cursor-pointer"
+          >
+            Clear
+          </button>
+        )}
       </div>
-      <div className={`space-y-0.5 ${indent ? 'pl-2 border-l-2 border-border/30' : ''}`}>
-        {children}
-      </div>
+      {children}
     </div>
   );
 }
 
-function SidebarItem({
+function ChipStat({
+  label,
+  count,
+  color,
   active,
   onClick,
-  children,
-  small,
 }: {
+  label: string;
+  count: number;
+  color?: string;
   active: boolean;
   onClick: () => void;
-  children: React.ReactNode;
-  small?: boolean;
 }) {
   return (
     <button
       onClick={onClick}
-      className={`w-full flex items-center gap-2 text-left rounded-md px-2 py-1 cursor-pointer transition-all duration-150 ${
-        small ? 'text-[11px]' : 'text-xs'
-      } ${
+      style={
+        active && color
+          ? {
+              backgroundColor: `color-mix(in srgb, ${color} 15%, transparent)`,
+              borderColor: `color-mix(in srgb, ${color} 45%, transparent)`,
+              color,
+            }
+          : undefined
+      }
+      className={`flex items-center justify-between gap-2 rounded-lg border px-2.5 py-1.5 cursor-pointer transition-colors ${
         active
-          ? 'text-primary bg-primary/10'
-          : 'text-dark-text hover:text-light-text hover:bg-surface'
+          ? color
+            ? ''
+            : 'bg-primary/15 border-primary/40 text-primary'
+          : 'border-border text-dark-text hover:border-dark-text/40 hover:text-light-text'
       }`}
     >
-      <span
-        className={`w-1.5 h-1.5 rounded-full shrink-0 transition-all duration-150 ${
-          active ? 'bg-primary' : 'bg-transparent'
-        }`}
-      />
-      <span className="flex items-center gap-1">{children}</span>
+      <span className="text-[11px] font-medium">{label}</span>
+      <span className="text-[10px] font-mono tabular-nums opacity-80">{count}</span>
     </button>
-  );
-}
-
-function MobileFilterRow({
-  label,
-  indent,
-  children,
-}: {
-  label: string;
-  indent?: boolean;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className={indent ? 'pl-3 border-l border-border/40' : ''}>
-      <div className="text-[10px] uppercase tracking-wider font-semibold text-dark-text mb-1.5">{label}</div>
-      <div className="flex flex-wrap gap-1">{children}</div>
-    </div>
-  );
-}
-
-function FilterChip({
-  active,
-  onClick,
-  children,
-  color = 'primary',
-  size = 'md',
-}: {
-  active: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
-  color?: 'primary' | 'info';
-  size?: 'md' | 'sm';
-}) {
-  const base = 'inline-flex items-center gap-1 rounded-full border font-medium transition-all duration-150 cursor-pointer select-none';
-  const sz = size === 'sm' ? 'px-2 py-0.5 text-[10px]' : 'px-2.5 py-0.5 text-[11px]';
-  const activeCls =
-    color === 'info'
-      ? 'bg-info/15 border-info/40 text-info'
-      : 'bg-primary/20 border-primary/50 text-primary';
-  const inactiveCls =
-    color === 'info'
-      ? 'border-border text-dark-text hover:border-info/30 hover:text-info/80 hover:bg-info/5'
-      : 'border-border/70 text-dark-text hover:border-primary/40 hover:text-light-text hover:bg-primary/5';
-  return (
-    <button onClick={onClick} className={`${base} ${sz} ${active ? activeCls : inactiveCls}`}>
-      {children}
-    </button>
-  );
-}
-
-function ActivePill({
-  label,
-  onRemove,
-  color = 'primary',
-}: {
-  label: string;
-  onRemove: () => void;
-  color?: 'primary' | 'info';
-}) {
-  const cls =
-    color === 'info'
-      ? 'bg-info/10 border-info/30 text-info'
-      : 'bg-primary/10 border-primary/30 text-primary';
-
-  return (
-    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[11px] font-medium ${cls}`}>
-      {label}
-      <button
-        onClick={onRemove}
-        className="ml-0.5 opacity-60 hover:opacity-100 transition-opacity cursor-pointer"
-        aria-label={`Remove ${label} filter`}
-      >
-        <X size={10} />
-      </button>
-    </span>
   );
 }

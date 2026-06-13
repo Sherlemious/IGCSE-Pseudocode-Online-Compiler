@@ -6,6 +6,20 @@ import { prisma } from '../../lib/prisma';
 import { auth } from '../../lib/auth';
 import { PREMIUM_GATING_ENABLED } from '../../lib/featureFlags';
 import { PracticeFilters } from './PracticeFilters';
+import { PracticeToolbar } from './PracticeToolbar';
+import {
+  DIFFICULTIES,
+  DIFF_META,
+  STATUS_KEYS,
+  type ActiveFilters,
+  type Difficulty,
+  type DiffFacet,
+  type NamedFacet,
+  type SortKey,
+  type StatusFacet,
+  type StatusKey,
+  type YearFacet,
+} from './filterUtils';
 
 export const metadata: Metadata = {
   title: 'Cambridge Pseudocode Practice Questions - Past Papers',
@@ -16,33 +30,43 @@ export const metadata: Metadata = {
   },
 };
 
-const DIFFICULTY_BADGE: Record<string, string> = {
-  EASY: 'bg-success/10 border-success/30 text-success',
-  MEDIUM: 'bg-warning/10 border-warning/30 text-warning',
-  HARD: 'bg-error/10 border-error/30 text-error',
-};
-
-// Single source of truth for per-difficulty colour + label.
-// `color` is a CSS var so it tracks the active runtime theme.
-const DIFF_META: Record<string, { label: string; color: string; text: string }> = {
-  EASY: { label: 'Easy', color: 'var(--color-success)', text: 'text-success' },
-  MEDIUM: { label: 'Medium', color: 'var(--color-warning)', text: 'text-warning' },
-  HARD: { label: 'Hard', color: 'var(--color-error)', text: 'text-error' },
-};
-
-const DIFFICULTIES = ['EASY', 'MEDIUM', 'HARD'] as const;
+const SESSION_ORDER = ['May/June', 'Oct/Nov', 'Feb/Mar'];
 
 interface PageProps {
-  searchParams: Promise<{ topic?: string; year?: string; session?: string; tag?: string; q?: string }>;
+  searchParams: Promise<{
+    topic?: string;
+    year?: string;
+    session?: string;
+    tag?: string;
+    q?: string;
+    diff?: string;
+    status?: string;
+    sort?: string;
+  }>;
 }
 
 export default async function PracticePage({ searchParams }: PageProps) {
-  const { topic: activeTopic, year: yearParam, session: activeSession, tag: activeTag, q: activeQ } = await searchParams;
-  const activeYear = yearParam ? parseInt(yearParam, 10) : undefined;
+  const params = await searchParams;
+  const activeTopic = params.topic;
+  const activeSession = params.session;
+  const activeTag = params.tag;
+  const activeQ = params.q;
+  const activeYear = params.year ? parseInt(params.year, 10) : undefined;
+  const activeDiff = (() => {
+    const v = params.diff?.toUpperCase();
+    return v && (DIFFICULTIES as readonly string[]).includes(v) ? (v as Difficulty) : undefined;
+  })();
+  const validStatus = (() => {
+    const v = params.status?.toLowerCase();
+    return v && (STATUS_KEYS as readonly string[]).includes(v) ? (v as StatusKey) : undefined;
+  })();
+  const activeSort: SortKey =
+    params.sort === 'marks' || params.sort === 'az' ? params.sort : 'year';
 
   const session = await auth();
   const isPremium = session?.user?.plan === 'PREMIUM';
   const hasFullAccess = isPremium || !PREMIUM_GATING_ENABLED;
+  const showStatus = !!session;
 
   let questions: Awaited<ReturnType<typeof fetchQuestions>> = [];
   let progressMap: Map<string, { status: string; bestScore: number; totalTests: number; updatedAt: Date }> = new Map();
@@ -61,55 +85,120 @@ export default async function PracticePage({ searchParams }: PageProps) {
     // DB not yet configured — show placeholder
   }
 
-  // ── Derived filter data ────────────────────────────────────────────────────
-  const topics = Array.from(new Set(questions.map((q) => q.topic).filter(Boolean) as string[])).sort();
+  const statusOf = (id: string): StatusKey => {
+    const p = progressMap.get(id);
+    if (!p) return 'todo';
+    return p.status === 'SOLVED' ? 'solved' : 'started';
+  };
 
-  // Year groups: sorted descending, each with its unique sessions sorted
-  const yearSessionMap = new Map<number, Set<string>>();
+  // ── Faceted matching ────────────────────────────────────────────────────────
+  // `except` lists the dimensions to ignore — used so each facet's counts reflect
+  // every OTHER active filter (proper cross-filtering) rather than itself.
+  type Question = (typeof questions)[number];
+  const matchExcept = (q: Question, except: string[]): boolean => {
+    if (!except.includes('topic') && activeTopic && q.topic !== activeTopic) return false;
+    if (!except.includes('year')) {
+      if (activeYear && q.year !== activeYear) return false;
+      if (activeSession && q.session !== activeSession) return false;
+    }
+    if (!except.includes('tag') && activeTag && !q.tags.includes(activeTag)) return false;
+    if (!except.includes('q') && activeQ && !q.title.toLowerCase().includes(activeQ.toLowerCase())) return false;
+    if (!except.includes('diff') && activeDiff && q.difficulty !== activeDiff) return false;
+    if (!except.includes('status') && validStatus && statusOf(q.id) !== validStatus) return false;
+    return true;
+  };
+
+  const filtered = questions.filter((q) => matchExcept(q, []));
+
+  // ── Facet counts ──────────────────────────────────────────────────────────
+  // Topics
+  const allTopics = Array.from(new Set(questions.map((q) => q.topic).filter(Boolean) as string[]));
+  const topicCount = new Map<string, number>(allTopics.map((t) => [t, 0]));
   for (const q of questions) {
-    if (q.year) {
-      if (!yearSessionMap.has(q.year)) yearSessionMap.set(q.year, new Set());
-      if (q.session) yearSessionMap.get(q.year)!.add(q.session);
+    if (q.topic && matchExcept(q, ['topic'])) topicCount.set(q.topic, (topicCount.get(q.topic) ?? 0) + 1);
+  }
+  const topics: NamedFacet[] = allTopics
+    .map((name) => ({ name, count: topicCount.get(name) ?? 0 }))
+    .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
+
+  // Years + sessions
+  const yearSessions = new Map<number, Set<string>>();
+  for (const q of questions) {
+    if (!q.year) continue;
+    if (!yearSessions.has(q.year)) yearSessions.set(q.year, new Set());
+    if (q.session) yearSessions.get(q.year)!.add(q.session);
+  }
+  const yearCount = new Map<number, number>();
+  const sessionCount = new Map<string, number>();
+  for (const q of questions) {
+    if (!matchExcept(q, ['year']) || !q.year) continue;
+    yearCount.set(q.year, (yearCount.get(q.year) ?? 0) + 1);
+    if (q.session) {
+      const key = `${q.year}|${q.session}`;
+      sessionCount.set(key, (sessionCount.get(key) ?? 0) + 1);
     }
   }
-  const SESSION_ORDER = ['May/June', 'Oct/Nov', 'Feb/Mar'];
-  const yearGroups = Array.from(yearSessionMap.entries())
+  const years: YearFacet[] = Array.from(yearSessions.entries())
     .sort(([a], [b]) => b - a)
-    .map(([year, sessionsSet]) => ({
+    .map(([year, set]) => ({
       year,
-      sessions: Array.from(sessionsSet).sort(
-        (a, b) => SESSION_ORDER.indexOf(b) - SESSION_ORDER.indexOf(a)
-      ),
+      count: yearCount.get(year) ?? 0,
+      sessions: Array.from(set)
+        .sort((a, b) => SESSION_ORDER.indexOf(b) - SESSION_ORDER.indexOf(a))
+        .map((name) => ({ name, count: sessionCount.get(`${year}|${name}`) ?? 0 })),
     }));
 
-  // All unique tags (sorted)
-  const allTags = Array.from(new Set(questions.flatMap((q) => q.tags))).sort();
+  // Tags
+  const allTags = Array.from(new Set(questions.flatMap((q) => q.tags)));
+  const tagCount = new Map<string, number>(allTags.map((t) => [t, 0]));
+  for (const q of questions) {
+    if (!matchExcept(q, ['tag'])) continue;
+    for (const tg of q.tags) if (tagCount.has(tg)) tagCount.set(tg, (tagCount.get(tg) ?? 0) + 1);
+  }
+  const tags: NamedFacet[] = allTags
+    .map((name) => ({ name, count: tagCount.get(name) ?? 0 }))
+    .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
 
-  // ── Filtering ──────────────────────────────────────────────────────────────
-  const filtered = questions.filter((q) => {
-    if (activeTopic && q.topic !== activeTopic) return false;
-    if (activeYear && q.year !== activeYear) return false;
-    if (activeSession && q.session !== activeSession) return false;
-    if (activeTag && !q.tags.includes(activeTag)) return false;
-    if (activeQ && !q.title.toLowerCase().includes(activeQ.toLowerCase())) return false;
-    return true;
-  });
+  // Difficulty
+  const diffCount: Record<Difficulty, number> = { EASY: 0, MEDIUM: 0, HARD: 0 };
+  for (const q of questions) {
+    if (matchExcept(q, ['diff']) && q.difficulty in diffCount) diffCount[q.difficulty as Difficulty]++;
+  }
+  const difficulties: DiffFacet[] = DIFFICULTIES.map((value) => ({ value, count: diffCount[value] }));
 
-  // Group by difficulty
+  // Status
+  const statusCount: Record<StatusKey, number> = { todo: 0, started: 0, solved: 0 };
+  let statusAllCount = 0;
+  for (const q of questions) {
+    if (!matchExcept(q, ['status'])) continue;
+    statusAllCount++;
+    statusCount[statusOf(q.id)]++;
+  }
+  const statuses: StatusFacet[] = STATUS_KEYS.map((value) => ({ value, count: statusCount[value] }));
+
+  // ── Sort within difficulty groups ───────────────────────────────────────────
+  const sortQuestions = (arr: Question[]): Question[] => {
+    const copy = [...arr];
+    if (activeSort === 'az') copy.sort((a, b) => a.title.localeCompare(b.title));
+    else if (activeSort === 'marks')
+      copy.sort((a, b) => (b.marks ?? -1) - (a.marks ?? -1) || a.title.localeCompare(b.title));
+    else copy.sort((a, b) => (b.year ?? -1) - (a.year ?? -1) || a.title.localeCompare(b.title));
+    return copy;
+  };
+
   const grouped = DIFFICULTIES.reduce(
     (acc, d) => {
-      acc[d] = filtered.filter((q) => q.difficulty === d);
+      acc[d] = sortQuestions(filtered.filter((q) => q.difficulty === d));
       return acc;
     },
-    {} as Record<string, typeof filtered>
+    {} as Record<Difficulty, Question[]>
   );
 
-  // Stats — overall (across all questions, not the filtered view)
+  // ── Header stats (overall, not filtered) ────────────────────────────────────
   const totalSolved = Array.from(progressMap.values()).filter((p) => p.status === 'SOLVED').length;
   const totalQuestions = questions.length;
   const overallPct = totalQuestions > 0 ? Math.round((totalSolved / totalQuestions) * 100) : 0;
 
-  // Per-difficulty solved totals for the header dashboard
   const solvedByDiff: Record<string, number> = { EASY: 0, MEDIUM: 0, HARD: 0 };
   const totalByDiff: Record<string, number> = { EASY: 0, MEDIUM: 0, HARD: 0 };
   for (const q of questions) {
@@ -118,30 +207,51 @@ export default async function PracticePage({ searchParams }: PageProps) {
     if (progressMap.get(q.id)?.status === 'SOLVED') solvedByDiff[q.difficulty]++;
   }
 
-  // Progress-ring geometry (header dashboard)
   const RING = 64;
   const RING_STROKE = 5;
   const RING_R = (RING - RING_STROKE) / 2;
   const RING_C = 2 * Math.PI * RING_R;
   const RING_OFFSET = RING_C * (1 - overallPct / 100);
 
-  // "Continue where you left off"
+  // "Continue where you left off" — most recently touched, not-yet-solved attempt
   const resumeQuestion = (() => {
     if (!session?.user?.id) return null;
     const inProgress = Array.from(progressMap.entries())
-      .filter(([, p]) => p.status === 'IN_PROGRESS')
-      .sort(([, a], [, b]) => new Date((b as { updatedAt: Date }).updatedAt).getTime() - new Date((a as { updatedAt: Date }).updatedAt).getTime());
+      .filter(([, p]) => p.status === 'ATTEMPTED')
+      .sort(
+        ([, a], [, b]) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+      );
     if (!inProgress.length) return null;
     const [qId] = inProgress[0];
     return questions.find((q) => q.id === qId) ?? null;
   })();
 
+  const active: ActiveFilters = {
+    topic: activeTopic,
+    year: activeYear,
+    session: activeSession,
+    tag: activeTag,
+    q: activeQ,
+    diff: activeDiff,
+    status: validStatus,
+    sort: activeSort,
+  };
+
+  const filterProps = {
+    topics,
+    years,
+    tags,
+    difficulties,
+    statuses,
+    statusAllCount,
+    active,
+    showStatus,
+  };
+
   // Running index so cards cascade in continuously across difficulty groups.
   let revealIndex = 0;
 
   return (
-    // On desktop: flex-col container that does NOT scroll — sidebar and content each scroll independently.
-    // On mobile: single overflow-y-auto container so page header + filters + questions scroll together.
     <div className="flex-1 min-h-0 overflow-y-auto lg:overflow-hidden lg:flex lg:flex-col bg-background bg-dot-grid text-light-text relative scrollbar-pretty">
       <div
         className="absolute inset-0 pointer-events-none"
@@ -151,7 +261,7 @@ export default async function PracticePage({ searchParams }: PageProps) {
       />
       <div className="max-w-7xl w-full mx-auto relative px-4 sm:px-6 lg:px-8 lg:flex lg:flex-col lg:flex-1 lg:min-h-0">
 
-        {/* ── Page header — shrinks to its natural height on desktop ── */}
+        {/* ── Page header ── */}
         <div className="pt-8 mb-6 lg:shrink-0">
           <div className="flex items-start justify-between gap-5 mb-3">
             <div className="min-w-0">
@@ -165,10 +275,8 @@ export default async function PracticePage({ searchParams }: PageProps) {
               </p>
             </div>
 
-            {/* Progress dashboard — ring + per-difficulty breakdown */}
             {session && totalQuestions > 0 && (
               <div className="shrink-0 flex items-center gap-4 sm:gap-5 animate-fade-in-up">
-                {/* Per-difficulty mini-stats (desktop / tablet only) */}
                 <div className="hidden sm:flex flex-col gap-1.5">
                   {DIFFICULTIES.map((d) => {
                     const meta = DIFF_META[d];
@@ -194,17 +302,9 @@ export default async function PracticePage({ searchParams }: PageProps) {
                   })}
                 </div>
 
-                {/* Overall ring */}
                 <div className="relative shrink-0 animate-scale-in" style={{ width: RING, height: RING }}>
                   <svg width={RING} height={RING} className="-rotate-90">
-                    <circle
-                      cx={RING / 2}
-                      cy={RING / 2}
-                      r={RING_R}
-                      fill="none"
-                      stroke="var(--color-border)"
-                      strokeWidth={RING_STROKE}
-                    />
+                    <circle cx={RING / 2} cy={RING / 2} r={RING_R} fill="none" stroke="var(--color-border)" strokeWidth={RING_STROKE} />
                     <circle
                       cx={RING / 2}
                       cy={RING / 2}
@@ -219,9 +319,7 @@ export default async function PracticePage({ searchParams }: PageProps) {
                     />
                   </svg>
                   <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <span className="text-sm font-bold font-mono text-light-text leading-none tabular-nums">
-                      {overallPct}%
-                    </span>
+                    <span className="text-sm font-bold font-mono text-light-text leading-none tabular-nums">{overallPct}%</span>
                     <span className="text-[8px] uppercase tracking-wider text-dark-text mt-0.5">
                       {totalSolved}/{totalQuestions}
                     </span>
@@ -257,253 +355,235 @@ export default async function PracticePage({ searchParams }: PageProps) {
         </div>
 
         {/* ── Two-column layout ── */}
-        {/* On desktop: grid fills the remaining height; each column scrolls independently. */}
-        {/* On mobile: normal block flow inside the outer scroll container.             */}
         <div className="lg:grid lg:grid-cols-[240px_1fr] lg:gap-10 lg:flex-1 lg:min-h-0 lg:[grid-template-rows:1fr]">
 
-          {/* Sidebar — desktop only, independently scrollable */}
+          {/* Sidebar — desktop only */}
           <aside className="hidden lg:block lg:overflow-y-auto lg:pb-8 lg:min-h-0 scrollbar-pretty pr-1">
             <Suspense fallback={null}>
-              <PracticeFilters
-                topics={topics}
-                yearGroups={yearGroups}
-                allTags={allTags}
-                activeTopic={activeTopic}
-                activeYear={activeYear}
-                activeSession={activeSession}
-                activeTag={activeTag}
-                activeQ={activeQ}
-              />
+              <PracticeFilters variant="desktop" {...filterProps} />
             </Suspense>
           </aside>
 
           {/* Main content */}
           <div className="min-w-0 lg:overflow-y-auto lg:pb-8 lg:min-h-0 scrollbar-pretty">
-            {/* Mobile filters — hidden on desktop (sidebar handles it there) */}
+            {/* Mobile filters */}
             <div className="lg:hidden">
               <Suspense fallback={null}>
-                <PracticeFilters
-                  topics={topics}
-                  yearGroups={yearGroups}
-                  allTags={allTags}
-                  activeTopic={activeTopic}
-                  activeYear={activeYear}
-                  activeSession={activeSession}
-                  activeTag={activeTag}
-                  activeQ={activeQ}
-                />
+                <PracticeFilters variant="mobile" {...filterProps} />
               </Suspense>
             </div>
 
-            {/* Resume banner */}
-            {resumeQuestion && (
-              <Link
-                href={`/practice/${resumeQuestion.id}`}
-                className="group relative flex items-center gap-3 mb-5 pl-3.5 pr-4 py-3 rounded-xl border border-primary/25 bg-primary/[0.06] hover:bg-primary/10 hover:border-primary/40 transition-all duration-200 overflow-hidden animate-fade-in-up"
-              >
-                <span
-                  aria-hidden
-                  className="absolute inset-0 pointer-events-none opacity-60"
-                  style={{ background: 'radial-gradient(120% 140% at 0% 50%, rgba(var(--color-primary-rgb), 0.10) 0%, transparent 55%)' }}
-                />
-                <span className="relative shrink-0 w-8 h-8 rounded-lg bg-primary/15 border border-primary/25 flex items-center justify-center">
-                  <ArrowRight size={14} className="text-primary group-hover:translate-x-0.5 transition-transform" />
-                </span>
-                <div className="relative min-w-0 flex-1">
-                  <div className="mono-label text-primary/70 mb-0.5">Continue where you left off</div>
-                  <div className="text-sm font-medium text-light-text truncate">{resumeQuestion.title}</div>
-                </div>
-              </Link>
-            )}
-
-            {/* Question list */}
             {questions.length === 0 ? (
               <EmptyState
                 title="No questions yet"
                 body="Questions are added through the database. Check back soon — new past-paper sets land regularly."
               />
-            ) : filtered.length === 0 ? (
-              <EmptyState
-                title="Nothing matches those filters"
-                body="Try removing a filter or clearing your search to see more questions."
-              />
             ) : (
-              <div className="space-y-7">
-                {DIFFICULTIES.map((d) => {
-                  const qs = grouped[d];
-                  if (qs.length === 0) return null;
-                  const meta = DIFF_META[d];
-                  const isLocked = d !== 'EASY' && !hasFullAccess;
-                  const groupSolved = qs.filter((q) => progressMap.get(q.id)?.status === 'SOLVED').length;
-                  const groupPct = qs.length ? Math.round((groupSolved / qs.length) * 100) : 0;
+              <>
+                <Suspense fallback={null}>
+                  <PracticeToolbar filteredCount={filtered.length} totalCount={totalQuestions} active={active} />
+                </Suspense>
 
-                  return (
-                    <div key={d}>
-                      {/* Group header */}
-                      <div className="flex items-center gap-3 mb-3">
-                        <span className={`flex items-center gap-1.5 text-xs font-bold tracking-wider ${meta.text}`}>
-                          <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: meta.color }} />
-                          {d}
-                        </span>
-                        <span className="text-xs text-dark-text font-mono tabular-nums">{qs.length}</span>
-                        {isLocked && (
-                          <span className="flex items-center gap-1 text-[10px] text-warning/80 px-1.5 py-0.5 rounded border border-warning/25 bg-warning/5">
-                            <Crown size={10} />
-                            Premium
-                          </span>
-                        )}
-                        <div
-                          className="flex-1 h-px"
-                          style={{ background: `linear-gradient(90deg, color-mix(in srgb, ${meta.color} 22%, transparent), var(--color-border) 60%)` }}
-                        />
-                        {session && !isLocked && groupSolved > 0 && (
-                          <span className="flex items-center gap-2 shrink-0">
-                            <span className="hidden sm:block w-16 h-1 rounded-full bg-border overflow-hidden">
-                              <span
-                                className="block h-full rounded-full transition-all duration-700 ease-out"
-                                style={{ width: `${groupPct}%`, backgroundColor: meta.color }}
-                              />
-                            </span>
-                            <span className="text-[10px] text-dark-text font-mono tabular-nums">
-                              {groupSolved}/{qs.length} solved
-                            </span>
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Cards */}
-                      <div className="space-y-2">
-                        {qs.map((q) => {
-                          const paperRef = q.year
-                            ? [
-                                q.year,
-                                q.session,
-                                q.variant ? `V${q.variant}` : null,
-                                q.questionNumber ? `Q${q.questionNumber}${q.part ? `(${q.part})` : ''}` : null,
-                              ].filter(Boolean).join(' ')
-                            : q.paper ?? null;
-                          const progress = progressMap.get(q.id);
-                          const solved = progress?.status === 'SOLVED';
-                          const attemptPct =
-                            progress && progress.totalTests > 0
-                              ? Math.round((progress.bestScore / progress.totalTests) * 100)
-                              : 0;
-                          const revealDelay = Math.min(revealIndex++, 14) * 35;
-
-                          const cardContent = (
-                            <>
-                              {/* Difficulty spine */}
-                              <span
-                                aria-hidden
-                                className="absolute left-0 inset-y-0 w-[3px] transition-all duration-200 group-hover:w-[5px]"
-                                style={{ backgroundColor: meta.color, opacity: isLocked ? 0.3 : solved ? 0.9 : 0.5 }}
-                              />
-                              {/* Solved wash */}
-                              {solved && (
-                                <span
-                                  aria-hidden
-                                  className="absolute inset-0 pointer-events-none"
-                                  style={{ background: `linear-gradient(90deg, color-mix(in srgb, var(--color-success) 7%, transparent), transparent 55%)` }}
-                                />
-                              )}
-
-                              <div className="relative flex items-center gap-3 min-w-0">
-                                {/* Status indicator */}
-                                {isLocked ? (
-                                  <Lock className="h-[18px] w-[18px] text-dark-text/40 shrink-0" />
-                                ) : solved ? (
-                                  <CheckCircle className="h-[18px] w-[18px] text-success shrink-0" />
-                                ) : progress ? (
-                                  // Mini conic progress ring → glanceable "how close am I"
-                                  <span
-                                    className="relative h-[18px] w-[18px] shrink-0 rounded-full"
-                                    style={{
-                                      background: `conic-gradient(var(--color-warning) ${attemptPct * 3.6}deg, color-mix(in srgb, var(--color-warning) 20%, transparent) ${attemptPct * 3.6}deg)`,
-                                    }}
-                                    title={`Best ${progress.bestScore}/${progress.totalTests}`}
-                                  >
-                                    <span className="absolute inset-[3px] rounded-full bg-surface" />
-                                  </span>
-                                ) : (
-                                  <span className="h-[18px] w-[18px] rounded-full border-2 border-border shrink-0 transition-colors group-hover:border-primary/40" />
-                                )}
-
-                                <div className="min-w-0">
-                                  <div className="font-medium text-sm text-light-text truncate transition-colors group-hover:text-primary">
-                                    {q.title}
-                                  </div>
-                                  {(q.topic || paperRef || q.tags.length > 0) && (
-                                    <div className="flex flex-wrap items-center gap-1.5 mt-1">
-                                      {q.topic && (
-                                        <span className={`inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded border ${
-                                          q.topic === 'File Handling'
-                                            ? 'bg-info/10 border-info/30 text-info'
-                                            : 'bg-background border-border text-dark-text'
-                                        }`}>
-                                          {q.topic === 'File Handling' && <FileText size={9} />}
-                                          {q.topic}
-                                        </span>
-                                      )}
-                                      {paperRef && (
-                                        <span className="text-[10px] text-dark-text/70 font-mono">{paperRef}</span>
-                                      )}
-                                      {q.marks && (
-                                        <span className="text-[10px] text-warning/70 font-mono">{q.marks}m</span>
-                                      )}
-                                      {q.tags.slice(0, 3).map((tag) => (
-                                        <span key={tag} className="text-[10px] px-1.5 py-0.5 rounded-full border border-border/60 text-dark-text/50">
-                                          {tag}
-                                        </span>
-                                      ))}
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-
-                              <div className="relative flex items-center gap-2.5 ml-3 shrink-0">
-                                {progress && !isLocked && (
-                                  <span className="text-[10px] text-dark-text font-mono tabular-nums">
-                                    {progress.bestScore}/{progress.totalTests}
-                                  </span>
-                                )}
-                                <span className={`text-[10px] font-bold tracking-wide px-2 py-0.5 rounded-md border ${DIFFICULTY_BADGE[q.difficulty] ?? 'border-border text-dark-text'}`}>
-                                  {q.difficulty}
-                                </span>
-                                {!isLocked && (
-                                  <ArrowRight
-                                    size={14}
-                                    className="text-primary opacity-0 -translate-x-1 transition-all duration-200 group-hover:opacity-100 group-hover:translate-x-0 shrink-0"
-                                  />
-                                )}
-                              </div>
-                            </>
-                          );
-
-                          return isLocked ? (
-                            <div
-                              key={q.id}
-                              className="relative flex items-center justify-between gap-3 pl-4 pr-3 py-3 rounded-xl border border-border bg-surface/40 overflow-hidden opacity-60 cursor-not-allowed animate-fade-in-up"
-                              style={{ animationDelay: `${revealDelay}ms` }}
-                              aria-disabled="true"
-                            >
-                              {cardContent}
-                            </div>
-                          ) : (
-                            <Link
-                              key={q.id}
-                              href={`/practice/${q.id}`}
-                              className="group relative flex items-center justify-between gap-3 pl-4 pr-3 py-3 rounded-xl border border-border bg-surface overflow-hidden transition-all duration-200 hover:border-primary/40 hover:-translate-y-px hover:shadow-[0_8px_22px_-12px_rgba(0,0,0,0.55)] animate-fade-in-up"
-                              style={{ animationDelay: `${revealDelay}ms` }}
-                            >
-                              {cardContent}
-                            </Link>
-                          );
-                        })}
-                      </div>
+                {/* Resume banner */}
+                {resumeQuestion && (
+                  <Link
+                    href={`/practice/${resumeQuestion.id}`}
+                    className="group relative flex items-center gap-3 mb-5 pl-3.5 pr-4 py-3 rounded-xl border border-primary/25 bg-primary/[0.06] hover:bg-primary/10 hover:border-primary/40 transition-all duration-200 overflow-hidden animate-fade-in-up"
+                  >
+                    <span
+                      aria-hidden
+                      className="absolute inset-0 pointer-events-none opacity-60"
+                      style={{ background: 'radial-gradient(120% 140% at 0% 50%, rgba(var(--color-primary-rgb), 0.10) 0%, transparent 55%)' }}
+                    />
+                    <span className="relative shrink-0 w-8 h-8 rounded-lg bg-primary/15 border border-primary/25 flex items-center justify-center">
+                      <ArrowRight size={14} className="text-primary group-hover:translate-x-0.5 transition-transform" />
+                    </span>
+                    <div className="relative min-w-0 flex-1">
+                      <div className="mono-label text-primary/70 mb-0.5">Continue where you left off</div>
+                      <div className="text-sm font-medium text-light-text truncate">{resumeQuestion.title}</div>
                     </div>
-                  );
-                })}
-              </div>
+                  </Link>
+                )}
+
+                {filtered.length === 0 ? (
+                  <EmptyState
+                    title="Nothing matches those filters"
+                    body="Try removing a filter or clearing your search to see more questions."
+                  />
+                ) : (
+                  <div className="space-y-7">
+                    {DIFFICULTIES.map((d) => {
+                      const qs = grouped[d];
+                      if (qs.length === 0) return null;
+                      const meta = DIFF_META[d];
+                      const isLocked = d !== 'EASY' && !hasFullAccess;
+                      const groupSolved = qs.filter((q) => progressMap.get(q.id)?.status === 'SOLVED').length;
+                      const groupPct = qs.length ? Math.round((groupSolved / qs.length) * 100) : 0;
+
+                      return (
+                        <div key={d}>
+                          {/* Group header */}
+                          <div className="flex items-center gap-3 mb-3">
+                            <span className={`flex items-center gap-1.5 text-xs font-bold tracking-wider ${meta.text}`}>
+                              <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: meta.color }} />
+                              {d}
+                            </span>
+                            <span className="text-xs text-dark-text font-mono tabular-nums">{qs.length}</span>
+                            {isLocked && (
+                              <span className="flex items-center gap-1 text-[10px] text-warning/80 px-1.5 py-0.5 rounded border border-warning/25 bg-warning/5">
+                                <Crown size={10} />
+                                Premium
+                              </span>
+                            )}
+                            <div
+                              className="flex-1 h-px"
+                              style={{ background: `linear-gradient(90deg, color-mix(in srgb, ${meta.color} 22%, transparent), var(--color-border) 60%)` }}
+                            />
+                            {session && !isLocked && groupSolved > 0 && (
+                              <span className="flex items-center gap-2 shrink-0">
+                                <span className="hidden sm:block w-16 h-1 rounded-full bg-border overflow-hidden">
+                                  <span
+                                    className="block h-full rounded-full transition-all duration-700 ease-out"
+                                    style={{ width: `${groupPct}%`, backgroundColor: meta.color }}
+                                  />
+                                </span>
+                                <span className="text-[10px] text-dark-text font-mono tabular-nums">
+                                  {groupSolved}/{qs.length} solved
+                                </span>
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Cards */}
+                          <div className="space-y-2">
+                            {qs.map((q) => {
+                              const paperRef = q.year
+                                ? [
+                                    q.year,
+                                    q.session,
+                                    q.variant ? `V${q.variant}` : null,
+                                    q.questionNumber ? `Q${q.questionNumber}${q.part ? `(${q.part})` : ''}` : null,
+                                  ].filter(Boolean).join(' ')
+                                : q.paper ?? null;
+                              const progress = progressMap.get(q.id);
+                              const solved = progress?.status === 'SOLVED';
+                              const attemptPct =
+                                progress && progress.totalTests > 0
+                                  ? Math.round((progress.bestScore / progress.totalTests) * 100)
+                                  : 0;
+                              const revealDelay = Math.min(revealIndex++, 14) * 35;
+
+                              const cardContent = (
+                                <>
+                                  <span
+                                    aria-hidden
+                                    className="absolute left-0 inset-y-0 w-[3px] transition-all duration-200 group-hover:w-[5px]"
+                                    style={{ backgroundColor: meta.color, opacity: isLocked ? 0.3 : solved ? 0.9 : 0.5 }}
+                                  />
+                                  {solved && (
+                                    <span
+                                      aria-hidden
+                                      className="absolute inset-0 pointer-events-none"
+                                      style={{ background: `linear-gradient(90deg, color-mix(in srgb, var(--color-success) 7%, transparent), transparent 55%)` }}
+                                    />
+                                  )}
+
+                                  <div className="relative flex items-center gap-3 min-w-0">
+                                    {isLocked ? (
+                                      <Lock className="h-[18px] w-[18px] text-dark-text/40 shrink-0" />
+                                    ) : solved ? (
+                                      <CheckCircle className="h-[18px] w-[18px] text-success shrink-0" />
+                                    ) : progress ? (
+                                      <span
+                                        className="relative h-[18px] w-[18px] shrink-0 rounded-full"
+                                        style={{
+                                          background: `conic-gradient(var(--color-warning) ${attemptPct * 3.6}deg, color-mix(in srgb, var(--color-warning) 20%, transparent) ${attemptPct * 3.6}deg)`,
+                                        }}
+                                        title={`Best ${progress.bestScore}/${progress.totalTests}`}
+                                      >
+                                        <span className="absolute inset-[3px] rounded-full bg-surface" />
+                                      </span>
+                                    ) : (
+                                      <span className="h-[18px] w-[18px] rounded-full border-2 border-border shrink-0 transition-colors group-hover:border-primary/40" />
+                                    )}
+
+                                    <div className="min-w-0">
+                                      <div className="font-medium text-sm text-light-text truncate transition-colors group-hover:text-primary">
+                                        {q.title}
+                                      </div>
+                                      {(q.topic || paperRef || q.tags.length > 0) && (
+                                        <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                                          {q.topic && (
+                                            <span className={`inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded border ${
+                                              q.topic === 'File Handling'
+                                                ? 'bg-info/10 border-info/30 text-info'
+                                                : 'bg-background border-border text-dark-text'
+                                            }`}>
+                                              {q.topic === 'File Handling' && <FileText size={9} />}
+                                              {q.topic}
+                                            </span>
+                                          )}
+                                          {paperRef && (
+                                            <span className="text-[10px] text-dark-text/70 font-mono">{paperRef}</span>
+                                          )}
+                                          {q.tags.slice(0, 3).map((tag) => (
+                                            <span key={tag} className="text-[10px] px-1.5 py-0.5 rounded-full border border-border/60 text-dark-text/50">
+                                              {tag}
+                                            </span>
+                                          ))}
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+
+                                  <div className="relative flex items-center gap-3 ml-3 shrink-0">
+                                    {q.marks != null && (
+                                      <span className="hidden sm:inline text-[10px] text-warning/80 font-mono tabular-nums">
+                                        {q.marks}m
+                                      </span>
+                                    )}
+                                    {progress && !isLocked && (
+                                      <span className="text-[10px] text-dark-text font-mono tabular-nums">
+                                        {progress.bestScore}/{progress.totalTests}
+                                      </span>
+                                    )}
+                                    {!isLocked && (
+                                      <ArrowRight
+                                        size={14}
+                                        className="text-primary opacity-0 -translate-x-1 transition-all duration-200 group-hover:opacity-100 group-hover:translate-x-0 shrink-0"
+                                      />
+                                    )}
+                                  </div>
+                                </>
+                              );
+
+                              return isLocked ? (
+                                <div
+                                  key={q.id}
+                                  className="relative flex items-center justify-between gap-3 pl-4 pr-3 py-3 rounded-xl border border-border bg-surface/40 overflow-hidden opacity-60 cursor-not-allowed animate-fade-in-up"
+                                  style={{ animationDelay: `${revealDelay}ms` }}
+                                  aria-disabled="true"
+                                >
+                                  {cardContent}
+                                </div>
+                              ) : (
+                                <Link
+                                  key={q.id}
+                                  href={`/practice/${q.id}`}
+                                  className="group relative flex items-center justify-between gap-3 pl-4 pr-3 py-3 rounded-xl border border-border bg-surface overflow-hidden transition-all duration-200 hover:border-primary/40 hover:-translate-y-px hover:shadow-[0_8px_22px_-12px_rgba(0,0,0,0.55)] animate-fade-in-up"
+                                  style={{ animationDelay: `${revealDelay}ms` }}
+                                >
+                                  {cardContent}
+                                </Link>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </>
             )}
           </div>
         </div>
