@@ -253,6 +253,8 @@ export default function ExamWorkspace({ examId, questions, timeLimitMin, started
               onClick={goPrev}
               disabled={currentIndex === 0}
               className="p-1 rounded hover:bg-background transition-colors disabled:opacity-20"
+              title="Previous question (Alt+Left)"
+              aria-label="Previous question"
             >
               <ChevronLeft size={14} />
             </button>
@@ -263,6 +265,8 @@ export default function ExamWorkspace({ examId, questions, timeLimitMin, started
               onClick={goNext}
               disabled={currentIndex === questions.length - 1}
               className="p-1 rounded hover:bg-background transition-colors disabled:opacity-20"
+              title="Next question (Alt+Right)"
+              aria-label="Next question"
             >
               <ChevronRight size={14} />
             </button>
@@ -276,6 +280,15 @@ export default function ExamWorkspace({ examId, questions, timeLimitMin, started
             const isActive = i === currentIndex;
             const allPassed = r?.graded && r.passCount === r.totalTests;
             const partial = r?.graded && !allPassed;
+            const isFlagged = flagged.has(q.questionId);
+            const status = !r?.graded
+              ? 'Not checked yet'
+              : allPassed
+                ? `Checked: ${r.passCount}/${r.totalTests} tests passed`
+                : `Checked: ${r.passCount}/${r.totalTests} tests passed`;
+            const flagStatus = isFlagged ? 'Flagged for review' : 'Not flagged';
+            const tooltip = `Question ${i + 1}: ${q.title}\n${status}\n${flagStatus}`;
+
             return (
               <button
                 key={q.questionId}
@@ -289,11 +302,15 @@ export default function ExamWorkspace({ examId, questions, timeLimitMin, started
                         ? 'bg-warning/15 text-warning border border-warning/30'
                         : 'bg-background text-dark-text border border-border hover:border-primary/30'
                 }`}
-                title={q.title}
+                title={tooltip}
+                aria-label={`Go to question ${i + 1}: ${q.title}. ${status}. ${flagStatus}.`}
               >
                 {i + 1}
-                {flagged.has(q.questionId) && (
-                  <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-warning border border-background" />
+                {isFlagged && (
+                  <span
+                    className="pointer-events-none absolute right-0.5 top-0.5 h-1.5 w-1.5 rounded-full bg-warning ring-1 ring-background"
+                    aria-hidden="true"
+                  />
                 )}
               </button>
             );
@@ -307,6 +324,8 @@ export default function ExamWorkspace({ examId, questions, timeLimitMin, started
             bg-primary text-on-primary text-xs font-semibold
             hover:opacity-90 active:scale-[0.97] transition-all duration-200 disabled:opacity-50
             shadow-[0_0_12px_-2px_rgba(var(--color-primary-rgb),0.3)]"
+          title="Submit exam"
+          aria-label="Submit exam"
         >
           {submitting ? <Loader2 size={12} className="animate-spin" /> : <Send size={12} />}
           Submit
@@ -388,10 +407,20 @@ export default function ExamWorkspace({ examId, questions, timeLimitMin, started
             {/* Debug step controls */}
             {isStepping && (
               <>
-                <button onClick={step} className="flex items-center gap-1 px-2 py-1 rounded-md text-xs text-info hover:bg-info/10 transition-colors">
+                <button
+                  onClick={step}
+                  className="flex items-center gap-1 px-2 py-1 rounded-md text-xs text-info hover:bg-info/10 transition-colors"
+                  title="Step over the next statement"
+                  aria-label="Step over the next statement"
+                >
                   <Bug size={11} />Step
                 </button>
-                <button onClick={continueExecution} className="flex items-center gap-1 px-2 py-1 rounded-md text-xs text-success hover:bg-success/10 transition-colors">
+                <button
+                  onClick={continueExecution}
+                  className="flex items-center gap-1 px-2 py-1 rounded-md text-xs text-success hover:bg-success/10 transition-colors"
+                  title="Continue running from the current debug step"
+                  aria-label="Continue running from the current debug step"
+                >
                   <Play size={11} />Continue
                 </button>
               </>
@@ -402,6 +431,8 @@ export default function ExamWorkspace({ examId, questions, timeLimitMin, started
                   onClick={() => { clearEntries(); setActiveTab('terminal'); debugRun(code); }}
                   disabled={grading}
                   className="flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium text-warning hover:bg-warning/10 transition-all duration-200 disabled:opacity-40"
+                  title="Debug by stepping through the code"
+                  aria-label="Debug by stepping through the code"
                 >
                   <Bug size={11} />
                   Debug
@@ -413,6 +444,8 @@ export default function ExamWorkspace({ examId, questions, timeLimitMin, started
                       ? 'bg-error/15 text-error hover:bg-error/25'
                       : 'bg-success/15 text-success hover:bg-success/25'
                   }`}
+                  title={isRunning ? 'Stop running code' : 'Run code (Ctrl+Enter)'}
+                  aria-label={isRunning ? 'Stop running code' : 'Run code'}
                 >
                   {isRunning ? <Square size={11} /> : <Play size={11} />}
                   {isRunning ? 'Stop' : 'Run'}
@@ -424,6 +457,8 @@ export default function ExamWorkspace({ examId, questions, timeLimitMin, started
               disabled={grading || isRunning}
               className="flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium
                 bg-primary/15 text-primary hover:bg-primary/25 transition-all duration-200 disabled:opacity-40"
+              title="Check this answer against the exam test cases (Ctrl+Shift+Enter)"
+              aria-label="Check this answer against the exam test cases"
             >
               {grading ? <Loader2 size={11} className="animate-spin" /> : <ClipboardCheck size={11} />}
               Check
@@ -432,6 +467,8 @@ export default function ExamWorkspace({ examId, questions, timeLimitMin, started
               onClick={() => handleCodeChange(question.starterCode)}
               className="flex items-center gap-1 px-2 py-1 rounded-md text-xs
                 text-dark-text hover:text-light-text hover:bg-background transition-all duration-200"
+              title="Reset this answer to the starter code"
+              aria-label="Reset this answer to the starter code"
             >
               <RotateCcw size={11} />
               Reset
@@ -443,7 +480,16 @@ export default function ExamWorkspace({ examId, questions, timeLimitMin, started
                   ? 'text-warning bg-warning/10 hover:bg-warning/20'
                   : 'text-dark-text hover:text-light-text hover:bg-background'
               }`}
-              title="Flag for review (mark to revisit)"
+              title={
+                flagged.has(question.questionId)
+                  ? 'Remove flag from this question'
+                  : 'Flag this question for review'
+              }
+              aria-label={
+                flagged.has(question.questionId)
+                  ? 'Remove flag from this question'
+                  : 'Flag this question for review'
+              }
             >
               <Bookmark size={11} fill={flagged.has(question.questionId) ? 'currentColor' : 'none'} />
               {flagged.has(question.questionId) ? 'Flagged' : 'Flag'}
@@ -487,6 +533,8 @@ export default function ExamWorkspace({ examId, questions, timeLimitMin, started
                       ? 'bg-background text-light-text shadow-sm'
                       : 'text-dark-text hover:text-light-text'
                   }`}
+                  title={tab === 'terminal' ? 'Show program output and input' : 'Show grading results'}
+                  aria-label={tab === 'terminal' ? 'Show program output and input' : 'Show grading results'}
                 >
                   {tab === 'terminal' ? <Terminal size={11} /> : <ClipboardCheck size={11} />}
                   {tab === 'terminal' ? 'Terminal' : 'Results'}
