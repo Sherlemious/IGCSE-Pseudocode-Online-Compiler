@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, MessageSquare, Users, ArrowLeft, UserCircle } from 'lucide-react';
+import { LayoutDashboard, MessageSquare, Users, ArrowLeft, BarChart3 } from 'lucide-react';
 
 interface User {
   name?: string | null;
@@ -19,7 +19,7 @@ const NAV = [
   { href: '/admin',          label: 'Overview', icon: LayoutDashboard },
   { href: '/admin/feedback', label: 'Feedback', icon: MessageSquare   },
   { href: '/admin/users',    label: 'Users',    icon: Users           },
-  { href: '/admin/profile',  label: 'Profile',  icon: UserCircle      },
+  { href: '/admin/analytics', label: 'Analytics', icon: BarChart3       },
 ];
 
 function Avatar({ user, size = 'md' }: { user: User; size?: 'sm' | 'md' }) {
@@ -94,7 +94,7 @@ export default function AdminSidebar({ user }: Props) {
           </Link>
 
           <Link
-            href="/admin/profile"
+            href="/admin/analytics"
             className="flex items-center gap-2.5 px-3 py-2 rounded-lg transition-colors hover:bg-border/30 group"
           >
             <Avatar user={user} size="sm" />
