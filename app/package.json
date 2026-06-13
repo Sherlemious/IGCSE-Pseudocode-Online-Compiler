@@ -34,7 +34,7 @@
     "antlr4ng": "^3.0.16",
     "bcryptjs": "^3.0.3",
     "lucide-react": "^0.577.0",
-    "next": "16.2.1",
+    "next": "^16.2.9",
     "next-auth": "^5.0.0-beta.30",
     "posthog-js": "^1.371.2",
     "prisma": "^6.19.2",
