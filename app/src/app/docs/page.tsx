@@ -29,8 +29,8 @@ const H3 = ({ id, children }: HeadingProps) => (
 );
 
 const DocsPage = () => {
-  const [activeId, setActiveId] = useState('general');
-  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['general']));
+  const [activeId, setActiveId] = useState('getting-started');
+  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['getting-started']));
   const [tocOpen, setTocOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const contentRef = useRef<HTMLDivElement>(null);
@@ -174,9 +174,14 @@ const DocsPage = () => {
                   scrollTo(entry.id);
                   if (hasChildren && !isExpanded) toggleSection(entry.id);
                 }}
-                className="flex-1 text-left py-1.5 truncate"
+                className="flex-1 text-left py-1.5 flex items-center gap-1.5 truncate"
               >
-                {entry.label}
+                <span className="truncate">{entry.label}</span>
+                {entry.badge && (
+                  <span className="flex-shrink-0 text-[9px] font-semibold tracking-wide px-1 py-0.5 rounded bg-primary/15 text-primary uppercase leading-none">
+                    {entry.badge}
+                  </span>
+                )}
               </button>
             </div>
 
@@ -277,6 +282,117 @@ const DocsPage = () => {
               for both courses unless marked <span className="text-primary font-medium">AS &amp; A Level</span>.
             </p>
           </div>
+
+          {/* ──────────────────────────────────────────────── */}
+          {/*  Getting Started                                  */}
+          {/* ──────────────────────────────────────────────── */}
+          <H2 id="getting-started">Getting Started</H2>
+          <p className="text-sm text-dark-text mb-4">
+            New to pseudocode? Start here. These four short examples walk you through the core ideas —
+            no prior knowledge required.
+          </p>
+
+          <H3 id="first-program">Your First Program</H3>
+          <p className="text-sm text-dark-text mb-2">
+            The simplest pseudocode program just prints something to the screen. Use{' '}
+            <Kw>OUTPUT</Kw> followed by a string in double quotes:
+          </p>
+          <CodeBlock
+            code={`OUTPUT "Hello, World!"`}
+          />
+          <p className="text-sm text-dark-text mt-3 mb-2">
+            You can output multiple values in one line — separate them with commas:
+          </p>
+          <CodeBlock
+            code={`DECLARE Score : INTEGER
+Score <- 42
+OUTPUT "Your score is ", Score`}
+          />
+          <p className="text-xs text-dark-text italic mt-1">
+            <Kw>{'<-'}</Kw> assigns a value to a variable. <Kw>DECLARE</Kw> creates the variable first.
+          </p>
+
+          <H3 id="first-input">Asking for Input</H3>
+          <p className="text-sm text-dark-text mb-2">
+            Use <Kw>INPUT</Kw> to read a value the user types. The program pauses and waits:
+          </p>
+          <CodeBlock
+            code={`DECLARE Name : STRING
+INPUT Name, "What is your name? "
+OUTPUT "Hello, ", Name, "!"`}
+          />
+          <p className="text-sm text-dark-text mt-3 mb-2">
+            The text after the comma is an optional prompt shown above the input field. Here&apos;s a
+            slightly longer example that also does arithmetic:
+          </p>
+          <CodeBlock
+            code={`DECLARE Length : REAL
+DECLARE Width  : REAL
+INPUT Length, "Enter the length: "
+INPUT Width,  "Enter the width: "
+OUTPUT "Area = ", Length * Width`}
+          />
+
+          <H3 id="first-decision">Making Decisions</H3>
+          <p className="text-sm text-dark-text mb-2">
+            Use <Kw>IF … THEN … ELSE … ENDIF</Kw> to choose between two paths:
+          </p>
+          <CodeBlock
+            code={`DECLARE Mark : INTEGER
+INPUT Mark, "Enter your mark: "
+IF Mark >= 50 THEN
+    OUTPUT "Pass"
+ELSE
+    OUTPUT "Fail"
+ENDIF`}
+          />
+          <p className="text-sm text-dark-text mt-3 mb-2">
+            Chain more conditions with <Kw>ELSEIF</Kw>:
+          </p>
+          <CodeBlock
+            code={`DECLARE Mark : INTEGER
+INPUT Mark, "Enter your mark: "
+IF Mark >= 70 THEN
+    OUTPUT "Distinction"
+ELSEIF Mark >= 50 THEN
+    OUTPUT "Pass"
+ELSE
+    OUTPUT "Fail"
+ENDIF`}
+          />
+
+          <H3 id="first-loop">Repeating Things</H3>
+          <p className="text-sm text-dark-text mb-2">
+            Use a <Kw>FOR</Kw> loop when you know how many times to repeat:
+          </p>
+          <CodeBlock
+            code={`FOR i <- 1 TO 5
+    OUTPUT i
+NEXT i`}
+          />
+          <p className="text-sm text-dark-text mt-3 mb-2">
+            Combine everything: ask for five numbers and calculate their total:
+          </p>
+          <CodeBlock
+            code={`DECLARE Num   : INTEGER
+DECLARE Total : INTEGER
+Total <- 0
+FOR i <- 1 TO 5
+    INPUT Num, "Enter number " & NUM_TO_STRING(i) & ": "
+    Total <- Total + Num
+NEXT i
+OUTPUT "Total = ", Total`}
+          />
+          <p className="text-sm text-dark-text mt-3">
+            Ready to go deeper? Browse the full reference below — or jump straight to{' '}
+            <button
+              onClick={() => scrollTo('iteration')}
+              className="text-primary hover:underline"
+            >
+              Iteration
+            </button>{' '}
+            to learn about WHILE and REPEAT loops.
+          </p>
 
           {/* ──────────────────────────────────────────────── */}
           {/*  General Syntax                                  */}
@@ -1014,28 +1130,6 @@ CLOSEFILE "log.txt"`}
           {/*  AS & A Level (9618)                             */}
           {/* ──────────────────────────────────────────────── */}
           <H2 id="alevel">Cambridge International AS &amp; A Level Computer Science (9618)</H2>
-
-          <H3 id="alevel-overview">Course Overview</H3>
-          <p className="text-sm text-dark-text mb-2">
-            Cambridge International AS &amp; A Level Computer Science (9618) develops computational thinking
-            and programming skills for higher education computer science courses and twenty-first century
-            digital employers. It asks learners to apply practical programming solutions, think creatively,
-            analytically, logically and critically, and consider ethical issues raised by current and
-            emerging computing technologies.
-          </p>
-          <p className="text-sm text-dark-text mb-2">
-            The 9618 pseudocode guide extends IGCSE pseudocode with user-defined types, reference
-            parameters, random-access files and object-oriented programming. All of these run in this
-            compiler — IGCSE students can simply ignore them.
-          </p>
-
-          <H3 id="alevel-syllabus">Syllabus Materials</H3>
-          <p className="text-sm text-dark-text mb-2">
-            The syllabus year refers to the year in which the examination will be taken. Cambridge 9618
-            materials include the 2024-2025 syllabus and update, the 2026 syllabus and update, the 2026
-            Pseudocode Guide for Teachers, the 2027-2029 syllabus and update, the 2027-2029 Pseudocode
-            Guide, and the 2023-2025 AS and A Level grade descriptions.
-          </p>
 
           <H3 id="alevel-types">User-Defined Types</H3>
           <p className="text-sm text-dark-text mb-2">

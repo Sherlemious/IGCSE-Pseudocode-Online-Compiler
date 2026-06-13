@@ -1,0 +1,73 @@
+// Shared token lists for syntax highlighting.
+// Used by both the CodeMirror editor language (pseudocode-lang.ts) and the
+// static docs highlighter (components/common/highlightPseudocode.tsx) —
+// kept dependency-free so the docs bundle doesn't pull in CodeMirror.
+
+export const TYPES = ['INTEGER', 'REAL', 'CHAR', 'STRING', 'BOOLEAN', 'DATE'];
+
+export const BOOLEANS = ['TRUE', 'FALSE'];
+
+// Pseudocode keywords based on the ANTLR grammar
+export const KEYWORDS = [
+  'DECLARE',
+  'CONSTANT',
+  'INPUT',
+  'OUTPUT',
+  'PRINT',
+  'IF',
+  'THEN',
+  'ELSE',
+  'ELSEIF',
+  'ENDIF',
+  'CASE',
+  'OF',
+  'OTHERWISE',
+  'ENDCASE',
+  'FOR',
+  'TO',
+  'STEP',
+  'NEXT',
+  'WHILE',
+  'DO',
+  'ENDWHILE',
+  'REPEAT',
+  'UNTIL',
+  'PROCEDURE',
+  'ENDPROCEDURE',
+  'FUNCTION',
+  'ENDFUNCTION',
+  'RETURNS',
+  'RETURN',
+  'CALL',
+  'ARRAY',
+  'AND',
+  'OR',
+  'NOT',
+  'MOD',
+  'DIV',
+  'OPENFILE',
+  'READFILE',
+  'WRITEFILE',
+  'CLOSEFILE',
+  'READ',
+  'WRITE',
+  'APPEND',
+  // A Level (9618)
+  'TYPE',
+  'ENDTYPE',
+  'SET',
+  'DEFINE',
+  'BYREF',
+  'BYVAL',
+  'RANDOM',
+  'SEEK',
+  'GETRECORD',
+  'PUTRECORD',
+  'CLASS',
+  'ENDCLASS',
+  'INHERITS',
+  'PUBLIC',
+  'PRIVATE',
+  'NEW',
+  'SUPER',
+];

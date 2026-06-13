@@ -1,10 +1,22 @@
 export interface TocEntry {
   id: string;
   label: string;
+  /** Small chip rendered next to the label (e.g. "A Level"). */
+  badge?: string;
   children?: { id: string; label: string }[];
 }
 
 const toc: TocEntry[] = [
+  {
+    id: 'getting-started',
+    label: 'Getting Started',
+    children: [
+      { id: 'first-program', label: 'Your First Program' },
+      { id: 'first-input', label: 'Asking for Input' },
+      { id: 'first-decision', label: 'Making Decisions' },
+      { id: 'first-loop', label: 'Repeating Things' },
+    ],
+  },
   { id: 'general', label: 'General Syntax' },
   {
     id: 'variables',
@@ -87,9 +99,8 @@ const toc: TocEntry[] = [
   {
     id: 'alevel',
     label: 'AS & A Level (9618)',
+    badge: 'A Level',
     children: [
-      { id: 'alevel-overview', label: 'Course Overview' },
-      { id: 'alevel-syllabus', label: 'Syllabus Materials' },
       { id: 'alevel-types', label: 'User-Defined Types' },
       { id: 'alevel-date', label: 'DATE Type' },
       { id: 'alevel-byref', label: 'BYREF & BYVAL' },

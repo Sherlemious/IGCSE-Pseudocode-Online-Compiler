@@ -130,11 +130,19 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
         <link
-          href="https://fonts.googleapis.com/css2?family=Inconsolata:wght@400;500&family=JetBrains+Mono:wght@400;500&family=Source+Code+Pro:wght@400;500&display=swap"
-          rel="stylesheet"
+          rel="preload"
+          href="/fonts/inter/inter-latin-wght-normal.woff2"
+          as="font"
+          type="font/woff2"
+          crossOrigin=""
+        />
+        <link
+          rel="preload"
+          href="/fonts/fira-code/fira-code-latin-wght-normal.woff2"
+          as="font"
+          type="font/woff2"
+          crossOrigin=""
         />
       </head>
       <Script

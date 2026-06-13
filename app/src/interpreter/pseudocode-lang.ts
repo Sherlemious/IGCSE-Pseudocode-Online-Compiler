@@ -1,76 +1,10 @@
 import { StreamLanguage, LanguageSupport } from '@codemirror/language';
 import { StreamParser } from '@codemirror/language';
 import { tags } from '@lezer/highlight';
+import { KEYWORDS as keywords, TYPES as types, BOOLEANS as booleans } from './tokens';
 
 // Create a simple parser for pseudocode
 // This is a fallback approach using StreamLanguage API
-
-const types = ['INTEGER', 'REAL', 'CHAR', 'STRING', 'BOOLEAN', 'DATE'];
-const booleans = ['TRUE', 'FALSE'];
-// Define pseudocode keywords based on ANTLR grammar
-const keywords = [
-  'DECLARE',
-  'CONSTANT',
-  'INPUT',
-  'OUTPUT',
-  'PRINT',
-  'IF',
-  'THEN',
-  'ELSE',
-  'ELSEIF',
-  'ENDIF',
-  'CASE',
-  'OF',
-  'OTHERWISE',
-  'ENDCASE',
-  'FOR',
-  'TO',
-  'STEP',
-  'NEXT',
-  'WHILE',
-  'DO',
-  'ENDWHILE',
-  'REPEAT',
-  'UNTIL',
-  'PROCEDURE',
-  'ENDPROCEDURE',
-  'FUNCTION',
-  'ENDFUNCTION',
-  'RETURNS',
-  'RETURN',
-  'CALL',
-  'ARRAY',
-  'AND',
-  'OR',
-  'NOT',
-  'MOD',
-  'DIV',
-  'OPENFILE',
-  'READFILE',
-  'WRITEFILE',
-  'CLOSEFILE',
-  'READ',
-  'WRITE',
-  'APPEND',
-  // A Level (9618)
-  'TYPE',
-  'ENDTYPE',
-  'SET',
-  'DEFINE',
-  'BYREF',
-  'BYVAL',
-  'RANDOM',
-  'SEEK',
-  'GETRECORD',
-  'PUTRECORD',
-  'CLASS',
-  'ENDCLASS',
-  'INHERITS',
-  'PUBLIC',
-  'PRIVATE',
-  'NEW',
-  'SUPER',
-];
 
 interface PseudocodeState {
   inString: boolean;
