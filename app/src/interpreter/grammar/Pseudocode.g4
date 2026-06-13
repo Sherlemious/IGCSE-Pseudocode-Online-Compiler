@@ -41,16 +41,25 @@ statement
 
 declareStatement
     : DECLARE identifierList COLON ARRAY LBRACKET expr COLON expr RBRACKET OF dataType
-    | DECLARE IDENTIFIER COLON ARRAY LBRACKET expr COLON expr COMMA expr COLON expr RBRACKET OF dataType
+    | DECLARE identifier COLON ARRAY LBRACKET expr COLON expr COMMA expr COLON expr RBRACKET OF dataType
     | DECLARE identifierList COLON dataType
     ;
 
 identifierList
-    : IDENTIFIER (COMMA IDENTIFIER)*
+    : identifier (COMMA identifier)*
+    ;
+
+// Variable-name positions accept "soft" keywords: the A Level keywords below are
+// reserved only where their construct needs them, so existing student code like
+// DECLARE Date : STRING or DECLARE Class : STRING keeps working.
+identifier
+    : IDENTIFIER
+    | TYPE | SET | DATE_TYPE | RANDOM | NEW | CLASS | SEEK | DEFINE
+    | INHERITS | PUBLIC | PRIVATE | BYREF | BYVAL | GETRECORD | PUTRECORD
     ;
 
 constantStatement
-    : CONSTANT IDENTIFIER (LARROW | EQUALS) expr
+    : CONSTANT identifier (LARROW | EQUALS) expr
     ;
 
 dataType
@@ -74,7 +83,7 @@ typeDefinition
     ;
 
 defineStatement
-    : DEFINE IDENTIFIER LPAREN exprList? RPAREN COLON IDENTIFIER
+    : DEFINE identifier LPAREN exprList? RPAREN COLON IDENTIFIER
     ;
 
 // ─── Classes (A Level OOP) ─────────────────────────────────────────────────
@@ -94,7 +103,7 @@ classMember
 // ─── Designators (variables, array elements, record fields, dereferences) ──
 
 designator
-    : (IDENTIFIER | SUPER) designatorPart*
+    : (identifier | SUPER) designatorPart*
     ;
 
 designatorPart
@@ -104,8 +113,7 @@ designatorPart
     ;
 
 memberName
-    : IDENTIFIER
-    | NEW
+    : identifier
     ;
 
 // ─── Assignment ─────────────────────────────────────────────────────────────
@@ -162,7 +170,7 @@ caseLabel
 // ─── FOR / NEXT ─────────────────────────────────────────────────────────────
 
 forStatement
-    : FOR IDENTIFIER (LARROW | EQUALS) expr TO expr (STEP expr)? NEWLINE* block NEWLINE* NEXT IDENTIFIER
+    : FOR identifier (LARROW | EQUALS) expr TO expr (STEP expr)? NEWLINE* block NEWLINE* NEXT identifier
     ;
 
 // ─── WHILE / ENDWHILE ──────────────────────────────────────────────────────
@@ -180,11 +188,11 @@ repeatStatement
 // ─── PROCEDURE / FUNCTION ───────────────────────────────────────────────────
 
 procedureDeclaration
-    : PROCEDURE name=(IDENTIFIER | NEW) LPAREN paramList? RPAREN NEWLINE* block NEWLINE* ENDPROCEDURE
+    : PROCEDURE identifier LPAREN paramList? RPAREN NEWLINE* block NEWLINE* ENDPROCEDURE
     ;
 
 functionDeclaration
-    : FUNCTION IDENTIFIER LPAREN paramList? RPAREN RETURNS dataType NEWLINE* block NEWLINE* ENDFUNCTION
+    : FUNCTION identifier LPAREN paramList? RPAREN RETURNS dataType NEWLINE* block NEWLINE* ENDFUNCTION
     ;
 
 paramList
@@ -192,16 +200,16 @@ paramList
     ;
 
 param
-    : (BYREF | BYVAL)? IDENTIFIER COLON dataType
+    : (BYREF | BYVAL)? identifier COLON dataType
     ;
 
 callStatement
-    : CALL IDENTIFIER LPAREN argList? RPAREN
+    : CALL identifier LPAREN argList? RPAREN
     | CALL methodCall
     ;
 
 methodCall
-    : (IDENTIFIER | SUPER) designatorPart* DOT memberName LPAREN argList? RPAREN
+    : (identifier | SUPER) designatorPart* DOT memberName LPAREN argList? RPAREN
     ;
 
 methodCallStatement
@@ -255,8 +263,10 @@ argList
 
 // ─── Block (sequence of statements) ────────────────────────────────────────
 
+// A block may be empty (e.g. an IF branch holding only a comment) — comments are
+// skipped by the lexer, and scaffold/starter code often has not-yet-filled bodies.
 block
-    : statement (NEWLINE* statement)*
+    : (statement (NEWLINE* statement)*)?
     ;
 
 // ─── Expressions ────────────────────────────────────────────────────────────
@@ -276,12 +286,11 @@ expr
 
 atom
     : LPAREN expr RPAREN                                # parenAtom
-    | IDENTIFIER LPAREN argList? RPAREN                 # functionCallAtom
+    | identifier LPAREN argList? RPAREN                 # functionCallAtom
     | NEW IDENTIFIER LPAREN argList? RPAREN             # newInstanceAtom
     | CARET designator                                  # addressOfAtom
     | DIV LPAREN expr COMMA expr RPAREN                 # divFunctionAtom
     | MOD LPAREN expr COMMA expr RPAREN                 # modFunctionAtom
-    | RANDOM LPAREN RPAREN                              # randomFunctionAtom
     | designator                                        # designatorAtom
     | INTEGER_LITERAL                                   # integerAtom
     | REAL_LITERAL                                      # realAtom

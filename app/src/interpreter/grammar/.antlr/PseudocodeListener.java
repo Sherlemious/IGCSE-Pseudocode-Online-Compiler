@@ -67,6 +67,140 @@ public interface PseudocodeListener extends ParseTreeListener {
 	 */
 	void exitDataType(PseudocodeParser.DataTypeContext ctx);
 	/**
+	 * Enter a parse tree produced by the {@code enumTypeDef}
+	 * labeled alternative in {@link PseudocodeParser#typeDefinition}.
+	 * @param ctx the parse tree
+	 */
+	void enterEnumTypeDef(PseudocodeParser.EnumTypeDefContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code enumTypeDef}
+	 * labeled alternative in {@link PseudocodeParser#typeDefinition}.
+	 * @param ctx the parse tree
+	 */
+	void exitEnumTypeDef(PseudocodeParser.EnumTypeDefContext ctx);
+	/**
+	 * Enter a parse tree produced by the {@code pointerTypeDef}
+	 * labeled alternative in {@link PseudocodeParser#typeDefinition}.
+	 * @param ctx the parse tree
+	 */
+	void enterPointerTypeDef(PseudocodeParser.PointerTypeDefContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code pointerTypeDef}
+	 * labeled alternative in {@link PseudocodeParser#typeDefinition}.
+	 * @param ctx the parse tree
+	 */
+	void exitPointerTypeDef(PseudocodeParser.PointerTypeDefContext ctx);
+	/**
+	 * Enter a parse tree produced by the {@code setTypeDef}
+	 * labeled alternative in {@link PseudocodeParser#typeDefinition}.
+	 * @param ctx the parse tree
+	 */
+	void enterSetTypeDef(PseudocodeParser.SetTypeDefContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code setTypeDef}
+	 * labeled alternative in {@link PseudocodeParser#typeDefinition}.
+	 * @param ctx the parse tree
+	 */
+	void exitSetTypeDef(PseudocodeParser.SetTypeDefContext ctx);
+	/**
+	 * Enter a parse tree produced by the {@code recordTypeDef}
+	 * labeled alternative in {@link PseudocodeParser#typeDefinition}.
+	 * @param ctx the parse tree
+	 */
+	void enterRecordTypeDef(PseudocodeParser.RecordTypeDefContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code recordTypeDef}
+	 * labeled alternative in {@link PseudocodeParser#typeDefinition}.
+	 * @param ctx the parse tree
+	 */
+	void exitRecordTypeDef(PseudocodeParser.RecordTypeDefContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link PseudocodeParser#defineStatement}.
+	 * @param ctx the parse tree
+	 */
+	void enterDefineStatement(PseudocodeParser.DefineStatementContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link PseudocodeParser#defineStatement}.
+	 * @param ctx the parse tree
+	 */
+	void exitDefineStatement(PseudocodeParser.DefineStatementContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link PseudocodeParser#classDeclaration}.
+	 * @param ctx the parse tree
+	 */
+	void enterClassDeclaration(PseudocodeParser.ClassDeclarationContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link PseudocodeParser#classDeclaration}.
+	 * @param ctx the parse tree
+	 */
+	void exitClassDeclaration(PseudocodeParser.ClassDeclarationContext ctx);
+	/**
+	 * Enter a parse tree produced by the {@code classFieldMember}
+	 * labeled alternative in {@link PseudocodeParser#classMember}.
+	 * @param ctx the parse tree
+	 */
+	void enterClassFieldMember(PseudocodeParser.ClassFieldMemberContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code classFieldMember}
+	 * labeled alternative in {@link PseudocodeParser#classMember}.
+	 * @param ctx the parse tree
+	 */
+	void exitClassFieldMember(PseudocodeParser.ClassFieldMemberContext ctx);
+	/**
+	 * Enter a parse tree produced by the {@code classProcMember}
+	 * labeled alternative in {@link PseudocodeParser#classMember}.
+	 * @param ctx the parse tree
+	 */
+	void enterClassProcMember(PseudocodeParser.ClassProcMemberContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code classProcMember}
+	 * labeled alternative in {@link PseudocodeParser#classMember}.
+	 * @param ctx the parse tree
+	 */
+	void exitClassProcMember(PseudocodeParser.ClassProcMemberContext ctx);
+	/**
+	 * Enter a parse tree produced by the {@code classFuncMember}
+	 * labeled alternative in {@link PseudocodeParser#classMember}.
+	 * @param ctx the parse tree
+	 */
+	void enterClassFuncMember(PseudocodeParser.ClassFuncMemberContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code classFuncMember}
+	 * labeled alternative in {@link PseudocodeParser#classMember}.
+	 * @param ctx the parse tree
+	 */
+	void exitClassFuncMember(PseudocodeParser.ClassFuncMemberContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link PseudocodeParser#designator}.
+	 * @param ctx the parse tree
+	 */
+	void enterDesignator(PseudocodeParser.DesignatorContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link PseudocodeParser#designator}.
+	 * @param ctx the parse tree
+	 */
+	void exitDesignator(PseudocodeParser.DesignatorContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link PseudocodeParser#designatorPart}.
+	 * @param ctx the parse tree
+	 */
+	void enterDesignatorPart(PseudocodeParser.DesignatorPartContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link PseudocodeParser#designatorPart}.
+	 * @param ctx the parse tree
+	 */
+	void exitDesignatorPart(PseudocodeParser.DesignatorPartContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link PseudocodeParser#memberName}.
+	 * @param ctx the parse tree
+	 */
+	void enterMemberName(PseudocodeParser.MemberNameContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link PseudocodeParser#memberName}.
+	 * @param ctx the parse tree
+	 */
+	void exitMemberName(PseudocodeParser.MemberNameContext ctx);
+	/**
 	 * Enter a parse tree produced by {@link PseudocodeParser#assignmentStatement}.
 	 * @param ctx the parse tree
 	 */
@@ -76,6 +210,16 @@ public interface PseudocodeListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitAssignmentStatement(PseudocodeParser.AssignmentStatementContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link PseudocodeParser#singleAssignment}.
+	 * @param ctx the parse tree
+	 */
+	void enterSingleAssignment(PseudocodeParser.SingleAssignmentContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link PseudocodeParser#singleAssignment}.
+	 * @param ctx the parse tree
+	 */
+	void exitSingleAssignment(PseudocodeParser.SingleAssignmentContext ctx);
 	/**
 	 * Enter a parse tree produced by {@link PseudocodeParser#inputStatement}.
 	 * @param ctx the parse tree
@@ -136,6 +280,16 @@ public interface PseudocodeListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitCaseClause(PseudocodeParser.CaseClauseContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link PseudocodeParser#caseLabel}.
+	 * @param ctx the parse tree
+	 */
+	void enterCaseLabel(PseudocodeParser.CaseLabelContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link PseudocodeParser#caseLabel}.
+	 * @param ctx the parse tree
+	 */
+	void exitCaseLabel(PseudocodeParser.CaseLabelContext ctx);
 	/**
 	 * Enter a parse tree produced by {@link PseudocodeParser#forStatement}.
 	 * @param ctx the parse tree
@@ -217,6 +371,26 @@ public interface PseudocodeListener extends ParseTreeListener {
 	 */
 	void exitCallStatement(PseudocodeParser.CallStatementContext ctx);
 	/**
+	 * Enter a parse tree produced by {@link PseudocodeParser#methodCall}.
+	 * @param ctx the parse tree
+	 */
+	void enterMethodCall(PseudocodeParser.MethodCallContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link PseudocodeParser#methodCall}.
+	 * @param ctx the parse tree
+	 */
+	void exitMethodCall(PseudocodeParser.MethodCallContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link PseudocodeParser#methodCallStatement}.
+	 * @param ctx the parse tree
+	 */
+	void enterMethodCallStatement(PseudocodeParser.MethodCallStatementContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link PseudocodeParser#methodCallStatement}.
+	 * @param ctx the parse tree
+	 */
+	void exitMethodCallStatement(PseudocodeParser.MethodCallStatementContext ctx);
+	/**
 	 * Enter a parse tree produced by {@link PseudocodeParser#returnStatement}.
 	 * @param ctx the parse tree
 	 */
@@ -266,6 +440,36 @@ public interface PseudocodeListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitCloseFileStatement(PseudocodeParser.CloseFileStatementContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link PseudocodeParser#seekStatement}.
+	 * @param ctx the parse tree
+	 */
+	void enterSeekStatement(PseudocodeParser.SeekStatementContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link PseudocodeParser#seekStatement}.
+	 * @param ctx the parse tree
+	 */
+	void exitSeekStatement(PseudocodeParser.SeekStatementContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link PseudocodeParser#getRecordStatement}.
+	 * @param ctx the parse tree
+	 */
+	void enterGetRecordStatement(PseudocodeParser.GetRecordStatementContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link PseudocodeParser#getRecordStatement}.
+	 * @param ctx the parse tree
+	 */
+	void exitGetRecordStatement(PseudocodeParser.GetRecordStatementContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link PseudocodeParser#putRecordStatement}.
+	 * @param ctx the parse tree
+	 */
+	void enterPutRecordStatement(PseudocodeParser.PutRecordStatementContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link PseudocodeParser#putRecordStatement}.
+	 * @param ctx the parse tree
+	 */
+	void exitPutRecordStatement(PseudocodeParser.PutRecordStatementContext ctx);
 	/**
 	 * Enter a parse tree produced by {@link PseudocodeParser#fileMode}.
 	 * @param ctx the parse tree
@@ -441,29 +645,29 @@ public interface PseudocodeListener extends ParseTreeListener {
 	 */
 	void exitFunctionCallAtom(PseudocodeParser.FunctionCallAtomContext ctx);
 	/**
-	 * Enter a parse tree produced by the {@code arrayAccess1DAtom}
+	 * Enter a parse tree produced by the {@code newInstanceAtom}
 	 * labeled alternative in {@link PseudocodeParser#atom}.
 	 * @param ctx the parse tree
 	 */
-	void enterArrayAccess1DAtom(PseudocodeParser.ArrayAccess1DAtomContext ctx);
+	void enterNewInstanceAtom(PseudocodeParser.NewInstanceAtomContext ctx);
 	/**
-	 * Exit a parse tree produced by the {@code arrayAccess1DAtom}
+	 * Exit a parse tree produced by the {@code newInstanceAtom}
 	 * labeled alternative in {@link PseudocodeParser#atom}.
 	 * @param ctx the parse tree
 	 */
-	void exitArrayAccess1DAtom(PseudocodeParser.ArrayAccess1DAtomContext ctx);
+	void exitNewInstanceAtom(PseudocodeParser.NewInstanceAtomContext ctx);
 	/**
-	 * Enter a parse tree produced by the {@code arrayAccess2DAtom}
+	 * Enter a parse tree produced by the {@code addressOfAtom}
 	 * labeled alternative in {@link PseudocodeParser#atom}.
 	 * @param ctx the parse tree
 	 */
-	void enterArrayAccess2DAtom(PseudocodeParser.ArrayAccess2DAtomContext ctx);
+	void enterAddressOfAtom(PseudocodeParser.AddressOfAtomContext ctx);
 	/**
-	 * Exit a parse tree produced by the {@code arrayAccess2DAtom}
+	 * Exit a parse tree produced by the {@code addressOfAtom}
 	 * labeled alternative in {@link PseudocodeParser#atom}.
 	 * @param ctx the parse tree
 	 */
-	void exitArrayAccess2DAtom(PseudocodeParser.ArrayAccess2DAtomContext ctx);
+	void exitAddressOfAtom(PseudocodeParser.AddressOfAtomContext ctx);
 	/**
 	 * Enter a parse tree produced by the {@code divFunctionAtom}
 	 * labeled alternative in {@link PseudocodeParser#atom}.
@@ -489,17 +693,29 @@ public interface PseudocodeListener extends ParseTreeListener {
 	 */
 	void exitModFunctionAtom(PseudocodeParser.ModFunctionAtomContext ctx);
 	/**
-	 * Enter a parse tree produced by the {@code identifierAtom}
+	 * Enter a parse tree produced by the {@code randomFunctionAtom}
 	 * labeled alternative in {@link PseudocodeParser#atom}.
 	 * @param ctx the parse tree
 	 */
-	void enterIdentifierAtom(PseudocodeParser.IdentifierAtomContext ctx);
+	void enterRandomFunctionAtom(PseudocodeParser.RandomFunctionAtomContext ctx);
 	/**
-	 * Exit a parse tree produced by the {@code identifierAtom}
+	 * Exit a parse tree produced by the {@code randomFunctionAtom}
 	 * labeled alternative in {@link PseudocodeParser#atom}.
 	 * @param ctx the parse tree
 	 */
-	void exitIdentifierAtom(PseudocodeParser.IdentifierAtomContext ctx);
+	void exitRandomFunctionAtom(PseudocodeParser.RandomFunctionAtomContext ctx);
+	/**
+	 * Enter a parse tree produced by the {@code designatorAtom}
+	 * labeled alternative in {@link PseudocodeParser#atom}.
+	 * @param ctx the parse tree
+	 */
+	void enterDesignatorAtom(PseudocodeParser.DesignatorAtomContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code designatorAtom}
+	 * labeled alternative in {@link PseudocodeParser#atom}.
+	 * @param ctx the parse tree
+	 */
+	void exitDesignatorAtom(PseudocodeParser.DesignatorAtomContext ctx);
 	/**
 	 * Enter a parse tree produced by the {@code integerAtom}
 	 * labeled alternative in {@link PseudocodeParser#atom}.
@@ -524,6 +740,18 @@ public interface PseudocodeListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitRealAtom(PseudocodeParser.RealAtomContext ctx);
+	/**
+	 * Enter a parse tree produced by the {@code dateAtom}
+	 * labeled alternative in {@link PseudocodeParser#atom}.
+	 * @param ctx the parse tree
+	 */
+	void enterDateAtom(PseudocodeParser.DateAtomContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code dateAtom}
+	 * labeled alternative in {@link PseudocodeParser#atom}.
+	 * @param ctx the parse tree
+	 */
+	void exitDateAtom(PseudocodeParser.DateAtomContext ctx);
 	/**
 	 * Enter a parse tree produced by the {@code stringAtom}
 	 * labeled alternative in {@link PseudocodeParser#atom}.

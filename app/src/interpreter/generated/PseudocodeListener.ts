@@ -7,6 +7,7 @@ import { ProgramContext } from "./PseudocodeParser.js";
 import { StatementContext } from "./PseudocodeParser.js";
 import { DeclareStatementContext } from "./PseudocodeParser.js";
 import { IdentifierListContext } from "./PseudocodeParser.js";
+import { IdentifierContext } from "./PseudocodeParser.js";
 import { ConstantStatementContext } from "./PseudocodeParser.js";
 import { DataTypeContext } from "./PseudocodeParser.js";
 import { EnumTypeDefContext } from "./PseudocodeParser.js";
@@ -67,7 +68,6 @@ import { NewInstanceAtomContext } from "./PseudocodeParser.js";
 import { AddressOfAtomContext } from "./PseudocodeParser.js";
 import { DivFunctionAtomContext } from "./PseudocodeParser.js";
 import { ModFunctionAtomContext } from "./PseudocodeParser.js";
-import { RandomFunctionAtomContext } from "./PseudocodeParser.js";
 import { DesignatorAtomContext } from "./PseudocodeParser.js";
 import { IntegerAtomContext } from "./PseudocodeParser.js";
 import { RealAtomContext } from "./PseudocodeParser.js";
@@ -123,6 +123,16 @@ export class PseudocodeListener implements ParseTreeListener {
      * @param ctx the parse tree
      */
     exitIdentifierList?: (ctx: IdentifierListContext) => void;
+    /**
+     * Enter a parse tree produced by `PseudocodeParser.identifier`.
+     * @param ctx the parse tree
+     */
+    enterIdentifier?: (ctx: IdentifierContext) => void;
+    /**
+     * Exit a parse tree produced by `PseudocodeParser.identifier`.
+     * @param ctx the parse tree
+     */
+    exitIdentifier?: (ctx: IdentifierContext) => void;
     /**
      * Enter a parse tree produced by `PseudocodeParser.constantStatement`.
      * @param ctx the parse tree
@@ -769,18 +779,6 @@ export class PseudocodeListener implements ParseTreeListener {
      * @param ctx the parse tree
      */
     exitModFunctionAtom?: (ctx: ModFunctionAtomContext) => void;
-    /**
-     * Enter a parse tree produced by the `randomFunctionAtom`
-     * labeled alternative in `PseudocodeParser.atom`.
-     * @param ctx the parse tree
-     */
-    enterRandomFunctionAtom?: (ctx: RandomFunctionAtomContext) => void;
-    /**
-     * Exit a parse tree produced by the `randomFunctionAtom`
-     * labeled alternative in `PseudocodeParser.atom`.
-     * @param ctx the parse tree
-     */
-    exitRandomFunctionAtom?: (ctx: RandomFunctionAtomContext) => void;
     /**
      * Enter a parse tree produced by the `designatorAtom`
      * labeled alternative in `PseudocodeParser.atom`.

@@ -88,6 +88,150 @@ public class PseudocodeBaseListener implements PseudocodeListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
+	@Override public void enterEnumTypeDef(PseudocodeParser.EnumTypeDefContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitEnumTypeDef(PseudocodeParser.EnumTypeDefContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterPointerTypeDef(PseudocodeParser.PointerTypeDefContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitPointerTypeDef(PseudocodeParser.PointerTypeDefContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterSetTypeDef(PseudocodeParser.SetTypeDefContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitSetTypeDef(PseudocodeParser.SetTypeDefContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterRecordTypeDef(PseudocodeParser.RecordTypeDefContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitRecordTypeDef(PseudocodeParser.RecordTypeDefContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterDefineStatement(PseudocodeParser.DefineStatementContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitDefineStatement(PseudocodeParser.DefineStatementContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterClassDeclaration(PseudocodeParser.ClassDeclarationContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitClassDeclaration(PseudocodeParser.ClassDeclarationContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterClassFieldMember(PseudocodeParser.ClassFieldMemberContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitClassFieldMember(PseudocodeParser.ClassFieldMemberContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterClassProcMember(PseudocodeParser.ClassProcMemberContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitClassProcMember(PseudocodeParser.ClassProcMemberContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterClassFuncMember(PseudocodeParser.ClassFuncMemberContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitClassFuncMember(PseudocodeParser.ClassFuncMemberContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterDesignator(PseudocodeParser.DesignatorContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitDesignator(PseudocodeParser.DesignatorContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterDesignatorPart(PseudocodeParser.DesignatorPartContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitDesignatorPart(PseudocodeParser.DesignatorPartContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterMemberName(PseudocodeParser.MemberNameContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitMemberName(PseudocodeParser.MemberNameContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
 	@Override public void enterAssignmentStatement(PseudocodeParser.AssignmentStatementContext ctx) { }
 	/**
 	 * {@inheritDoc}
@@ -95,6 +239,18 @@ public class PseudocodeBaseListener implements PseudocodeListener {
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override public void exitAssignmentStatement(PseudocodeParser.AssignmentStatementContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterSingleAssignment(PseudocodeParser.SingleAssignmentContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitSingleAssignment(PseudocodeParser.SingleAssignmentContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
@@ -167,6 +323,18 @@ public class PseudocodeBaseListener implements PseudocodeListener {
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override public void exitCaseClause(PseudocodeParser.CaseClauseContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterCaseLabel(PseudocodeParser.CaseLabelContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitCaseLabel(PseudocodeParser.CaseLabelContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
@@ -268,6 +436,30 @@ public class PseudocodeBaseListener implements PseudocodeListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
+	@Override public void enterMethodCall(PseudocodeParser.MethodCallContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitMethodCall(PseudocodeParser.MethodCallContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterMethodCallStatement(PseudocodeParser.MethodCallStatementContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitMethodCallStatement(PseudocodeParser.MethodCallStatementContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
 	@Override public void enterReturnStatement(PseudocodeParser.ReturnStatementContext ctx) { }
 	/**
 	 * {@inheritDoc}
@@ -323,6 +515,42 @@ public class PseudocodeBaseListener implements PseudocodeListener {
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override public void exitCloseFileStatement(PseudocodeParser.CloseFileStatementContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterSeekStatement(PseudocodeParser.SeekStatementContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitSeekStatement(PseudocodeParser.SeekStatementContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterGetRecordStatement(PseudocodeParser.GetRecordStatementContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitGetRecordStatement(PseudocodeParser.GetRecordStatementContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterPutRecordStatement(PseudocodeParser.PutRecordStatementContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitPutRecordStatement(PseudocodeParser.PutRecordStatementContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
@@ -508,25 +736,25 @@ public class PseudocodeBaseListener implements PseudocodeListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterArrayAccess1DAtom(PseudocodeParser.ArrayAccess1DAtomContext ctx) { }
+	@Override public void enterNewInstanceAtom(PseudocodeParser.NewInstanceAtomContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitArrayAccess1DAtom(PseudocodeParser.ArrayAccess1DAtomContext ctx) { }
+	@Override public void exitNewInstanceAtom(PseudocodeParser.NewInstanceAtomContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterArrayAccess2DAtom(PseudocodeParser.ArrayAccess2DAtomContext ctx) { }
+	@Override public void enterAddressOfAtom(PseudocodeParser.AddressOfAtomContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitArrayAccess2DAtom(PseudocodeParser.ArrayAccess2DAtomContext ctx) { }
+	@Override public void exitAddressOfAtom(PseudocodeParser.AddressOfAtomContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
@@ -556,13 +784,25 @@ public class PseudocodeBaseListener implements PseudocodeListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterIdentifierAtom(PseudocodeParser.IdentifierAtomContext ctx) { }
+	@Override public void enterRandomFunctionAtom(PseudocodeParser.RandomFunctionAtomContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitIdentifierAtom(PseudocodeParser.IdentifierAtomContext ctx) { }
+	@Override public void exitRandomFunctionAtom(PseudocodeParser.RandomFunctionAtomContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterDesignatorAtom(PseudocodeParser.DesignatorAtomContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitDesignatorAtom(PseudocodeParser.DesignatorAtomContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
@@ -587,6 +827,18 @@ public class PseudocodeBaseListener implements PseudocodeListener {
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override public void exitRealAtom(PseudocodeParser.RealAtomContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterDateAtom(PseudocodeParser.DateAtomContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitDateAtom(PseudocodeParser.DateAtomContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *

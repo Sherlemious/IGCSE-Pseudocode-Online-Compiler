@@ -1,9 +1,12 @@
 import { describe, it, expect } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { parse } from '../parser';
 import { Interpreter } from '../core/interpreter';
 import { ServerVirtualFileSystem } from '../core/serverFilesystem';
 import { humanizeParseError } from '../errorMessages';
 import type { PseudocodeError } from '../core/types';
+import { examples } from '../../data/examples';
 
 // Runs pseudocode and collects outputs. Provide `inputs` in order for INPUT statements.
 // File I/O uses the server filesystem (vitest's node env has no localStorage),
@@ -910,5 +913,192 @@ describe('A Level — classes', () => {
 
   it('SUPER outside a class raises a friendly error', async () => {
     await expect(runCode('SUPER.NEW(1)\n')).rejects.toThrow(/inside a class method/);
+  });
+});
+
+// ─── Soft keywords: A Level keywords stay usable as variable names ───────────
+
+describe('soft keywords as variable names', () => {
+  it('Date works as a variable name', async () => {
+    const { outputs } = await runCode('DECLARE Date : STRING\nDate <- "Monday"\nOUTPUT Date\n');
+    expect(outputs).toEqual(['Monday']);
+  });
+
+  it('Class works as a variable name (common in IGCSE questions)', async () => {
+    const { outputs } = await runCode('DECLARE Class : STRING\nClass <- "10B"\nOUTPUT Class\n');
+    expect(outputs).toEqual(['10B']);
+  });
+
+  it('Random works as a variable while RANDOM() stays a builtin', async () => {
+    const { outputs } = await runCode('Random <- RANDOM()\nOUTPUT Random >= 0 AND Random < 1\n');
+    expect(outputs).toEqual(['TRUE']);
+  });
+
+  it('Type, New, Set and Seek work as variable names', async () => {
+    const code = [
+      'Type <- "bus"',
+      'New <- 5',
+      'Set <- 2',
+      'Seek <- New + Set',
+      'OUTPUT Type & New & Set & Seek',
+    ].join('\n') + '\n';
+    const { outputs } = await runCode(code);
+    expect(outputs).toEqual(['bus527']);
+  });
+
+  it('soft keywords work as FOR loop variables', async () => {
+    const code = [
+      'Total <- 0',
+      'FOR Date <- 1 TO 3',
+      '    Total <- Total + Date',
+      'NEXT Date',
+      'OUTPUT Total',
+    ].join('\n') + '\n';
+    const { outputs } = await runCode(code);
+    expect(outputs).toEqual(['6']);
+  });
+
+  it('soft keywords work as record field names', async () => {
+    const code = [
+      'TYPE Booking',
+      '  DECLARE Date : DATE',
+      '  DECLARE Class : STRING',
+      'ENDTYPE',
+      'DECLARE b : Booking',
+      'b.Date <- 02/01/2005',
+      'b.Class <- "Economy"',
+      'OUTPUT b.Date',
+      'OUTPUT b.Class',
+    ].join('\n') + '\n';
+    const { outputs } = await runCode(code);
+    expect(outputs).toEqual(['02/01/2005', 'Economy']);
+  });
+
+  it('soft keywords work as parameter names', async () => {
+    const code = [
+      'PROCEDURE Show(Date : STRING)',
+      '    OUTPUT Date',
+      'ENDPROCEDURE',
+      'CALL Show("Tuesday")',
+    ].join('\n') + '\n';
+    const { outputs } = await runCode(code);
+    expect(outputs).toEqual(['Tuesday']);
+  });
+
+  it('A Level constructs still parse alongside soft keywords', () => {
+    expect(parseErrors('TYPE Season = (Spring, Summer)\n')).toEqual([]);
+    expect(parseErrors('OPENFILE "f.dat" FOR RANDOM\n')).toEqual([]);
+    expect(parseErrors('SEEK "f.dat", 2\n')).toEqual([]);
+  });
+});
+
+// ─── Empty blocks (comment-only scaffolds must parse and run) ────────────────
+
+describe('empty blocks', () => {
+  it('IF with a comment-only branch runs the other branch', async () => {
+    const code = [
+      'x <- 5',
+      'IF x > 10 THEN',
+      '    // nothing here yet',
+      'ELSE',
+      '    OUTPUT "small"',
+      'ENDIF',
+    ].join('\n') + '\n';
+    const { outputs } = await runCode(code);
+    expect(outputs).toEqual(['small']);
+  });
+
+  it('ELSEIF chain with an empty branch keeps correct indexing', async () => {
+    const code = [
+      'x <- 85',
+      'IF x >= 90 THEN',
+      '    // todo',
+      'ELSEIF x >= 80 THEN',
+      '    OUTPUT "B"',
+      'ENDIF',
+    ].join('\n') + '\n';
+    const { outputs } = await runCode(code);
+    expect(outputs).toEqual(['B']);
+  });
+
+  it('empty FOR, WHILE and REPEAT bodies run as no-ops', async () => {
+    const code = [
+      'FOR i <- 1 TO 3',
+      'NEXT i',
+      'WHILE FALSE DO',
+      'ENDWHILE',
+      'REPEAT',
+      'UNTIL TRUE',
+      'OUTPUT "done"',
+    ].join('\n') + '\n';
+    const { outputs } = await runCode(code);
+    expect(outputs).toEqual(['done']);
+  });
+
+  it('empty procedure body is callable', async () => {
+    const code = [
+      'PROCEDURE P()',
+      'ENDPROCEDURE',
+      'CALL P()',
+      'OUTPUT "ok"',
+    ].join('\n') + '\n';
+    const { outputs } = await runCode(code);
+    expect(outputs).toEqual(['ok']);
+  });
+
+  it('empty CASE clause matches and does nothing', async () => {
+    const code = [
+      'x <- 1',
+      'CASE OF x',
+      '  1 :',
+      '  OTHERWISE : OUTPUT "other"',
+      'ENDCASE',
+      'OUTPUT "end"',
+    ].join('\n') + '\n';
+    const { outputs } = await runCode(code);
+    expect(outputs).toEqual(['end']);
+  });
+});
+
+// ─── Bundled programs must always parse ──────────────────────────────────────
+
+describe('bundled programs parse with the current grammar', () => {
+  it('every example in data/examples.ts parses', () => {
+    const failures: string[] = [];
+    for (const ex of examples) {
+      const errors = parseErrors(ex.code + '\n');
+      if (errors.length > 0) {
+        failures.push(`"${ex.title}": ${errors[0]}`);
+      }
+    }
+    expect(failures).toEqual([]);
+  });
+
+  // starterCode blocks are deliberately incomplete scaffolds in places (e.g. the
+  // literal `...` placeholders referenced by hints), so only solutions are
+  // required to parse. Placeholder starters get a friendly error instead — see
+  // the `...` hint test below.
+  it('every solution in prisma/seed.ts parses', () => {
+    const seedSrc = readFileSync(resolve(__dirname, '../../../prisma/seed.ts'), 'utf-8');
+    const codeBlocks = [...seedSrc.matchAll(/solution:\s*`([^`]*)`/g)];
+    expect(codeBlocks.length).toBeGreaterThan(0);
+
+    const failures: string[] = [];
+    for (const match of codeBlocks) {
+      const code = match[1];
+      if (code.trim() === '') continue;
+      const errors = parseErrors(code + '\n');
+      if (errors.length > 0) {
+        failures.push(`solution starting "${code.trimStart().slice(0, 40)}...": ${errors[0]}`);
+      }
+    }
+    expect(failures).toEqual([]);
+  });
+
+  it('running a starter with a `...` placeholder gives a friendly hint', () => {
+    const { errors } = parse('IF ... THEN\n    OUTPUT "Even"\nENDIF\n');
+    expect(errors.length).toBeGreaterThan(0);
+    const msg = humanizeParseError(errors[0].message);
+    expect(msg).toContain('Replace the `...` placeholder');
   });
 });

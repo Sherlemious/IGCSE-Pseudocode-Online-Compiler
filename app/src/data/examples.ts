@@ -936,7 +936,7 @@ OUTPUT "Total: ", Count, " prime numbers"`,
     code: `DECLARE N : INTEGER
 DECLARE First : INTEGER
 DECLARE Second : INTEGER
-DECLARE Next : INTEGER
+DECLARE NextTerm : INTEGER
 DECLARE i : INTEGER
 
 OUTPUT "How many Fibonacci numbers?"
@@ -956,10 +956,10 @@ IF N >= 2 THEN
 ENDIF
 
 FOR i <- 3 TO N
-    Next <- First + Second
-    OUTPUT Next, " "
+    NextTerm <- First + Second
+    OUTPUT NextTerm, " "
     First <- Second
-    Second <- Next
+    Second <- NextTerm
 NEXT i`,
   },
   {

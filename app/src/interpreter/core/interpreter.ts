@@ -58,7 +58,6 @@ import {
   AddressOfAtomContext,
   DivFunctionAtomContext,
   ModFunctionAtomContext,
-  RandomFunctionAtomContext,
   DesignatorAtomContext,
   IntegerAtomContext,
   RealAtomContext,
@@ -363,7 +362,7 @@ export class Interpreter {
       const factory = () => this.defaultForDataTypeSync(elemTypeCtx);
       if (ctx.COMMA()) {
         // 2D: DECLARE x : ARRAY[l1:u1, l2:u2] OF type (single identifier only)
-        const name = ctx.IDENTIFIER()!.getText();
+        const name = ctx.identifier()!.getText();
         const l1 = toNumber(await this.evalExpr(exprs[0]));
         const u1 = toNumber(await this.evalExpr(exprs[1]));
         const l2 = toNumber(await this.evalExpr(exprs[2]));
@@ -378,14 +377,14 @@ export class Interpreter {
         // 1D: DECLARE x, y, ... : ARRAY[l:u] OF type
         const lower = toNumber(await this.evalExpr(exprs[0]));
         const upper = toNumber(await this.evalExpr(exprs[1]));
-        for (const id of ctx.identifierList()!.IDENTIFIER()) {
+        for (const id of ctx.identifierList()!.identifier()) {
           const arr = new PseudocodeArray([{ lower, upper }], elemTypeName, factory);
           define(id.getText(), mkArray(arr));
         }
       }
     } else {
       const typeCtx = ctx.dataType();
-      for (const id of ctx.identifierList()!.IDENTIFIER()) {
+      for (const id of ctx.identifierList()!.identifier()) {
         define(id.getText(), await this.defaultForDataType(typeCtx));
       }
     }
@@ -443,7 +442,7 @@ export class Interpreter {
   // ─── CONSTANT ───────────────────────────────────────────────────
 
   private async visitConstant(ctx: ConstantStatementContext): Promise<void> {
-    const name = ctx.IDENTIFIER().getText();
+    const name = ctx.identifier().getText();
     const value = await this.evalExpr(ctx.expr());
     this.env.declareConstant(name, value);
   }
@@ -453,7 +452,7 @@ export class Interpreter {
   private async visitTypeDefinition(ctx: TypeDefinitionContext): Promise<void> {
     if (ctx instanceof EnumTypeDefContext) {
       const name = ctx.IDENTIFIER().getText();
-      const members = ctx.identifierList().IDENTIFIER().map((t) => t.getText());
+      const members = ctx.identifierList().identifier().map((t) => t.getText());
       this.types.set(name.toUpperCase(), { kind: 'ENUM', name, members });
       members.forEach((m, i) => this.enumMembers.set(m.toUpperCase(), mkEnum(name, m, i)));
       return;
@@ -480,8 +479,8 @@ export class Interpreter {
   }
 
   private async visitDefine(ctx: DefineStatementContext): Promise<void> {
-    const varName = ctx.IDENTIFIER(0)!.getText();
-    const typeName = ctx.IDENTIFIER(1)!.getText();
+    const varName = ctx.identifier().getText();
+    const typeName = ctx.IDENTIFIER()!.getText();
     const elements = new Set<string>();
     const list = ctx.exprList();
     if (list) {
@@ -514,12 +513,12 @@ export class Interpreter {
     for (const member of ctx.classMember()) {
       if (member instanceof ClassFieldMemberContext) {
         const visibility: Visibility = member.PRIVATE() ? 'PRIVATE' : 'PUBLIC';
-        for (const id of member.identifierList().IDENTIFIER()) {
+        for (const id of member.identifierList().identifier()) {
           fields.push({ name: id.getText(), dataTypeCtx: member.dataType(), visibility });
         }
       } else if (member instanceof ClassProcMemberContext) {
         const proc = member.procedureDeclaration();
-        const methodName = proc._name!.text!;
+        const methodName = proc.identifier().getText();
         methods.set(methodName.toUpperCase(), {
           name: methodName,
           params: this.extractParams(proc.paramList()),
@@ -529,7 +528,7 @@ export class Interpreter {
         });
       } else if (member instanceof ClassFuncMemberContext) {
         const func = member.functionDeclaration();
-        const methodName = func.IDENTIFIER().getText();
+        const methodName = func.identifier().getText();
         methods.set(methodName.toUpperCase(), {
           name: methodName,
           params: this.extractParams(func.paramList()),
@@ -670,7 +669,7 @@ export class Interpreter {
   private async resolveDesignator(ctx: DesignatorContext): Promise<Reference> {
     const parts = ctx.designatorPart();
     const line = ctx.start?.line;
-    const headId = ctx.IDENTIFIER();
+    const headId = ctx.identifier();
 
     if (!headId) {
       // SUPER head: only meaningful when immediately calling a superclass method
@@ -753,7 +752,7 @@ export class Interpreter {
   /** Evaluate a designator to a value (rvalue), with USERINPUT and enum-member fallbacks. */
   private async evalDesignator(ctx: DesignatorContext): Promise<RuntimeValue> {
     const parts = ctx.designatorPart();
-    const headId = ctx.IDENTIFIER();
+    const headId = ctx.identifier();
 
     if (headId && parts.length === 0) {
       const name = headId.getText();
@@ -905,7 +904,7 @@ export class Interpreter {
   // ─── FOR ────────────────────────────────────────────────────────
 
   private async visitFor(ctx: ForStatementContext): Promise<void> {
-    const varName = ctx.IDENTIFIER(0)!.getText();
+    const varName = ctx.identifier(0)!.getText();
     const exprs = ctx.expr();
 
     const startVal = toNumber(await this.evalExpr(exprs[0]));
@@ -954,13 +953,13 @@ export class Interpreter {
   // ─── PROCEDURE / FUNCTION declarations ──────────────────────────
 
   private async visitProcedureDecl(ctx: ProcedureDeclarationContext): Promise<void> {
-    const name = ctx._name!.text!;
+    const name = ctx.identifier().getText();
     const params = this.extractParams(ctx.paramList());
     this.procedures.set(name.toUpperCase(), { params, body: ctx.block() });
   }
 
   private async visitFunctionDecl(ctx: FunctionDeclarationContext): Promise<void> {
-    const name = ctx.IDENTIFIER().getText();
+    const name = ctx.identifier().getText();
     const params = this.extractParams(ctx.paramList());
     const returnType = ctx.dataType().getText();
     this.functions.set(name.toUpperCase(), { params, body: ctx.block(), returnType });
@@ -974,7 +973,7 @@ export class Interpreter {
       if (p.BYREF()) mode = 'BYREF';
       else if (p.BYVAL()) mode = 'BYVAL';
       return {
-        name: p.IDENTIFIER().getText(),
+        name: p.identifier().getText(),
         type: p.dataType().getText(),
         mode,
       };
@@ -989,7 +988,7 @@ export class Interpreter {
       await this.execMethodCall(mc);
       return;
     }
-    const name = ctx.IDENTIFIER()!.getText();
+    const name = ctx.identifier()!.getText();
     await this.callProcedure(name, ctx.argList() ?? null, ctx.start?.line);
   }
 
@@ -997,7 +996,7 @@ export class Interpreter {
     const line = ctx.start?.line;
     const memberName = ctx.memberName().getText();
     const parts = ctx.designatorPart();
-    const headId = ctx.IDENTIFIER();
+    const headId = ctx.identifier();
 
     if (!headId) {
       if (parts.length > 0) {
@@ -1366,7 +1365,7 @@ export class Interpreter {
     }
 
     if (ctx instanceof FunctionCallAtomContext) {
-      const name = ctx.IDENTIFIER().getText();
+      const name = ctx.identifier().getText();
 
       // Check builtins first
       const builtin = getBuiltin(name);
@@ -1385,10 +1384,6 @@ export class Interpreter {
 
     if (ctx instanceof AddressOfAtomContext) {
       return mkPointer(await this.resolveDesignator(ctx.designator()));
-    }
-
-    if (ctx instanceof RandomFunctionAtomContext) {
-      return mkReal(Math.random());
     }
 
     if (ctx instanceof DivFunctionAtomContext) {

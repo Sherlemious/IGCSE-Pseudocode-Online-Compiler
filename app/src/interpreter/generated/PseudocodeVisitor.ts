@@ -7,6 +7,7 @@ import { ProgramContext } from "./PseudocodeParser.js";
 import { StatementContext } from "./PseudocodeParser.js";
 import { DeclareStatementContext } from "./PseudocodeParser.js";
 import { IdentifierListContext } from "./PseudocodeParser.js";
+import { IdentifierContext } from "./PseudocodeParser.js";
 import { ConstantStatementContext } from "./PseudocodeParser.js";
 import { DataTypeContext } from "./PseudocodeParser.js";
 import { EnumTypeDefContext } from "./PseudocodeParser.js";
@@ -67,7 +68,6 @@ import { NewInstanceAtomContext } from "./PseudocodeParser.js";
 import { AddressOfAtomContext } from "./PseudocodeParser.js";
 import { DivFunctionAtomContext } from "./PseudocodeParser.js";
 import { ModFunctionAtomContext } from "./PseudocodeParser.js";
-import { RandomFunctionAtomContext } from "./PseudocodeParser.js";
 import { DesignatorAtomContext } from "./PseudocodeParser.js";
 import { IntegerAtomContext } from "./PseudocodeParser.js";
 import { RealAtomContext } from "./PseudocodeParser.js";
@@ -110,6 +110,12 @@ export class PseudocodeVisitor<Result> extends AbstractParseTreeVisitor<Result> 
      * @return the visitor result
      */
     visitIdentifierList?: (ctx: IdentifierListContext) => Result;
+    /**
+     * Visit a parse tree produced by `PseudocodeParser.identifier`.
+     * @param ctx the parse tree
+     * @return the visitor result
+     */
+    visitIdentifier?: (ctx: IdentifierContext) => Result;
     /**
      * Visit a parse tree produced by `PseudocodeParser.constantStatement`.
      * @param ctx the parse tree
@@ -493,13 +499,6 @@ export class PseudocodeVisitor<Result> extends AbstractParseTreeVisitor<Result> 
      * @return the visitor result
      */
     visitModFunctionAtom?: (ctx: ModFunctionAtomContext) => Result;
-    /**
-     * Visit a parse tree produced by the `randomFunctionAtom`
-     * labeled alternative in `PseudocodeParser.atom`.
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    visitRandomFunctionAtom?: (ctx: RandomFunctionAtomContext) => Result;
     /**
      * Visit a parse tree produced by the `designatorAtom`
      * labeled alternative in `PseudocodeParser.atom`.

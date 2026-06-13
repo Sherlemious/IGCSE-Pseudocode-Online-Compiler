@@ -49,7 +49,9 @@ One **superset grammar** covers both Cambridge IGCSE (0478) and AS & A Level (96
 Deliberate parse edges (documented in /docs — do not "fix"):
 - Contiguous `dd/dd/dddd` lexes as a DATE_LITERAL; spaced division (`10 / 02 / 2005`) still works
 - `p^ - 1` parses as pointer-deref-then-subtract; negative exponents on identifiers need parens: `x ^ (-1)`
-- A Level keywords (TYPE, SET, DATE, NEW, CLASS, RANDOM, …) are reserved words; the `RANDOM()` builtin survives via a dedicated `randomFunctionAtom` grammar alternative
+- A Level keywords are **soft keywords**: the grammar's `identifier` rule accepts TYPE/SET/DATE/RANDOM/NEW/CLASS/SEEK/DEFINE/INHERITS/PUBLIC/PRIVATE/BYREF/BYVAL/GETRECORD/PUTRECORD in variable-name positions, so `DECLARE Date : STRING` keeps working. Only SUPER, ENDTYPE, ENDCLASS and the pre-existing IGCSE keywords are fully reserved. Type/class **names** stay hard IDENTIFIER.
+- `block` may be empty — comment-only IF/loop bodies (common in starter scaffolds) parse and run as no-ops
+- Some seed `starterCode` is deliberately incomplete (literal `...` placeholders referenced by hints); only `solution` blocks are parse-checked by the test suite, and `...` gets a friendly "replace the placeholder" parse hint
 
 ## Interpreter Design
 

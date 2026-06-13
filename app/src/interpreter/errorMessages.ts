@@ -290,6 +290,10 @@ export function humanizeParseError(rawMessage: string): string {
       if (token === '[')
         return 'Array access needs the array name before `[`.\n  Example:\n    Scores[i] <- 10\n    OUTPUT Scores[i]';
 
+      // `...` placeholders left in starter code parse as stray dots
+      if (token === '.' && isExpressionExpected(rawMessage))
+        return 'Replace the `...` placeholder with your own code.\n  Example: change `IF ... THEN` to `IF MOD(N, 2) = 0 THEN`';
+
       if (['>=', '<=', '>', '<', '=', '<>'].includes(token) && isExpressionExpected(rawMessage))
         return `A comparison operator like ${token} needs a value on both sides.\n  Example:\n    IF Score ${token} 50 THEN\n      OUTPUT "OK"\n    ENDIF`;
 

@@ -1165,9 +1165,11 @@ Player.SetAttempts(5)              // method call
 OUTPUT Player.GetAttempts()        // method in an expression`}
           />
           <p className="text-sm text-dark-text mt-2">
-            Note: A Level keywords such as <Kw>TYPE</Kw>, <Kw>SET</Kw>, <Kw>DATE</Kw>, <Kw>NEW</Kw>,{' '}
-            <Kw>CLASS</Kw>, <Kw>PUBLIC</Kw> and <Kw>PRIVATE</Kw> are reserved and cannot be used as
-            variable names.
+            Note: the A Level keywords (<Kw>TYPE</Kw>, <Kw>SET</Kw>, <Kw>DATE</Kw>, <Kw>NEW</Kw>,{' '}
+            <Kw>CLASS</Kw>, <Kw>RANDOM</Kw>, …) still work as ordinary variable names —{' '}
+            <Kw>DECLARE Date : STRING</Kw> or <Kw>DECLARE Class : STRING</Kw> are fine. Only{' '}
+            <Kw>SUPER</Kw>, <Kw>ENDTYPE</Kw>, <Kw>ENDCLASS</Kw> and the original IGCSE keywords
+            (such as <Kw>IF</Kw>, <Kw>NEXT</Kw>, <Kw>READ</Kw>) are fully reserved.
           </p>
 
           {/* ──────────────────────────────────────────────── */}

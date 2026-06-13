@@ -1038,7 +1038,7 @@ The sequence starts: **0, 1, 1, 2, 3, 5, 8, 13, 21, …**
     starterCode: `DECLARE N : INTEGER
 DECLARE First : INTEGER
 DECLARE Second : INTEGER
-DECLARE Next : INTEGER
+DECLARE NextTerm : INTEGER
 DECLARE i : INTEGER
 
 INPUT N
@@ -1054,20 +1054,20 @@ IF N >= 2 THEN
 ENDIF
 
 FOR i <- 3 TO N
-    Next <- First + Second
-    OUTPUT Next
+    NextTerm <- First + Second
+    OUTPUT NextTerm
     First <- Second
-    Second <- Next
+    Second <- NextTerm
 NEXT i`,
     hints: [
       'Each Fibonacci number is the sum of the two preceding ones. You need to keep track of the last two values.',
-      'Start with First = 0 and Second = 1. Output these first two values. Then for each subsequent number, compute Next = First + Second, output it, and shift the values.',
-      'After outputting Next, update: First <- Second, then Second <- Next. This shifts the window forward for the next iteration.',
+      'Start with First = 0 and Second = 1. Output these first two values. Then for each subsequent number, compute NextTerm = First + Second, output it, and shift the values.',
+      'After outputting NextTerm, update: First <- Second, then Second <- NextTerm. This shifts the window forward for the next iteration.',
     ],
     solution: `DECLARE N : INTEGER
 DECLARE First : INTEGER
 DECLARE Second : INTEGER
-DECLARE Next : INTEGER
+DECLARE NextTerm : INTEGER
 DECLARE i : INTEGER
 
 INPUT N
@@ -1083,10 +1083,10 @@ IF N >= 2 THEN
 ENDIF
 
 FOR i <- 3 TO N
-    Next <- First + Second
-    OUTPUT Next
+    NextTerm <- First + Second
+    OUTPUT NextTerm
     First <- Second
-    Second <- Next
+    Second <- NextTerm
 NEXT i`,
     solutionExplanation: 'Output the first two Fibonacci numbers (0 and 1) as special cases. Then use a loop from 3 to N, computing each new number as the sum of the previous two, outputting it, and shifting the two tracking variables forward.',
     testCases: [
@@ -3091,7 +3091,7 @@ Output: hello@world.com is valid
     starterCode: `DECLARE EmailAddress : STRING
 DECLARE Valid : BOOLEAN
 DECLARE i : INTEGER
-DECLARE Char : CHAR
+DECLARE Ch : CHAR
 
 INPUT EmailAddress
 Valid <- FALSE
@@ -3109,14 +3109,14 @@ Valid <- FALSE
     solution: `DECLARE EmailAddress : STRING
 DECLARE Valid : BOOLEAN
 DECLARE i : INTEGER
-DECLARE Char : CHAR
+DECLARE Ch : CHAR
 
 INPUT EmailAddress
 Valid <- FALSE
 
 FOR i <- 1 TO LENGTH(EmailAddress)
-    Char <- SUBSTRING(EmailAddress, i, 1)
-    IF Char = "@" THEN
+    Ch <- SUBSTRING(EmailAddress, i, 1)
+    IF Ch = "@" THEN
         Valid <- TRUE
     ENDIF
 NEXT i
