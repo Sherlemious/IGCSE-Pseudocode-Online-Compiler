@@ -6747,6 +6747,729 @@ CLOSEFILE NewFile`,
       { inputs: ['Mia', '5', 'A <- 1', '', 'B <- 2//set B', 'OUTPUT A', 'OUTPUT B//done'], expectedOutput: '4\nA <- 1\nB <- 2\nOUTPUT A\nOUTPUT B', description: 'Blank line and inline comments', sortOrder: 2, isHidden: true },
     ],
   },
+
+  {
+    title: 'Boundary Grade Classifier',
+    description: `Read a mark from 0 to 100 and output the grade.
+
+Use these boundaries:
+
+- 90 to 100: A*
+- 80 to 89: A
+- 70 to 79: B
+- 60 to 69: C
+- 50 to 59: D
+- 0 to 49: U
+
+If the mark is outside 0 to 100, output Invalid.
+
+**Input:** One integer mark.
+**Output:** The grade or Invalid.
+
+**Example:**
+\`\`\`
+Input:  89
+Output: A
+\`\`\``,
+    difficulty: 'EASY' as const,
+    topic: 'Selection',
+    tags: ['Original Practice', 'Boundary Cases', 'Selection', 'Validation', 'Grades'],
+    marks: 5,
+    starterCode: `DECLARE Mark : INTEGER
+
+INPUT Mark
+
+// Check invalid values first, then test grade boundaries in descending order`,
+    hints: [
+      'The order of the IF statements matters. Test invalid values before checking the grades.',
+      'Use compound conditions such as Mark < 0 OR Mark > 100.',
+      'After the invalid check, compare from the highest boundary downwards: 90, 80, 70, 60, 50.',
+    ],
+    solution: `DECLARE Mark : INTEGER
+
+INPUT Mark
+
+IF Mark < 0 OR Mark > 100 THEN
+    OUTPUT "Invalid"
+ELSEIF Mark >= 90 THEN
+    OUTPUT "A*"
+ELSEIF Mark >= 80 THEN
+    OUTPUT "A"
+ELSEIF Mark >= 70 THEN
+    OUTPUT "B"
+ELSEIF Mark >= 60 THEN
+    OUTPUT "C"
+ELSEIF Mark >= 50 THEN
+    OUTPUT "D"
+ELSE
+    OUTPUT "U"
+ENDIF`,
+    solutionExplanation: 'Invalid marks are rejected first. The remaining valid marks are tested from the highest boundary down, so each mark is classified by the first matching grade range.',
+    testCases: [
+      { inputs: ['89'], expectedOutput: 'A', description: 'Upper A boundary', sortOrder: 0 },
+      { inputs: ['90'], expectedOutput: 'A*', description: 'A* boundary', sortOrder: 1 },
+      { inputs: ['49'], expectedOutput: 'U', description: 'Just below D', sortOrder: 2 },
+      { inputs: ['101'], expectedOutput: 'Invalid', description: 'Too high', sortOrder: 3, isHidden: true },
+      { inputs: ['0'], expectedOutput: 'U', description: 'Lowest valid mark', sortOrder: 4, isHidden: true },
+    ],
+  },
+
+  {
+    title: 'Validated PIN Entry',
+    description: `Keep asking the user to enter a PIN until it has exactly 4 characters.
+
+For each invalid PIN:
+
+- output Too short if it has fewer than 4 characters
+- output Too long if it has more than 4 characters
+
+When a valid PIN is entered, output Accepted.
+
+**Input:** One or more PIN strings.
+**Output:** Error messages for invalid attempts, then Accepted.
+
+**Example:**
+\`\`\`
+Input:  12
+        12345
+        9081
+Output: Too short
+        Too long
+        Accepted
+\`\`\``,
+    difficulty: 'EASY' as const,
+    topic: 'Validation',
+    tags: ['Original Practice', 'Validation', 'REPEAT UNTIL', 'String Length', 'Input Loop'],
+    marks: 6,
+    starterCode: `DECLARE Pin : STRING
+
+REPEAT
+    INPUT Pin
+
+    // Output the correct error message when the length is invalid
+UNTIL ...
+
+OUTPUT "Accepted"`,
+    hints: [
+      'A REPEAT loop is useful because at least one PIN must be entered.',
+      'Use LENGTH(Pin) to compare the number of characters with 4.',
+      'The loop condition should stop when LENGTH(Pin) = 4.',
+    ],
+    solution: `DECLARE Pin : STRING
+
+REPEAT
+    INPUT Pin
+
+    IF LENGTH(Pin) < 4 THEN
+        OUTPUT "Too short"
+    ELSEIF LENGTH(Pin) > 4 THEN
+        OUTPUT "Too long"
+    ENDIF
+UNTIL LENGTH(Pin) = 4
+
+OUTPUT "Accepted"`,
+    solutionExplanation: 'The REPEAT loop reads a PIN and reports whether it is too short or too long. The loop terminates only when the length is exactly 4, then the final accepted message is output.',
+    testCases: [
+      { inputs: ['12', '12345', '9081'], expectedOutput: 'Too short\nToo long\nAccepted', description: 'Short, long, then valid', sortOrder: 0 },
+      { inputs: ['1357'], expectedOutput: 'Accepted', description: 'Valid first time', sortOrder: 1 },
+      { inputs: ['999', '1111'], expectedOutput: 'Too short\nAccepted', description: 'One retry', sortOrder: 2, isHidden: true },
+      { inputs: ['abcdef', '4321'], expectedOutput: 'Too long\nAccepted', description: 'Alphabetic input still checks length', sortOrder: 3, isHidden: true },
+    ],
+  },
+
+  {
+    title: 'First Double Letter',
+    description: `Read a word and find the first pair of adjacent matching letters.
+
+The comparison is case-insensitive. Output the matching letter in uppercase. If there is no adjacent pair, output None.
+
+**Input:** One word.
+**Output:** The first repeated adjacent letter in uppercase, or None.
+
+**Example:**
+\`\`\`
+Input:  book
+Output: O
+\`\`\``,
+    difficulty: 'MEDIUM' as const,
+    topic: 'String Processing',
+    tags: ['Original Practice', 'String Processing', 'Adjacent Values', 'Case Insensitive', 'WHILE Loop'],
+    marks: 7,
+    starterCode: `DECLARE Word, First, Second, FoundLetter : STRING
+DECLARE Position : INTEGER
+DECLARE Found : BOOLEAN
+
+INPUT Word
+
+// Scan adjacent characters until a matching pair is found`,
+    hints: [
+      'Compare character Position with character Position + 1.',
+      'Use UCASE(SUBSTRING(...)) so that a and A count as the same letter.',
+      'A WHILE loop can stop early when a matching pair has been found.',
+    ],
+    solution: `DECLARE Word, First, Second, FoundLetter : STRING
+DECLARE Position : INTEGER
+DECLARE Found : BOOLEAN
+
+INPUT Word
+
+Position <- 1
+Found <- FALSE
+FoundLetter <- ""
+
+WHILE Position < LENGTH(Word) AND Found = FALSE DO
+    First <- UCASE(SUBSTRING(Word, Position, 1))
+    Second <- UCASE(SUBSTRING(Word, Position + 1, 1))
+
+    IF First = Second THEN
+        Found <- TRUE
+        FoundLetter <- First
+    ENDIF
+
+    Position <- Position + 1
+ENDWHILE
+
+IF Found THEN
+    OUTPUT FoundLetter
+ELSE
+    OUTPUT "None"
+ENDIF`,
+    solutionExplanation: 'The loop compares each character with the next one after converting both to uppercase. A Boolean flag stops the scan when the first adjacent match is found.',
+    testCases: [
+      { inputs: ['book'], expectedOutput: 'O', description: 'Double O', sortOrder: 0 },
+      { inputs: ['Mississippi'], expectedOutput: 'S', description: 'First double is ss', sortOrder: 1 },
+      { inputs: ['abcde'], expectedOutput: 'None', description: 'No adjacent repeat', sortOrder: 2 },
+      { inputs: ['aAmaze'], expectedOutput: 'A', description: 'Case-insensitive match', sortOrder: 3, isHidden: true },
+      { inputs: ['letter'], expectedOutput: 'T', description: 'Later double letter', sortOrder: 4, isHidden: true },
+    ],
+  },
+
+  {
+    title: 'Run-Length Compressor',
+    description: `Read an uppercase word and compress each run of consecutive equal letters.
+
+For every run, output the letter followed by the number of times it appears consecutively.
+
+**Input:** One uppercase word with at least one character.
+**Output:** The compressed string.
+
+**Example:**
+\`\`\`
+Input:  AAABBCCCC
+Output: A3B2C4
+\`\`\``,
+    difficulty: 'HARD' as const,
+    topic: 'String Processing',
+    tags: ['Original Practice', 'String Processing', 'Compression', 'Run Length', 'Sentinel Logic'],
+    marks: 9,
+    starterCode: `DECLARE Word, Result, Current, NextChar : STRING
+DECLARE Position, Count : INTEGER
+
+INPUT Word
+
+// Build Result by counting each run of equal consecutive letters`,
+    hints: [
+      'Track the current character and how many times it has appeared in the current run.',
+      'When the next character changes, append Current and Count to the result and start a new run.',
+      'After the loop finishes, remember to append the final run.',
+    ],
+    solution: `DECLARE Word, Result, Current, NextChar : STRING
+DECLARE Position, Count : INTEGER
+
+INPUT Word
+
+Result <- ""
+Current <- SUBSTRING(Word, 1, 1)
+Count <- 1
+
+FOR Position <- 2 TO LENGTH(Word)
+    NextChar <- SUBSTRING(Word, Position, 1)
+
+    IF NextChar = Current THEN
+        Count <- Count + 1
+    ELSE
+        Result <- Result & Current & Count
+        Current <- NextChar
+        Count <- 1
+    ENDIF
+NEXT Position
+
+Result <- Result & Current & Count
+OUTPUT Result`,
+    solutionExplanation: 'The algorithm keeps a current run and appends it only when the next character is different. The final run is appended after the loop, which is the common edge case in this task.',
+    testCases: [
+      { inputs: ['AAABBCCCC'], expectedOutput: 'A3B2C4', description: 'Several runs', sortOrder: 0 },
+      { inputs: ['XYZ'], expectedOutput: 'X1Y1Z1', description: 'No repeated letters', sortOrder: 1 },
+      { inputs: ['AAAAA'], expectedOutput: 'A5', description: 'One long run', sortOrder: 2 },
+      { inputs: ['AABBAA'], expectedOutput: 'A2B2A2', description: 'Same letter appears in separate runs', sortOrder: 3, isHidden: true },
+    ],
+  },
+
+  {
+    title: 'Second Highest Distinct Score',
+    description: `Read N scores into an array, where N is between 3 and 10.
+
+Output the highest score and the second highest distinct score. If all scores are the same, output No second highest after the highest score.
+
+**Input:** N followed by N integer scores.
+**Output:** Highest score, then second highest distinct score or No second highest.
+
+**Example:**
+\`\`\`
+Input:  6
+        7
+        9
+        9
+        3
+        6
+        7
+Output: Highest: 9
+        Second: 7
+\`\`\``,
+    difficulty: 'MEDIUM' as const,
+    topic: 'Arrays',
+    tags: ['Original Practice', 'Arrays', 'Min/Max', 'Duplicates', 'Distinct Values'],
+    marks: 8,
+    starterCode: `DECLARE Scores : ARRAY[1:10] OF INTEGER
+DECLARE N, Index, Highest, Second : INTEGER
+DECLARE HasSecond : BOOLEAN
+
+INPUT N
+
+// Read the scores and find the highest and second highest distinct values`,
+    hints: [
+      'Read all N values into the array first so the algorithm practises array indexing.',
+      'When a score is greater than Highest, the old Highest may become Second.',
+      'When a score is below Highest but above Second, update only Second.',
+    ],
+    solution: `DECLARE Scores : ARRAY[1:10] OF INTEGER
+DECLARE N, Index, Highest, Second : INTEGER
+DECLARE HasSecond : BOOLEAN
+
+INPUT N
+
+FOR Index <- 1 TO N
+    INPUT Scores[Index]
+NEXT Index
+
+Highest <- Scores[1]
+Second <- Scores[1]
+HasSecond <- FALSE
+
+FOR Index <- 2 TO N
+    IF Scores[Index] > Highest THEN
+        Second <- Highest
+        Highest <- Scores[Index]
+        HasSecond <- TRUE
+    ELSEIF Scores[Index] < Highest THEN
+        IF HasSecond = FALSE OR Scores[Index] > Second THEN
+            Second <- Scores[Index]
+            HasSecond <- TRUE
+        ENDIF
+    ENDIF
+NEXT Index
+
+OUTPUT "Highest: " & Highest
+IF HasSecond THEN
+    OUTPUT "Second: " & Second
+ELSE
+    OUTPUT "No second highest"
+ENDIF`,
+    solutionExplanation: 'The scan maintains the highest value and the best value strictly below it. Duplicate highest scores do not update the second highest because the question asks for a distinct value.',
+    testCases: [
+      { inputs: ['6', '7', '9', '9', '3', '6', '7'], expectedOutput: 'Highest: 9\nSecond: 7', description: 'Duplicate highest score', sortOrder: 0 },
+      { inputs: ['4', '5', '5', '5', '5'], expectedOutput: 'Highest: 5\nNo second highest', description: 'All values equal', sortOrder: 1 },
+      { inputs: ['5', '-2', '-7', '-1', '-1', '-3'], expectedOutput: 'Highest: -1\nSecond: -2', description: 'Negative scores', sortOrder: 2, isHidden: true },
+      { inputs: ['3', '10', '4', '8'], expectedOutput: 'Highest: 10\nSecond: 8', description: 'Highest appears first', sortOrder: 3, isHidden: true },
+    ],
+  },
+
+  {
+    title: 'Longest Hot Streak',
+    description: `Read 7 daily temperatures into an array.
+
+Output the length of the longest consecutive streak where the temperature is greater than 30.
+
+**Input:** Seven integer temperatures.
+**Output:** One integer, the longest hot streak.
+
+**Example:**
+\`\`\`
+Input:  29
+        31
+        33
+        28
+        35
+        36
+        37
+Output: 3
+\`\`\``,
+    difficulty: 'MEDIUM' as const,
+    topic: 'Arrays',
+    tags: ['Original Practice', 'Arrays', 'Streaks', 'Counting', 'Max Tracking'],
+    marks: 7,
+    starterCode: `DECLARE Temps : ARRAY[1:7] OF INTEGER
+DECLARE Day, CurrentStreak, BestStreak : INTEGER
+
+// Read the temperatures, then find the longest run greater than 30`,
+    hints: [
+      'Use CurrentStreak to count the current run of hot days.',
+      'When a temperature is not greater than 30, reset CurrentStreak to 0.',
+      'Each time CurrentStreak increases, compare it with BestStreak.',
+    ],
+    solution: `DECLARE Temps : ARRAY[1:7] OF INTEGER
+DECLARE Day, CurrentStreak, BestStreak : INTEGER
+
+FOR Day <- 1 TO 7
+    INPUT Temps[Day]
+NEXT Day
+
+CurrentStreak <- 0
+BestStreak <- 0
+
+FOR Day <- 1 TO 7
+    IF Temps[Day] > 30 THEN
+        CurrentStreak <- CurrentStreak + 1
+        IF CurrentStreak > BestStreak THEN
+            BestStreak <- CurrentStreak
+        ENDIF
+    ELSE
+        CurrentStreak <- 0
+    ENDIF
+NEXT Day
+
+OUTPUT BestStreak`,
+    solutionExplanation: 'A current streak counts consecutive temperatures above 30. It resets whenever a non-hot day is found, while BestStreak stores the maximum length seen so far.',
+    testCases: [
+      { inputs: ['29', '31', '33', '28', '35', '36', '37'], expectedOutput: '3', description: 'Best streak at the end', sortOrder: 0 },
+      { inputs: ['31', '32', '33', '34', '35', '36', '37'], expectedOutput: '7', description: 'All hot days', sortOrder: 1 },
+      { inputs: ['30', '29', '28', '27', '26', '25', '24'], expectedOutput: '0', description: '30 is not greater than 30', sortOrder: 2 },
+      { inputs: ['40', '41', '20', '42', '43', '44', '10'], expectedOutput: '3', description: 'Middle streak is longer', sortOrder: 3, isHidden: true },
+    ],
+  },
+
+  {
+    title: 'Stock Reorder List',
+    description: `Read five product names and their stock quantities into parallel arrays.
+
+For every product with stock less than 10, output the product name. After checking all products, output the number of products that need reordering.
+
+**Input:** Five pairs: product name, then stock quantity.
+**Output:** Product names below 10, then Total: followed by the reorder count.
+
+**Example:**
+\`\`\`
+Input:  Pens
+        4
+        Books
+        12
+        Rulers
+        9
+        Bags
+        10
+        Glue
+        2
+Output: Pens
+        Rulers
+        Glue
+        Total: 3
+\`\`\``,
+    difficulty: 'MEDIUM' as const,
+    topic: 'Arrays',
+    tags: ['Original Practice', 'Parallel Arrays', 'Counting', 'Filtering', 'Stock Control'],
+    marks: 8,
+    starterCode: `DECLARE Names : ARRAY[1:5] OF STRING
+DECLARE Stock : ARRAY[1:5] OF INTEGER
+DECLARE Index, ReorderCount : INTEGER
+
+// Read product names and stock values into parallel arrays`,
+    hints: [
+      'Use the same index to store each product name and its stock quantity.',
+      'A second loop can inspect each stock value and output the matching name when it is less than 10.',
+      'Increase ReorderCount only when a product is output.',
+    ],
+    solution: `DECLARE Names : ARRAY[1:5] OF STRING
+DECLARE Stock : ARRAY[1:5] OF INTEGER
+DECLARE Index, ReorderCount : INTEGER
+
+FOR Index <- 1 TO 5
+    INPUT Names[Index]
+    INPUT Stock[Index]
+NEXT Index
+
+ReorderCount <- 0
+
+FOR Index <- 1 TO 5
+    IF Stock[Index] < 10 THEN
+        OUTPUT Names[Index]
+        ReorderCount <- ReorderCount + 1
+    ENDIF
+NEXT Index
+
+OUTPUT "Total: " & ReorderCount`,
+    solutionExplanation: 'Parallel arrays keep each product name at the same index as its stock quantity. The second loop filters products below the reorder level and counts them.',
+    testCases: [
+      { inputs: ['Pens', '4', 'Books', '12', 'Rulers', '9', 'Bags', '10', 'Glue', '2'], expectedOutput: 'Pens\nRulers\nGlue\nTotal: 3', description: 'Some products below reorder level', sortOrder: 0 },
+      { inputs: ['A', '10', 'B', '11', 'C', '12', 'D', '13', 'E', '14'], expectedOutput: 'Total: 0', description: 'No products below 10', sortOrder: 1 },
+      { inputs: ['A', '0', 'B', '1', 'C', '2', 'D', '3', 'E', '4'], expectedOutput: 'A\nB\nC\nD\nE\nTotal: 5', description: 'All products need reordering', sortOrder: 2, isHidden: true },
+    ],
+  },
+
+  {
+    title: 'Date Validator With Leap Years',
+    description: `Read a day, month, and year. Output Valid if the date exists, otherwise output Invalid.
+
+February has 29 days in a leap year and 28 days otherwise. A leap year is divisible by 400, or divisible by 4 but not divisible by 100.
+
+**Input:** Day, month, then year.
+**Output:** Valid or Invalid.
+
+**Example:**
+\`\`\`
+Input:  29
+        2
+        2024
+Output: Valid
+\`\`\``,
+    difficulty: 'HARD' as const,
+    topic: 'Validation',
+    tags: ['Original Practice', 'Validation', 'Leap Year', 'Functions', 'Boundary Cases'],
+    marks: 10,
+    starterCode: `FUNCTION IsLeapYear(Year : INTEGER) RETURNS BOOLEAN
+    // Return TRUE when Year is a leap year
+ENDFUNCTION
+
+DECLARE Day, Month, Year, MaxDay : INTEGER
+DECLARE Valid : BOOLEAN
+
+INPUT Day
+INPUT Month
+INPUT Year
+
+// Work out the maximum valid day for the month, then validate Day`,
+    hints: [
+      'Write a Boolean function for the leap-year rule so the main program stays readable.',
+      'Reject months outside 1 to 12 before trying to calculate the maximum day.',
+      'April, June, September, and November have 30 days. February depends on IsLeapYear.',
+    ],
+    solution: `FUNCTION IsLeapYear(Year : INTEGER) RETURNS BOOLEAN
+    IF MOD(Year, 400) = 0 THEN
+        RETURN TRUE
+    ELSEIF MOD(Year, 100) = 0 THEN
+        RETURN FALSE
+    ELSEIF MOD(Year, 4) = 0 THEN
+        RETURN TRUE
+    ELSE
+        RETURN FALSE
+    ENDIF
+ENDFUNCTION
+
+DECLARE Day, Month, Year, MaxDay : INTEGER
+DECLARE Valid : BOOLEAN
+
+INPUT Day
+INPUT Month
+INPUT Year
+
+Valid <- TRUE
+MaxDay <- 31
+
+IF Month < 1 OR Month > 12 THEN
+    Valid <- FALSE
+ELSE
+    IF Month = 4 OR Month = 6 OR Month = 9 OR Month = 11 THEN
+        MaxDay <- 30
+    ELSEIF Month = 2 THEN
+        IF IsLeapYear(Year) THEN
+            MaxDay <- 29
+        ELSE
+            MaxDay <- 28
+        ENDIF
+    ELSE
+        MaxDay <- 31
+    ENDIF
+
+    IF Day < 1 OR Day > MaxDay THEN
+        Valid <- FALSE
+    ENDIF
+ENDIF
+
+IF Valid THEN
+    OUTPUT "Valid"
+ELSE
+    OUTPUT "Invalid"
+ENDIF`,
+    solutionExplanation: 'The leap-year logic is isolated in a function. The main program rejects invalid months, selects the correct maximum day for the month, then checks that the day is within range.',
+    testCases: [
+      { inputs: ['29', '2', '2024'], expectedOutput: 'Valid', description: 'Leap day in a leap year', sortOrder: 0 },
+      { inputs: ['29', '2', '2023'], expectedOutput: 'Invalid', description: 'Leap day in a normal year', sortOrder: 1 },
+      { inputs: ['31', '4', '2025'], expectedOutput: 'Invalid', description: 'April has 30 days', sortOrder: 2 },
+      { inputs: ['31', '12', '2025'], expectedOutput: 'Valid', description: '31-day month', sortOrder: 3, isHidden: true },
+      { inputs: ['1', '13', '2025'], expectedOutput: 'Invalid', description: 'Invalid month', sortOrder: 4, isHidden: true },
+      { inputs: ['29', '2', '1900'], expectedOutput: 'Invalid', description: 'Century not divisible by 400', sortOrder: 5, isHidden: true },
+    ],
+  },
+
+  {
+    title: 'Tic-Tac-Toe Winner',
+    description: `Read a 3 by 3 board and output the winner.
+
+Each input row contains three characters. X and O are player marks, and - is an empty square. Output X or O if that player has a complete row, column, or diagonal. Otherwise output Draw.
+
+**Input:** Three strings, each with three characters.
+**Output:** X, O, or Draw.
+
+**Example:**
+\`\`\`
+Input:  XO-
+        OX-
+        --X
+Output: X
+\`\`\``,
+    difficulty: 'HARD' as const,
+    topic: '2D Arrays',
+    tags: ['Original Practice', '2D Arrays', 'Grid Scan', 'Nested Loops', 'Game Logic'],
+    marks: 12,
+    starterCode: `DECLARE Board : ARRAY[1:3, 1:3] OF STRING
+DECLARE Line, Winner : STRING
+DECLARE Row, Col : INTEGER
+
+// Read the board into a 2D array and check rows, columns, and diagonals`,
+    hints: [
+      'Use SUBSTRING(Line, Col, 1) to store each character in Board[Row, Col].',
+      'Check that all three cells in a line are equal and not "-".',
+      'Rows and columns can be checked in loops. The two diagonals need separate checks.',
+    ],
+    solution: `DECLARE Board : ARRAY[1:3, 1:3] OF STRING
+DECLARE Line, Winner : STRING
+DECLARE Row, Col : INTEGER
+
+FOR Row <- 1 TO 3
+    INPUT Line
+    FOR Col <- 1 TO 3
+        Board[Row, Col] <- SUBSTRING(Line, Col, 1)
+    NEXT Col
+NEXT Row
+
+Winner <- ""
+
+FOR Row <- 1 TO 3
+    IF Board[Row, 1] <> "-" AND Board[Row, 1] = Board[Row, 2] AND Board[Row, 2] = Board[Row, 3] THEN
+        Winner <- Board[Row, 1]
+    ENDIF
+NEXT Row
+
+FOR Col <- 1 TO 3
+    IF Board[1, Col] <> "-" AND Board[1, Col] = Board[2, Col] AND Board[2, Col] = Board[3, Col] THEN
+        Winner <- Board[1, Col]
+    ENDIF
+NEXT Col
+
+IF Board[1, 1] <> "-" AND Board[1, 1] = Board[2, 2] AND Board[2, 2] = Board[3, 3] THEN
+    Winner <- Board[1, 1]
+ENDIF
+
+IF Board[1, 3] <> "-" AND Board[1, 3] = Board[2, 2] AND Board[2, 2] = Board[3, 1] THEN
+    Winner <- Board[1, 3]
+ENDIF
+
+IF Winner = "" THEN
+    OUTPUT "Draw"
+ELSE
+    OUTPUT Winner
+ENDIF`,
+    solutionExplanation: 'The board is stored in a 2D array. The solution checks rows, columns, and both diagonals for three equal non-empty marks, then outputs the winner or Draw.',
+    testCases: [
+      { inputs: ['XO-', 'OX-', '--X'], expectedOutput: 'X', description: 'Main diagonal win', sortOrder: 0 },
+      { inputs: ['OOO', 'XX-', '---'], expectedOutput: 'O', description: 'Row win', sortOrder: 1 },
+      { inputs: ['XOX', 'OXO', 'OXO'], expectedOutput: 'Draw', description: 'No winning line', sortOrder: 2 },
+      { inputs: ['-OX', '-OX', '-O-'], expectedOutput: 'O', description: 'Column win', sortOrder: 3, isHidden: true },
+      { inputs: ['--X', '-X-', 'XOO'], expectedOutput: 'X', description: 'Anti-diagonal win', sortOrder: 4, isHidden: true },
+    ],
+  },
+
+  {
+    title: 'Log File Error Summary',
+    description: `Read N log entries, write them to a file called log.txt, then read the file back and count the entry types.
+
+Each log entry starts with one of these letters:
+
+- E for error
+- W for warning
+- I for information
+
+Output the number of errors, warnings, and information entries.
+
+**Input:** N followed by N log entry strings.
+**Output:** Three summary lines.
+
+**Example:**
+\`\`\`
+Input:  4
+        E Disk full
+        W Low memory
+        I Start
+        E Timeout
+Output: Errors: 2
+        Warnings: 1
+        Info: 1
+\`\`\``,
+    difficulty: 'HARD' as const,
+    topic: 'File Handling',
+    tags: ['Original Practice', 'File Handling', 'Counting', 'String Prefix', 'EOF Loop'],
+    marks: 10,
+    starterCode: `DECLARE Count, Index, Errors, Warnings, Info : INTEGER
+DECLARE Line, Prefix : STRING
+
+INPUT Count
+
+// Write the log entries to log.txt, then read them back and count their prefixes`,
+    hints: [
+      'The first phase opens log.txt FOR WRITE and writes each input line.',
+      'The second phase opens the same file FOR READ and loops WHILE NOT EOF("log.txt").',
+      'Use SUBSTRING(Line, 1, 1) to inspect the first character of each log entry.',
+    ],
+    solution: `DECLARE Count, Index, Errors, Warnings, Info : INTEGER
+DECLARE Line, Prefix : STRING
+
+INPUT Count
+
+OPENFILE "log.txt" FOR WRITE
+FOR Index <- 1 TO Count
+    INPUT Line
+    WRITEFILE "log.txt", Line
+NEXT Index
+CLOSEFILE "log.txt"
+
+Errors <- 0
+Warnings <- 0
+Info <- 0
+
+OPENFILE "log.txt" FOR READ
+WHILE NOT EOF("log.txt") DO
+    READFILE "log.txt", Line
+    Prefix <- SUBSTRING(Line, 1, 1)
+
+    IF Prefix = "E" THEN
+        Errors <- Errors + 1
+    ELSEIF Prefix = "W" THEN
+        Warnings <- Warnings + 1
+    ELSEIF Prefix = "I" THEN
+        Info <- Info + 1
+    ENDIF
+ENDWHILE
+CLOSEFILE "log.txt"
+
+OUTPUT "Errors: " & Errors
+OUTPUT "Warnings: " & Warnings
+OUTPUT "Info: " & Info`,
+    solutionExplanation: 'The file is written first so the solution practises both WRITEFILE and READFILE. The read loop uses EOF and counts each line according to its first character.',
+    testCases: [
+      { inputs: ['4', 'E Disk full', 'W Low memory', 'I Start', 'E Timeout'], expectedOutput: 'Errors: 2\nWarnings: 1\nInfo: 1', description: 'Mixed log entries', sortOrder: 0 },
+      { inputs: ['3', 'I Start', 'I Ready', 'I Stop'], expectedOutput: 'Errors: 0\nWarnings: 0\nInfo: 3', description: 'Only information entries', sortOrder: 1 },
+      { inputs: ['5', 'W One', 'E Two', 'W Three', 'E Four', 'W Five'], expectedOutput: 'Errors: 2\nWarnings: 3\nInfo: 0', description: 'No info entries', sortOrder: 2, isHidden: true },
+    ],
+  },
 ];
 
 // ─── Main seed function ────────────────────────────────────────────────────────
