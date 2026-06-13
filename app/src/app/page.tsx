@@ -22,10 +22,11 @@ export default function Home() {
       >
         <div className="flex items-center gap-2 min-w-0">
           <h1 className="text-xs font-semibold text-light-text whitespace-nowrap">
-            IGCSE Pseudocode Compiler
+            IGCSE and AS &amp; A Level Pseudocode Compiler
           </h1>
           <span className="sr-only">
-            — Free online editor &amp; runner for Cambridge Computer Science · 0478 · 0984 · 2210 · 9618
+            — Free online editor &amp; runner for Cambridge IGCSE Computer Science and Cambridge
+            International AS &amp; A Level Computer Science (9618) · 0478 · 0984 · 2210 · 9618
           </span>
         </div>
 

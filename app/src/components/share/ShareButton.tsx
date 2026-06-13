@@ -39,10 +39,10 @@ export default function ShareButton({
 
   const studentText =
     shareText ??
-    `If you're studying IGCSE Computer Science, this free pseudocode compiler is worth checking out.\n${SITE_URL}`;
+    `If you're studying Cambridge IGCSE or AS & A Level Computer Science, this free pseudocode compiler is worth checking out.\n${SITE_URL}`;
 
   const teacherText =
-    `Free tool for IGCSE Computer Science students — write and run Cambridge pseudocode right in the browser, with practice questions and timed exams:\n${SITE_URL}`;
+    `Free tool for Cambridge IGCSE and AS & A Level Computer Science students — write and run Cambridge pseudocode right in the browser, with practice questions and timed exams:\n${SITE_URL}`;
 
   function track(method: string) {
     ph?.capture('share_clicked', { method, context: headline ?? 'generic' });
@@ -51,7 +51,7 @@ export default function ShareButton({
   async function handleNativeShare() {
     track('native');
     try {
-      await navigator.share({ title: 'IGCSE Pseudocode Compiler', text: studentText, url: SITE_URL });
+      await navigator.share({ title: 'IGCSE & AS/A Level Pseudocode Compiler', text: studentText, url: SITE_URL });
       ph?.capture('share_completed', { method: 'native' });
     } catch {
       // user cancelled or not supported — fall through silently

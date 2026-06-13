@@ -1260,10 +1260,10 @@ FOR i <- 1 TO 10
 NEXT i`,
   },
 
-  // A Level (9618)
+  // AS & A Level (9618)
   {
     title: 'Records (TYPE ... ENDTYPE)',
-    category: 'A Level (9618)',
+    category: 'AS & A Level (9618)',
     code: `// A record groups related data under one identifier
 TYPE StudentRecord
     DECLARE LastName : STRING
@@ -1289,7 +1289,7 @@ OUTPUT Pupil2.FirstName, " ", Pupil2.LastName, " (", Pupil2.YearGroup, Pupil2.Fo
   },
   {
     title: 'Enumerated Types & Pointers',
-    category: 'A Level (9618)',
+    category: 'AS & A Level (9618)',
     code: `// Enumerated type: a fixed list of named values
 TYPE Season = (Spring, Summer, Autumn, Winter)
 
@@ -1315,7 +1315,7 @@ OUTPUT "Now: ", ThisSeason`,
   },
   {
     title: 'BYREF and BYVAL Parameters',
-    category: 'A Level (9618)',
+    category: 'AS & A Level (9618)',
     code: `// BYREF passes a reference: the procedure changes the caller's variables.
 // BYREF applies to the following parameters too, until BYVAL appears.
 PROCEDURE SWAP(BYREF X : INTEGER, Y : INTEGER)
@@ -1336,7 +1336,7 @@ OUTPUT "After:  a = ", a, ", b = ", b`,
   },
   {
     title: 'CASE with Ranges',
-    category: 'A Level (9618)',
+    category: 'AS & A Level (9618)',
     code: `DECLARE Mark : INTEGER
 OUTPUT "Enter a mark (0-100):"
 INPUT Mark
@@ -1350,7 +1350,7 @@ ENDCASE`,
   },
   {
     title: 'Random-Access Files',
-    category: 'A Level (9618)',
+    category: 'AS & A Level (9618)',
     code: `// Random files store fixed records at numbered positions
 TYPE Student
     DECLARE Name : STRING
@@ -1377,7 +1377,7 @@ OUTPUT "Found: ", Found.Name, " (Year ", Found.YearGroup, ")"`,
   },
   {
     title: 'Classes & Inheritance (OOP)',
-    category: 'A Level (9618)',
+    category: 'AS & A Level (9618)',
     code: `CLASS Pet
     PRIVATE Name : STRING
 
@@ -1405,5 +1405,253 @@ ENDCLASS
 
 MyCat <- NEW Cat("Kitty", "Shorthaired")
 OUTPUT MyCat.Describe()`,
+  },
+  {
+    title: 'May/June 2024 Paper 41 - Sort and Search',
+    category: 'AS & A Level (9618)',
+    code: `DECLARE DataStored : ARRAY[0:19] OF INTEGER
+DECLARE NumberItems : INTEGER
+
+PROCEDURE Initialise()
+    DECLARE Count : INTEGER
+    REPEAT
+        OUTPUT "How many numbers will you enter?"
+        INPUT NumberItems
+    UNTIL NumberItems > 0 AND NumberItems < 21
+
+    FOR Count <- 0 TO NumberItems - 1
+        OUTPUT "Enter number"
+        INPUT DataStored[Count]
+    NEXT Count
+ENDPROCEDURE
+
+PROCEDURE BubbleSort()
+    DECLARE Count, Count2, Temp : INTEGER
+    FOR Count <- 0 TO NumberItems - 2
+        FOR Count2 <- 0 TO NumberItems - Count - 2
+            IF DataStored[Count2] > DataStored[Count2 + 1] THEN
+                Temp <- DataStored[Count2]
+                DataStored[Count2] <- DataStored[Count2 + 1]
+                DataStored[Count2 + 1] <- Temp
+            ENDIF
+        NEXT Count2
+    NEXT Count
+ENDPROCEDURE
+
+FUNCTION BinarySearch(DataToFind : INTEGER) RETURNS INTEGER
+    DECLARE First, Last, MidValue : INTEGER
+    First <- 0
+    Last <- NumberItems - 1
+
+    WHILE First <= Last DO
+        MidValue <- DIV(First + Last, 2)
+        IF DataStored[MidValue] = DataToFind THEN
+            RETURN MidValue
+        ELSE
+            IF DataToFind < DataStored[MidValue] THEN
+                Last <- MidValue - 1
+            ELSE
+                First <- MidValue + 1
+            ENDIF
+        ENDIF
+    ENDWHILE
+
+    RETURN -1
+ENDFUNCTION
+
+CALL Initialise()
+CALL BubbleSort()
+OUTPUT "Index: ", BinarySearch(7)`,
+  },
+  {
+    title: 'May/June 2024 Paper 41 - Tree Class',
+    category: 'AS & A Level (9618)',
+    code: `CLASS Tree
+    PRIVATE TreeName : STRING
+    PRIVATE HeightGrowth : INTEGER
+    PRIVATE MaxHeight : INTEGER
+    PRIVATE MaxWidth : INTEGER
+    PRIVATE Evergreen : STRING
+
+    PUBLIC PROCEDURE NEW(Name : STRING, HGrowth : INTEGER, MaxH : INTEGER, MaxW : INTEGER, PEvergreen : STRING)
+        TreeName <- Name
+        HeightGrowth <- HGrowth
+        MaxHeight <- MaxH
+        MaxWidth <- MaxW
+        Evergreen <- PEvergreen
+    ENDPROCEDURE
+
+    PUBLIC FUNCTION GetTreeName() RETURNS STRING
+        RETURN TreeName
+    ENDFUNCTION
+
+    PUBLIC FUNCTION GetGrowth() RETURNS INTEGER
+        RETURN HeightGrowth
+    ENDFUNCTION
+
+    PUBLIC FUNCTION GetMaxHeight() RETURNS INTEGER
+        RETURN MaxHeight
+    ENDFUNCTION
+
+    PUBLIC FUNCTION GetMaxWidth() RETURNS INTEGER
+        RETURN MaxWidth
+    ENDFUNCTION
+
+    PUBLIC FUNCTION GetEvergreen() RETURNS STRING
+        RETURN Evergreen
+    ENDFUNCTION
+ENDCLASS
+
+PROCEDURE PrintTree(Item : Tree)
+    DECLARE Final : STRING
+    Final <- "does not lose its leaves"
+    IF Item.GetEvergreen() = "No" THEN
+        Final <- "loses its leaves each year"
+    ENDIF
+
+    OUTPUT Item.GetTreeName(), " has a maximum height ", Item.GetMaxHeight(), " a maximum width ", Item.GetMaxWidth(), " and grows ", Item.GetGrowth(), " cm a year. It ", Final
+ENDPROCEDURE
+
+Oak <- NEW Tree("Oak", 30, 20, 12, "No")
+CALL PrintTree(Oak)`,
+  },
+  {
+    title: 'May/June 2024 Paper 41 - Linear Queue',
+    category: 'AS & A Level (9618)',
+    code: `DECLARE QueueData : ARRAY[0:19] OF STRING
+DECLARE QueueHead : INTEGER
+DECLARE QueueTail : INTEGER
+
+QueueHead <- -1
+QueueTail <- -1
+
+FUNCTION Enqueue(DataToInsert : STRING) RETURNS BOOLEAN
+    IF QueueTail = 19 THEN
+        RETURN FALSE
+    ENDIF
+
+    IF QueueHead = -1 THEN
+        QueueHead <- 0
+    ENDIF
+
+    QueueTail <- QueueTail + 1
+    QueueData[QueueTail] <- DataToInsert
+    RETURN TRUE
+ENDFUNCTION
+
+FUNCTION Dequeue() RETURNS STRING
+    DECLARE Item : STRING
+    IF QueueHead = -1 OR QueueHead > QueueTail THEN
+        RETURN "false"
+    ENDIF
+
+    Item <- QueueData[QueueHead]
+    QueueHead <- QueueHead + 1
+    RETURN Item
+ENDFUNCTION
+
+OUTPUT Enqueue("Oak")
+OUTPUT Enqueue("Pine")
+OUTPUT Dequeue()
+OUTPUT Dequeue()
+OUTPUT Dequeue()`,
+  },
+  {
+    title: 'May/June 2024 Paper 21 - Odd and Even Index Totals',
+    category: 'AS & A Level (9618)',
+    code: `DECLARE Data : ARRAY[1:10] OF INTEGER
+
+FUNCTION Check() RETURNS STRING
+    DECLARE Odd, Even, Index : INTEGER
+    Odd <- 0
+    Even <- 0
+
+    FOR Index <- 1 TO 10
+        IF MOD(Index, 2) = 0 THEN
+            Even <- Even + Data[Index]
+        ELSE
+            Odd <- Odd + Data[Index]
+        ENDIF
+    NEXT Index
+
+    IF Odd > Even THEN
+        RETURN "Odd"
+    ELSE
+        IF Even > Odd THEN
+            RETURN "Even"
+        ELSE
+            RETURN "Same"
+        ENDIF
+    ENDIF
+ENDFUNCTION`,
+  },
+  {
+    title: 'May/June 2024 Paper 21 - Right-Angled Triangle',
+    category: 'AS & A Level (9618)',
+    code: `FUNCTION ISRA(x1 : INTEGER, y1 : INTEGER, x2 : INTEGER, y2 : INTEGER, x3 : INTEGER, y3 : INTEGER) RETURNS BOOLEAN
+    DECLARE Len1, Len2, Len3 : INTEGER
+    Len1 <- (x1 - x2)^2 + (y1 - y2)^2
+    Len2 <- (x1 - x3)^2 + (y1 - y3)^2
+    Len3 <- (x2 - x3)^2 + (y2 - y3)^2
+
+    IF (Len1 = Len2 + Len3) OR (Len2 = Len1 + Len3) OR (Len3 = Len1 + Len2) THEN
+        RETURN TRUE
+    ELSE
+        RETURN FALSE
+    ENDIF
+ENDFUNCTION
+
+OUTPUT ISRA(0, 0, 3, 0, 0, 4)`,
+  },
+  {
+    title: 'May/June 2024 Paper 21 - Remove Comments from a File',
+    category: 'AS & A Level (9618)',
+    code: `FUNCTION DeleteComment(Line : STRING) RETURNS STRING
+    DECLARE NewLine, TwoChars : STRING
+    DECLARE Count, TrimTo : INTEGER
+    CONSTANT Comment <- "//"
+
+    NewLine <- Line
+    TrimTo <- 0
+    Count <- 1
+
+    WHILE Count < LENGTH(Line) AND TrimTo = 0 DO
+        TwoChars <- MID(Line, Count, 2)
+        IF TwoChars = Comment THEN
+            TrimTo <- Count
+        ENDIF
+        Count <- Count + 1
+    ENDWHILE
+
+    IF TrimTo <> 0 THEN
+        NewLine <- LEFT(Line, TrimTo - 1)
+    ENDIF
+
+    RETURN NewLine
+ENDFUNCTION
+
+FUNCTION Stage_1(StudentName : STRING) RETURNS INTEGER
+    DECLARE OldFile, NewFile, Line : STRING
+    DECLARE Count : INTEGER
+
+    OldFile <- StudentName & "_src.txt"
+    NewFile <- StudentName & "_S1.txt"
+    OPENFILE OldFile FOR READ
+    OPENFILE NewFile FOR WRITE
+
+    Count <- 0
+    WHILE NOT EOF(OldFile) DO
+        READFILE OldFile, Line
+        Line <- DeleteComment(Line)
+        IF LENGTH(Line) <> 0 THEN
+            WRITEFILE NewFile, Line
+            Count <- Count + 1
+        ENDIF
+    ENDWHILE
+
+    CLOSEFILE OldFile
+    CLOSEFILE NewFile
+    RETURN Count
+ENDFUNCTION`,
   },
 ];

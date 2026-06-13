@@ -272,9 +272,9 @@ const DocsPage = () => {
           <div className="pt-6 pb-4">
             <h1 className="text-xl font-bold text-light-text">Cambridge Pseudocode Reference</h1>
             <p className="text-sm text-dark-text mt-1">
-              Complete language reference for Cambridge IGCSE (0478) and AS &amp; A Level (9618) pseudocode.
-              IGCSE syntax is a subset — everything below works for both courses unless marked{' '}
-              <span className="text-primary font-medium">A Level</span>.
+              Complete language reference for Cambridge IGCSE (0478) and Cambridge International AS &amp; A
+              Level Computer Science (9618) pseudocode. IGCSE syntax is a subset — everything below works
+              for both courses unless marked <span className="text-primary font-medium">AS &amp; A Level</span>.
             </p>
           </div>
 
@@ -1011,13 +1011,30 @@ CLOSEFILE "log.txt"`}
           />
 
           {/* ──────────────────────────────────────────────── */}
-          {/*  A Level (9618)                                  */}
+          {/*  AS & A Level (9618)                             */}
           {/* ──────────────────────────────────────────────── */}
-          <H2 id="alevel">A Level (9618) Extensions</H2>
+          <H2 id="alevel">Cambridge International AS &amp; A Level Computer Science (9618)</H2>
+
+          <H3 id="alevel-overview">Course Overview</H3>
           <p className="text-sm text-dark-text mb-2">
-            The AS &amp; A Level (9618) course extends IGCSE pseudocode with user-defined types, reference
+            Cambridge International AS &amp; A Level Computer Science (9618) develops computational thinking
+            and programming skills for higher education computer science courses and twenty-first century
+            digital employers. It asks learners to apply practical programming solutions, think creatively,
+            analytically, logically and critically, and consider ethical issues raised by current and
+            emerging computing technologies.
+          </p>
+          <p className="text-sm text-dark-text mb-2">
+            The 9618 pseudocode guide extends IGCSE pseudocode with user-defined types, reference
             parameters, random-access files and object-oriented programming. All of these run in this
             compiler — IGCSE students can simply ignore them.
+          </p>
+
+          <H3 id="alevel-syllabus">Syllabus Materials</H3>
+          <p className="text-sm text-dark-text mb-2">
+            The syllabus year refers to the year in which the examination will be taken. Cambridge 9618
+            materials include the 2024-2025 syllabus and update, the 2026 syllabus and update, the 2026
+            Pseudocode Guide for Teachers, the 2027-2029 syllabus and update, the 2027-2029 Pseudocode
+            Guide, and the 2023-2025 AS and A Level grade descriptions.
           </p>
 
           <H3 id="alevel-types">User-Defined Types</H3>
@@ -1165,7 +1182,7 @@ Player.SetAttempts(5)              // method call
 OUTPUT Player.GetAttempts()        // method in an expression`}
           />
           <p className="text-sm text-dark-text mt-2">
-            Note: the A Level keywords (<Kw>TYPE</Kw>, <Kw>SET</Kw>, <Kw>DATE</Kw>, <Kw>NEW</Kw>,{' '}
+            Note: the AS &amp; A Level keywords (<Kw>TYPE</Kw>, <Kw>SET</Kw>, <Kw>DATE</Kw>, <Kw>NEW</Kw>,{' '}
             <Kw>CLASS</Kw>, <Kw>RANDOM</Kw>, …) still work as ordinary variable names —{' '}
             <Kw>DECLARE Date : STRING</Kw> or <Kw>DECLARE Class : STRING</Kw> are fine. Only{' '}
             <Kw>SUPER</Kw>, <Kw>ENDTYPE</Kw>, <Kw>ENDCLASS</Kw> and the original IGCSE keywords

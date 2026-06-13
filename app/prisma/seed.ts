@@ -5921,6 +5921,832 @@ OUTPUT "18 and over: " & Count18Over`,
       { inputs: ['6', '6', '11', '12', '17', '18', '8'], expectedOutput: 'Under 7: 1\n7 to 11: 2\n12 to 17: 2\n18 and over: 1', description: 'Boundary values',               sortOrder: 4, isHidden: true },
     ],
   },
+
+  // ═══ CAMBRIDGE AS & A LEVEL 9618 MAY/JUNE 2024 ═══════════════════════════
+
+  {
+    title: '9618 Paper 41: Initialise DataStored',
+    description: `Adapted from Cambridge International AS & A Level Computer Science (9618), May/June 2024 Paper 41, Question 1.
+
+Declare a global 1D array \`DataStored\` with space for up to 20 integers and a global variable \`NumberItems\`.
+
+Write procedure \`Initialise()\` to:
+
+- input \`NumberItems\`
+- validate that it is between 1 and 20 inclusive
+- input and store that many integers in \`DataStored\`
+
+The main program must set \`NumberItems\` to 0, call \`Initialise()\`, then output \`NumberItems\` followed by the stored values in order.
+
+**Input:** Quantity of numbers, then each number. Invalid quantities may appear before a valid one.
+**Output:** \`NumberItems\`, then each stored value on a new line.
+
+**Example:**
+\`\`\`
+Input:  5
+        10
+        4
+        7
+        2
+        9
+Output: 5
+        10
+        4
+        7
+        2
+        9
+\`\`\``,
+    difficulty: 'MEDIUM' as const,
+    topic: 'Arrays',
+    tags: ['AS & A Level', '9618', 'May/June 2024', 'Paper 41', 'Arrays', 'Validation'],
+    year: 2024,
+    session: 'May/June',
+    variant: 1,
+    paper: '9618/41',
+    questionNumber: 1,
+    part: 'b/c',
+    starterCode: `DECLARE DataStored : ARRAY[0:19] OF INTEGER
+DECLARE NumberItems : INTEGER
+
+PROCEDURE Initialise()
+    // Input and validate NumberItems
+    // Then input NumberItems integers into DataStored
+ENDPROCEDURE
+
+DECLARE Index : INTEGER
+
+NumberItems <- 0
+CALL Initialise()
+
+OUTPUT NumberItems
+FOR Index <- 0 TO NumberItems - 1
+    OUTPUT DataStored[Index]
+NEXT Index`,
+    hints: [
+      'Use a REPEAT...UNTIL loop to keep asking for NumberItems until it is between 1 and 20 inclusive.',
+      'After validation, use a FOR loop from 0 to NumberItems - 1 and INPUT DataStored[Count].',
+      'DataStored and NumberItems are declared globally, so the procedure can use them directly.',
+    ],
+    solution: `DECLARE DataStored : ARRAY[0:19] OF INTEGER
+DECLARE NumberItems : INTEGER
+
+PROCEDURE Initialise()
+    DECLARE Count : INTEGER
+
+    REPEAT
+        INPUT NumberItems
+    UNTIL NumberItems > 0 AND NumberItems < 21
+
+    FOR Count <- 0 TO NumberItems - 1
+        INPUT DataStored[Count]
+    NEXT Count
+ENDPROCEDURE
+
+DECLARE Index : INTEGER
+
+NumberItems <- 0
+CALL Initialise()
+
+OUTPUT NumberItems
+FOR Index <- 0 TO NumberItems - 1
+    OUTPUT DataStored[Index]
+NEXT Index`,
+    solutionExplanation: 'The procedure validates the item count before reading array values. The main program then outputs the count and iterates over the populated portion of the array.',
+    testCases: [
+      { inputs: ['5', '10', '4', '7', '2', '9'], expectedOutput: '5\n10\n4\n7\n2\n9', description: 'Five valid numbers', sortOrder: 0 },
+      { inputs: ['0', '21', '3', '8', '6', '4'], expectedOutput: '3\n8\n6\n4', description: 'Invalid counts rejected before valid count', sortOrder: 1 },
+      { inputs: ['1', '99'], expectedOutput: '1\n99', description: 'Lower boundary', sortOrder: 2, isHidden: true },
+      { inputs: ['4', '-1', '0', '15', '15'], expectedOutput: '4\n-1\n0\n15\n15', description: 'Negative and duplicate data values', sortOrder: 3, isHidden: true },
+    ],
+  },
+
+  {
+    title: '9618 Paper 41: Bubble Sort and Binary Search',
+    description: `Adapted from Cambridge International AS & A Level Computer Science (9618), May/June 2024 Paper 41, Question 1.
+
+The global array \`DataStored\` contains up to 20 integers. Write:
+
+- procedure \`BubbleSort()\` to sort the used part of \`DataStored\` into ascending order
+- iterative function \`BinarySearch(DataToFind)\` to return the zero-based index where the value is found, or \`-1\` if it is not found
+
+The test harness reads \`NumberItems\`, then that many values, then the search value. It calls your sort and search routines, outputs the sorted values, then outputs the search result.
+
+**Input:** Count, values, search value.
+**Output:** Sorted values, then the index returned by \`BinarySearch()\`.
+
+**Example:**
+\`\`\`
+Input:  5
+        4
+        2
+        9
+        1
+        7
+        7
+Output: 1
+        2
+        4
+        7
+        9
+        3
+\`\`\``,
+    difficulty: 'HARD' as const,
+    topic: 'Algorithms',
+    tags: ['AS & A Level', '9618', 'May/June 2024', 'Paper 41', 'Sorting', 'Searching', 'Arrays'],
+    year: 2024,
+    session: 'May/June',
+    variant: 1,
+    paper: '9618/41',
+    questionNumber: 1,
+    part: 'd/e',
+    starterCode: `DECLARE DataStored : ARRAY[0:19] OF INTEGER
+DECLARE NumberItems : INTEGER
+
+PROCEDURE BubbleSort()
+    // Sort DataStored[0] to DataStored[NumberItems - 1]
+ENDPROCEDURE
+
+FUNCTION BinarySearch(DataToFind : INTEGER) RETURNS INTEGER
+    // Return the index of DataToFind, or -1 if not found
+ENDFUNCTION
+
+DECLARE Count : INTEGER
+DECLARE SearchValue : INTEGER
+
+INPUT NumberItems
+FOR Count <- 0 TO NumberItems - 1
+    INPUT DataStored[Count]
+NEXT Count
+INPUT SearchValue
+
+CALL BubbleSort()
+
+FOR Count <- 0 TO NumberItems - 1
+    OUTPUT DataStored[Count]
+NEXT Count
+OUTPUT BinarySearch(SearchValue)`,
+    hints: [
+      'Bubble sort compares adjacent items and swaps them when they are in the wrong order.',
+      'For binary search, initialise First <- 0 and Last <- NumberItems - 1. Repeatedly calculate MidValue using DIV(First + Last, 2).',
+      'If the target is smaller than the middle value, move Last left. If it is larger, move First right. Return -1 after the loop.',
+    ],
+    solution: `DECLARE DataStored : ARRAY[0:19] OF INTEGER
+DECLARE NumberItems : INTEGER
+
+PROCEDURE BubbleSort()
+    DECLARE Count, Count2, Temp : INTEGER
+
+    FOR Count <- 0 TO NumberItems - 2
+        FOR Count2 <- 0 TO NumberItems - Count - 2
+            IF DataStored[Count2] > DataStored[Count2 + 1] THEN
+                Temp <- DataStored[Count2]
+                DataStored[Count2] <- DataStored[Count2 + 1]
+                DataStored[Count2 + 1] <- Temp
+            ENDIF
+        NEXT Count2
+    NEXT Count
+ENDPROCEDURE
+
+FUNCTION BinarySearch(DataToFind : INTEGER) RETURNS INTEGER
+    DECLARE First, Last, MidValue : INTEGER
+
+    First <- 0
+    Last <- NumberItems - 1
+
+    WHILE First <= Last DO
+        MidValue <- DIV(First + Last, 2)
+        IF DataStored[MidValue] = DataToFind THEN
+            RETURN MidValue
+        ELSE
+            IF DataToFind < DataStored[MidValue] THEN
+                Last <- MidValue - 1
+            ELSE
+                First <- MidValue + 1
+            ENDIF
+        ENDIF
+    ENDWHILE
+
+    RETURN -1
+ENDFUNCTION
+
+DECLARE Count : INTEGER
+DECLARE SearchValue : INTEGER
+
+INPUT NumberItems
+FOR Count <- 0 TO NumberItems - 1
+    INPUT DataStored[Count]
+NEXT Count
+INPUT SearchValue
+
+CALL BubbleSort()
+
+FOR Count <- 0 TO NumberItems - 1
+    OUTPUT DataStored[Count]
+NEXT Count
+OUTPUT BinarySearch(SearchValue)`,
+    solutionExplanation: 'The sort repeatedly swaps adjacent out-of-order elements. The binary search then works over the sorted range using first, last and middle pointers.',
+    testCases: [
+      { inputs: ['5', '4', '2', '9', '1', '7', '7'], expectedOutput: '1\n2\n4\n7\n9\n3', description: 'Target found after sorting', sortOrder: 0 },
+      { inputs: ['4', '8', '3', '8', '1', '6'], expectedOutput: '1\n3\n8\n8\n-1', description: 'Target not found', sortOrder: 1 },
+      { inputs: ['1', '42', '42'], expectedOutput: '42\n0', description: 'Single item found', sortOrder: 2, isHidden: true },
+      { inputs: ['6', '-2', '5', '0', '-2', '9', '1', '1'], expectedOutput: '-2\n-2\n0\n1\n5\n9\n3', description: 'Negative values and duplicates', sortOrder: 3, isHidden: true },
+    ],
+  },
+
+  {
+    title: '9618 Paper 41: Tree Class Summary',
+    description: `Adapted from Cambridge International AS & A Level Computer Science (9618), May/June 2024 Paper 41, Question 2.
+
+Declare class \`Tree\` with private attributes:
+
+- \`TreeName\`
+- \`HeightGrowth\`
+- \`MaxHeight\`
+- \`MaxWidth\`
+- \`Evergreen\`
+
+Write the constructor and getter methods. Then write procedure \`PrintTree(Item)\` that outputs a formatted summary. If \`Evergreen\` is \`"No"\`, the final phrase must be \`loses its leaves each year\`; otherwise it must be \`does not lose its leaves\`.
+
+The test harness reads one tree, creates the object, and calls \`PrintTree()\`.
+
+**Input:** Name, growth, maximum height, maximum width, evergreen value.
+**Output:** One formatted sentence.
+
+**Example:**
+\`\`\`
+Input:  Oak
+        30
+        20
+        12
+        No
+Output: Oak has a maximum height 20 a maximum width 12 and grows 30 cm a year. It loses its leaves each year
+\`\`\``,
+    difficulty: 'HARD' as const,
+    topic: 'Object-Oriented Programming',
+    tags: ['AS & A Level', '9618', 'May/June 2024', 'Paper 41', 'Classes', 'OOP'],
+    year: 2024,
+    session: 'May/June',
+    variant: 1,
+    paper: '9618/41',
+    questionNumber: 2,
+    starterCode: `CLASS Tree
+    // Declare private attributes
+
+    PUBLIC PROCEDURE NEW(Name : STRING, HGrowth : INTEGER, MaxH : INTEGER, MaxW : INTEGER, PEvergreen : STRING)
+        // Initialise attributes
+    ENDPROCEDURE
+
+    // Add getter methods
+ENDCLASS
+
+PROCEDURE PrintTree(Item : Tree)
+    // Output the formatted tree summary
+ENDPROCEDURE
+
+DECLARE Name, Evergreen : STRING
+DECLARE Growth, MaxH, MaxW : INTEGER
+
+INPUT Name
+INPUT Growth
+INPUT MaxH
+INPUT MaxW
+INPUT Evergreen
+
+MyTree <- NEW Tree(Name, Growth, MaxH, MaxW, Evergreen)
+CALL PrintTree(MyTree)`,
+    hints: [
+      'Class fields are declared inside CLASS using PRIVATE FieldName : Type.',
+      'Getter functions return the matching private attribute.',
+      'In PrintTree(), set the final phrase to the evergreen message first, then change it if GetEvergreen() = "No".',
+    ],
+    solution: `CLASS Tree
+    PRIVATE TreeName : STRING
+    PRIVATE HeightGrowth : INTEGER
+    PRIVATE MaxHeight : INTEGER
+    PRIVATE MaxWidth : INTEGER
+    PRIVATE Evergreen : STRING
+
+    PUBLIC PROCEDURE NEW(Name : STRING, HGrowth : INTEGER, MaxH : INTEGER, MaxW : INTEGER, PEvergreen : STRING)
+        TreeName <- Name
+        HeightGrowth <- HGrowth
+        MaxHeight <- MaxH
+        MaxWidth <- MaxW
+        Evergreen <- PEvergreen
+    ENDPROCEDURE
+
+    PUBLIC FUNCTION GetTreeName() RETURNS STRING
+        RETURN TreeName
+    ENDFUNCTION
+
+    PUBLIC FUNCTION GetGrowth() RETURNS INTEGER
+        RETURN HeightGrowth
+    ENDFUNCTION
+
+    PUBLIC FUNCTION GetMaxHeight() RETURNS INTEGER
+        RETURN MaxHeight
+    ENDFUNCTION
+
+    PUBLIC FUNCTION GetMaxWidth() RETURNS INTEGER
+        RETURN MaxWidth
+    ENDFUNCTION
+
+    PUBLIC FUNCTION GetEvergreen() RETURNS STRING
+        RETURN Evergreen
+    ENDFUNCTION
+ENDCLASS
+
+PROCEDURE PrintTree(Item : Tree)
+    DECLARE Final : STRING
+
+    Final <- "does not lose its leaves"
+    IF Item.GetEvergreen() = "No" THEN
+        Final <- "loses its leaves each year"
+    ENDIF
+
+    OUTPUT Item.GetTreeName(), " has a maximum height ", Item.GetMaxHeight(), " a maximum width ", Item.GetMaxWidth(), " and grows ", Item.GetGrowth(), " cm a year. It ", Final
+ENDPROCEDURE
+
+DECLARE Name, Evergreen : STRING
+DECLARE Growth, MaxH, MaxW : INTEGER
+
+INPUT Name
+INPUT Growth
+INPUT MaxH
+INPUT MaxW
+INPUT Evergreen
+
+MyTree <- NEW Tree(Name, Growth, MaxH, MaxW, Evergreen)
+CALL PrintTree(MyTree)`,
+    solutionExplanation: 'The class encapsulates its data as private fields and exposes each value through a getter. PrintTree calls those getters and chooses the final phrase based on Evergreen.',
+    testCases: [
+      { inputs: ['Oak', '30', '20', '12', 'No'], expectedOutput: 'Oak has a maximum height 20 a maximum width 12 and grows 30 cm a year. It loses its leaves each year', description: 'Deciduous tree', sortOrder: 0 },
+      { inputs: ['Pine', '25', '30', '8', 'Yes'], expectedOutput: 'Pine has a maximum height 30 a maximum width 8 and grows 25 cm a year. It does not lose its leaves', description: 'Evergreen tree', sortOrder: 1 },
+      { inputs: ['Cedar', '12', '40', '15', 'YES'], expectedOutput: 'Cedar has a maximum height 40 a maximum width 15 and grows 12 cm a year. It does not lose its leaves', description: 'Any value other than No uses evergreen phrase', sortOrder: 2, isHidden: true },
+    ],
+  },
+
+  {
+    title: '9618 Paper 41: Linear Queue Operations',
+    description: `Adapted from Cambridge International AS & A Level Computer Science (9618), May/June 2024 Paper 41, Question 3.
+
+A linear queue stores up to 20 strings in \`QueueData\`. \`QueueHead\` and \`QueueTail\` both start at \`-1\`.
+
+Write:
+
+- function \`Enqueue(DataToInsert)\` to insert data if the queue is not full and return \`TRUE\`; return \`FALSE\` if the queue is full
+- function \`Dequeue()\` to return \`"false"\` if the queue is empty, otherwise return the next item and update the head pointer
+
+The test harness reads a number of operations. Operation \`E\` is followed by a value and must output the result of \`Enqueue()\`. Operation \`D\` must output the result of \`Dequeue()\`.
+
+**Input:** Operation count, then operations.
+**Output:** One line per operation result.
+
+**Example:**
+\`\`\`
+Input:  5
+        E
+        A
+        E
+        B
+        D
+        D
+        D
+Output: TRUE
+        TRUE
+        A
+        B
+        false
+\`\`\``,
+    difficulty: 'HARD' as const,
+    topic: 'Queues',
+    tags: ['AS & A Level', '9618', 'May/June 2024', 'Paper 41', 'Queues', 'Arrays'],
+    year: 2024,
+    session: 'May/June',
+    variant: 1,
+    paper: '9618/41',
+    questionNumber: 3,
+    starterCode: `DECLARE QueueData : ARRAY[0:19] OF STRING
+DECLARE QueueHead : INTEGER
+DECLARE QueueTail : INTEGER
+
+FUNCTION Enqueue(DataToInsert : STRING) RETURNS BOOLEAN
+    // Insert the value if there is space
+ENDFUNCTION
+
+FUNCTION Dequeue() RETURNS STRING
+    // Return "false" if empty, otherwise return next item
+ENDFUNCTION
+
+DECLARE OperationCount, Count : INTEGER
+DECLARE Operation, Value : STRING
+
+QueueHead <- -1
+QueueTail <- -1
+
+INPUT OperationCount
+FOR Count <- 1 TO OperationCount
+    INPUT Operation
+    IF Operation = "E" THEN
+        INPUT Value
+        OUTPUT Enqueue(Value)
+    ELSE
+        OUTPUT Dequeue()
+    ENDIF
+NEXT Count`,
+    hints: [
+      'The queue is full when QueueTail = 19.',
+      'When the first item is inserted, QueueHead must change from -1 to 0.',
+      'Dequeue is empty when QueueHead = -1 or QueueHead > QueueTail. Otherwise return QueueData[QueueHead] and then increment QueueHead.',
+    ],
+    solution: `DECLARE QueueData : ARRAY[0:19] OF STRING
+DECLARE QueueHead : INTEGER
+DECLARE QueueTail : INTEGER
+
+FUNCTION Enqueue(DataToInsert : STRING) RETURNS BOOLEAN
+    IF QueueTail = 19 THEN
+        RETURN FALSE
+    ENDIF
+
+    IF QueueHead = -1 THEN
+        QueueHead <- 0
+    ENDIF
+
+    QueueTail <- QueueTail + 1
+    QueueData[QueueTail] <- DataToInsert
+    RETURN TRUE
+ENDFUNCTION
+
+FUNCTION Dequeue() RETURNS STRING
+    DECLARE Item : STRING
+
+    IF QueueHead = -1 OR QueueHead > QueueTail THEN
+        RETURN "false"
+    ENDIF
+
+    Item <- QueueData[QueueHead]
+    QueueHead <- QueueHead + 1
+    RETURN Item
+ENDFUNCTION
+
+DECLARE OperationCount, Count : INTEGER
+DECLARE Operation, Value : STRING
+
+QueueHead <- -1
+QueueTail <- -1
+
+INPUT OperationCount
+FOR Count <- 1 TO OperationCount
+    INPUT Operation
+    IF Operation = "E" THEN
+        INPUT Value
+        OUTPUT Enqueue(Value)
+    ELSE
+        OUTPUT Dequeue()
+    ENDIF
+NEXT Count`,
+    solutionExplanation: 'The tail pointer advances when data is inserted. The head pointer advances when data is removed. The empty and full checks prevent invalid array access.',
+    testCases: [
+      { inputs: ['5', 'E', 'A', 'E', 'B', 'D', 'D', 'D'], expectedOutput: 'TRUE\nTRUE\nA\nB\nfalse', description: 'Enqueue two, dequeue three', sortOrder: 0 },
+      { inputs: ['3', 'D', 'E', 'Oak', 'D'], expectedOutput: 'false\nTRUE\nOak', description: 'Empty dequeue before insert', sortOrder: 1 },
+      { inputs: ['4', 'E', 'One', 'E', 'Two', 'E', 'Three', 'D'], expectedOutput: 'TRUE\nTRUE\nTRUE\nOne', description: 'FIFO order', sortOrder: 2, isHidden: true },
+      { inputs: ['22', 'E', 'A0', 'E', 'A1', 'E', 'A2', 'E', 'A3', 'E', 'A4', 'E', 'A5', 'E', 'A6', 'E', 'A7', 'E', 'A8', 'E', 'A9', 'E', 'A10', 'E', 'A11', 'E', 'A12', 'E', 'A13', 'E', 'A14', 'E', 'A15', 'E', 'A16', 'E', 'A17', 'E', 'A18', 'E', 'A19', 'E', 'Overflow', 'D'], expectedOutput: 'TRUE\nTRUE\nTRUE\nTRUE\nTRUE\nTRUE\nTRUE\nTRUE\nTRUE\nTRUE\nTRUE\nTRUE\nTRUE\nTRUE\nTRUE\nTRUE\nTRUE\nTRUE\nTRUE\nTRUE\nFALSE\nA0', description: 'Full queue rejects overflow', sortOrder: 3, isHidden: true },
+    ],
+  },
+
+  {
+    title: '9618 Paper 21: Odd and Even Index Totals',
+    description: `Adapted from Cambridge International AS & A Level Computer Science (9618), May/June 2024 Paper 21, Question 4.
+
+A global array \`Data\` stores integer elements. Write function \`Check()\` to total the elements in odd index locations and even index locations. Return:
+
+- \`"Odd"\` if the odd-index total is greater
+- \`"Even"\` if the even-index total is greater
+- \`"Same"\` if the totals are equal
+
+The original exam question uses 100 elements. This practice version uses 10 elements to keep test cases readable.
+
+**Input:** 10 integers for \`Data[1]\` to \`Data[10]\`.
+**Output:** \`Odd\`, \`Even\`, or \`Same\`.
+
+**Example:**
+\`\`\`
+Input:  5
+        1
+        5
+        1
+        5
+        1
+        5
+        1
+        5
+        1
+Output: Odd
+\`\`\``,
+    difficulty: 'MEDIUM' as const,
+    topic: 'Arrays',
+    tags: ['AS & A Level', '9618', 'May/June 2024', 'Paper 21', 'Adapted', 'Arrays', 'Totalling'],
+    year: 2024,
+    session: 'May/June',
+    variant: 1,
+    paper: '9618/21',
+    questionNumber: 4,
+    starterCode: `DECLARE Data : ARRAY[1:10] OF INTEGER
+
+FUNCTION Check() RETURNS STRING
+    // Total odd and even index locations
+ENDFUNCTION
+
+DECLARE Index : INTEGER
+FOR Index <- 1 TO 10
+    INPUT Data[Index]
+NEXT Index
+
+OUTPUT Check()`,
+    hints: [
+      'Use two running totals: Odd and Even.',
+      'Use MOD(Index, 2) to decide whether the current index is even.',
+      'After the loop, compare Odd and Even and return the required string.',
+    ],
+    solution: `DECLARE Data : ARRAY[1:10] OF INTEGER
+
+FUNCTION Check() RETURNS STRING
+    DECLARE Odd, Even, Index : INTEGER
+
+    Odd <- 0
+    Even <- 0
+
+    FOR Index <- 1 TO 10
+        IF MOD(Index, 2) = 0 THEN
+            Even <- Even + Data[Index]
+        ELSE
+            Odd <- Odd + Data[Index]
+        ENDIF
+    NEXT Index
+
+    IF Odd > Even THEN
+        RETURN "Odd"
+    ELSE
+        IF Even > Odd THEN
+            RETURN "Even"
+        ELSE
+            RETURN "Same"
+        ENDIF
+    ENDIF
+ENDFUNCTION
+
+DECLARE Index : INTEGER
+FOR Index <- 1 TO 10
+    INPUT Data[Index]
+NEXT Index
+
+OUTPUT Check()`,
+    solutionExplanation: 'The function classifies each index using MOD(Index, 2), accumulates two totals, then compares the totals to choose the return value.',
+    testCases: [
+      { inputs: ['5', '1', '5', '1', '5', '1', '5', '1', '5', '1'], expectedOutput: 'Odd', description: 'Odd index total greater', sortOrder: 0 },
+      { inputs: ['1', '5', '1', '5', '1', '5', '1', '5', '1', '5'], expectedOutput: 'Even', description: 'Even index total greater', sortOrder: 1 },
+      { inputs: ['1', '1', '2', '2', '3', '3', '4', '4', '5', '5'], expectedOutput: 'Same', description: 'Totals equal', sortOrder: 2 },
+      { inputs: ['-1', '0', '-1', '0', '-1', '0', '-1', '0', '-1', '0'], expectedOutput: 'Even', description: 'Negative odd-index total', sortOrder: 3, isHidden: true },
+    ],
+  },
+
+  {
+    title: '9618 Paper 21: Right-Angled Triangle Function',
+    description: `Adapted from Cambridge International AS & A Level Computer Science (9618), May/June 2024 Paper 21, Question 6.
+
+Write function \`ISRA()\` that takes six integers representing the coordinates of three triangle vertices:
+
+\`(x1, y1)\`, \`(x2, y2)\`, and \`(x3, y3)\`.
+
+The function must return \`TRUE\` if the triangle is right-angled and \`FALSE\` otherwise. Use squared lengths so no square root is needed:
+
+\`A^2 = B^2 + C^2\`
+
+**Input:** Six integers.
+**Output:** \`TRUE\` or \`FALSE\`.
+
+**Example:**
+\`\`\`
+Input:  0
+        0
+        3
+        0
+        0
+        4
+Output: TRUE
+\`\`\``,
+    difficulty: 'MEDIUM' as const,
+    topic: 'Procedures & Functions',
+    tags: ['AS & A Level', '9618', 'May/June 2024', 'Paper 21', 'Functions', 'Geometry'],
+    year: 2024,
+    session: 'May/June',
+    variant: 1,
+    paper: '9618/21',
+    questionNumber: 6,
+    starterCode: `FUNCTION ISRA(x1 : INTEGER, y1 : INTEGER, x2 : INTEGER, y2 : INTEGER, x3 : INTEGER, y3 : INTEGER) RETURNS BOOLEAN
+    // Calculate the three squared lengths and test for a right angle
+ENDFUNCTION
+
+DECLARE x1, y1, x2, y2, x3, y3 : INTEGER
+
+INPUT x1
+INPUT y1
+INPUT x2
+INPUT y2
+INPUT x3
+INPUT y3
+
+OUTPUT ISRA(x1, y1, x2, y2, x3, y3)`,
+    hints: [
+      'Calculate each squared side length using differences in x and y coordinates.',
+      'You need to test all three possibilities because any side could be the hypotenuse.',
+      'Return TRUE when Len1 = Len2 + Len3 OR Len2 = Len1 + Len3 OR Len3 = Len1 + Len2.',
+    ],
+    solution: `FUNCTION ISRA(x1 : INTEGER, y1 : INTEGER, x2 : INTEGER, y2 : INTEGER, x3 : INTEGER, y3 : INTEGER) RETURNS BOOLEAN
+    DECLARE Len1, Len2, Len3 : INTEGER
+
+    Len1 <- (x1 - x2)^2 + (y1 - y2)^2
+    Len2 <- (x1 - x3)^2 + (y1 - y3)^2
+    Len3 <- (x2 - x3)^2 + (y2 - y3)^2
+
+    IF (Len1 = Len2 + Len3) OR (Len2 = Len1 + Len3) OR (Len3 = Len1 + Len2) THEN
+        RETURN TRUE
+    ELSE
+        RETURN FALSE
+    ENDIF
+ENDFUNCTION
+
+DECLARE x1, y1, x2, y2, x3, y3 : INTEGER
+
+INPUT x1
+INPUT y1
+INPUT x2
+INPUT y2
+INPUT x3
+INPUT y3
+
+OUTPUT ISRA(x1, y1, x2, y2, x3, y3)`,
+    solutionExplanation: 'The squared distances avoid floating-point square roots. A triangle is right-angled if one squared side length equals the sum of the other two squared side lengths.',
+    testCases: [
+      { inputs: ['0', '0', '3', '0', '0', '4'], expectedOutput: 'TRUE', description: '3-4-5 triangle', sortOrder: 0 },
+      { inputs: ['0', '0', '2', '0', '1', '2'], expectedOutput: 'FALSE', description: 'Not right-angled', sortOrder: 1 },
+      { inputs: ['1', '1', '1', '4', '5', '1'], expectedOutput: 'TRUE', description: 'Translated right triangle', sortOrder: 2, isHidden: true },
+      { inputs: ['-1', '-1', '-1', '2', '3', '-1'], expectedOutput: 'TRUE', description: 'Negative coordinates', sortOrder: 3, isHidden: true },
+    ],
+  },
+
+  {
+    title: '9618 Paper 21: Remove Comments from Source File',
+    description: `Adapted from Cambridge International AS & A Level Computer Science (9618), May/June 2024 Paper 21, Question 8.
+
+Write:
+
+- function \`DeleteComment(Line)\` to return \`Line\` after removing any comment. Comments start with \`//\`.
+- function \`Stage_1(StudentName)\` to read \`StudentName & "_src.txt"\`, remove comments from each line, skip blank lines, write the remaining lines to \`StudentName & "_S1.txt"\`, and return the number of lines written.
+
+The test harness creates the source file from the input, calls \`Stage_1()\`, outputs the returned count, then outputs the cleaned file.
+
+**Input:** Student name, number of source lines, then each source line.
+**Output:** Count of written lines, then each line written to the stage 1 file.
+
+**Example:**
+\`\`\`
+Input:  Ali
+        4
+        OUTPUT "Hello"// greeting
+        // skip
+        DECLARE X : INTEGER
+        X <- 1
+Output: 3
+        OUTPUT "Hello"
+        DECLARE X : INTEGER
+        X <- 1
+\`\`\``,
+    difficulty: 'HARD' as const,
+    topic: 'File Handling',
+    tags: ['AS & A Level', '9618', 'May/June 2024', 'Paper 21', 'String Processing', 'File Handling'],
+    year: 2024,
+    session: 'May/June',
+    variant: 1,
+    paper: '9618/21',
+    questionNumber: 8,
+    part: 'a/b',
+    starterCode: `FUNCTION DeleteComment(Line : STRING) RETURNS STRING
+    // Return Line with anything from // onwards removed
+ENDFUNCTION
+
+FUNCTION Stage_1(StudentName : STRING) RETURNS INTEGER
+    // Read StudentName & "_src.txt"
+    // Write cleaned, non-blank lines to StudentName & "_S1.txt"
+    // Return the number of lines written
+ENDFUNCTION
+
+DECLARE StudentName, Line, NewFile : STRING
+DECLARE SourceLineCount, Count, Index : INTEGER
+
+INPUT StudentName
+INPUT SourceLineCount
+
+OPENFILE StudentName & "_src.txt" FOR WRITE
+FOR Index <- 1 TO SourceLineCount
+    INPUT Line
+    WRITEFILE StudentName & "_src.txt", Line
+NEXT Index
+CLOSEFILE StudentName & "_src.txt"
+
+Count <- Stage_1(StudentName)
+OUTPUT Count
+
+NewFile <- StudentName & "_S1.txt"
+OPENFILE NewFile FOR READ
+WHILE NOT EOF(NewFile) DO
+    READFILE NewFile, Line
+    OUTPUT Line
+ENDWHILE
+CLOSEFILE NewFile`,
+    hints: [
+      'DeleteComment should scan the string using MID(Line, Count, 2) until it finds //.',
+      'If // is found at position TrimTo, use LEFT(Line, TrimTo - 1). Otherwise keep the original line.',
+      'Stage_1 opens the old file for READ and the new file for WRITE. Only WRITEFILE when LENGTH(Line) <> 0 after comments are removed.',
+    ],
+    solution: `FUNCTION DeleteComment(Line : STRING) RETURNS STRING
+    DECLARE NewLine, TwoChars : STRING
+    DECLARE Count, TrimTo : INTEGER
+    CONSTANT Comment <- "//"
+
+    NewLine <- Line
+    TrimTo <- 0
+    Count <- 1
+
+    WHILE Count < LENGTH(Line) AND TrimTo = 0 DO
+        TwoChars <- MID(Line, Count, 2)
+        IF TwoChars = Comment THEN
+            TrimTo <- Count
+        ENDIF
+        Count <- Count + 1
+    ENDWHILE
+
+    IF TrimTo <> 0 THEN
+        NewLine <- LEFT(Line, TrimTo - 1)
+    ENDIF
+
+    RETURN NewLine
+ENDFUNCTION
+
+FUNCTION Stage_1(StudentName : STRING) RETURNS INTEGER
+    DECLARE OldFile, NewFile, Line : STRING
+    DECLARE Count : INTEGER
+
+    OldFile <- StudentName & "_src.txt"
+    NewFile <- StudentName & "_S1.txt"
+
+    OPENFILE OldFile FOR READ
+    OPENFILE NewFile FOR WRITE
+
+    Count <- 0
+    WHILE NOT EOF(OldFile) DO
+        READFILE OldFile, Line
+        Line <- DeleteComment(Line)
+        IF LENGTH(Line) <> 0 THEN
+            WRITEFILE NewFile, Line
+            Count <- Count + 1
+        ENDIF
+    ENDWHILE
+
+    CLOSEFILE OldFile
+    CLOSEFILE NewFile
+    RETURN Count
+ENDFUNCTION
+
+DECLARE StudentName, Line, NewFile : STRING
+DECLARE SourceLineCount, Count, Index : INTEGER
+
+INPUT StudentName
+INPUT SourceLineCount
+
+OPENFILE StudentName & "_src.txt" FOR WRITE
+FOR Index <- 1 TO SourceLineCount
+    INPUT Line
+    WRITEFILE StudentName & "_src.txt", Line
+NEXT Index
+CLOSEFILE StudentName & "_src.txt"
+
+Count <- Stage_1(StudentName)
+OUTPUT Count
+
+NewFile <- StudentName & "_S1.txt"
+OPENFILE NewFile FOR READ
+WHILE NOT EOF(NewFile) DO
+    READFILE NewFile, Line
+    OUTPUT Line
+ENDWHILE
+CLOSEFILE NewFile`,
+    solutionExplanation: 'DeleteComment finds the first comment marker and keeps only the text before it. Stage_1 applies that function to each source line, writing only non-empty results to the new file and counting them.',
+    testCases: [
+      { inputs: ['Ali', '4', 'OUTPUT "Hello"// greeting', '// skip', 'DECLARE X : INTEGER', 'X <- 1'], expectedOutput: '3\nOUTPUT "Hello"\nDECLARE X : INTEGER\nX <- 1', description: 'Inline and full-line comments', sortOrder: 0 },
+      { inputs: ['Sam', '3', '// comment only', '// another comment', '// final'], expectedOutput: '0', description: 'All lines removed', sortOrder: 1 },
+      { inputs: ['Mia', '5', 'A <- 1', '', 'B <- 2//set B', 'OUTPUT A', 'OUTPUT B//done'], expectedOutput: '4\nA <- 1\nB <- 2\nOUTPUT A\nOUTPUT B', description: 'Blank line and inline comments', sortOrder: 2, isHidden: true },
+    ],
+  },
 ];
 
 // ─── Main seed function ────────────────────────────────────────────────────────

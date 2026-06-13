@@ -11,13 +11,13 @@ import OnboardingNudges from '../components/onboarding/OnboardingNudges';
 
 const SITE_URL = 'https://pseudocode-compiler.sherlemious.com';
 const DESCRIPTION =
-  'Write, run and debug Cambridge IGCSE pseudocode in your browser. Free compiler with interactive input, practice questions from past papers, timed exams and instant autograding.';
+  'Write, run and debug Cambridge IGCSE and Cambridge International AS & A Level Computer Science pseudocode in your browser. Free compiler for 0478/0984/2210 and 9618 with interactive input, practice questions, timed exams and instant autograding.';
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: 'IGCSE Pseudocode Compiler — Free Online Editor & Runner',
-    template: '%s | IGCSE Pseudocode Compiler',
+    default: 'IGCSE and AS & A Level Pseudocode Compiler — Free Online Editor & Runner',
+    template: '%s | IGCSE and AS & A Level Pseudocode Compiler',
   },
   description: DESCRIPTION,
   keywords: [
@@ -25,12 +25,16 @@ export const metadata: Metadata = {
     '0478', '0984', '2210', '9618',
     // exam boards & levels
     'IGCSE', 'IGCSE 9-1', 'O Level', 'Cambridge IGCSE', 'Cambridge O Level', 'CIE',
-    'A Level', 'A-Level', 'AS Level', 'Cambridge A Level', 'Cambridge A-Level',
+    'A Level', 'A-Level', 'AS Level', 'AS & A Level', 'Cambridge A Level', 'Cambridge A-Level',
+    'Cambridge International AS & A Level', 'Cambridge International AS Level', 'Cambridge International A Level',
     // subject names
     'Computer Science', 'IGCSE Computer Science', 'O Level Computer Science',
-    'A Level Computer Science', 'Cambridge A Level Computer Science',
+    'A Level Computer Science', 'AS & A Level Computer Science',
+    'Cambridge A Level Computer Science', 'Cambridge International AS & A Level Computer Science',
+    '9618 Computer Science', 'Cambridge 9618',
     // A-Level pseudocode
-    'A Level pseudocode', 'pseudocode A Level', 'pseudocode 9618', 'AS Level pseudocode',
+    'A Level pseudocode', 'AS & A Level pseudocode', 'pseudocode A Level', 'pseudocode 9618',
+    'AS Level pseudocode', '9618 pseudocode guide', '2026 Pseudocode Guide', '2027 2029 Pseudocode Guide',
     // core tool terms — spelling variants
     'pseudocode', 'pseudo code', 'pseudo-code',
     'pseudocode compiler', 'pseudocode interpreter', 'pseudocode online',
@@ -68,15 +72,15 @@ export const metadata: Metadata = {
   icons: { icon: '/favicon.svg', shortcut: '/favicon.svg' },
   openGraph: {
     type: 'website',
-    siteName: 'IGCSE Pseudocode Compiler',
+    siteName: 'IGCSE and AS & A Level Pseudocode Compiler',
     url: SITE_URL,
-    title: 'IGCSE Pseudocode Compiler — Free Online Editor & Runner',
+    title: 'IGCSE and AS & A Level Pseudocode Compiler — Free Online Editor & Runner',
     description: DESCRIPTION,
     locale: 'en_US',
   },
   twitter: {
     card: 'summary',
-    title: 'IGCSE Pseudocode Compiler — Free Online Editor & Runner',
+    title: 'IGCSE and AS & A Level Pseudocode Compiler — Free Online Editor & Runner',
     description: DESCRIPTION,
   },
 };
@@ -84,7 +88,7 @@ export const metadata: Metadata = {
 const jsonLd = {
   '@context': 'https://schema.org',
   '@type': 'WebApplication',
-  name: 'IGCSE Pseudocode Compiler',
+  name: 'IGCSE and AS & A Level Pseudocode Compiler',
   url: SITE_URL,
   description: DESCRIPTION,
   applicationCategory: 'EducationalApplication',
@@ -98,7 +102,7 @@ const jsonLd = {
   featureList: [
     'Browser-based pseudocode compiler — no installation required',
     'Interactive INPUT support — execution pauses and waits for user input',
-    'Supports Cambridge IGCSE (0478/0984/2210) and A-Level (9618) pseudocode syntax',
+    'Supports Cambridge IGCSE (0478/0984/2210) and Cambridge International AS & A Level Computer Science (9618) pseudocode syntax',
     'Full pseudocode syntax: IF/ELSEIF/ELSE, FOR/WHILE/REPEAT, CASE OF, PROCEDURE, FUNCTION, arrays, file handling',
     'Built-in functions: LENGTH, SUBSTRING, ROUND, INT, RANDOM, ASC, CHR, NUM_TO_STRING, STRING_TO_NUM',
     'Syntax highlighting editor with error markers',
@@ -113,7 +117,7 @@ const jsonLd = {
     'File handling simulation via browser localStorage',
     'Google and GitHub OAuth sign-in',
   ],
-  alternativeHeadline: 'IGCSE Pseudocode Editor, Runner & Interpreter',
+  alternativeHeadline: 'IGCSE and AS & A Level Pseudocode Editor, Runner & Interpreter',
   alternativeName: ['pseudocode compiler', 'pseudocode editor', 'pseudocode runner', 'pseudocode interpreter', 'psuedocode compiler', 'pseudocode complier'],
   offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
 };

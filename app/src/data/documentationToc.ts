@@ -86,8 +86,10 @@ const toc: TocEntry[] = [
   },
   {
     id: 'alevel',
-    label: 'A Level (9618)',
+    label: 'AS & A Level (9618)',
     children: [
+      { id: 'alevel-overview', label: 'Course Overview' },
+      { id: 'alevel-syllabus', label: 'Syllabus Materials' },
       { id: 'alevel-types', label: 'User-Defined Types' },
       { id: 'alevel-date', label: 'DATE Type' },
       { id: 'alevel-byref', label: 'BYREF & BYVAL' },

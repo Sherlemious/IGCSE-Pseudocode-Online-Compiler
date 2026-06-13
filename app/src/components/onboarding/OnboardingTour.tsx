@@ -16,7 +16,7 @@ const STEPS: TourStep[] = [
   {
     targetSelector: '[data-tour="editor"]',
     title: 'Write Your Code',
-    description: 'This is the editor. Write Cambridge pseudocode here — it supports all IGCSE (0478) and A Level (9618) syntax with syntax highlighting.',
+    description: 'This is the editor. Write Cambridge pseudocode here — it supports IGCSE (0478) and AS & A Level Computer Science (9618) syntax with syntax highlighting.',
     icon: <Braces size={16} className="text-primary" />,
     position: 'right',
   },
