@@ -8,7 +8,7 @@ import OnboardingTour from '../onboarding/OnboardingTour';
 import FeedbackSurvey, { shouldShowFeedbackSurvey } from '../feedback/FeedbackSurvey';
 import { useInterpreter } from '../../interpreter/useInterpreter';
 import { toast } from 'sonner';
-import { AUTOSAVE_KEY, FILE_PREFIX, AUTOSAVE_DELAY, ONBOARDING_KEY } from '../../utils/constants';
+import { AUTOSAVE_KEY, FILE_PREFIX, AUTOSAVE_DELAY, ONBOARDING_KEY, SPLIT_COMPILER_KEY, loadSplitPercent } from '../../utils/constants';
 
 const FEEDBACK_RUN_THRESHOLD = 2;
 const FEEDBACK_RUN_LS_KEY = 'compiler_run_count';
@@ -66,6 +66,7 @@ const CompilerPage: React.FC = () => {
   const [showFeedback, setShowFeedback] = useState(false);
   const feedbackShownRef = useRef(false);
   const [jumpToLine, setJumpToLine] = useState<number | null>(null);
+  const [outputTab, setOutputTab] = useState<'terminal' | 'trace'>('terminal');
 
   const {
     entries,
@@ -76,8 +77,11 @@ const CompilerPage: React.FC = () => {
     debugVariables,
     errorLine,
     breakpoints,
+    traceRows,
+    maxTraceRows,
     run,
     debugRun,
+    traceRun,
     step,
     continueExecution,
     provideInput,
@@ -129,8 +133,11 @@ const CompilerPage: React.FC = () => {
     return () => clearTimeout(saveTimer.current);
   }, [tabs]);
 
-  // Resizable split pane
+  // Resizable split pane (persisted; loaded post-mount to avoid SSR mismatch)
   const [splitPercent, setSplitPercent] = useState(50);
+  const splitPercentRef = useRef(splitPercent);
+  useEffect(() => { splitPercentRef.current = splitPercent; }, [splitPercent]);
+  useEffect(() => { setSplitPercent(loadSplitPercent(SPLIT_COMPILER_KEY, 50, 20, 80)); }, []);
   const containerRef = useRef<HTMLDivElement>(null);
   const dragging = useRef(false);
 
@@ -160,6 +167,7 @@ const CompilerPage: React.FC = () => {
       document.removeEventListener('touchend', onEnd);
       document.body.style.cursor = '';
       document.body.style.userSelect = '';
+      try { localStorage.setItem(SPLIT_COMPILER_KEY, String(splitPercentRef.current)); } catch { /* ignore */ }
     };
 
     document.body.style.cursor = window.innerWidth >= 1024 ? 'col-resize' : 'row-resize';
@@ -245,6 +253,7 @@ const CompilerPage: React.FC = () => {
 
   const handleRunCode = async () => {
     if (!activeTab.content.trim()) return;
+    setOutputTab('terminal');
     await run(activeTab.content);
 
     // Track run count and trigger feedback survey after threshold
@@ -259,7 +268,14 @@ const CompilerPage: React.FC = () => {
 
   const handleDebugCode = async () => {
     if (!activeTab.content.trim()) return;
+    setOutputTab('terminal');
     await debugRun(activeTab.content);
+  };
+
+  const handleTraceCode = async () => {
+    if (!activeTab.content.trim()) return;
+    setOutputTab('trace');
+    await traceRun(activeTab.content);
   };
 
   return (
@@ -272,6 +288,7 @@ const CompilerPage: React.FC = () => {
             onCodeChange={handleCodeChange}
             onRunCode={handleRunCode}
             onDebugCode={handleDebugCode}
+            onTraceCode={handleTraceCode}
             isRunning={interpreterRunning}
             isStepping={isStepping}
             debugLine={debugLine}
@@ -313,6 +330,10 @@ const CompilerPage: React.FC = () => {
             isStepping={isStepping}
             debugVariables={debugVariables}
             onJumpToLine={(line) => setJumpToLine(line)}
+            traceRows={traceRows}
+            maxTraceRows={maxTraceRows}
+            activeTab={outputTab}
+            onTabChange={setOutputTab}
           />
         </div>
       </div>

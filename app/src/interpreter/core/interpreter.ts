@@ -113,7 +113,7 @@ import {
 import { getBuiltin, registerFileBuiltins } from './builtins';
 import { VirtualFileSystem } from './filesystem';
 import type { ServerVirtualFileSystem } from './serverFilesystem';
-import { InterpreterCallbacks, RuntimeError, ExecutionCancelledError, DebugVariable } from './types';
+import { InterpreterCallbacks, RuntimeError, ExecutionCancelledError, DebugVariable, MAX_TRACE_ROWS } from './types';
 
 type AnyFileSystem = VirtualFileSystem | ServerVirtualFileSystem;
 
@@ -162,6 +162,8 @@ export class Interpreter {
   private _stepMode = false;
   private stepResolver: (() => void) | null = null;
   private _breakpoints = new Set<number>();
+  private _traceMode = false;
+  private _traceCount = 0;
 
   constructor(callbacks: InterpreterCallbacks, signal: AbortSignal, fileSystem?: AnyFileSystem) {
     this.env = new Environment();
@@ -208,6 +210,11 @@ export class Interpreter {
 
   setBreakpoints(breakpoints: Set<number>): void {
     this._breakpoints = new Set(breakpoints);
+  }
+
+  setTraceMode(enabled: boolean): void {
+    this._traceMode = enabled;
+    this._traceCount = 0;
   }
 
   step(): void {
@@ -310,6 +317,15 @@ export class Interpreter {
     if (line !== undefined) {
       await this.beforeStatement(line);
     }
+    await this.dispatchStatement(ctx);
+    // Record a trace row (variable state *after* the statement ran) when tracing.
+    if (this._traceMode && line !== undefined && this._traceCount < MAX_TRACE_ROWS) {
+      this._traceCount++;
+      this.callbacks.onTrace?.(line, this.snapshotVariables());
+    }
+  }
+
+  private async dispatchStatement(ctx: StatementContext): Promise<void> {
     if (ctx.declareStatement()) return this.visitDeclare(ctx.declareStatement()!);
     if (ctx.constantStatement()) return this.visitConstant(ctx.constantStatement()!);
     if (ctx.typeDefinition()) return this.visitTypeDefinition(ctx.typeDefinition()!);

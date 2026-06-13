@@ -10,6 +10,21 @@ export interface DebugVariable {
   constant: boolean;
 }
 
+/** Maximum number of rows a trace ("dry run") will record before stopping. */
+export const MAX_TRACE_ROWS = 1000;
+
+/** A single recorded step in a trace ("dry run") table. */
+export interface TraceRow {
+  /** 1-based execution order. */
+  step: number;
+  /** Source line of the statement that executed. */
+  line: number;
+  /** Variable state immediately after the statement executed. */
+  variables: DebugVariable[];
+  /** Output emitted by this statement (if any). */
+  output: string[];
+}
+
 export interface InterpreterCallbacks {
   onOutput(text: string): void;
   onInputRequest(variableName: string, prompt?: string): void;
@@ -20,6 +35,8 @@ export interface InterpreterCallbacks {
   onBeforeStep?(line: number, variables: DebugVariable[]): void;
   /** Called when a breakpoint is hit during normal execution. */
   onBreakpoint?(line: number, variables: DebugVariable[]): void;
+  /** Called after each statement executes in trace mode (for the trace table). */
+  onTrace?(line: number, variables: DebugVariable[]): void;
 }
 
 export class PseudocodeError extends Error {

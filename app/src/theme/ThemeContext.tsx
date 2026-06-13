@@ -32,6 +32,9 @@ interface ThemeContextValue {
   setWordWrap: (v: boolean) => void;
   fontFamilyId: FontFamilyId;
   setFontFamily: (id: FontFamilyId) => void;
+  /** When on, the editor + terminal use OpenDyslexic with extra spacing (overrides the font picker). */
+  dyslexicFont: boolean;
+  setDyslexicFont: (v: boolean) => void;
   /** The signed-in user's saved custom themes (empty when signed out). */
   customThemes: SavedTheme[];
   /** True while the initial DB fetch of custom themes is in flight. */
@@ -49,6 +52,7 @@ const STORAGE_KEY_THEME = 'pseudocode-theme';
 const STORAGE_KEY_FONT_SIZE = 'pseudocode-font-size';
 const STORAGE_KEY_WORD_WRAP = 'pseudocode-word-wrap';
 const STORAGE_KEY_FONT_FAMILY = 'pseudocode-font-family';
+const STORAGE_KEY_DYSLEXIC = 'pseudocode-dyslexic-font';
 const STORAGE_KEY_ACTIVE_COLORS = 'pseudocode-active-colors'; // first-paint cache for active custom theme
 const STORAGE_KEY_LEGACY_CUSTOM = 'pseudocode-custom-theme';  // pre-multi-theme single custom theme
 const DEFAULT_THEME: PresetThemeId = 'one-dark-pro';
@@ -78,8 +82,21 @@ function applyFontSize(size: number) {
   document.documentElement.style.setProperty('--editor-font-size', `${size}px`);
 }
 
-function applyFontFamily(id: FontFamilyId) {
-  document.documentElement.style.setProperty('--editor-font-family', FONT_FAMILIES[id].css);
+const DYSLEXIC_FONT_CSS = '"OpenDyslexic", monospace';
+const DYSLEXIC_LETTER_SPACING = '0.04em';
+const DYSLEXIC_LINE_HEIGHT = '1.7';
+const DEFAULT_LETTER_SPACING = 'normal';
+const DEFAULT_LINE_HEIGHT = '1.5';
+
+/**
+ * Apply editor typography. When `dyslexic` is on, OpenDyslexic plus wider
+ * letter-spacing/line-height override the picker selection.
+ */
+function applyTypography(id: FontFamilyId, dyslexic: boolean) {
+  const root = document.documentElement;
+  root.style.setProperty('--editor-font-family', dyslexic ? DYSLEXIC_FONT_CSS : FONT_FAMILIES[id].css);
+  root.style.setProperty('--editor-letter-spacing', dyslexic ? DYSLEXIC_LETTER_SPACING : DEFAULT_LETTER_SPACING);
+  root.style.setProperty('--editor-line-height', dyslexic ? DYSLEXIC_LINE_HEIGHT : DEFAULT_LINE_HEIGHT);
 }
 
 function isPreset(id: string): id is PresetThemeId {
@@ -109,6 +126,10 @@ function loadFontFamily(): FontFamilyId {
   const stored = localStorage.getItem(STORAGE_KEY_FONT_FAMILY);
   if (stored && stored in FONT_FAMILIES) return stored as FontFamilyId;
   return DEFAULT_FONT_FAMILY;
+}
+
+function loadDyslexicFont(): boolean {
+  return localStorage.getItem(STORAGE_KEY_DYSLEXIC) === 'true';
 }
 
 function parseStoredColors(raw: string | null): CustomColors | null {
@@ -168,6 +189,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const [fontSize, setFontSizeState] = useState<number>(DEFAULT_FONT_SIZE);
   const [wordWrap, setWordWrapState] = useState<boolean>(true);
   const [fontFamilyId, setFontFamilyId] = useState<FontFamilyId>(DEFAULT_FONT_FAMILY);
+  const [dyslexicFont, setDyslexicFontState] = useState<boolean>(false);
   const [customThemes, setCustomThemes] = useState<SavedTheme[]>([]);
   const [themesLoading, setThemesLoading] = useState<boolean>(true);
 
@@ -177,6 +199,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     setFontSizeState(loadFontSize());
     setWordWrapState(loadWordWrap());
     setFontFamilyId(loadFontFamily());
+    setDyslexicFontState(loadDyslexicFont());
   }, []);
 
   // Fetch the user's saved themes when auth state resolves; migrate any legacy theme.
@@ -257,9 +280,9 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   }, [fontSize]);
 
   useEffect(() => {
-    applyFontFamily(fontFamilyId);
+    applyTypography(fontFamilyId, dyslexicFont);
     localStorage.setItem(STORAGE_KEY_FONT_FAMILY, fontFamilyId);
-  }, [fontFamilyId]);
+  }, [fontFamilyId, dyslexicFont]);
 
   const setTheme = useCallback(
     (id: ActiveThemeId) => {
@@ -280,6 +303,11 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   const setFontFamily = (id: FontFamilyId) => {
     if (id in FONT_FAMILIES) setFontFamilyId(id);
+  };
+
+  const setDyslexicFont = (v: boolean) => {
+    setDyslexicFontState(v);
+    localStorage.setItem(STORAGE_KEY_DYSLEXIC, String(v));
   };
 
   const createTheme = useCallback(async (name: string, colors: CustomColors) => {
@@ -323,6 +351,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         fontSize, setFontSize,
         wordWrap, setWordWrap,
         fontFamilyId, setFontFamily,
+        dyslexicFont, setDyslexicFont,
         customThemes, themesLoading, isSignedIn,
         createTheme, updateTheme, deleteTheme,
       }}

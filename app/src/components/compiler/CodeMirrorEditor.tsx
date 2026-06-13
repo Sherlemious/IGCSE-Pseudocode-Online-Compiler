@@ -113,7 +113,7 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
   jumpToLine = null,
   onJumpToLineConsumed,
 }) => {
-  const { fontSize } = useTheme();
+  const { fontSize, dyslexicFont } = useTheme();
   const editorRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
   const onChangeRef = useRef(onChange);
@@ -245,6 +245,8 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
         padding: '1rem 0',
         caretColor: 'var(--color-primary)',
         color: 'var(--color-light-text)',
+        letterSpacing: 'var(--editor-letter-spacing)',
+        lineHeight: 'var(--editor-line-height)',
       },
       '.cm-gutters': {
         backgroundColor: 'var(--color-surface)',
@@ -478,13 +480,21 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
     });
   }, [wordWrap]);
 
-  // Reconfigure font size so CodeMirror remeasures gutter alignment
+  // Reconfigure typography so CodeMirror remeasures (font size + dyslexia spacing)
   useEffect(() => {
     if (!viewRef.current) return;
     viewRef.current.dispatch({
-      effects: fontSizeCompartment.reconfigure(EditorView.theme({ '&': { fontSize: `${fontSize}px` } })),
+      effects: fontSizeCompartment.reconfigure(
+        EditorView.theme({
+          '&': { fontSize: `${fontSize}px` },
+          '.cm-content': {
+            letterSpacing: 'var(--editor-letter-spacing)',
+            lineHeight: 'var(--editor-line-height)',
+          },
+        })
+      ),
     });
-  }, [fontSize]);
+  }, [fontSize, dyslexicFont]);
 
   // Scroll debug line into view
   useEffect(() => {

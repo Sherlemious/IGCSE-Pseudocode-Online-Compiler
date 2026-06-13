@@ -2,12 +2,14 @@
 
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import CodeMirrorEditor from '../compiler/CodeMirrorEditor';
+import TraceTable from '../compiler/TraceTable';
 import { useInterpreter } from '../../interpreter/useInterpreter';
-import { AUTOSAVE_DELAY } from '../../utils/constants';
+import { AUTOSAVE_DELAY, SPLIT_PRACTICE_KEY, loadSplitPercent } from '../../utils/constants';
 import {
   Play,
   Square,
   Bug,
+  Table2,
   SkipForward,
   FastForward,
   RotateCcw,
@@ -90,12 +92,16 @@ export default function PracticeWorkspace({ questionId, starterCode, savedCode, 
   const {
     entries, isRunning, waitingForInput,
     isStepping, debugLine, debugVariables, errorLine, breakpoints,
-    run, debugRun, step, continueExecution, provideInput, stop, clearEntries, toggleBreakpoint,
+    traceRows, maxTraceRows,
+    run, debugRun, traceRun, step, continueExecution, provideInput, stop, clearEntries, toggleBreakpoint,
   } = useInterpreter();
 
   /* ── Output panel ───────────────────────────────────── */
-  const [activeTab, setActiveTab] = useState<'output' | 'results'>('output');
+  const [activeTab, setActiveTab] = useState<'output' | 'results' | 'trace'>('output');
   const [splitPercent, setSplitPercent] = useState(55);
+  const splitPercentRef = useRef(splitPercent);
+  useEffect(() => { splitPercentRef.current = splitPercent; }, [splitPercent]);
+  useEffect(() => { setSplitPercent(loadSplitPercent(SPLIT_PRACTICE_KEY, 55, 20, 80)); }, []);
   const containerRef = useRef<HTMLDivElement>(null);
   const dragging = useRef(false);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -152,6 +158,13 @@ export default function PracticeWorkspace({ questionId, starterCode, savedCode, 
     await debugRun(code);
   }, [code, isRunning, debugRun]);
 
+  const handleTrace = useCallback(async () => {
+    if (!code.trim() || isRunning) return;
+    setActiveTab('trace');
+    setMobileView('output');
+    await traceRun(code);
+  }, [code, isRunning, traceRun]);
+
   const handleGrade = useCallback(async () => {
     if (!code.trim() || isGrading || isRunning) return;
     setIsGrading(true);
@@ -173,8 +186,14 @@ export default function PracticeWorkspace({ questionId, starterCode, savedCode, 
       const data: GradeResponse = await res.json();
       setGradeResponse(data);
       setMobileView('output');
+      const allPassed = data.passCount === data.totalCount;
       window.dispatchEvent(new CustomEvent('practice:graded', {
-        detail: { isSolved: data.passCount === data.totalCount },
+        detail: {
+          isSolved: allPassed,
+          allPassed,
+          passCount: data.passCount,
+          totalCount: data.totalCount,
+        },
       }));
     } catch {
       setGradingError('Failed to connect to the grading server. Please try again.');
@@ -230,6 +249,7 @@ export default function PracticeWorkspace({ questionId, starterCode, savedCode, 
       document.removeEventListener('touchend', onEnd);
       document.body.style.cursor = '';
       document.body.style.userSelect = '';
+      try { localStorage.setItem(SPLIT_PRACTICE_KEY, String(splitPercentRef.current)); } catch { /* ignore */ }
     };
     document.body.style.cursor = 'row-resize';
     document.body.style.userSelect = 'none';
@@ -306,9 +326,19 @@ export default function PracticeWorkspace({ questionId, starterCode, savedCode, 
             </button>
           )}
 
-          {/* Run & Debug */}
+          {/* Trace, Debug & Run */}
           {!isRunning && !isGrading && (
             <>
+              <button
+                onClick={handleTrace}
+                disabled={!code.trim()}
+                className="flex items-center gap-1 px-2 py-1 text-xs text-primary hover:bg-primary/10 rounded
+                  transition-colors disabled:opacity-50 disabled:pointer-events-none"
+                title="Trace (generate a dry-run table)"
+              >
+                <Table2 className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Trace</span>
+              </button>
               <button
                 onClick={handleDebug}
                 disabled={!code.trim()}
@@ -451,6 +481,20 @@ export default function PracticeWorkspace({ questionId, starterCode, savedCode, 
                 )}
                 {isGrading && <span className="inline-block w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />}
               </button>
+              <button
+                onClick={() => setActiveTab('trace')}
+                className={`flex items-center gap-1.5 px-2.5 py-1 text-xs rounded transition-colors ${
+                  activeTab === 'trace'
+                    ? 'bg-background text-light-text font-medium'
+                    : 'text-dark-text hover:text-light-text hover:bg-background/50'
+                }`}
+              >
+                <Table2 className="h-3 w-3" />
+                Trace
+                {traceRows.length > 0 && (
+                  <span className="text-[10px] font-mono text-dark-text/60">{traceRows.length}</span>
+                )}
+              </button>
             </div>
             <div className="flex items-center gap-0.5">
               {activeTab === 'output' && (
@@ -476,6 +520,11 @@ export default function PracticeWorkspace({ questionId, starterCode, savedCode, 
                 scrollbar-thin scrollbar-thumb-primary scrollbar-track-background scrollbar-thumb-rounded-full"
             >
               {renderTerminal()}
+            </div>
+          ) : activeTab === 'trace' ? (
+            <div className="flex-1 min-h-0 bg-background overflow-auto
+              scrollbar-thin scrollbar-thumb-primary scrollbar-track-background scrollbar-thumb-rounded-full">
+              <TraceTable rows={traceRows} maxRows={maxTraceRows} />
             </div>
           ) : (
             <div className="flex-1 min-h-0 bg-background overflow-y-auto
@@ -555,7 +604,14 @@ export default function PracticeWorkspace({ questionId, starterCode, savedCode, 
     }
 
     return (
-      <div className="p-3 font-mono" style={{ fontSize: 'var(--editor-font-size)' }}>
+      <div
+        className="p-3 font-mono"
+        style={{
+          fontSize: 'var(--editor-font-size)',
+          fontFamily: 'var(--editor-font-family)',
+          letterSpacing: 'var(--editor-letter-spacing)',
+        }}
+      >
         {/* Debug variables */}
         {isStepping && debugVariables.length > 0 && (
           <div className="mb-3 pb-2 border-b border-border/30">

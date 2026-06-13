@@ -1,8 +1,10 @@
 'use client';
 
 import React, { useRef, useEffect, useState, useCallback } from 'react';
-import { Terminal, Trash2, ChevronRight, Bug, ChevronDown, Copy, Check } from 'lucide-react';
-import type { OutputEntry, DebugVariable } from '../../interpreter/core/types';
+import { Terminal, Trash2, ChevronRight, Bug, ChevronDown, Copy, Check, Table2 } from 'lucide-react';
+import type { OutputEntry, DebugVariable, TraceRow } from '../../interpreter/core/types';
+import TraceTable from './TraceTable';
+import { SPLIT_VARS_KEY, loadSplitPercent } from '../../utils/constants';
 
 interface OutputDisplayProps {
   entries: OutputEntry[];
@@ -13,6 +15,10 @@ interface OutputDisplayProps {
   isStepping?: boolean;
   debugVariables?: DebugVariable[];
   onJumpToLine?: (line: number) => void;
+  traceRows?: TraceRow[];
+  maxTraceRows?: number;
+  activeTab?: 'terminal' | 'trace';
+  onTabChange?: (tab: 'terminal' | 'trace') => void;
 }
 
 const WELCOME_ART = `  ___  ___  ___ _   _ ___   ___
@@ -29,6 +35,10 @@ const OutputDisplay: React.FC<OutputDisplayProps> = ({
   isStepping = false,
   debugVariables = [],
   onJumpToLine,
+  traceRows = [],
+  maxTraceRows = 1000,
+  activeTab = 'terminal',
+  onTabChange,
 }) => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -37,8 +47,11 @@ const OutputDisplay: React.FC<OutputDisplayProps> = ({
   const [copied, setCopied] = useState(false);
   const [expandedErrors, setExpandedErrors] = useState<Set<number>>(new Set());
 
-  // Resizable split between variables panel and terminal
+  // Resizable split between variables panel and terminal (persisted)
   const [varsPanelHeight, setVarsPanelHeight] = useState(35); // percentage
+  const varsPanelHeightRef = useRef(varsPanelHeight);
+  useEffect(() => { varsPanelHeightRef.current = varsPanelHeight; }, [varsPanelHeight]);
+  useEffect(() => { setVarsPanelHeight(loadSplitPercent(SPLIT_VARS_KEY, 35, 15, 70)); }, []);
   const varsContainerRef = useRef<HTMLDivElement>(null);
   const varsDragging = useRef(false);
 
@@ -86,6 +99,7 @@ const OutputDisplay: React.FC<OutputDisplayProps> = ({
         document.removeEventListener('touchend', onEnd);
         document.body.style.cursor = '';
         document.body.style.userSelect = '';
+        try { localStorage.setItem(SPLIT_VARS_KEY, String(varsPanelHeightRef.current)); } catch { /* ignore */ }
       };
 
       document.body.style.cursor = 'row-resize';
@@ -235,7 +249,14 @@ const OutputDisplay: React.FC<OutputDisplayProps> = ({
     }
 
     return (
-      <div className="p-4 font-mono" style={{ fontSize: 'var(--editor-font-size)' }}>
+      <div
+        className="p-4 font-mono"
+        style={{
+          fontSize: 'var(--editor-font-size)',
+          fontFamily: 'var(--editor-font-family)',
+          letterSpacing: 'var(--editor-letter-spacing)',
+        }}
+      >
         {entries.map((entry, i) => {
           if (entry.kind === 'output') {
             return (
@@ -364,26 +385,41 @@ const OutputDisplay: React.FC<OutputDisplayProps> = ({
 
   return (
     <div className="flex-1 min-h-0 flex flex-col">
-      {/* Panel header */}
-      <div className="h-9 bg-surface border-b border-border flex items-center justify-between px-3 shrink-0">
-        <div className="flex items-center gap-2">
-          <Terminal className="h-3.5 w-3.5 text-dark-text" />
-          <span className="text-xs font-semibold tracking-wider text-dark-text uppercase">Terminal</span>
-          {isStepping && (
-            <div className="flex items-center gap-1.5">
-              <Bug size={12} className="text-warning" />
-              <span className="text-[10px] text-warning hidden sm:inline">debugging</span>
-            </div>
-          )}
-          {isRunning && !isStepping && (
-            <div className="flex items-center gap-1.5">
-              <span className="inline-block w-2 h-2 rounded-full bg-success animate-pulse" />
-              <span className="text-[10px] text-success hidden sm:inline">running</span>
-            </div>
-          )}
+      {/* Panel header — Terminal / Trace tabs */}
+      <div className="h-9 bg-surface border-b border-border flex items-center justify-between px-2 shrink-0">
+        <div className="flex items-center gap-0.5">
+          <button
+            onClick={() => onTabChange?.('terminal')}
+            className={`flex items-center gap-1.5 px-2.5 py-1 text-xs rounded transition-colors ${
+              activeTab === 'terminal'
+                ? 'bg-background text-light-text font-medium'
+                : 'text-dark-text hover:text-light-text hover:bg-background/50'
+            }`}
+          >
+            <Terminal className="h-3.5 w-3.5" />
+            Terminal
+            {isStepping && <Bug size={12} className="text-warning" />}
+            {isRunning && !isStepping && (
+              <span className="inline-block w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
+            )}
+          </button>
+          <button
+            onClick={() => onTabChange?.('trace')}
+            className={`flex items-center gap-1.5 px-2.5 py-1 text-xs rounded transition-colors ${
+              activeTab === 'trace'
+                ? 'bg-background text-light-text font-medium'
+                : 'text-dark-text hover:text-light-text hover:bg-background/50'
+            }`}
+          >
+            <Table2 className="h-3.5 w-3.5" />
+            Trace
+            {traceRows.length > 0 && (
+              <span className="text-[10px] font-mono text-dark-text/60">{traceRows.length}</span>
+            )}
+          </button>
         </div>
         <div className="flex items-center gap-0.5">
-          {entries.length > 0 && (
+          {activeTab === 'terminal' && entries.length > 0 && (
             <button
               onClick={handleCopyOutput}
               className="opacity-60 hover:opacity-100 transition-opacity p-1 rounded hover:bg-background"
@@ -392,31 +428,43 @@ const OutputDisplay: React.FC<OutputDisplayProps> = ({
               {copied ? <Check className="h-3.5 w-3.5 text-success" /> : <Copy className="h-3.5 w-3.5" />}
             </button>
           )}
-          <button
-            onClick={onClear}
-            className="opacity-60 hover:opacity-100 transition-opacity p-1 rounded hover:bg-background"
-            title="Clear terminal"
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-          </button>
+          {activeTab === 'terminal' && (
+            <button
+              onClick={onClear}
+              className="opacity-60 hover:opacity-100 transition-opacity p-1 rounded hover:bg-background"
+              title="Clear terminal"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
+          )}
         </div>
       </div>
 
-      {/* Content area with variable panel and terminal */}
-      <div ref={varsContainerRef} className="flex-1 min-h-0 flex flex-col overflow-hidden">
-        {/* Variable watch panel (shown during debug) */}
-        {renderVariablePanel()}
-
-        {/* Terminal output */}
+      {/* Content area */}
+      {activeTab === 'trace' ? (
         <div
-          ref={scrollRef}
-          className="flex-1 min-h-0 bg-background overflow-y-auto
+          className="flex-1 min-h-0 bg-background overflow-auto
             scrollbar-thin scrollbar-thumb-primary hover:scrollbar-thumb-primary-hover
             scrollbar-track-background scrollbar-thumb-rounded-full"
         >
-          {renderContent()}
+          <TraceTable rows={traceRows} maxRows={maxTraceRows} />
         </div>
-      </div>
+      ) : (
+        <div ref={varsContainerRef} className="flex-1 min-h-0 flex flex-col overflow-hidden">
+          {/* Variable watch panel (shown during debug) */}
+          {renderVariablePanel()}
+
+          {/* Terminal output */}
+          <div
+            ref={scrollRef}
+            className="flex-1 min-h-0 bg-background overflow-y-auto
+              scrollbar-thin scrollbar-thumb-primary hover:scrollbar-thumb-primary-hover
+              scrollbar-track-background scrollbar-thumb-rounded-full"
+          >
+            {renderContent()}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

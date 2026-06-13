@@ -1,7 +1,8 @@
 import { useState, useRef, useCallback } from 'react';
 import posthog from 'posthog-js';
 import { Interpreter, parse, PseudocodeError } from './index';
-import type { OutputEntry, DebugVariable } from './core/types';
+import type { OutputEntry, DebugVariable, TraceRow } from './core/types';
+import { MAX_TRACE_ROWS } from './core/types';
 import { humanizeParseError, humanizeRuntimeError } from './errorMessages';
 
 function captureError(
@@ -36,10 +37,31 @@ export function useInterpreter() {
   // Error line marker
   const [errorLine, setErrorLine] = useState<number | null>(null);
 
+  // Trace ("dry run") table state
+  const [traceRows, setTraceRows] = useState<TraceRow[]>([]);
+
   const interpreterRef = useRef<Interpreter | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const outputBuffer = useRef<string[]>([]);
   const flushTimeout = useRef<number | null>(null);
+
+  // Trace buffers — accumulated off-React and flushed via rAF to avoid a state
+  // update per executed statement. `traceOutputBuffer` collects output emitted
+  // since the last recorded row so it can be attached to that row.
+  const traceModeRef = useRef(false);
+  const traceBuffer = useRef<TraceRow[]>([]);
+  const traceOutputBuffer = useRef<string[]>([]);
+  const traceFlushTimeout = useRef<number | null>(null);
+  const traceStepRef = useRef(0); // monotonic step counter (survives rAF flushes)
+
+  const flushTrace = useCallback(() => {
+    if (traceBuffer.current.length > 0) {
+      const rows = traceBuffer.current;
+      traceBuffer.current = [];
+      setTraceRows((prev) => [...prev, ...rows]);
+    }
+    traceFlushTimeout.current = null;
+  }, []);
 
   const flushOutput = useCallback(() => {
     if (outputBuffer.current.length > 0) {
@@ -60,8 +82,18 @@ export function useInterpreter() {
     }
   }, [flushOutput]);
 
+  const flushTraceSync = useCallback(() => {
+    if (traceBuffer.current.length > 0) {
+      if (traceFlushTimeout.current !== null) {
+        cancelAnimationFrame(traceFlushTimeout.current);
+        traceFlushTimeout.current = null;
+      }
+      flushTrace();
+    }
+  }, [flushTrace]);
+
   const startExecution = useCallback(
-    async (sourceCode: string, stepMode: boolean) => {
+    async (sourceCode: string, stepMode: boolean, traceMode = false) => {
       // Clean up any previous run
       if (abortRef.current) {
         abortRef.current.abort();
@@ -70,9 +102,18 @@ export function useInterpreter() {
         cancelAnimationFrame(flushTimeout.current);
         flushTimeout.current = null;
       }
+      if (traceFlushTimeout.current !== null) {
+        cancelAnimationFrame(traceFlushTimeout.current);
+        traceFlushTimeout.current = null;
+      }
       outputBuffer.current = [];
+      traceBuffer.current = [];
+      traceOutputBuffer.current = [];
+      traceStepRef.current = 0;
+      traceModeRef.current = traceMode;
 
       setEntries([]);
+      setTraceRows([]);
       setIsRunning(true);
       setWaitingForInput(false);
       setIsStepping(stepMode);
@@ -118,6 +159,10 @@ export function useInterpreter() {
             if (flushTimeout.current === null) {
               flushTimeout.current = requestAnimationFrame(flushOutput);
             }
+            // In trace mode, also stage output to attach to the next trace row.
+            if (traceModeRef.current) {
+              traceOutputBuffer.current.push(text);
+            }
           },
           onInputRequest(variableName: string, prompt?: string) {
             // Flush any pending output before requesting input
@@ -129,8 +174,9 @@ export function useInterpreter() {
             setWaitingForInput(false);
           },
           onComplete() {
-            // Flush any remaining output
+            // Flush any remaining output / trace rows
             flushOutputSync();
+            flushTraceSync();
             setIsRunning(false);
             setWaitingForInput(false);
             setIsStepping(false);
@@ -138,6 +184,7 @@ export function useInterpreter() {
           },
           onError(error: PseudocodeError) {
             flushOutputSync();
+            flushTraceSync();
             captureError('runtime', error.message, error.line, sourceCode.split('\n').length);
             if (error.line != null) setErrorLine(error.line);
             setEntries((prev) => [
@@ -160,18 +207,35 @@ export function useInterpreter() {
             setDebugLine(line);
             setDebugVariables(variables);
           },
+          onTrace(line: number, variables: DebugVariable[]) {
+            const output = traceOutputBuffer.current;
+            traceOutputBuffer.current = [];
+            traceStepRef.current += 1;
+            traceBuffer.current.push({
+              step: traceStepRef.current,
+              line,
+              variables,
+              output,
+            });
+            if (traceFlushTimeout.current === null) {
+              traceFlushTimeout.current = requestAnimationFrame(flushTrace);
+            }
+          },
         },
         abortController.signal
       );
 
       interpreter.setStepMode(stepMode);
-      interpreter.setBreakpoints(breakpoints);
+      interpreter.setTraceMode(traceMode);
+      // Trace runs straight through — ignore breakpoints so the table is complete.
+      interpreter.setBreakpoints(traceMode ? new Set() : breakpoints);
       interpreterRef.current = interpreter;
 
       try {
         await interpreter.execute(tree);
       } catch (e) {
         flushOutputSync();
+        flushTraceSync();
 
         if (e instanceof PseudocodeError) {
           captureError('runtime', e.message, e.line, sourceCode.split('\n').length);
@@ -208,6 +272,13 @@ export function useInterpreter() {
   const debugRun = useCallback(
     async (sourceCode: string) => {
       await startExecution(sourceCode, true);
+    },
+    [startExecution]
+  );
+
+  const traceRun = useCallback(
+    async (sourceCode: string) => {
+      await startExecution(sourceCode, false, true);
     },
     [startExecution]
   );
@@ -250,21 +321,30 @@ export function useInterpreter() {
       cancelAnimationFrame(flushTimeout.current);
       flushTimeout.current = null;
     }
+    // Keep whatever trace rows were recorded so far visible, but flush the buffer.
+    flushTraceSync();
+    traceModeRef.current = false;
     outputBuffer.current = [];
     setIsRunning(false);
     setWaitingForInput(false);
     setIsStepping(false);
     setDebugLine(null);
     setDebugVariables([]);
-  }, []);
+  }, [flushTraceSync]);
 
   const clearEntries = useCallback(() => {
     if (flushTimeout.current !== null) {
       cancelAnimationFrame(flushTimeout.current);
       flushTimeout.current = null;
     }
+    if (traceFlushTimeout.current !== null) {
+      cancelAnimationFrame(traceFlushTimeout.current);
+      traceFlushTimeout.current = null;
+    }
     outputBuffer.current = [];
+    traceBuffer.current = [];
     setEntries([]);
+    setTraceRows([]);
   }, []);
 
   const toggleBreakpoint = useCallback((line: number) => {
@@ -294,9 +374,13 @@ export function useInterpreter() {
     errorLine,
     // Breakpoints
     breakpoints,
+    // Trace
+    traceRows,
+    maxTraceRows: MAX_TRACE_ROWS,
     // Actions
     run,
     debugRun,
+    traceRun,
     step,
     continueExecution,
     provideInput,
