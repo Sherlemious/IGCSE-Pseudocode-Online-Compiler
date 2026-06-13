@@ -1,4 +1,5 @@
-export type ThemeId = 'one-dark-pro' | 'dracula' | 'nord' | 'monokai' | 'github-light';
+export type PresetThemeId = 'one-dark-pro' | 'dracula' | 'nord' | 'monokai' | 'github-light';
+export type ThemeId = PresetThemeId | 'custom';
 
 export interface ThemeColors {
   primary: string;
@@ -33,13 +34,13 @@ export interface ThemeColors {
 }
 
 export interface Theme {
-  id: ThemeId;
+  id: PresetThemeId;
   label: string;
   swatch: string;
   colors: ThemeColors;
 }
 
-export const themes: Record<ThemeId, Theme> = {
+export const themes: Record<PresetThemeId, Theme> = {
   'one-dark-pro': {
     id: 'one-dark-pro',
     label: 'One Dark Pro',
@@ -221,3 +222,111 @@ export const themes: Record<ThemeId, Theme> = {
     },
   },
 };
+
+// ── Custom theme support ─────────────────────────────────────
+
+export type CustomColorKey =
+  | 'background' | 'surface' | 'primary' | 'light-text' | 'border'
+  | 'syntax-keyword' | 'syntax-type' | 'syntax-string' | 'syntax-number'
+  | 'syntax-boolean' | 'syntax-operator' | 'syntax-comment' | 'syntax-variable';
+
+export type CustomColors = Pick<ThemeColors, CustomColorKey>;
+
+export const DEFAULT_CUSTOM_COLORS: CustomColors = {
+  background: '#282C34',
+  surface: '#21252B',
+  primary: '#61AFEF',
+  'light-text': '#ABB2BF',
+  border: '#181A1F',
+  'syntax-keyword': '#C678DD',
+  'syntax-type': '#E5C07B',
+  'syntax-string': '#98C379',
+  'syntax-number': '#D19A66',
+  'syntax-boolean': '#D19A66',
+  'syntax-operator': '#56B6C2',
+  'syntax-comment': '#5C6370',
+  'syntax-variable': '#E06C75',
+};
+
+// Color math helpers
+function hexToRgb(hex: string): [number, number, number] {
+  return [
+    parseInt(hex.slice(1, 3), 16),
+    parseInt(hex.slice(3, 5), 16),
+    parseInt(hex.slice(5, 7), 16),
+  ];
+}
+
+function clamp(v: number) { return Math.max(0, Math.min(255, v)); }
+
+function rgbToHex(r: number, g: number, b: number): string {
+  return '#' + [r, g, b].map(v => clamp(Math.round(v)).toString(16).padStart(2, '0')).join('');
+}
+
+function blendHex(a: string, b: string, t: number): string {
+  const [r1, g1, b1] = hexToRgb(a);
+  const [r2, g2, b2] = hexToRgb(b);
+  return rgbToHex(r1 + (r2 - r1) * t, g1 + (g2 - g1) * t, b1 + (b2 - b1) * t);
+}
+
+function scaleHex(hex: string, factor: number): string {
+  const [r, g, b] = hexToRgb(hex);
+  return rgbToHex(r * factor, g * factor, b * factor);
+}
+
+function luminance(hex: string): number {
+  const [r, g, b] = hexToRgb(hex);
+  return (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+}
+
+export function deriveThemeColors(c: CustomColors): ThemeColors {
+  return {
+    primary: c.primary,
+    'primary-hover': scaleHex(c.primary, 0.85),
+    'on-primary': luminance(c.primary) > 0.4 ? '#111318' : '#FFFFFF',
+    secondary: c.surface,
+    accent: c.primary,
+    background: c.background,
+    surface: c.surface,
+    'header-bg': c.surface,
+    'header-text': c['light-text'],
+    'light-text': c['light-text'],
+    'dark-text': blendHex(c['light-text'], c.background, 0.45),
+    border: c.border,
+    'disabled-bg': blendHex(c.surface, c.border, 0.5),
+    warning: '#E5C07B',
+    info: c.primary,
+    error: '#E06C75',
+    'error-hover': '#BE5046',
+    success: '#98C379',
+    'code-bg': c.surface,
+    'code-text': c['light-text'],
+    'syntax-keyword': c['syntax-keyword'],
+    'syntax-type': c['syntax-type'],
+    'syntax-string': c['syntax-string'],
+    'syntax-number': c['syntax-number'],
+    'syntax-boolean': c['syntax-boolean'],
+    'syntax-operator': c['syntax-operator'],
+    'syntax-comment': c['syntax-comment'],
+    'syntax-variable': c['syntax-variable'],
+  };
+}
+
+export function presetToCustomColors(id: PresetThemeId): CustomColors {
+  const c = themes[id].colors;
+  return {
+    background: c.background,
+    surface: c.surface,
+    primary: c.primary,
+    'light-text': c['light-text'],
+    border: c.border,
+    'syntax-keyword': c['syntax-keyword'],
+    'syntax-type': c['syntax-type'],
+    'syntax-string': c['syntax-string'],
+    'syntax-number': c['syntax-number'],
+    'syntax-boolean': c['syntax-boolean'],
+    'syntax-operator': c['syntax-operator'],
+    'syntax-comment': c['syntax-comment'],
+    'syntax-variable': c['syntax-variable'],
+  };
+}
