@@ -283,7 +283,7 @@ const CodeInput: React.FC<CodeInputProps> = ({
           <span>
             <kbd className="font-mono">Ctrl+Enter</kbd> run &middot; <kbd className="font-mono">Ctrl+Shift+K</kbd> stop &middot; <kbd className="font-mono">Ctrl+/</kbd> all shortcuts
           </span>
-          <button onClick={dismissShortcutHint} className="ml-3 text-primary/40 hover:text-primary/70 transition-colors leading-none">
+          <button onClick={dismissShortcutHint} aria-label="Dismiss shortcut hint" className="ml-3 text-primary/40 hover:text-primary/70 transition-colors leading-none">
             <X size={11} />
           </button>
         </div>
