@@ -356,11 +356,22 @@ export default function ExamWorkspace({ examId, questions, timeLimitMin, started
                 strong: ({ ...props }) => <strong className="text-light-text font-semibold" {...props} />,
                 ul: ({ ...props }) => <ul className="list-disc pl-4 mb-2 space-y-0.5" {...props} />,
                 ol: ({ ...props }) => <ol className="list-decimal pl-4 mb-2 space-y-0.5" {...props} />,
-                code: ({ children, ...props }) => (
-                  <code className="font-mono text-[0.82em] px-1 py-0.5 rounded bg-surface border border-border text-info" {...props}>
-                    {children}
-                  </code>
-                ),
+                code: ({ className, children, ...props }) => {
+                  const content = String(children);
+                  const isInline = !className && !content.includes('\n');
+                  if (isInline) {
+                    return (
+                      <code className="font-mono text-[0.82em] px-1 py-0.5 rounded bg-surface border border-border text-info" {...props}>
+                        {children}
+                      </code>
+                    );
+                  }
+                  return (
+                    <code className="font-mono text-xs text-light-text" {...props}>
+                      {children}
+                    </code>
+                  );
+                },
                 pre: ({ ...props }) => (
                   <pre className="mb-2 p-2 rounded bg-background border border-border overflow-x-auto text-xs" {...props} />
                 ),
@@ -510,7 +521,7 @@ export default function ExamWorkspace({ examId, questions, timeLimitMin, started
           </div>
 
           {/* Editor */}
-          <div className="flex-1 min-h-0 flex flex-col" style={{ flex: '1 1 60%' }}>
+          <div className="min-h-0 flex overflow-hidden" style={{ flex: '1 1 60%' }}>
             <CodeMirrorEditor
               value={code}
               onChange={handleCodeChange}
