@@ -3,6 +3,7 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import CodeMirrorEditor from '../compiler/CodeMirrorEditor';
 import TraceTable from '../compiler/TraceTable';
+import PracticeStartGate from './PracticeStartGate';
 import { useInterpreter } from '../../interpreter/useInterpreter';
 import { AUTOSAVE_DELAY, SPLIT_PRACTICE_KEY, loadSplitPercent } from '../../utils/constants';
 import { toast } from 'sonner';
@@ -26,6 +27,8 @@ import {
   Lightbulb,
   BookOpen,
   FileText,
+  LayoutTemplate,
+  PenLine,
   X,
 } from 'lucide-react';
 
@@ -56,17 +59,13 @@ interface Props {
   preloadedFileNames?: string[];
 }
 
+/** How the editor was seeded for a fresh question. */
+type StartMode = 'template' | 'scratch';
+
 /* ── Helpers ────────────────────────────────────────────── */
 
 const STORAGE_KEY = (id: string) => `practice_code:${id}`;
-
-function loadSavedCode(questionId: string, starterCode: string): string {
-  try {
-    return localStorage.getItem(STORAGE_KEY(questionId)) ?? starterCode;
-  } catch {
-    return starterCode;
-  }
-}
+const MODE_KEY = (id: string) => `practice_mode:${id}`;
 
 function errorLabel(kind: string): string {
   switch (kind) {
@@ -86,8 +85,67 @@ function errorHint(error: NonNullable<GradeResultItem['error']>): string {
 /* ── Component ──────────────────────────────────────────── */
 
 export default function PracticeWorkspace({ questionId, starterCode, savedCode, preloadedFileNames }: Props) {
-  /* ── Code state ─────────────────────────────────────── */
-  const [code, setCode] = useState(() => savedCode || loadSavedCode(questionId, starterCode));
+  /* ── Code + start-mode state ────────────────────────── */
+  const [code, setCode] = useState(savedCode ?? '');
+  // `mode === null` means the "choose your start" gate is showing (only once `ready`).
+  const [mode, setMode] = useState<StartMode | null>(null);
+  const [ready, setReady] = useState(false);
+  const prevModeRef = useRef<StartMode | null>(null);
+  const hasTemplate = starterCode.trim().length > 0;
+
+  // Resolve the initial editor state on the client. localStorage isn't available
+  // during SSR, so deferring to a mount effect avoids a hydration mismatch and
+  // keeps the gate decision (which depends on local progress) client-only.
+  useEffect(() => {
+    const localCode = (() => {
+      try { return localStorage.getItem(STORAGE_KEY(questionId)); } catch { return null; }
+    })();
+    const storedMode = (() => {
+      try { return localStorage.getItem(MODE_KEY(questionId)) as StartMode | null; } catch { return null; }
+    })();
+
+    if (savedCode) {
+      // Server-saved progress → continue where they left off.
+      setCode(savedCode);
+      setMode(storedMode ?? 'template');
+    } else if (localCode != null) {
+      // Local draft exists → continue it.
+      setCode(localCode);
+      setMode(storedMode ?? (hasTemplate ? 'template' : 'scratch'));
+    } else if (!hasTemplate) {
+      // No scaffold to offer → straight to a blank editor.
+      setCode('');
+      setMode('scratch');
+    } else {
+      // Fresh question with a template available → show the chooser.
+      setMode(null);
+    }
+    setReady(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [questionId]);
+
+  const chooseMode = useCallback((next: StartMode) => {
+    const seed = next === 'template' ? starterCode : '';
+    setMode(next);
+    setCode(seed);
+    prevModeRef.current = null;
+    try {
+      localStorage.setItem(MODE_KEY(questionId), next);
+      localStorage.setItem(STORAGE_KEY(questionId), seed);
+    } catch { /* storage full / unavailable */ }
+  }, [questionId, starterCode]);
+
+  const reopenGate = useCallback(() => {
+    prevModeRef.current = mode;
+    setMode(null);
+  }, [mode]);
+
+  const cancelGate = useCallback(() => {
+    if (prevModeRef.current) {
+      setMode(prevModeRef.current);
+      prevModeRef.current = null;
+    }
+  }, []);
 
   /* ── Interpreter ────────────────────────────────────── */
   const {
@@ -125,12 +183,13 @@ export default function PracticeWorkspace({ questionId, starterCode, savedCode, 
   /* ── Autosave ───────────────────────────────────────── */
   const saveTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   useEffect(() => {
+    if (!ready || mode === null) return; // don't persist the preview seed while the gate is open
     clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(() => {
       try { localStorage.setItem(STORAGE_KEY(questionId), code); } catch { /* full */ }
     }, AUTOSAVE_DELAY);
     return () => clearTimeout(saveTimer.current);
-  }, [code, questionId]);
+  }, [code, questionId, ready, mode]);
 
   /* ── Auto-scroll terminal ──────────────────────────── */
   useEffect(() => {
@@ -210,10 +269,12 @@ export default function PracticeWorkspace({ questionId, starterCode, savedCode, 
     }
   }, [code, isGrading, isRunning, questionId]);
 
+  // In template mode "reset" restores the scaffold; in scratch mode it clears the editor.
+  const resetTarget = mode === 'scratch' ? '' : starterCode;
   const handleReset = useCallback(() => {
-    if (code === starterCode) return;
+    if (code === resetTarget) return;
     setResetConfirmOpen(true);
-  }, [code, starterCode]);
+  }, [code, resetTarget]);
 
   const handleInputSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -280,21 +341,59 @@ export default function PracticeWorkspace({ questionId, starterCode, savedCode, 
   }, []);
 
   /* ── Render ─────────────────────────────────────────── */
+  // Resolving local progress (client-only) — brief, avoids flashing the wrong pane.
+  if (!ready) {
+    return (
+      <div className="flex-1 min-h-0 flex items-center justify-center bg-background">
+        <span className="inline-block h-6 w-6 rounded-full border-2 border-primary/25 border-t-primary animate-spin" />
+      </div>
+    );
+  }
+
+  // Fresh question with a scaffold available → let the student choose how to begin.
+  if (mode === null) {
+    return (
+      <PracticeStartGate
+        starterCode={starterCode}
+        hasExistingWork={code.trim() !== '' && code !== starterCode}
+        onChoose={chooseMode}
+        onCancel={prevModeRef.current ? cancelGate : undefined}
+      />
+    );
+  }
+
   return (
     <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
       {/* ── Toolbar ──────────────────────────────────── */}
       <div className="h-9 bg-surface border-b border-border flex items-center justify-between px-2 shrink-0">
-        {/* Left: reset */}
+        {/* Left: start-mode chip + reset */}
         <div className="flex items-center gap-1">
+          {hasTemplate && (
+            <>
+              <button
+                onClick={reopenGate}
+                disabled={busy}
+                className="flex items-center gap-1.5 px-2 py-1 text-xs text-dark-text hover:text-light-text
+                  hover:bg-background rounded transition-colors disabled:opacity-30 disabled:pointer-events-none"
+                title="Change how you started"
+              >
+                {mode === 'scratch'
+                  ? <PenLine className="h-3.5 w-3.5" />
+                  : <LayoutTemplate className="h-3.5 w-3.5" />}
+                <span className="hidden sm:inline">{mode === 'scratch' ? 'Scratch' : 'Template'}</span>
+              </button>
+              <div className="w-px h-4 bg-border mx-0.5" />
+            </>
+          )}
           <button
             onClick={handleReset}
-            disabled={busy || code === starterCode}
+            disabled={busy || code === resetTarget}
             className="flex items-center gap-1 px-2 py-1 text-xs text-dark-text hover:text-light-text
               hover:bg-background rounded transition-colors disabled:opacity-30 disabled:pointer-events-none"
-            title="Reset to starter code"
+            title={mode === 'scratch' ? 'Clear all code' : 'Reset to starter code'}
           >
             <RotateCcw className="h-3.5 w-3.5" />
-            <span className="hidden sm:inline">Reset</span>
+            <span className="hidden sm:inline">{mode === 'scratch' ? 'Clear' : 'Reset'}</span>
           </button>
         </div>
 
@@ -546,13 +645,17 @@ export default function PracticeWorkspace({ questionId, starterCode, savedCode, 
             <div className="flex items-start justify-between mb-3">
               <h3 className="text-sm font-semibold text-light-text flex items-center gap-2">
                 <RotateCcw size={14} className="text-warning shrink-0" />
-                Reset to starter code?
+                {mode === 'scratch' ? 'Clear all code?' : 'Reset to starter code?'}
               </h3>
               <button onClick={() => setResetConfirmOpen(false)} className="text-dark-text hover:text-light-text transition-colors p-0.5">
                 <X size={14} />
               </button>
             </div>
-            <p className="text-xs text-dark-text mb-4 leading-relaxed">Your current code will be lost.</p>
+            <p className="text-xs text-dark-text mb-4 leading-relaxed">
+              {mode === 'scratch'
+                ? 'Your current code will be cleared to an empty editor.'
+                : 'Your current code will be replaced with the starter template.'}
+            </p>
             <div className="flex gap-2 justify-end">
               <button
                 onClick={() => setResetConfirmOpen(false)}
@@ -561,10 +664,10 @@ export default function PracticeWorkspace({ questionId, starterCode, savedCode, 
                 Cancel
               </button>
               <button
-                onClick={() => { setResetConfirmOpen(false); setCode(starterCode); }}
+                onClick={() => { setResetConfirmOpen(false); setCode(resetTarget); }}
                 className="px-3 py-1.5 text-xs font-medium text-warning bg-warning/10 hover:bg-warning/20 rounded-lg border border-warning/30 transition-colors"
               >
-                Reset
+                {mode === 'scratch' ? 'Clear' : 'Reset'}
               </button>
             </div>
           </div>
