@@ -139,6 +139,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           type="font/woff2"
           crossOrigin=""
         />
+        <link
+          rel="preload"
+          href="/fonts/fraunces/fraunces-latin-wght-normal.woff2"
+          as="font"
+          type="font/woff2"
+          crossOrigin=""
+        />
       </head>
       <Script
         src="https://www.googletagmanager.com/gtag/js?id=G-8DTBPF97YS"

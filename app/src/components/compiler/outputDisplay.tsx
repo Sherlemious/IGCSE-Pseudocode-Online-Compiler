@@ -248,6 +248,8 @@ const OutputDisplay: React.FC<OutputDisplayProps> = ({
       );
     }
 
+    const hadError = entries.some((e) => e.kind === 'error');
+
     return (
       <div
         className="p-4 font-mono"
@@ -260,7 +262,7 @@ const OutputDisplay: React.FC<OutputDisplayProps> = ({
         {entries.map((entry, i) => {
           if (entry.kind === 'output') {
             return (
-              <div key={i} className="flex gap-2 whitespace-pre-wrap">
+              <div key={i} className="terminal-line flex gap-2 whitespace-pre-wrap">
                 <ChevronRight className="text-primary/40 shrink-0 mt-0.5 w-[1em] h-[1em]" />
                 <span className="text-light-text">{entry.text}</span>
               </div>
@@ -286,7 +288,7 @@ const OutputDisplay: React.FC<OutputDisplayProps> = ({
             return (
               <div
                 key={i}
-                className={`flex gap-2 py-0.5 ${clickable ? 'cursor-pointer hover:opacity-80 transition-opacity' : ''}`}
+                className={`terminal-line flex gap-2 py-0.5 ${clickable ? 'cursor-pointer hover:opacity-80 transition-opacity' : ''}`}
                 onClick={clickable ? () => onJumpToLine!(errLine!) : undefined}
                 title={clickable ? `Click to jump to line ${errLine}` : undefined}
               >
@@ -315,7 +317,7 @@ const OutputDisplay: React.FC<OutputDisplayProps> = ({
           if (entry.kind === 'input') {
             if (entry.submitted) {
               return (
-                <div key={i} className="flex flex-col">
+                <div key={i} className="terminal-line flex flex-col">
                   {entry.prompt && (
                     <span className="text-primary whitespace-pre-wrap">{entry.prompt}</span>
                   )}
@@ -330,7 +332,7 @@ const OutputDisplay: React.FC<OutputDisplayProps> = ({
 
             // Active input (last unsubmitted)
             return (
-              <div key={i} className="flex flex-col my-1">
+              <div key={i} className="terminal-line flex flex-col my-1">
                 {entry.prompt && (
                   <span className="text-primary whitespace-pre-wrap">{entry.prompt}</span>
                 )}
@@ -364,19 +366,27 @@ const OutputDisplay: React.FC<OutputDisplayProps> = ({
           </div>
         )}
 
-        {/* Running indicator */}
+        {/* Running indicator — the "compiling" beat before output streams in */}
         {isRunning && !isStepping && !waitingForInput && entries.length === 0 && (
-          <div className="flex items-center gap-2 text-primary">
-            <span className="inline-block w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-            <span>Executing...</span>
+          <div className="terminal-line flex items-center gap-2 text-primary">
+            <span className="flex items-end gap-1">
+              <span className="exec-dot inline-block w-1.5 h-1.5 rounded-full bg-primary" style={{ animationDelay: '0ms' }} />
+              <span className="exec-dot inline-block w-1.5 h-1.5 rounded-full bg-primary" style={{ animationDelay: '150ms' }} />
+              <span className="exec-dot inline-block w-1.5 h-1.5 rounded-full bg-primary" style={{ animationDelay: '300ms' }} />
+            </span>
+            <span>Running&hellip;</span>
           </div>
         )}
 
-        {/* Process exit message */}
+        {/* Process exit — status-aware so a clean run reads as success */}
         {!isRunning && entries.length > 0 && (
-          <div className="mt-3 pt-2 border-t border-border/50 text-xs text-dark-text/40 flex items-center gap-1.5">
-            <span className="inline-block w-1.5 h-1.5 rounded-full bg-dark-text/30" />
-            Process exited
+          <div
+            className={`terminal-line mt-3 pt-2 border-t border-border/50 text-xs flex items-center gap-1.5 ${
+              hadError ? 'text-error/70' : 'text-success/70'
+            }`}
+          >
+            <span className={`inline-block w-1.5 h-1.5 rounded-full ${hadError ? 'bg-error/60' : 'bg-success/60'}`} />
+            {hadError ? 'Process exited with errors' : 'Process finished'}
           </div>
         )}
       </div>
@@ -447,7 +457,7 @@ const OutputDisplay: React.FC<OutputDisplayProps> = ({
             scrollbar-thin scrollbar-thumb-primary hover:scrollbar-thumb-primary-hover
             scrollbar-track-background scrollbar-thumb-rounded-full"
         >
-          <TraceTable rows={traceRows} maxRows={maxTraceRows} />
+          <TraceTable rows={traceRows} maxRows={maxTraceRows} isLive={isRunning || isStepping} />
         </div>
       ) : (
         <div ref={varsContainerRef} className="flex-1 min-h-0 flex flex-col overflow-hidden">

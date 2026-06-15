@@ -269,7 +269,7 @@ export default async function PracticePage({ searchParams }: PageProps) {
                 <Sparkles size={11} className="shrink-0" />
                 Past-paper practice
               </div>
-              <h1 className="text-2xl font-bold tracking-tight">Practice Questions</h1>
+              <h1 className="display-serif text-[1.75rem] leading-tight font-semibold">Practice Questions</h1>
               <p className="text-sm text-dark-text mt-1 max-w-md">
                 Solve autograded pseudocode questions. Every submission is checked against hidden test cases.
               </p>
@@ -598,7 +598,7 @@ function EmptyState({ title, body }: { title: string; body: string }) {
       <div className="w-14 h-14 rounded-2xl bg-surface border border-border flex items-center justify-center mb-4">
         <FileText className="h-6 w-6 text-primary/50" />
       </div>
-      <h2 className="text-base font-semibold text-light-text mb-1.5">{title}</h2>
+      <h2 className="display-serif text-xl font-semibold text-light-text mb-1.5">{title}</h2>
       <p className="text-sm text-dark-text max-w-xs">{body}</p>
     </div>
   );

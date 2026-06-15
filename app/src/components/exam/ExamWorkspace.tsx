@@ -238,7 +238,7 @@ export default function ExamWorkspace({ examId, questions, timeLimitMin, started
             <div className="w-14 h-14 rounded-full bg-error/15 border border-error/30 flex items-center justify-center mx-auto mb-4">
               <Loader2 size={24} className="text-error animate-spin" />
             </div>
-            <h2 className="text-xl font-bold text-light-text mb-2">Time&apos;s Up!</h2>
+            <h2 className="display-serif text-2xl font-semibold text-light-text mb-2">Time&apos;s Up!</h2>
             <p className="text-xs text-dark-text leading-relaxed">Submitting your exam&hellip;</p>
           </div>
         </div>
@@ -336,7 +336,7 @@ export default function ExamWorkspace({ examId, questions, timeLimitMin, started
       <div className="flex-1 min-h-0 flex flex-col lg:flex-row">
         {/* Left: question description */}
         <div className="lg:w-80 shrink-0 border-r border-border overflow-y-auto p-5 scrollbar-thin scrollbar-thumb-primary">
-          <h2 className="text-sm font-bold text-light-text mb-1.5">{question.title}</h2>
+          <h2 className="display-serif text-lg leading-snug font-semibold text-light-text mb-1.5">{question.title}</h2>
           <span
             className={`inline-block text-[10px] font-mono font-semibold px-2 py-0.5 rounded-md border mb-3 ${
               question.difficulty === 'EASY'

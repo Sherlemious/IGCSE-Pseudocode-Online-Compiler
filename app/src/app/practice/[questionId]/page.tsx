@@ -195,7 +195,7 @@ export default async function QuestionPage({ params }: Props) {
           <ChevronLeft size={12} />
           Practice
         </Link>
-        <h1 className="text-lg font-bold text-light-text mb-2">{question.title}</h1>
+        <h1 className="display-serif text-2xl leading-snug font-semibold text-light-text mb-2">{question.title}</h1>
 
         {/* Paper reference line — only shown when structured paper data exists */}
         {(question.year || question.session || question.variant || question.questionNumber || question.part) && (
@@ -248,8 +248,8 @@ export default async function QuestionPage({ params }: Props) {
           <ReactMarkdown
             remarkPlugins={[remarkGfm]}
             components={{
-              h1: ({ ...props }) => <h3 className="text-base font-semibold text-light-text mt-5 mb-2" {...props} />,
-              h2: ({ ...props }) => <h3 className="text-base font-semibold text-light-text mt-5 mb-2" {...props} />,
+              h1: ({ ...props }) => <h3 className="display-serif text-lg font-semibold text-light-text mt-5 mb-2" {...props} />,
+              h2: ({ ...props }) => <h3 className="display-serif text-lg font-semibold text-light-text mt-5 mb-2" {...props} />,
               h3: ({ ...props }) => <h4 className="text-sm font-semibold text-light-text mt-4 mb-2" {...props} />,
               p: ({ ...props }) => <p className="mb-3" {...props} />,
               strong: ({ ...props }) => <strong className="text-light-text font-semibold" {...props} />,
@@ -309,7 +309,7 @@ export default async function QuestionPage({ params }: Props) {
         {/* Sample test cases (always visible — they're a teaser for locked questions) */}
         {question.testCases.length > 0 && (
           <div className="mt-6">
-            <h2 className="text-sm font-semibold text-light-text mb-2">Sample Test Cases</h2>
+            <h2 className="display-serif text-base font-semibold text-light-text mb-2">Sample Test Cases</h2>
             <div className="space-y-3">
               {question.testCases.map((tc, i) => {
                 let preloadedFiles: Record<string, string> | null = null;

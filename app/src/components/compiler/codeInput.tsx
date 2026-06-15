@@ -86,6 +86,27 @@ const CodeInput: React.FC<CodeInputProps> = ({
   const [showShortcutHint, setShowShortcutHint] = useState(false);
   const { wordWrap } = useTheme();
 
+  // Flash the Run button once when a run settles — success-tinted on a clean
+  // finish, error-tinted when the run produced an error. Watches the falling
+  // edge of isRunning and the rising edge of errorLine so it fires for normal
+  // runs, runtime errors and instant parse errors alike.
+  const [runPulse, setRunPulse] = useState<'idle' | 'success' | 'error'>('idle');
+  const prevRunning = useRef(false);
+  const prevErrorLine = useRef<number | null>(null);
+  const pulseTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  useEffect(() => {
+    const justFinished = prevRunning.current && !isRunning;
+    const justErrored = errorLine != null && prevErrorLine.current == null;
+    if (justErrored || justFinished) {
+      setRunPulse(justErrored ? 'error' : 'success');
+      clearTimeout(pulseTimer.current);
+      pulseTimer.current = setTimeout(() => setRunPulse('idle'), 700);
+    }
+    prevRunning.current = isRunning;
+    prevErrorLine.current = errorLine ?? null;
+  }, [isRunning, errorLine]);
+  useEffect(() => () => clearTimeout(pulseTimer.current), []);
+
   useEffect(() => {
     try {
       if (!localStorage.getItem(SHORTCUT_HINT_KEY)) {
@@ -262,7 +283,9 @@ const CodeInput: React.FC<CodeInputProps> = ({
               </button>
               <button
                 onClick={onRunCode}
-                className="flex items-center gap-1 px-2 py-1 text-xs text-success hover:bg-success/10 rounded transition-colors"
+                className={`flex items-center gap-1 px-2 py-1 text-xs text-success hover:bg-success/10 rounded transition-colors ${
+                  runPulse === 'success' ? 'run-pulse-success' : runPulse === 'error' ? 'run-pulse-error' : ''
+                }`}
                 title="Run Code (Ctrl+Enter)"
                 data-tour="run-button"
               >

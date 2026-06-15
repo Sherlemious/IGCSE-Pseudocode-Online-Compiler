@@ -621,7 +621,7 @@ export default function PracticeWorkspace({ questionId, starterCode, savedCode, 
           ) : activeTab === 'trace' ? (
             <div className="flex-1 min-h-0 bg-background overflow-auto
               scrollbar-thin scrollbar-thumb-primary scrollbar-track-background scrollbar-thumb-rounded-full">
-              <TraceTable rows={traceRows} maxRows={maxTraceRows} />
+              <TraceTable rows={traceRows} maxRows={maxTraceRows} isLive={isRunning || isStepping} />
             </div>
           ) : (
             <div className="flex-1 min-h-0 bg-background overflow-y-auto
@@ -739,7 +739,7 @@ export default function PracticeWorkspace({ questionId, starterCode, savedCode, 
         {entries.map((entry, i) => {
           if (entry.kind === 'output') {
             return (
-              <div key={i} className="flex gap-2 whitespace-pre-wrap">
+              <div key={i} className="terminal-line flex gap-2 whitespace-pre-wrap">
                 <ChevronRight size={14} className="text-primary/40 shrink-0 mt-0.5" />
                 <span className="text-light-text">{entry.text}</span>
               </div>
@@ -751,7 +751,7 @@ export default function PracticeWorkspace({ questionId, starterCode, savedCode, 
             return (
               <div
                 key={i}
-                className={`flex gap-2 whitespace-pre-wrap py-0.5 ${errLine ? 'cursor-pointer hover:opacity-75 transition-opacity' : ''}`}
+                className={`terminal-line flex gap-2 whitespace-pre-wrap py-0.5 ${errLine ? 'cursor-pointer hover:opacity-75 transition-opacity' : ''}`}
                 onClick={errLine ? () => { setJumpToLine(errLine); setMobileView('editor'); } : undefined}
                 title={errLine ? `Click to jump to line ${errLine}` : undefined}
               >
@@ -763,7 +763,7 @@ export default function PracticeWorkspace({ questionId, starterCode, savedCode, 
           if (entry.kind === 'input') {
             if (entry.submitted) {
               return (
-                <div key={i} className="flex gap-2 whitespace-pre-wrap">
+                <div key={i} className="terminal-line flex gap-2 whitespace-pre-wrap">
                   <span className="text-info/50 shrink-0">&larr;</span>
                   <span className="text-dark-text/70">{entry.variableName}:</span>
                   <span className="text-info">{entry.value}</span>
@@ -771,7 +771,7 @@ export default function PracticeWorkspace({ questionId, starterCode, savedCode, 
               );
             }
             return (
-              <form key={i} onSubmit={handleInputSubmit} className="flex items-center gap-2 my-1">
+              <form key={i} onSubmit={handleInputSubmit} className="terminal-line flex items-center gap-2 my-1">
                 <span className="text-info terminal-cursor shrink-0">&gt;</span>
                 <span className="text-dark-text/70 shrink-0">{entry.variableName}:</span>
                 <input
@@ -798,15 +798,25 @@ export default function PracticeWorkspace({ questionId, starterCode, savedCode, 
           </div>
         )}
         {isRunning && !isStepping && !waitingForInput && entries.length === 0 && (
-          <div className="flex items-center gap-2 text-primary">
-            <span className="inline-block w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-            <span>Executing...</span>
+          <div className="terminal-line flex items-center gap-2 text-primary">
+            <span className="flex items-end gap-1">
+              <span className="exec-dot inline-block w-1.5 h-1.5 rounded-full bg-primary" style={{ animationDelay: '0ms' }} />
+              <span className="exec-dot inline-block w-1.5 h-1.5 rounded-full bg-primary" style={{ animationDelay: '150ms' }} />
+              <span className="exec-dot inline-block w-1.5 h-1.5 rounded-full bg-primary" style={{ animationDelay: '300ms' }} />
+            </span>
+            <span>Running&hellip;</span>
           </div>
         )}
         {!isRunning && entries.length > 0 && (
-          <div className="mt-3 pt-2 border-t border-border/50 text-xs text-dark-text/40 flex items-center gap-1.5">
-            <span className="inline-block w-1.5 h-1.5 rounded-full bg-dark-text/30" />
-            Process exited
+          <div
+            className={`terminal-line mt-3 pt-2 border-t border-border/50 text-xs flex items-center gap-1.5 ${
+              entries.some((e) => e.kind === 'error') ? 'text-error/70' : 'text-success/70'
+            }`}
+          >
+            <span className={`inline-block w-1.5 h-1.5 rounded-full ${
+              entries.some((e) => e.kind === 'error') ? 'bg-error/60' : 'bg-success/60'
+            }`} />
+            {entries.some((e) => e.kind === 'error') ? 'Process exited with errors' : 'Process finished'}
           </div>
         )}
       </div>

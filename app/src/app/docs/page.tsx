@@ -17,7 +17,7 @@ type HeadingProps = {
 };
 
 const H2 = ({ id, children }: HeadingProps) => (
-  <h2 data-section={id} className="text-lg font-semibold text-light-text pt-6 pb-2 mb-4 border-b border-border scroll-mt-4">
+  <h2 data-section={id} className="display-serif text-2xl font-semibold text-light-text pt-6 pb-2 mb-4 border-b border-border scroll-mt-4">
     {children}
   </h2>
 );
@@ -275,7 +275,7 @@ const DocsPage = () => {
         <div className="max-w-3xl mx-auto">
           {/* Title */}
           <div className="pt-6 pb-4">
-            <h1 className="text-xl font-bold text-light-text">Cambridge Pseudocode Reference</h1>
+            <h1 className="display-serif text-3xl leading-tight font-semibold text-light-text">Cambridge Pseudocode Reference</h1>
             <p className="text-sm text-dark-text mt-1">
               Complete language reference for Cambridge IGCSE (0478) and Cambridge International AS &amp; A
               Level Computer Science (9618) pseudocode. IGCSE syntax is a subset — everything below works

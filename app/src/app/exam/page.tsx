@@ -65,7 +65,7 @@ export default async function ExamPage() {
             <Hourglass className="h-5 w-5 text-primary" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-light-text tracking-tight">Exam Simulation</h1>
+            <h1 className="display-serif text-2xl font-semibold text-light-text">Exam Simulation</h1>
             <p className="text-xs text-dark-text mt-0.5">Timed practice with randomly selected questions</p>
           </div>
         </div>
