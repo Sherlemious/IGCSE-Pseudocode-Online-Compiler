@@ -11,7 +11,7 @@ export default function TopicBreakdown({ data }: Props) {
 
   return (
     <div className="bg-surface rounded-xl border border-border p-5 animate-fade-in-up" style={{ animationDelay: '180ms' }}>
-      <h3 className="mono-label text-dark-text mb-5">By Topic</h3>
+      <h3 className="display-serif text-base font-semibold text-light-text mb-5">Marks by Topic</h3>
       {entries.length === 0 ? (
         <div className="text-center py-6 space-y-3">
           <p className="text-xs text-dark-text/50">No topic data yet</p>

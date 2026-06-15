@@ -89,7 +89,7 @@ export default function ActivityHeatmap({ activityByDate }: { activityByDate: Re
   return (
     <div className="bg-surface rounded-xl border border-border p-4 mb-4 animate-fade-in-up">
       <div className="flex items-center justify-between mb-3">
-        <span className="text-xs font-semibold text-light-text">Activity</span>
+        <span className="display-serif text-base font-semibold text-light-text">Activity</span>
         <div className="flex items-center gap-3 text-[10px] text-dark-text">
           {currentStreak > 0 && (
             <span className="text-primary font-medium">{currentStreak}-day streak</span>

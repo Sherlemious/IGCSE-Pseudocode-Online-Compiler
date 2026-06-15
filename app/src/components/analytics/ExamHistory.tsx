@@ -22,7 +22,7 @@ export default function ExamHistory({ exams }: Props) {
   if (exams.length === 0) {
     return (
       <div className="bg-surface rounded-xl border border-border p-5 animate-fade-in-up" style={{ animationDelay: '300ms' }}>
-        <h3 className="mono-label text-dark-text mb-5">Exam History</h3>
+        <h3 className="display-serif text-base font-semibold text-light-text mb-5">Examination Record</h3>
         <div className="text-center py-8">
           <Circle size={20} className="text-dark-text/20 mx-auto mb-2" />
           <p className="text-xs text-dark-text/50 mb-3">No exams taken yet</p>
@@ -39,7 +39,7 @@ export default function ExamHistory({ exams }: Props) {
 
   return (
     <div className="bg-surface rounded-xl border border-border p-5 animate-fade-in-up" style={{ animationDelay: '300ms' }}>
-      <h3 className="mono-label text-dark-text mb-4">Exam History</h3>
+      <h3 className="display-serif text-base font-semibold text-light-text mb-4">Examination Record</h3>
       <div className="space-y-0.5">
         {exams.map((exam) => {
           const pct = exam.totalTests && exam.totalTests > 0

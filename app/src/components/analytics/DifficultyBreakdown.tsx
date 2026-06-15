@@ -13,7 +13,7 @@ export default function DifficultyBreakdown({ data }: Props) {
 
   return (
     <div className="bg-surface rounded-xl border border-border p-5 animate-fade-in-up" style={{ animationDelay: '120ms' }}>
-      <h3 className="mono-label text-dark-text mb-5">By Difficulty</h3>
+      <h3 className="display-serif text-base font-semibold text-light-text mb-5">Marks by Difficulty</h3>
       <div className="space-y-5">
         {DIFFS.map(({ key, label, color, textClass }) => {
           const d = data[key] || { attempted: 0, solved: 0 };

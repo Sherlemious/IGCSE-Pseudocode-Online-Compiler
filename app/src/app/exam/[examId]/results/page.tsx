@@ -58,6 +58,15 @@ export default async function ExamResultsPage({ params }: Props) {
   const scoreColor =
     percentage >= 70 ? 'var(--color-success)' : percentage >= 40 ? 'var(--color-warning)' : 'var(--color-error)';
 
+  // Indicative grade band + examiner's remark — the "graded paper" framing.
+  const gradeBand =
+    percentage >= 90 ? 'A*' : percentage >= 80 ? 'A' : percentage >= 70 ? 'B'
+    : percentage >= 60 ? 'C' : percentage >= 50 ? 'D' : percentage >= 40 ? 'E' : 'U';
+  const examRemark =
+    percentage >= 70 ? 'Strong performance under timed conditions.'
+    : percentage >= 40 ? 'A solid attempt — review the questions you missed below.'
+    : 'Keep practising — revisit these topics and sit the paper again.';
+
   return (
     <div className="flex-1 overflow-y-auto bg-background bg-dot-grid p-6 relative">
       <div
@@ -103,15 +112,20 @@ export default async function ExamResultsPage({ params }: Props) {
               />
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className="text-3xl font-bold font-mono" style={{ color: scoreColor }}>
+              <span className="display-serif text-3xl font-semibold leading-none" style={{ color: scoreColor }}>
                 {percentage}%
               </span>
             </div>
           </div>
 
-          <h1 className="text-lg font-bold text-light-text mb-1">
+          <h1 className="display-serif text-2xl font-semibold text-light-text mb-1.5">
             {exam.status === 'TIMED_OUT' ? 'Time\u2019s Up!' : 'Exam Complete'}
           </h1>
+
+          <div className="inline-flex items-center gap-2">
+            <span className="mono-label text-dark-text/55">Indicative grade</span>
+            <span className="display-serif text-xl font-semibold leading-none" style={{ color: scoreColor }}>{gradeBand}</span>
+          </div>
 
           <div className="flex items-center justify-center gap-5 text-xs text-dark-text mt-3">
             <span className="flex items-center gap-1.5 font-mono">
@@ -130,6 +144,10 @@ export default async function ExamResultsPage({ params }: Props) {
               {exam.difficulty && ` / ${exam.difficulty}`}
             </div>
           )}
+
+          <p className="display-serif italic text-sm text-light-text/80 leading-snug mt-4 pt-4 border-t border-border/50 max-w-sm mx-auto">
+            {examRemark}
+          </p>
         </div>
 
         {/* Share */}
@@ -139,7 +157,7 @@ export default async function ExamResultsPage({ params }: Props) {
 
         {/* Per-question breakdown */}
         <div className="animate-fade-in-up" style={{ animationDelay: '150ms' }}>
-          <h2 className="mono-label text-dark-text mb-3 px-1">Question Breakdown</h2>
+          <h2 className="display-serif text-lg font-semibold text-light-text mb-3 px-1">Marking Summary</h2>
           <div className="space-y-2 stagger-children mb-6">
             {exam.answers.map((a, i) => {
               const allPassed = a.totalTests > 0 && a.passCount === a.totalTests;
