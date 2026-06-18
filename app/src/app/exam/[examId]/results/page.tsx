@@ -68,7 +68,7 @@ export default async function ExamResultsPage({ params }: Props) {
     : 'Keep practising — revisit these topics and sit the paper again.';
 
   return (
-    <div className="flex-1 overflow-y-auto bg-background bg-dot-grid p-6 relative">
+    <div className="flex-1 overflow-y-auto bg-background bg-dot-grid p-6 relative scrollbar-pretty">
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
