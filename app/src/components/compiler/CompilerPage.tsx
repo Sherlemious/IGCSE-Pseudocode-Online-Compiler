@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import CodeInput, { type EditorTab, type CursorPosition } from './codeInput';
 import OutputDisplay from './outputDisplay';
+import { convertToPython } from '../../interpreter/converters/pythonConverter';
 import Footer from '../layout/footer';
 import OnboardingTour from '../onboarding/OnboardingTour';
 import FeedbackSurvey, { shouldShowFeedbackSurvey } from '../feedback/FeedbackSurvey';
@@ -66,7 +67,7 @@ const CompilerPage: React.FC = () => {
   const [showFeedback, setShowFeedback] = useState(false);
   const feedbackShownRef = useRef(false);
   const [jumpToLine, setJumpToLine] = useState<number | null>(null);
-  const [outputTab, setOutputTab] = useState<'terminal' | 'trace'>('terminal');
+  const [outputTab, setOutputTab] = useState<'terminal' | 'trace' | 'python'>('terminal');
 
   const {
     entries,
@@ -101,6 +102,13 @@ const CompilerPage: React.FC = () => {
   }, []);
 
   const activeTab = tabs.find((t) => t.id === activeTabId) ?? tabs[0];
+
+  // Convert pseudocode → Python lazily — only while the Python tab is open, so we
+  // don't re-parse on every keystroke when it isn't being viewed.
+  const pythonConversion = useMemo(
+    () => (outputTab === 'python' ? convertToPython(activeTab.content) : { code: '', errors: [] }),
+    [activeTab.content, outputTab],
+  );
 
   // Sync running state for footer
   useEffect(() => {
@@ -302,6 +310,7 @@ const CompilerPage: React.FC = () => {
             onContinue={continueExecution}
             onStop={stop}
             onSelectExample={handleExampleSelect}
+            onConvertToPython={() => setOutputTab('python')}
             onCursorChange={setCursor}
             tabs={tabs}
             activeTabId={activeTabId}
@@ -339,6 +348,8 @@ const CompilerPage: React.FC = () => {
             maxTraceRows={maxTraceRows}
             activeTab={outputTab}
             onTabChange={setOutputTab}
+            pythonCode={pythonConversion.code}
+            pythonErrors={pythonConversion.errors}
           />
         </div>
       </div>

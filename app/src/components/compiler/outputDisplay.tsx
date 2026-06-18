@@ -1,10 +1,13 @@
 'use client';
 
 import React, { useRef, useEffect, useState, useCallback } from 'react';
-import { Terminal, Trash2, ChevronRight, Bug, ChevronDown, Copy, Check, Table2 } from 'lucide-react';
-import type { OutputEntry, DebugVariable, TraceRow } from '../../interpreter/core/types';
+import { Terminal, Trash2, ChevronRight, Bug, ChevronDown, Copy, Check, Table2, Code2, Download, AlertTriangle } from 'lucide-react';
+import type { OutputEntry, DebugVariable, TraceRow, PseudocodeError } from '../../interpreter/core/types';
 import TraceTable from './TraceTable';
+import PythonView from './PythonView';
 import { SPLIT_VARS_KEY, loadSplitPercent } from '../../utils/constants';
+
+type OutputTab = 'terminal' | 'trace' | 'python';
 
 interface OutputDisplayProps {
   entries: OutputEntry[];
@@ -17,8 +20,10 @@ interface OutputDisplayProps {
   onJumpToLine?: (line: number) => void;
   traceRows?: TraceRow[];
   maxTraceRows?: number;
-  activeTab?: 'terminal' | 'trace';
-  onTabChange?: (tab: 'terminal' | 'trace') => void;
+  activeTab?: OutputTab;
+  onTabChange?: (tab: OutputTab) => void;
+  pythonCode?: string;
+  pythonErrors?: PseudocodeError[];
 }
 
 const WELCOME_ART = `  ___  ___  ___ _   _ ___   ___
@@ -39,6 +44,8 @@ const OutputDisplay: React.FC<OutputDisplayProps> = ({
   maxTraceRows = 1000,
   activeTab = 'terminal',
   onTabChange,
+  pythonCode = '',
+  pythonErrors = [],
 }) => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -136,6 +143,23 @@ const OutputDisplay: React.FC<OutputDisplayProps> = ({
     });
   };
 
+  const handleCopyPython = () => {
+    navigator.clipboard.writeText(pythonCode).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    });
+  };
+
+  const handleDownloadPython = () => {
+    const blob = new Blob([pythonCode], { type: 'text/x-python' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'pseudocode.py';
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const formatValue = (v: DebugVariable) => {
     if (v.type === 'STRING') return `"${v.value}"`;
     if (v.type === 'CHAR') return `'${v.value}'`;
@@ -227,6 +251,29 @@ const OutputDisplay: React.FC<OutputDisplayProps> = ({
         )}
       </>
     );
+  };
+
+  const renderPythonContent = () => {
+    if (pythonErrors.length > 0) {
+      return (
+        <div className="h-full flex flex-col items-center justify-center gap-3 text-dark-text select-none p-6 text-center">
+          <AlertTriangle className="h-6 w-6 text-warning" />
+          <div className="text-sm text-light-text">Fix the syntax errors before converting</div>
+          <div className="text-xs text-dark-text/70 max-w-md font-mono">
+            {pythonErrors[0].line ? `Line ${pythonErrors[0].line}: ` : ''}{pythonErrors[0].message}
+          </div>
+        </div>
+      );
+    }
+    if (!pythonCode.trim()) {
+      return (
+        <div className="h-full flex flex-col items-center justify-center gap-2 text-dark-text select-none p-6 text-center">
+          <Code2 className="h-6 w-6 text-primary/40" />
+          <div className="text-sm text-dark-text/70">Write some pseudocode to see the Python translation</div>
+        </div>
+      );
+    }
+    return <PythonView code={pythonCode} />;
   };
 
   const renderContent = () => {
@@ -427,6 +474,18 @@ const OutputDisplay: React.FC<OutputDisplayProps> = ({
               <span className="text-[10px] font-mono text-dark-text/60">{traceRows.length}</span>
             )}
           </button>
+          <button
+            onClick={() => onTabChange?.('python')}
+            className={`flex items-center gap-1.5 px-2.5 py-1 text-xs rounded transition-colors ${
+              activeTab === 'python'
+                ? 'bg-background text-light-text font-medium'
+                : 'text-dark-text hover:text-light-text hover:bg-background/50'
+            }`}
+            title="Convert this pseudocode to Python"
+          >
+            <Code2 className="h-3.5 w-3.5" />
+            Python
+          </button>
         </div>
         <div className="flex items-center gap-0.5">
           {activeTab === 'terminal' && entries.length > 0 && (
@@ -447,11 +506,33 @@ const OutputDisplay: React.FC<OutputDisplayProps> = ({
               <Trash2 className="h-3.5 w-3.5" />
             </button>
           )}
+          {activeTab === 'python' && pythonCode && pythonErrors.length === 0 && (
+            <>
+              <button
+                onClick={handleCopyPython}
+                className="opacity-60 hover:opacity-100 transition-opacity p-1 rounded hover:bg-background"
+                title="Copy Python"
+              >
+                {copied ? <Check className="h-3.5 w-3.5 text-success" /> : <Copy className="h-3.5 w-3.5" />}
+              </button>
+              <button
+                onClick={handleDownloadPython}
+                className="opacity-60 hover:opacity-100 transition-opacity p-1 rounded hover:bg-background"
+                title="Download .py"
+              >
+                <Download className="h-3.5 w-3.5" />
+              </button>
+            </>
+          )}
         </div>
       </div>
 
       {/* Content area */}
-      {activeTab === 'trace' ? (
+      {activeTab === 'python' ? (
+        <div className="flex-1 min-h-0 bg-background overflow-hidden flex flex-col">
+          {renderPythonContent()}
+        </div>
+      ) : activeTab === 'trace' ? (
         <div
           className="flex-1 min-h-0 bg-background overflow-auto
             scrollbar-thin scrollbar-thumb-primary hover:scrollbar-thumb-primary-hover

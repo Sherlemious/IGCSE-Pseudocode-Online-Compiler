@@ -13,6 +13,7 @@ import {
   Download,
   Share2,
   Check,
+  Code2,
 } from 'lucide-react';
 import ExamplePicker from './examplePicker';
 import FileViewer from './fileViewer';
@@ -45,6 +46,7 @@ interface CodeInputProps {
   onContinue: () => void;
   onStop: () => void;
   onSelectExample: (code: string) => void;
+  onConvertToPython?: () => void;
   onCursorChange?: (pos: CursorPosition) => void;
   tabs: EditorTab[];
   activeTabId: string;
@@ -70,6 +72,7 @@ const CodeInput: React.FC<CodeInputProps> = ({
   onContinue,
   onStop,
   onSelectExample,
+  onConvertToPython,
   onCursorChange,
   tabs,
   activeTabId,
@@ -233,6 +236,13 @@ const CodeInput: React.FC<CodeInputProps> = ({
               title="Copy share link"
             >
               {shareStatus === 'copied' ? <Check size={14} className="text-success" /> : <Share2 size={14} />}
+            </button>
+            <button
+              onClick={onConvertToPython}
+              className="flex items-center justify-center w-7 h-7 opacity-60 hover:opacity-100 hover:bg-background rounded transition-opacity"
+              title="Convert to Python"
+            >
+              <Code2 size={14} />
             </button>
           </div>
         </div>
