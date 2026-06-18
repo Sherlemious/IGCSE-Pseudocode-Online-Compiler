@@ -1,13 +1,24 @@
 'use client';
 
 import React, { useRef, useEffect, useState, useCallback } from 'react';
-import { Terminal, Trash2, ChevronRight, Bug, ChevronDown, Copy, Check, Table2, Code2, Download, AlertTriangle, RefreshCw } from 'lucide-react';
+import dynamic from 'next/dynamic';
+import { Terminal, Trash2, ChevronRight, Bug, ChevronDown, Copy, Check, Table2, Code2, Workflow, Download, AlertTriangle, RefreshCw } from 'lucide-react';
 import type { OutputEntry, DebugVariable, TraceRow, PseudocodeError } from '../../interpreter/core/types';
+import type { FlowNode, FlowEdge } from '../../interpreter/converters/flowchartConverter';
 import TraceTable from './TraceTable';
 import PythonView from './PythonView';
 import { SPLIT_VARS_KEY, loadSplitPercent } from '../../utils/constants';
 
-type OutputTab = 'terminal' | 'trace' | 'python';
+// React Flow + dagre are heavy and only needed when the Flowchart tab is opened,
+// so the whole view (and its deps) is code-split out of the main bundle.
+const FlowchartView = dynamic(() => import('./FlowchartView'), {
+  ssr: false,
+  loading: () => (
+    <div className="h-full flex items-center justify-center text-xs text-dark-text/60">Loading flowchart…</div>
+  ),
+});
+
+type OutputTab = 'terminal' | 'trace' | 'python' | 'flowchart';
 
 interface OutputDisplayProps {
   entries: OutputEntry[];
@@ -26,6 +37,12 @@ interface OutputDisplayProps {
   pythonErrors?: PseudocodeError[];
   pythonStale?: boolean;
   onRefreshPython?: () => void;
+  flowchartNodes?: FlowNode[];
+  flowchartEdges?: FlowEdge[];
+  flowchartNotes?: string[];
+  flowchartErrors?: PseudocodeError[];
+  flowchartStale?: boolean;
+  onRefreshFlowchart?: () => void;
 }
 
 const WELCOME_ART = `  ___  ___  ___ _   _ ___   ___
@@ -50,6 +67,12 @@ const OutputDisplay: React.FC<OutputDisplayProps> = ({
   pythonErrors = [],
   pythonStale = false,
   onRefreshPython,
+  flowchartNodes = [],
+  flowchartEdges = [],
+  flowchartNotes = [],
+  flowchartErrors = [],
+  flowchartStale = false,
+  onRefreshFlowchart,
 }) => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -280,6 +303,45 @@ const OutputDisplay: React.FC<OutputDisplayProps> = ({
     return <PythonView code={pythonCode} />;
   };
 
+  const renderFlowchartContent = () => {
+    if (flowchartErrors.length > 0) {
+      return (
+        <div className="h-full flex flex-col items-center justify-center gap-3 text-dark-text select-none p-6 text-center">
+          <AlertTriangle className="h-6 w-6 text-warning" />
+          <div className="text-sm text-light-text">Fix the syntax errors before converting</div>
+          <div className="text-xs text-dark-text/70 max-w-md font-mono">
+            {flowchartErrors[0].line ? `Line ${flowchartErrors[0].line}: ` : ''}{flowchartErrors[0].message}
+          </div>
+        </div>
+      );
+    }
+    if (flowchartNodes.length === 0) {
+      return (
+        <div className="h-full flex flex-col items-center justify-center gap-2 text-dark-text select-none p-6 text-center">
+          <Workflow className="h-6 w-6 text-primary/40" />
+          <div className="text-sm text-dark-text/70">Write some pseudocode to see the flowchart</div>
+        </div>
+      );
+    }
+    return (
+      <div className="h-full flex flex-col">
+        <div className="flex-1 min-h-0">
+          <FlowchartView nodes={flowchartNodes} edges={flowchartEdges} />
+        </div>
+        {flowchartNotes.length > 0 && (
+          <div className="shrink-0 max-h-24 overflow-y-auto border-t border-border bg-surface/50 px-3 py-1.5 text-[11px] text-dark-text/70">
+            {flowchartNotes.map((note, i) => (
+              <div key={i} className="flex gap-1.5">
+                <span className="text-warning/70">•</span>
+                <span>{note}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   const renderContent = () => {
     // Welcome state — no run yet
     if (!isRunning && entries.length === 0) {
@@ -490,6 +552,18 @@ const OutputDisplay: React.FC<OutputDisplayProps> = ({
             <Code2 className="h-3.5 w-3.5" />
             Python
           </button>
+          <button
+            onClick={() => onTabChange?.('flowchart')}
+            className={`flex items-center gap-1.5 px-2.5 py-1 text-xs rounded transition-colors ${
+              activeTab === 'flowchart'
+                ? 'bg-background text-light-text font-medium'
+                : 'text-dark-text hover:text-light-text hover:bg-background/50'
+            }`}
+            title="Convert this pseudocode to a flowchart"
+          >
+            <Workflow className="h-3.5 w-3.5" />
+            Flowchart
+          </button>
         </div>
         <div className="flex items-center gap-0.5">
           {activeTab === 'terminal' && entries.length > 0 && (
@@ -539,6 +613,17 @@ const OutputDisplay: React.FC<OutputDisplayProps> = ({
               </button>
             </>
           )}
+          {activeTab === 'flowchart' && (
+            <button
+              onClick={onRefreshFlowchart}
+              className={`transition-opacity p-1 rounded hover:bg-background ${
+                flowchartStale ? 'text-warning opacity-100' : 'opacity-60 hover:opacity-100'
+              }`}
+              title={flowchartStale ? 'Code changed since converting — click to re-convert' : 'Re-convert from current code'}
+            >
+              <RefreshCw className="h-3.5 w-3.5" />
+            </button>
+          )}
         </div>
       </div>
 
@@ -556,6 +641,20 @@ const OutputDisplay: React.FC<OutputDisplayProps> = ({
             </button>
           )}
           {renderPythonContent()}
+        </div>
+      ) : activeTab === 'flowchart' ? (
+        <div className="flex-1 min-h-0 bg-background overflow-hidden flex flex-col">
+          {flowchartStale && flowchartNodes.length > 0 && flowchartErrors.length === 0 && (
+            <button
+              onClick={onRefreshFlowchart}
+              className="shrink-0 flex items-center justify-center gap-1.5 px-3 py-1 text-[11px]
+                bg-warning/10 text-warning/90 hover:bg-warning/20 border-b border-warning/20 transition-colors"
+            >
+              <RefreshCw className="h-3 w-3" />
+              Code changed since this was converted — click to refresh
+            </button>
+          )}
+          <div className="flex-1 min-h-0">{renderFlowchartContent()}</div>
         </div>
       ) : activeTab === 'trace' ? (
         <div

@@ -58,6 +58,7 @@ export const SEO_KEYWORDS = [
   'pseudocode simulator',
   'pseudocode translator',
   'pseudocode to Python',
+  'pseudocode to flowchart',
   'pseudocode to code',
   'convert pseudocode',
   'pseudocode converter',

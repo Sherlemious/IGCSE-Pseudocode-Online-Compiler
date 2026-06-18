@@ -14,6 +14,7 @@ import {
   Share2,
   Check,
   Code2,
+  Workflow,
 } from 'lucide-react';
 import ExamplePicker from './examplePicker';
 import FileViewer from './fileViewer';
@@ -47,6 +48,7 @@ interface CodeInputProps {
   onStop: () => void;
   onSelectExample: (code: string) => void;
   onConvertToPython?: () => void;
+  onConvertToFlowchart?: () => void;
   onCursorChange?: (pos: CursorPosition) => void;
   tabs: EditorTab[];
   activeTabId: string;
@@ -73,6 +75,7 @@ const CodeInput: React.FC<CodeInputProps> = ({
   onStop,
   onSelectExample,
   onConvertToPython,
+  onConvertToFlowchart,
   onCursorChange,
   tabs,
   activeTabId,
@@ -243,6 +246,13 @@ const CodeInput: React.FC<CodeInputProps> = ({
               title="Convert to Python"
             >
               <Code2 size={14} />
+            </button>
+            <button
+              onClick={onConvertToFlowchart}
+              className="flex items-center justify-center w-7 h-7 opacity-60 hover:opacity-100 hover:bg-background rounded transition-opacity"
+              title="Convert to Flowchart"
+            >
+              <Workflow size={14} />
             </button>
           </div>
         </div>

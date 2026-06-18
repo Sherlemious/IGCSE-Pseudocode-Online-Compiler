@@ -4,6 +4,7 @@ import React, { useState, useCallback, useEffect, useRef } from 'react';
 import CodeInput, { type EditorTab, type CursorPosition } from './codeInput';
 import OutputDisplay from './outputDisplay';
 import { convertToPython, type PythonConversion } from '../../interpreter/converters/pythonConverter';
+import { convertToFlowchart, type FlowchartConversion } from '../../interpreter/converters/flowchartConverter';
 import Footer from '../layout/footer';
 import OnboardingTour from '../onboarding/OnboardingTour';
 import FeedbackSurvey, { shouldShowFeedbackSurvey } from '../feedback/FeedbackSurvey';
@@ -67,7 +68,7 @@ const CompilerPage: React.FC = () => {
   const [showFeedback, setShowFeedback] = useState(false);
   const feedbackShownRef = useRef(false);
   const [jumpToLine, setJumpToLine] = useState<number | null>(null);
-  const [outputTab, setOutputTab] = useState<'terminal' | 'trace' | 'python'>('terminal');
+  const [outputTab, setOutputTab] = useState<'terminal' | 'trace' | 'python' | 'flowchart'>('terminal');
 
   const {
     entries,
@@ -116,15 +117,30 @@ const CompilerPage: React.FC = () => {
     setPythonConversion({ ...convertToPython(activeTab.content), source: activeTab.content });
   }, [activeTab.content]);
 
+  // Pseudocode → flowchart follows the same on-demand model as the Python view.
+  const [flowchartConversion, setFlowchartConversion] = useState<FlowchartConversion & { source: string }>({
+    nodes: [],
+    edges: [],
+    notes: [],
+    errors: [],
+    source: '',
+  });
+
+  const convertToFlowchartNow = useCallback(() => {
+    setFlowchartConversion({ ...convertToFlowchart(activeTab.content), source: activeTab.content });
+  }, [activeTab.content]);
+
   const handleOutputTabChange = useCallback(
-    (tab: 'terminal' | 'trace' | 'python') => {
+    (tab: 'terminal' | 'trace' | 'python' | 'flowchart') => {
       if (tab === 'python') convertToPythonNow();
+      if (tab === 'flowchart') convertToFlowchartNow();
       setOutputTab(tab);
     },
-    [convertToPythonNow],
+    [convertToPythonNow, convertToFlowchartNow],
   );
 
   const pythonStale = outputTab === 'python' && pythonConversion.source !== activeTab.content;
+  const flowchartStale = outputTab === 'flowchart' && flowchartConversion.source !== activeTab.content;
 
   // Sync running state for footer
   useEffect(() => {
@@ -327,6 +343,7 @@ const CompilerPage: React.FC = () => {
             onStop={stop}
             onSelectExample={handleExampleSelect}
             onConvertToPython={() => handleOutputTabChange('python')}
+            onConvertToFlowchart={() => handleOutputTabChange('flowchart')}
             onCursorChange={setCursor}
             tabs={tabs}
             activeTabId={activeTabId}
@@ -368,6 +385,12 @@ const CompilerPage: React.FC = () => {
             pythonErrors={pythonConversion.errors}
             pythonStale={pythonStale}
             onRefreshPython={convertToPythonNow}
+            flowchartNodes={flowchartConversion.nodes}
+            flowchartEdges={flowchartConversion.edges}
+            flowchartNotes={flowchartConversion.notes}
+            flowchartErrors={flowchartConversion.errors}
+            flowchartStale={flowchartStale}
+            onRefreshFlowchart={convertToFlowchartNow}
           />
         </div>
       </div>
