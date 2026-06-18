@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useRef, useEffect, useState, useCallback } from 'react';
-import { Terminal, Trash2, ChevronRight, Bug, ChevronDown, Copy, Check, Table2, Code2, Download, AlertTriangle } from 'lucide-react';
+import { Terminal, Trash2, ChevronRight, Bug, ChevronDown, Copy, Check, Table2, Code2, Download, AlertTriangle, RefreshCw } from 'lucide-react';
 import type { OutputEntry, DebugVariable, TraceRow, PseudocodeError } from '../../interpreter/core/types';
 import TraceTable from './TraceTable';
 import PythonView from './PythonView';
@@ -24,6 +24,8 @@ interface OutputDisplayProps {
   onTabChange?: (tab: OutputTab) => void;
   pythonCode?: string;
   pythonErrors?: PseudocodeError[];
+  pythonStale?: boolean;
+  onRefreshPython?: () => void;
 }
 
 const WELCOME_ART = `  ___  ___  ___ _   _ ___   ___
@@ -46,6 +48,8 @@ const OutputDisplay: React.FC<OutputDisplayProps> = ({
   onTabChange,
   pythonCode = '',
   pythonErrors = [],
+  pythonStale = false,
+  onRefreshPython,
 }) => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -506,6 +510,17 @@ const OutputDisplay: React.FC<OutputDisplayProps> = ({
               <Trash2 className="h-3.5 w-3.5" />
             </button>
           )}
+          {activeTab === 'python' && (
+            <button
+              onClick={onRefreshPython}
+              className={`transition-opacity p-1 rounded hover:bg-background ${
+                pythonStale ? 'text-warning opacity-100' : 'opacity-60 hover:opacity-100'
+              }`}
+              title={pythonStale ? 'Code changed since converting — click to re-convert' : 'Re-convert from current code'}
+            >
+              <RefreshCw className="h-3.5 w-3.5" />
+            </button>
+          )}
           {activeTab === 'python' && pythonCode && pythonErrors.length === 0 && (
             <>
               <button
@@ -530,6 +545,16 @@ const OutputDisplay: React.FC<OutputDisplayProps> = ({
       {/* Content area */}
       {activeTab === 'python' ? (
         <div className="flex-1 min-h-0 bg-background overflow-hidden flex flex-col">
+          {pythonStale && pythonCode && pythonErrors.length === 0 && (
+            <button
+              onClick={onRefreshPython}
+              className="shrink-0 flex items-center justify-center gap-1.5 px-3 py-1 text-[11px]
+                bg-warning/10 text-warning/90 hover:bg-warning/20 border-b border-warning/20 transition-colors"
+            >
+              <RefreshCw className="h-3 w-3" />
+              Code changed since this was converted — click to refresh
+            </button>
+          )}
           {renderPythonContent()}
         </div>
       ) : activeTab === 'trace' ? (

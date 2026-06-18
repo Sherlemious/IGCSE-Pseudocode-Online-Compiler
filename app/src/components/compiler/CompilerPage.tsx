@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import CodeInput, { type EditorTab, type CursorPosition } from './codeInput';
 import OutputDisplay from './outputDisplay';
-import { convertToPython } from '../../interpreter/converters/pythonConverter';
+import { convertToPython, type PythonConversion } from '../../interpreter/converters/pythonConverter';
 import Footer from '../layout/footer';
 import OnboardingTour from '../onboarding/OnboardingTour';
 import FeedbackSurvey, { shouldShowFeedbackSurvey } from '../feedback/FeedbackSurvey';
@@ -103,12 +103,28 @@ const CompilerPage: React.FC = () => {
 
   const activeTab = tabs.find((t) => t.id === activeTabId) ?? tabs[0];
 
-  // Convert pseudocode → Python lazily — only while the Python tab is open, so we
-  // don't re-parse on every keystroke when it isn't being viewed.
-  const pythonConversion = useMemo(
-    () => (outputTab === 'python' ? convertToPython(activeTab.content) : { code: '', errors: [] }),
-    [activeTab.content, outputTab],
+  // Pseudocode → Python is converted on an explicit action (opening the Python
+  // tab or the Convert button), never live as the student types. We keep the
+  // snapshot plus the source it came from so we can flag it as stale after edits.
+  const [pythonConversion, setPythonConversion] = useState<PythonConversion & { source: string }>({
+    code: '',
+    errors: [],
+    source: '',
+  });
+
+  const convertToPythonNow = useCallback(() => {
+    setPythonConversion({ ...convertToPython(activeTab.content), source: activeTab.content });
+  }, [activeTab.content]);
+
+  const handleOutputTabChange = useCallback(
+    (tab: 'terminal' | 'trace' | 'python') => {
+      if (tab === 'python') convertToPythonNow();
+      setOutputTab(tab);
+    },
+    [convertToPythonNow],
   );
+
+  const pythonStale = outputTab === 'python' && pythonConversion.source !== activeTab.content;
 
   // Sync running state for footer
   useEffect(() => {
@@ -310,7 +326,7 @@ const CompilerPage: React.FC = () => {
             onContinue={continueExecution}
             onStop={stop}
             onSelectExample={handleExampleSelect}
-            onConvertToPython={() => setOutputTab('python')}
+            onConvertToPython={() => handleOutputTabChange('python')}
             onCursorChange={setCursor}
             tabs={tabs}
             activeTabId={activeTabId}
@@ -347,9 +363,11 @@ const CompilerPage: React.FC = () => {
             traceRows={traceRows}
             maxTraceRows={maxTraceRows}
             activeTab={outputTab}
-            onTabChange={setOutputTab}
+            onTabChange={handleOutputTabChange}
             pythonCode={pythonConversion.code}
             pythonErrors={pythonConversion.errors}
+            pythonStale={pythonStale}
+            onRefreshPython={convertToPythonNow}
           />
         </div>
       </div>
