@@ -7,6 +7,7 @@ import type { OutputEntry, DebugVariable, TraceRow, PseudocodeError } from '../.
 import type { FlowNode, FlowEdge } from '../../interpreter/converters/flowchartConverter';
 import TraceTable from './TraceTable';
 import PythonView from './PythonView';
+import PythonLogo from '../icons/PythonLogo';
 import { SPLIT_VARS_KEY, loadSplitPercent } from '../../utils/constants';
 
 // React Flow + dagre are heavy and only needed when the Flowchart tab is opened,
@@ -549,7 +550,7 @@ const OutputDisplay: React.FC<OutputDisplayProps> = ({
             }`}
             title="Convert this pseudocode to Python"
           >
-            <Code2 className="h-3.5 w-3.5" />
+            <PythonLogo className="h-3.5 w-3.5" />
             Python
           </button>
           <button

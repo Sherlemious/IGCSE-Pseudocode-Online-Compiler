@@ -13,9 +13,9 @@ import {
   Download,
   Share2,
   Check,
-  Code2,
   Workflow,
 } from 'lucide-react';
+import PythonLogo from '../icons/PythonLogo';
 import ExamplePicker from './examplePicker';
 import FileViewer from './fileViewer';
 import CodeMirrorEditor from './CodeMirrorEditor';
@@ -245,7 +245,7 @@ const CodeInput: React.FC<CodeInputProps> = ({
               className="flex items-center justify-center w-7 h-7 opacity-60 hover:opacity-100 hover:bg-background rounded transition-opacity"
               title="Convert to Python"
             >
-              <Code2 size={14} />
+              <PythonLogo className="w-3.5 h-3.5" />
             </button>
             <button
               onClick={onConvertToFlowchart}
