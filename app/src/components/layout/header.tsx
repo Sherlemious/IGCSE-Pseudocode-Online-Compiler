@@ -14,6 +14,7 @@ import {
   Keyboard,
   GraduationCap,
   Clock,
+  Workflow,
   ArrowLeft,
 } from 'lucide-react';
 import SettingsPanel from './settingsPanel';
@@ -51,6 +52,7 @@ const Header: React.FC = () => {
   const isDocs = pathname === '/docs' || pathname.startsWith('/docs/');
   const isPractice = pathname === '/practice' || pathname.startsWith('/practice/');
   const isExam = pathname === '/exam' || pathname.startsWith('/exam/');
+  const isFlowchart = pathname === '/flowchart' || pathname.startsWith('/flowchart/');
   const isCompilerPage = pathname === '/';
 
   useEffect(() => {
@@ -121,6 +123,16 @@ const Header: React.FC = () => {
               >
                 <Clock size={13} />
                 Exam
+              </Link>
+              <Link
+                href="/flowchart"
+                onClick={() => trackNav('flowchart')}
+                className={`flex items-center gap-1 px-2 py-1 rounded hover:text-header-text hover:bg-white/10 transition duration-200 ${
+                  isFlowchart ? 'text-primary' : 'text-header-text/70'
+                }`}
+              >
+                <Workflow size={13} />
+                Flowchart
               </Link>
               <a
                 href="https://github.com/Sherlemious/IGCSE-Pseudocode-Online-Compiler"
@@ -200,6 +212,16 @@ const Header: React.FC = () => {
               >
                 <Clock size={14} />
                 Exam
+              </Link>
+              <Link
+                href="/flowchart"
+                className={`flex items-center gap-2 hover:text-header-text transition duration-200 py-1.5 px-1 rounded hover:bg-white/10 ${
+                  isFlowchart ? 'text-primary' : 'text-header-text/70'
+                }`}
+                onClick={() => { setIsMenuOpen(false); trackNav('flowchart'); }}
+              >
+                <Workflow size={14} />
+                Flowchart
               </Link>
               <a
                 href="https://github.com/Sherlemious/IGCSE-Pseudocode-Online-Compiler"

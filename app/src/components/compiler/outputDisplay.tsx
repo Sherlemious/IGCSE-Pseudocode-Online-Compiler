@@ -19,7 +19,9 @@ const FlowchartView = dynamic(() => import('./FlowchartView'), {
   ),
 });
 
-type OutputTab = 'terminal' | 'trace' | 'python' | 'flowchart';
+export type OutputTab = 'terminal' | 'trace' | 'python' | 'flowchart';
+
+const ALL_TABS: OutputTab[] = ['terminal', 'trace', 'python', 'flowchart'];
 
 interface OutputDisplayProps {
   entries: OutputEntry[];
@@ -34,6 +36,7 @@ interface OutputDisplayProps {
   maxTraceRows?: number;
   activeTab?: OutputTab;
   onTabChange?: (tab: OutputTab) => void;
+  tabs?: OutputTab[];
   pythonCode?: string;
   pythonErrors?: PseudocodeError[];
   pythonStale?: boolean;
@@ -64,6 +67,7 @@ const OutputDisplay: React.FC<OutputDisplayProps> = ({
   maxTraceRows = 1000,
   activeTab = 'terminal',
   onTabChange,
+  tabs = ALL_TABS,
   pythonCode = '',
   pythonErrors = [],
   pythonStale = false,
@@ -512,6 +516,7 @@ const OutputDisplay: React.FC<OutputDisplayProps> = ({
       {/* Panel header — Terminal / Trace tabs */}
       <div className="h-9 bg-surface border-b border-border flex items-center justify-between px-2 shrink-0">
         <div className="flex items-center gap-0.5">
+          {tabs.includes('terminal') && (
           <button
             onClick={() => onTabChange?.('terminal')}
             className={`flex items-center gap-1.5 px-2.5 py-1 text-xs rounded transition-colors ${
@@ -527,6 +532,8 @@ const OutputDisplay: React.FC<OutputDisplayProps> = ({
               <span className="inline-block w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
             )}
           </button>
+          )}
+          {tabs.includes('trace') && (
           <button
             onClick={() => onTabChange?.('trace')}
             className={`flex items-center gap-1.5 px-2.5 py-1 text-xs rounded transition-colors ${
@@ -541,6 +548,8 @@ const OutputDisplay: React.FC<OutputDisplayProps> = ({
               <span className="text-[10px] font-mono text-dark-text/60">{traceRows.length}</span>
             )}
           </button>
+          )}
+          {tabs.includes('python') && (
           <button
             onClick={() => onTabChange?.('python')}
             className={`flex items-center gap-1.5 px-2.5 py-1 text-xs rounded transition-colors ${
@@ -553,6 +562,8 @@ const OutputDisplay: React.FC<OutputDisplayProps> = ({
             <PythonLogo className="h-3.5 w-3.5" />
             Python
           </button>
+          )}
+          {tabs.includes('flowchart') && (
           <button
             onClick={() => onTabChange?.('flowchart')}
             className={`flex items-center gap-1.5 px-2.5 py-1 text-xs rounded transition-colors ${
@@ -565,6 +576,7 @@ const OutputDisplay: React.FC<OutputDisplayProps> = ({
             <Workflow className="h-3.5 w-3.5" />
             Flowchart
           </button>
+          )}
         </div>
         <div className="flex items-center gap-0.5">
           {activeTab === 'terminal' && entries.length > 0 && (
