@@ -5,7 +5,6 @@ const FEATURE_LINKS = [
   { label: 'Practice Questions', href: '/practice' },
   { label: 'Language Docs', href: '/docs' },
   { label: 'Timed Exams', href: '/exam' },
-  { label: 'Flowchart Maker', href: '/flowchart' },
   { label: 'Progress Analytics', href: '/analytics' },
 ] as const;
 

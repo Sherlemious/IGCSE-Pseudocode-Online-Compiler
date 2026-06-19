@@ -12,33 +12,113 @@ import {
   type NodeTypes,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import type { FlowNode, FlowEdge, NodeShape } from '../../interpreter/converters/flowchartConverter';
+import type { FlowNode, FlowEdge } from '../../interpreter/converters/flowchartConverter';
 import { layoutFlowchart, type FlowNodeData } from './flowchartLayout';
-import { ShapeBody, SHAPE_ACCENT } from '../flowchart/flowchartShapes';
 
-// ─── Custom node shapes (read-only; handles are non-connectable here) ─────────
+// ─── Custom node shapes (IGCSE flowchart symbols, themed with app tokens) ─────
 
 const handleStyle: CSSProperties = { width: 6, height: 6, opacity: 0, border: 'none' };
 
-function viewNode(shape: NodeShape) {
-  return function ViewNode({ data }: NodeProps) {
+const labelStyle: CSSProperties = {
+  fontFamily: 'var(--editor-font-family)',
+  fontSize: 12,
+  lineHeight: 1.2,
+  color: 'var(--color-light-text)',
+  textAlign: 'center',
+  wordBreak: 'break-word',
+  overflow: 'hidden',
+};
+
+function withHandles(children: React.ReactNode) {
+  return (
+    <>
+      <Handle type="target" position={Position.Top} isConnectable={false} style={handleStyle} />
+      {children}
+      <Handle type="source" position={Position.Bottom} isConnectable={false} style={handleStyle} />
+    </>
+  );
+}
+
+/** Rectangular shapes (process / terminator / subroutine) — a single bordered box. */
+function boxNode(extra: CSSProperties, labelExtra: CSSProperties = {}) {
+  return function BoxNode({ data }: NodeProps) {
     const d = data as FlowNodeData;
     return (
-      <>
-        <Handle type="target" position={Position.Top} isConnectable={false} style={handleStyle} />
-        <ShapeBody shape={shape} w={d.w} h={d.h} label={d.label} />
-        <Handle type="source" position={Position.Bottom} isConnectable={false} style={handleStyle} />
-      </>
+      <div
+        style={{
+          width: d.w,
+          height: d.h,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '0 14px',
+          boxSizing: 'border-box',
+          ...extra,
+        }}
+      >
+        {withHandles(<span style={{ ...labelStyle, ...labelExtra }}>{d.label}</span>)}
+      </div>
     );
   };
 }
 
+/** Clipped shapes (decision diamond / I/O parallelogram) — accent rim + surface fill. */
+function clippedNode(clip: string, accent: string, padX: number) {
+  return function ClippedNode({ data }: NodeProps) {
+    const d = data as FlowNodeData;
+    return (
+      <div style={{ position: 'relative', width: d.w, height: d.h, filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.4))' }}>
+        {withHandles(
+          <>
+            <div style={{ position: 'absolute', inset: 0, background: accent, clipPath: clip }} />
+            <div
+              style={{
+                position: 'absolute',
+                inset: 2,
+                background: 'var(--color-surface)',
+                clipPath: clip,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: `0 ${padX}px`,
+                boxSizing: 'border-box',
+              }}
+            >
+              <span style={labelStyle}>{d.label}</span>
+            </div>
+          </>,
+        )}
+      </div>
+    );
+  };
+}
+
+const DIAMOND = 'polygon(50% 0, 100% 50%, 50% 100%, 0 50%)';
+const PARALLELOGRAM = 'polygon(14% 0, 100% 0, 86% 100%, 0 100%)';
+
 const nodeTypes: NodeTypes = {
-  process: viewNode('process'),
-  terminator: viewNode('terminator'),
-  subroutine: viewNode('subroutine'),
-  decision: viewNode('decision'),
-  io: viewNode('io'),
+  process: boxNode({
+    background: 'var(--color-surface)',
+    border: '1px solid var(--color-border)',
+    borderRadius: 6,
+  }),
+  terminator: boxNode(
+    {
+      background: 'var(--color-primary)',
+      borderRadius: 9999,
+    },
+    { color: 'var(--color-background)', fontWeight: 700 },
+  ),
+  subroutine: boxNode({
+    background: 'var(--color-surface)',
+    borderTop: '1px solid var(--color-primary)',
+    borderBottom: '1px solid var(--color-primary)',
+    borderLeft: '4px double var(--color-primary)',
+    borderRight: '4px double var(--color-primary)',
+    borderRadius: 3,
+  }),
+  decision: clippedNode(DIAMOND, 'var(--color-warning)', 28),
+  io: clippedNode(PARALLELOGRAM, 'var(--color-info)', 24),
 };
 
 // React Flow CSS-variable overrides so its chrome matches the dark theme.
@@ -52,6 +132,14 @@ const rfTheme = {
   '--xy-controls-button-color-hover': 'var(--color-background)',
   '--xy-controls-button-border-color': 'var(--color-border)',
 } as unknown as CSSProperties;
+
+const MINIMAP_COLORS: Record<string, string> = {
+  terminator: 'var(--color-primary)',
+  decision: 'var(--color-warning)',
+  io: 'var(--color-info)',
+  subroutine: 'var(--color-primary)',
+  process: 'var(--color-dark-text)',
+};
 
 /** Cheap stable key so the canvas remounts (and re-fits) only when the graph changes. */
 function graphKey(nodes: FlowNode[]): string {
@@ -92,7 +180,7 @@ const FlowchartView: React.FC<FlowchartViewProps> = ({ nodes, edges }) => {
         <MiniMap
           pannable
           zoomable
-          nodeColor={(n) => SHAPE_ACCENT[(n.type as NodeShape) ?? 'process'] ?? 'var(--color-dark-text)'}
+          nodeColor={(n) => MINIMAP_COLORS[n.type ?? 'process'] ?? 'var(--color-dark-text)'}
           maskColor="rgba(0,0,0,0.55)"
           style={{ background: 'var(--color-surface)' }}
         />
