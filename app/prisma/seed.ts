@@ -7870,6 +7870,511 @@ OUTPUT Interest`,
       { inputs: ['1200', '2.5', '1'], expectedOutput: '30', description: null, sortOrder: 3, isHidden: true },
     ],
   },
+
+  // Additional IGCSE practice across loops, strings, and arrays.
+  {
+    title: 'Count Digits in a Number',
+    description: `Read a non-negative integer and output how many digits it contains.
+
+The value 0 has one digit.
+
+**Input:** One non-negative integer.
+**Output:** The number of digits.
+
+**Example:**
+\`\`\`
+Input:  48291
+Output: 5
+\`\`\``,
+    difficulty: 'EASY' as const,
+    topic: 'Loops',
+    tags: ['IGCSE', 'Original Practice', 'Counting', 'WHILE Loop', 'DIV'],
+    marks: 5,
+    starterCode: `DECLARE Number, DigitCount : INTEGER
+
+INPUT Number
+DigitCount <- 0
+
+// Repeatedly remove the final digit and count it
+
+OUTPUT DigitCount`,
+    hints: [
+      'DIV(Number, 10) removes the final decimal digit from a positive integer.',
+      'Handle 0 separately because a WHILE Number > 0 loop would not run for it.',
+      'Otherwise, repeat Number <- DIV(Number, 10) and increase DigitCount until Number is 0.',
+    ],
+    solution: `DECLARE Number, DigitCount : INTEGER
+
+INPUT Number
+
+IF Number = 0 THEN
+    DigitCount <- 1
+ELSE
+    DigitCount <- 0
+    WHILE Number > 0 DO
+        Number <- DIV(Number, 10)
+        DigitCount <- DigitCount + 1
+    ENDWHILE
+ENDIF
+
+OUTPUT DigitCount`,
+    solutionExplanation: 'Integer division by 10 removes one digit at a time. The loop counts those removals, with a separate case for zero.',
+    testCases: [
+      { inputs: ['48291'], expectedOutput: '5', description: 'Five-digit number', sortOrder: 0 },
+      { inputs: ['7'], expectedOutput: '1', description: 'Single digit', sortOrder: 1 },
+      { inputs: ['0'], expectedOutput: '1', description: 'Zero has one digit', sortOrder: 2, isHidden: true },
+      { inputs: ['1000000'], expectedOutput: '7', description: 'Power of ten', sortOrder: 3, isHidden: true },
+    ],
+  },
+
+  {
+    title: 'Guessing Attempts Counter',
+    description: `Read a secret integer, then keep reading guesses until the secret is guessed. Output the number of guesses made.
+
+**Input:** The secret number followed by one or more guesses.
+**Output:** The number of attempts.
+
+**Example:**
+\`\`\`
+Input:  12
+        5
+        10
+        12
+Output: 3
+\`\`\``,
+    difficulty: 'EASY' as const,
+    topic: 'Loops',
+    tags: ['IGCSE', 'Original Practice', 'REPEAT UNTIL', 'Counting', 'Sentinel Loop'],
+    marks: 4,
+    starterCode: `DECLARE Secret, Guess, Attempts : INTEGER
+
+INPUT Secret
+Attempts <- 0
+
+// Read and count guesses until Guess equals Secret
+
+OUTPUT Attempts`,
+    hints: [
+      'At least one guess must be read, so a REPEAT UNTIL loop is suitable.',
+      'Increase Attempts immediately after each INPUT Guess.',
+      'Stop the loop with UNTIL Guess = Secret.',
+    ],
+    solution: `DECLARE Secret, Guess, Attempts : INTEGER
+
+INPUT Secret
+Attempts <- 0
+
+REPEAT
+    INPUT Guess
+    Attempts <- Attempts + 1
+UNTIL Guess = Secret
+
+OUTPUT Attempts`,
+    solutionExplanation: 'The post-condition loop always reads a guess, counts it, and stops as soon as that guess matches the secret.',
+    testCases: [
+      { inputs: ['12', '5', '10', '12'], expectedOutput: '3', description: 'Three attempts', sortOrder: 0 },
+      { inputs: ['8', '8'], expectedOutput: '1', description: 'Correct first guess', sortOrder: 1 },
+      { inputs: ['-3', '0', '-1', '-2', '-3'], expectedOutput: '4', description: 'Negative secret', sortOrder: 2, isHidden: true },
+      { inputs: ['100', '50', '75', '90', '99', '100'], expectedOutput: '5', description: null, sortOrder: 3, isHidden: true },
+    ],
+  },
+
+  {
+    title: 'Count Words in a Sentence',
+    description: `Read a sentence and output its number of words.
+
+Words are groups of non-space characters. The sentence may contain leading, trailing, or repeated spaces.
+
+**Input:** One string.
+**Output:** The number of words.
+
+**Example:**
+\`\`\`
+Input:  pseudocode is useful
+Output: 3
+\`\`\``,
+    difficulty: 'MEDIUM' as const,
+    topic: 'String Processing',
+    tags: ['IGCSE', 'Original Practice', 'String Processing', 'Flags', 'Counting'],
+    marks: 7,
+    starterCode: `DECLARE Text, Character : STRING
+DECLARE Index, WordCount : INTEGER
+DECLARE InWord : BOOLEAN
+
+INPUT Text
+WordCount <- 0
+InWord <- FALSE
+
+// Count each transition from spaces into a word
+
+OUTPUT WordCount`,
+    hints: [
+      'Use InWord to remember whether the previous character was part of a word.',
+      'A non-space character starts a new word only when InWord is FALSE.',
+      'Set InWord to FALSE whenever a space is found; set it to TRUE and count when a word begins.',
+    ],
+    solution: `DECLARE Text, Character : STRING
+DECLARE Index, WordCount : INTEGER
+DECLARE InWord : BOOLEAN
+
+INPUT Text
+WordCount <- 0
+InWord <- FALSE
+
+FOR Index <- 1 TO LENGTH(Text)
+    Character <- SUBSTRING(Text, Index, 1)
+    IF Character = " " THEN
+        InWord <- FALSE
+    ELSEIF InWord = FALSE THEN
+        WordCount <- WordCount + 1
+        InWord <- TRUE
+    ENDIF
+NEXT Index
+
+OUTPUT WordCount`,
+    solutionExplanation: 'The flag prevents every character from being counted. A word is counted only on the first non-space character after the start or a space.',
+    testCases: [
+      { inputs: ['pseudocode is useful'], expectedOutput: '3', description: 'Three words', sortOrder: 0 },
+      { inputs: ['Hello'], expectedOutput: '1', description: 'One word', sortOrder: 1 },
+      { inputs: ['  two   spaces  '], expectedOutput: '2', description: 'Repeated and outer spaces', sortOrder: 2, isHidden: true },
+      { inputs: [''], expectedOutput: '0', description: 'Empty string', sortOrder: 3, isHidden: true },
+    ],
+  },
+
+  {
+    title: 'Rotate Array Left',
+    description: `Read six integers into an array. Move the first value to the end and shift every other value one position left, then output the rotated array.
+
+**Input:** Six integers.
+**Output:** Six rotated values, one per line.
+
+**Example:**
+\`\`\`
+Input:  10 20 30 40 50 60
+Output: 20
+        30
+        40
+        50
+        60
+        10
+\`\`\``,
+    difficulty: 'MEDIUM' as const,
+    topic: 'Arrays',
+    tags: ['IGCSE', 'Original Practice', 'Arrays', 'Traversal', 'Data Movement'],
+    marks: 6,
+    starterCode: `DECLARE Values : ARRAY[1:6] OF INTEGER
+DECLARE Index, FirstValue : INTEGER
+
+FOR Index <- 1 TO 6
+    INPUT Values[Index]
+NEXT Index
+
+// Save the first value, shift left, and place it at index 6`,
+    hints: [
+      'Save Values[1] before overwriting it.',
+      'For indices 1 to 5, assign Values[Index] <- Values[Index + 1].',
+      'Place the saved value in Values[6], then output the array.',
+    ],
+    solution: `DECLARE Values : ARRAY[1:6] OF INTEGER
+DECLARE Index, FirstValue : INTEGER
+
+FOR Index <- 1 TO 6
+    INPUT Values[Index]
+NEXT Index
+
+FirstValue <- Values[1]
+FOR Index <- 1 TO 5
+    Values[Index] <- Values[Index + 1]
+NEXT Index
+Values[6] <- FirstValue
+
+FOR Index <- 1 TO 6
+    OUTPUT Values[Index]
+NEXT Index`,
+    solutionExplanation: 'Saving the first element prevents it from being lost while the remaining elements shift left. It is then placed at the final index.',
+    testCases: [
+      { inputs: ['10', '20', '30', '40', '50', '60'], expectedOutput: '20\n30\n40\n50\n60\n10', description: 'Ascending tens', sortOrder: 0 },
+      { inputs: ['1', '2', '3', '4', '5', '6'], expectedOutput: '2\n3\n4\n5\n6\n1', description: 'Ascending values', sortOrder: 1 },
+      { inputs: ['7', '7', '7', '7', '7', '7'], expectedOutput: '7\n7\n7\n7\n7\n7', description: 'Equal values', sortOrder: 2, isHidden: true },
+      { inputs: ['-5', '0', '8', '-2', '4', '9'], expectedOutput: '0\n8\n-2\n4\n9\n-5', description: 'Mixed values', sortOrder: 3, isHidden: true },
+    ],
+  },
+
+  // AS & A Level practice using 9618-specific language features and ADTs.
+  {
+    title: 'Swap Values Using BYREF',
+    description: `Write and use a procedure that swaps two integer variables.
+
+The procedure parameters must use \`BYREF\` so the caller's variables are changed. Output the two values after the procedure call.
+
+**Input:** Two integers.
+**Output:** The values in swapped order, one per line.
+
+**Example:**
+\`\`\`
+Input:  4
+        9
+Output: 9
+        4
+\`\`\``,
+    difficulty: 'EASY' as const,
+    topic: 'Procedures & Functions',
+    tags: ['AS & A Level', '9618', 'Original Practice', 'Procedures', 'BYREF', 'Parameters'],
+    marks: 5,
+    starterCode: `PROCEDURE Swap(BYREF First : INTEGER, Second : INTEGER)
+    // Swap First and Second using a temporary variable
+ENDPROCEDURE
+
+DECLARE A, B : INTEGER
+INPUT A
+INPUT B
+CALL Swap(A, B)
+OUTPUT A
+OUTPUT B`,
+    hints: [
+      'Normal value parameters would only change local copies, so use BYREF.',
+      'Store First in a temporary variable before overwriting it.',
+      'Set Temp <- First, First <- Second, then Second <- Temp.',
+    ],
+    solution: `PROCEDURE Swap(BYREF First : INTEGER, Second : INTEGER)
+    DECLARE Temp : INTEGER
+    Temp <- First
+    First <- Second
+    Second <- Temp
+ENDPROCEDURE
+
+DECLARE A, B : INTEGER
+INPUT A
+INPUT B
+CALL Swap(A, B)
+OUTPUT A
+OUTPUT B`,
+    solutionExplanation: 'BYREF binds both parameters to the caller variables. The temporary value allows the assignments to exchange them without losing either original value.',
+    testCases: [
+      { inputs: ['4', '9'], expectedOutput: '9\n4', description: 'Different positive values', sortOrder: 0 },
+      { inputs: ['-3', '8'], expectedOutput: '8\n-3', description: 'Negative and positive', sortOrder: 1 },
+      { inputs: ['5', '5'], expectedOutput: '5\n5', description: 'Equal values', sortOrder: 2, isHidden: true },
+      { inputs: ['0', '-12'], expectedOutput: '-12\n0', description: null, sortOrder: 3, isHidden: true },
+    ],
+  },
+
+  {
+    title: 'Recursive Factorial Function',
+    description: `Write a recursive function \`Factorial(N)\` that returns the factorial of a non-negative integer.
+
+Use 0 and 1 as base cases. The function must call itself for larger values.
+
+**Input:** One integer from 0 to 10.
+**Output:** Its factorial.
+
+**Example:**
+\`\`\`
+Input:  5
+Output: 120
+\`\`\``,
+    difficulty: 'MEDIUM' as const,
+    topic: 'Procedures & Functions',
+    tags: ['AS & A Level', '9618', 'Original Practice', 'Functions', 'Recursion', 'Factorial'],
+    marks: 6,
+    starterCode: `FUNCTION Factorial(N : INTEGER) RETURNS INTEGER
+    // Add a base case and a recursive case
+ENDFUNCTION
+
+DECLARE Number : INTEGER
+INPUT Number
+OUTPUT Factorial(Number)`,
+    hints: [
+      'Every recursive function needs a base case that returns without another call.',
+      'Factorial(0) and Factorial(1) are both 1.',
+      'For larger N, return N * Factorial(N - 1).',
+    ],
+    solution: `FUNCTION Factorial(N : INTEGER) RETURNS INTEGER
+    IF N <= 1 THEN
+        RETURN 1
+    ELSE
+        RETURN N * Factorial(N - 1)
+    ENDIF
+ENDFUNCTION
+
+DECLARE Number : INTEGER
+INPUT Number
+OUTPUT Factorial(Number)`,
+    solutionExplanation: 'The base case stops recursion at 1. Each earlier call multiplies its N by the factorial returned for N - 1.',
+    testCases: [
+      { inputs: ['5'], expectedOutput: '120', description: 'Typical factorial', sortOrder: 0 },
+      { inputs: ['0'], expectedOutput: '1', description: 'Zero base case', sortOrder: 1 },
+      { inputs: ['1'], expectedOutput: '1', description: 'One base case', sortOrder: 2, isHidden: true },
+      { inputs: ['7'], expectedOutput: '5040', description: 'Deeper recursion', sortOrder: 3, isHidden: true },
+    ],
+  },
+
+  {
+    title: 'Highest Student Record',
+    description: `Define a record type named \`Student\` with a name and integer mark. Read three student records and output the name and mark of the student with the highest mark.
+
+If marks are equal, keep the student who was entered first.
+
+**Input:** Three pairs of name and mark.
+**Output:** The winning name followed by the mark on the next line.
+
+**Example:**
+\`\`\`
+Input:  Amal
+        71
+        Ben
+        88
+        Chen
+        79
+Output: Ben
+        88
+\`\`\``,
+    difficulty: 'MEDIUM' as const,
+    topic: 'Data Types',
+    tags: ['AS & A Level', '9618', 'Original Practice', 'Records', 'TYPE', 'Selection'],
+    marks: 8,
+    starterCode: `TYPE Student
+    DECLARE Name : STRING
+    DECLARE Mark : INTEGER
+ENDTYPE
+
+DECLARE First, Second, Third, Best : Student
+
+// Input the three records and find the record with the highest mark`,
+    hints: [
+      'Access record fields using dot notation, such as First.Name.',
+      'Start with Best <- First, then compare the other two marks with Best.Mark.',
+      'Use > rather than >= so an earlier student wins a tie.',
+    ],
+    solution: `TYPE Student
+    DECLARE Name : STRING
+    DECLARE Mark : INTEGER
+ENDTYPE
+
+DECLARE First, Second, Third, Best : Student
+
+INPUT First.Name
+INPUT First.Mark
+INPUT Second.Name
+INPUT Second.Mark
+INPUT Third.Name
+INPUT Third.Mark
+
+Best <- First
+IF Second.Mark > Best.Mark THEN
+    Best <- Second
+ENDIF
+IF Third.Mark > Best.Mark THEN
+    Best <- Third
+ENDIF
+
+OUTPUT Best.Name
+OUTPUT Best.Mark`,
+    solutionExplanation: 'Each record keeps a name and mark together. Copying the current best record updates both fields at once, while strict comparisons preserve the first student on ties.',
+    testCases: [
+      { inputs: ['Amal', '71', 'Ben', '88', 'Chen', '79'], expectedOutput: 'Ben\n88', description: 'Second student highest', sortOrder: 0 },
+      { inputs: ['Ari', '95', 'Bea', '80', 'Cal', '90'], expectedOutput: 'Ari\n95', description: 'First student highest', sortOrder: 1 },
+      { inputs: ['Dee', '60', 'Eli', '70', 'Fay', '70'], expectedOutput: 'Eli\n70', description: 'Earlier student wins tie', sortOrder: 2, isHidden: true },
+      { inputs: ['Gia', '0', 'Hao', '-1', 'Ivy', '-2'], expectedOutput: 'Gia\n0', description: 'Low marks', sortOrder: 3, isHidden: true },
+    ],
+  },
+
+  {
+    title: 'Stack Push and Pop',
+    description: `Implement a stack of up to five integers using an array and a top pointer.
+
+For each operation:
+
+- \`P\` is followed by a value. Push it and output \`TRUE\`, or output \`FALSE\` if the stack is full.
+- \`O\` pops and outputs the top value, or outputs \`-1\` if the stack is empty.
+
+**Input:** An operation count followed by operations and push values.
+**Output:** One result per operation.
+
+**Example:**
+\`\`\`
+Input:  4
+        P 10
+        P 20
+        O
+        O
+Output: TRUE
+        TRUE
+        20
+        10
+\`\`\``,
+    difficulty: 'HARD' as const,
+    topic: 'Stacks',
+    tags: ['AS & A Level', '9618', 'Original Practice', 'Stacks', 'ADT', 'Arrays', 'Functions'],
+    marks: 12,
+    starterCode: `DECLARE StackData : ARRAY[0:4] OF INTEGER
+DECLARE Top : INTEGER
+
+FUNCTION Push(Value : INTEGER) RETURNS BOOLEAN
+    // Return FALSE if full; otherwise push Value and return TRUE
+ENDFUNCTION
+
+FUNCTION Pop() RETURNS INTEGER
+    // Return -1 if empty; otherwise remove and return the top value
+ENDFUNCTION
+
+DECLARE OperationCount, Index, Value : INTEGER
+DECLARE Operation : STRING
+Top <- -1
+
+INPUT OperationCount
+// Process the operations`,
+    hints: [
+      'The stack is empty when Top = -1 and full when Top = 4.',
+      'Push increments Top before storing the new value.',
+      'Pop saves StackData[Top], decrements Top, then returns the saved value.',
+    ],
+    solution: `DECLARE StackData : ARRAY[0:4] OF INTEGER
+DECLARE Top : INTEGER
+
+FUNCTION Push(Value : INTEGER) RETURNS BOOLEAN
+    IF Top = 4 THEN
+        RETURN FALSE
+    ENDIF
+
+    Top <- Top + 1
+    StackData[Top] <- Value
+    RETURN TRUE
+ENDFUNCTION
+
+FUNCTION Pop() RETURNS INTEGER
+    DECLARE Value : INTEGER
+
+    IF Top = -1 THEN
+        RETURN -1
+    ENDIF
+
+    Value <- StackData[Top]
+    Top <- Top - 1
+    RETURN Value
+ENDFUNCTION
+
+DECLARE OperationCount, Index, Value : INTEGER
+DECLARE Operation : STRING
+Top <- -1
+
+INPUT OperationCount
+FOR Index <- 1 TO OperationCount
+    INPUT Operation
+    IF Operation = "P" THEN
+        INPUT Value
+        OUTPUT Push(Value)
+    ELSE
+        OUTPUT Pop()
+    ENDIF
+NEXT Index`,
+    solutionExplanation: 'Top identifies the current last item. Push advances it before storing; Pop reads the current item before moving it down. Boundary checks prevent overflow and underflow.',
+    testCases: [
+      { inputs: ['4', 'P', '10', 'P', '20', 'O', 'O'], expectedOutput: 'TRUE\nTRUE\n20\n10', description: 'LIFO order', sortOrder: 0 },
+      { inputs: ['2', 'O', 'O'], expectedOutput: '-1\n-1', description: 'Empty stack', sortOrder: 1 },
+      { inputs: ['7', 'P', '1', 'P', '2', 'P', '3', 'P', '4', 'P', '5', 'P', '6', 'O'], expectedOutput: 'TRUE\nTRUE\nTRUE\nTRUE\nTRUE\nFALSE\n5', description: 'Full stack rejects push', sortOrder: 2, isHidden: true },
+      { inputs: ['5', 'P', '-4', 'P', '0', 'O', 'P', '9', 'O'], expectedOutput: 'TRUE\nTRUE\n0\nTRUE\n9', description: 'Interleaved operations', sortOrder: 3, isHidden: true },
+    ],
+  },
 ];
 
 // ─── Main seed function ────────────────────────────────────────────────────────
