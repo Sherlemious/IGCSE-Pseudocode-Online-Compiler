@@ -4,7 +4,7 @@ import { useState, useEffect, useId, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import * as Popover from '@radix-ui/react-popover';
 import { HexColorPicker, HexColorInput } from 'react-colorful';
-import { X, RotateCcw, Check, Pipette } from 'lucide-react';
+import { X, RotateCcw, Check, Pipette, Palette, ChevronDown } from 'lucide-react';
 import {
   type CustomColors,
   type CustomColorKey,
@@ -60,8 +60,8 @@ export default function ThemeEditorModal({ mode, initialName, initialColors, onS
     setDraft((prev) => ({ ...prev, [key]: value }));
   }, []);
 
-  function handleImport(id: string) {
-    if (id && id in themes) setDraft(presetToCustomColors(id as PresetThemeId));
+  function handleImport(id: PresetThemeId) {
+    setDraft(presetToCustomColors(id));
   }
 
   async function handleSave() {
@@ -97,17 +97,9 @@ export default function ThemeEditorModal({ mode, initialName, initialColors, onS
             <p className="text-xs text-dark-text mt-0.5">Pick colors, see the preview update live</p>
           </div>
           <div className="flex items-center gap-2">
-            <select
-              defaultValue=""
-              onChange={(e) => { handleImport(e.target.value); e.currentTarget.value = ''; }}
-              className="text-xs bg-background border border-border text-dark-text rounded-lg px-2.5 py-1.5 outline-none focus:border-primary/50 transition-colors cursor-pointer"
-            >
-              <option value="" disabled>Import from preset…</option>
-              {PRESET_ORDER.map((id) => (
-                <option key={id} value={id}>{themes[id].label}</option>
-              ))}
-            </select>
+            <PresetImporter onImport={handleImport} />
             <button
+              type="button"
               onClick={onClose}
               className="p-1.5 rounded-lg text-dark-text hover:text-light-text hover:bg-border/30 transition-colors"
               aria-label="Close"
@@ -173,6 +165,85 @@ export default function ThemeEditorModal({ mode, initialName, initialColors, onS
 
   if (typeof document === 'undefined') return null;
   return createPortal(modal, document.body);
+}
+
+function PresetImporter({ onImport }: { onImport: (id: PresetThemeId) => void }) {
+  return (
+    <Popover.Root>
+      <Popover.Trigger asChild>
+        <button
+          type="button"
+          className="group flex h-8 items-center gap-2 rounded-lg border border-border bg-background px-2.5 text-xs font-medium text-dark-text outline-none transition-colors hover:border-primary/40 hover:text-light-text focus-visible:border-primary/60 focus-visible:ring-2 focus-visible:ring-primary/15"
+          aria-label="Import colors from a preset theme"
+        >
+          <span className="flex h-5 w-5 items-center justify-center rounded-md bg-primary/10 text-primary transition-colors group-hover:bg-primary/15">
+            <Palette size={12} />
+          </span>
+          <span className="hidden sm:inline">Import preset</span>
+          <ChevronDown size={12} className="opacity-60 transition-transform group-data-[state=open]:rotate-180" />
+        </button>
+      </Popover.Trigger>
+
+      <Popover.Portal>
+        <Popover.Content
+          sideOffset={8}
+          align="end"
+          collisionPadding={12}
+          className="z-[300] w-[min(18rem,calc(100vw-2rem))] rounded-xl border border-border bg-surface p-2 shadow-intense outline-none"
+        >
+          <div className="px-2 pb-2 pt-1">
+            <p className="text-xs font-semibold text-light-text">Import from preset</p>
+            <p className="mt-0.5 text-[10px] leading-relaxed text-dark-text">
+              Choose a starting palette. Your current colors will be replaced.
+            </p>
+          </div>
+
+          <div className="space-y-1">
+            {PRESET_ORDER.map((id) => {
+              const theme = themes[id];
+              const palette = [
+                theme.colors.background,
+                theme.colors.surface,
+                theme.colors.primary,
+                theme.colors['syntax-keyword'],
+                theme.colors['syntax-string'],
+              ];
+
+              return (
+                <Popover.Close asChild key={id}>
+                  <button
+                    type="button"
+                    onClick={() => onImport(id)}
+                    className="group/item flex w-full items-center gap-3 rounded-lg border border-transparent px-2 py-2 text-left outline-none transition-colors hover:border-border hover:bg-background focus-visible:border-primary/50 focus-visible:bg-background"
+                  >
+                    <span
+                      className="flex h-8 w-12 flex-shrink-0 overflow-hidden rounded-md border border-white/10 shadow-sm"
+                      aria-hidden="true"
+                    >
+                      {palette.map((color, index) => (
+                        <span key={`${color}-${index}`} className="h-full flex-1" style={{ backgroundColor: color }} />
+                      ))}
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-xs font-medium text-light-text">{theme.label}</span>
+                      <span className="mt-0.5 block truncate font-mono text-[9px] uppercase text-dark-text">
+                        {theme.colors.background}
+                      </span>
+                    </span>
+                    <span className="flex h-6 w-6 items-center justify-center rounded-md text-dark-text opacity-0 transition-all group-hover/item:opacity-100 group-focus-visible/item:opacity-100">
+                      <Check size={12} />
+                    </span>
+                  </button>
+                </Popover.Close>
+              );
+            })}
+          </div>
+
+          <Popover.Arrow className="fill-surface" />
+        </Popover.Content>
+      </Popover.Portal>
+    </Popover.Root>
+  );
 }
 
 // ── Color section ────────────────────────────────────────────
