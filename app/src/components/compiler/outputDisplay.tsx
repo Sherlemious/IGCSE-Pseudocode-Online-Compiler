@@ -510,17 +510,17 @@ const OutputDisplay: React.FC<OutputDisplayProps> = ({
   return (
     <div className="flex-1 min-h-0 flex flex-col">
       {/* Panel header — Terminal / Trace tabs */}
-      <div className="h-9 bg-surface border-b border-border flex items-center justify-between px-2 shrink-0">
-        <div className="flex items-center gap-0.5">
+      <div className="h-9 bg-surface border-b border-border flex items-center gap-1 px-1 sm:px-2 shrink-0">
+        <div className="flex min-w-0 flex-1 items-center gap-0.5 overflow-x-auto">
           <button
             onClick={() => onTabChange?.('terminal')}
-            className={`flex items-center gap-1.5 px-2.5 py-1 text-xs rounded transition-colors ${
+            className={`flex shrink-0 items-center gap-1 px-1.5 py-1 text-xs rounded transition-colors sm:gap-1.5 sm:px-2.5 ${
               activeTab === 'terminal'
                 ? 'bg-background text-light-text font-medium'
                 : 'text-dark-text hover:text-light-text hover:bg-background/50'
             }`}
           >
-            <Terminal className="h-3.5 w-3.5" />
+            <Terminal className="hidden h-3.5 w-3.5 sm:block" />
             Terminal
             {isStepping && <Bug size={12} className="text-warning" />}
             {isRunning && !isStepping && (
@@ -529,13 +529,13 @@ const OutputDisplay: React.FC<OutputDisplayProps> = ({
           </button>
           <button
             onClick={() => onTabChange?.('trace')}
-            className={`flex items-center gap-1.5 px-2.5 py-1 text-xs rounded transition-colors ${
+            className={`flex shrink-0 items-center gap-1 px-1.5 py-1 text-xs rounded transition-colors sm:gap-1.5 sm:px-2.5 ${
               activeTab === 'trace'
                 ? 'bg-background text-light-text font-medium'
                 : 'text-dark-text hover:text-light-text hover:bg-background/50'
             }`}
           >
-            <Table2 className="h-3.5 w-3.5" />
+            <Table2 className="hidden h-3.5 w-3.5 sm:block" />
             Trace
             {traceRows.length > 0 && (
               <span className="text-[10px] font-mono text-dark-text/60">{traceRows.length}</span>
@@ -543,30 +543,30 @@ const OutputDisplay: React.FC<OutputDisplayProps> = ({
           </button>
           <button
             onClick={() => onTabChange?.('python')}
-            className={`flex items-center gap-1.5 px-2.5 py-1 text-xs rounded transition-colors ${
+            className={`flex shrink-0 items-center gap-1 px-1.5 py-1 text-xs rounded transition-colors sm:gap-1.5 sm:px-2.5 ${
               activeTab === 'python'
                 ? 'bg-background text-light-text font-medium'
                 : 'text-dark-text hover:text-light-text hover:bg-background/50'
             }`}
             title="Convert this pseudocode to Python"
           >
-            <PythonLogo className="h-3.5 w-3.5" />
+            <PythonLogo className="hidden h-3.5 w-3.5 sm:block" />
             Python
           </button>
           <button
             onClick={() => onTabChange?.('flowchart')}
-            className={`flex items-center gap-1.5 px-2.5 py-1 text-xs rounded transition-colors ${
+            className={`flex shrink-0 items-center gap-1 px-1.5 py-1 text-xs rounded transition-colors sm:gap-1.5 sm:px-2.5 ${
               activeTab === 'flowchart'
                 ? 'bg-background text-light-text font-medium'
                 : 'text-dark-text hover:text-light-text hover:bg-background/50'
             }`}
             title="Convert this pseudocode to a flowchart"
           >
-            <Workflow className="h-3.5 w-3.5" />
+            <Workflow className="hidden h-3.5 w-3.5 sm:block" />
             Flowchart
           </button>
         </div>
-        <div className="flex items-center gap-0.5">
+        <div className="flex shrink-0 items-center gap-0.5">
           {activeTab === 'terminal' && entries.length > 0 && (
             <button
               onClick={handleCopyOutput}

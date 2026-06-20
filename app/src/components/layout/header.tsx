@@ -80,14 +80,14 @@ const Header: React.FC = () => {
                 </span>
               )}
             </Link>
-            <span className="text-header-text/20 select-none" aria-hidden>
+            <span className="hidden md:inline text-header-text/20 select-none" aria-hidden>
               ·
             </span>
             <a
               href={PORTFOLIO_URL}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-[11px] text-header-text/40 hover:text-primary transition-colors whitespace-nowrap"
+              className="hidden md:inline text-[11px] text-header-text/40 hover:text-primary transition-colors whitespace-nowrap"
               title="Made by Sherlemious — view portfolio"
             >
               by Sherlemious
