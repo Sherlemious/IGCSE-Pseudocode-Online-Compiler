@@ -1,21 +1,12 @@
 'use client';
 
-import { useState } from 'react';
 import { Plus, Pencil, Trash2, Check, Palette } from 'lucide-react';
-import { toast } from 'sonner';
 import {
   useTheme,
+  useThemeEditor,
   type CustomColors,
-  type SavedTheme,
-  DEFAULT_CUSTOM_COLORS,
-  presetToCustomColors,
-  themes,
 } from '@/theme';
 import ThemeEditorModal from '@/components/layout/ThemeEditorModal';
-
-type EditorState =
-  | { mode: 'create'; name: string; colors: CustomColors }
-  | { mode: 'edit'; id: string; name: string; colors: CustomColors };
 
 // The handful of colours shown in each theme's preview strip.
 const PREVIEW_KEYS: (keyof CustomColors)[] = [
@@ -26,43 +17,12 @@ export default function ThemeManager() {
   const {
     themeId, setTheme,
     customThemes, themesLoading, isSignedIn,
-    createTheme, updateTheme, deleteTheme,
   } = useTheme();
 
-  const [editor, setEditor] = useState<EditorState | null>(null);
-  const [confirmId, setConfirmId] = useState<string | null>(null);
-
-  function openCreate() {
-    const seed = themeId in themes
-      ? presetToCustomColors(themeId as keyof typeof themes)
-      : DEFAULT_CUSTOM_COLORS;
-    setEditor({ mode: 'create', name: '', colors: seed });
-  }
-
-  function openEdit(theme: SavedTheme) {
-    setEditor({ mode: 'edit', id: theme.id, name: theme.name, colors: theme.colors });
-  }
-
-  async function handleSubmit(name: string, colors: CustomColors): Promise<boolean> {
-    if (editor?.mode === 'edit') {
-      const ok = await updateTheme(editor.id, { name, colors });
-      if (ok) toast.success('Theme updated');
-      return ok;
-    }
-    const created = await createTheme(name, colors);
-    if (created) {
-      setTheme(created.id);
-      toast.success('Theme created');
-      return true;
-    }
-    return false;
-  }
-
-  async function handleDelete(id: string) {
-    const ok = await deleteTheme(id);
-    setConfirmId(null);
-    if (ok) toast.success('Theme deleted');
-  }
+  const {
+    editor, openCreate, openEdit, closeEditor, handleSubmit,
+    confirmDeleteId, requestDelete, cancelDelete, handleDelete,
+  } = useThemeEditor();
 
   return (
     <div className="bg-surface border border-border rounded-xl p-5">
@@ -125,7 +85,7 @@ export default function ThemeManager() {
                   </button>
 
                   {/* Actions */}
-                  {confirmId === theme.id ? (
+                  {confirmDeleteId === theme.id ? (
                     <span className="flex items-center gap-1 flex-shrink-0">
                       <button
                         onClick={() => void handleDelete(theme.id)}
@@ -134,7 +94,7 @@ export default function ThemeManager() {
                         Delete
                       </button>
                       <button
-                        onClick={() => setConfirmId(null)}
+                        onClick={cancelDelete}
                         className="px-2 py-1 rounded-md text-dark-text text-[10px] hover:text-light-text transition-colors"
                       >
                         Cancel
@@ -150,7 +110,7 @@ export default function ThemeManager() {
                         <Pencil size={13} />
                       </button>
                       <button
-                        onClick={() => setConfirmId(theme.id)}
+                        onClick={() => requestDelete(theme.id)}
                         className="p-1.5 rounded-md text-dark-text hover:text-error hover:bg-error/10 transition-colors"
                         aria-label={`Delete ${theme.name}`}
                       >
@@ -171,7 +131,7 @@ export default function ThemeManager() {
           initialName={editor.name}
           initialColors={editor.colors}
           onSubmit={handleSubmit}
-          onClose={() => setEditor(null)}
+          onClose={closeEditor}
         />
       )}
     </div>

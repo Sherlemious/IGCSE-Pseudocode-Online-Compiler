@@ -2,14 +2,16 @@
 
 import Link from 'next/link';
 import * as Popover from '@radix-ui/react-popover';
-import { Settings, Minus, Plus, Check, WrapText, ChevronRight, LogIn, Accessibility } from 'lucide-react';
+import { Settings, Minus, Plus, Check, WrapText, Pencil, Trash2, LogIn, Accessibility } from 'lucide-react';
 import {
   themes,
   type PresetThemeId,
   useTheme,
+  useThemeEditor,
   FONT_FAMILIES,
   type FontFamilyId,
 } from '../../theme';
+import ThemeEditorModal from './ThemeEditorModal';
 
 const themeOrder: PresetThemeId[] = ['one-dark-pro', 'dracula', 'nord', 'monokai', 'github-light'];
 const fontOrder: FontFamilyId[] = ['fira-code', 'jetbrains-mono', 'source-code-pro', 'inconsolata'];
@@ -24,7 +26,13 @@ export default function SettingsPanel() {
     customThemes, isSignedIn,
   } = useTheme();
 
+  const {
+    editor, openCreate, openEdit, closeEditor, handleSubmit,
+    confirmDeleteId, requestDelete, cancelDelete, handleDelete,
+  } = useThemeEditor();
+
   return (
+    <>
     <Popover.Root>
       <Popover.Trigger asChild>
         <button className="p-1 rounded hover:bg-white/10 transition duration-200" aria-label="Settings">
@@ -34,9 +42,10 @@ export default function SettingsPanel() {
 
       <Popover.Portal>
         <Popover.Content
-          className="z-50 w-80 rounded-xl bg-surface border border-border p-4 shadow-intense space-y-5"
+          className="z-50 w-[min(20rem,calc(100vw-1.5rem))] max-h-[85vh] overflow-y-auto scrollbar-pretty rounded-xl bg-surface border border-border p-4 shadow-intense space-y-5"
           sideOffset={8}
           align="end"
+          collisionPadding={8}
         >
           {/* Theme selector */}
           <div>
@@ -72,44 +81,85 @@ export default function SettingsPanel() {
               })}
             </div>
 
-            {/* Custom themes — quick switch (managed in profile) */}
+            {/* Custom themes — quick switch + inline create/edit/delete */}
             {isSignedIn ? (
               <div className="mt-3 space-y-1.5">
                 {customThemes.length > 0 && (
-                  <div className="max-h-36 overflow-y-auto scrollbar-pretty space-y-1 pr-0.5">
+                  <div className="max-h-48 overflow-y-auto scrollbar-pretty space-y-1 pr-0.5">
                     {customThemes.map((theme) => {
                       const isActive = theme.id === themeId;
                       return (
-                        <button
+                        <div
                           key={theme.id}
-                          onClick={() => setTheme(theme.id)}
-                          className={`w-full flex items-center gap-2.5 px-3 py-1.5 rounded-lg border text-xs transition-all ${
+                          className={`flex items-center gap-1 rounded-lg border text-xs transition-all ${
                             isActive
-                              ? 'border-primary/50 bg-primary/8 text-primary'
-                              : 'border-border bg-background text-dark-text hover:text-light-text hover:border-border/60'
+                              ? 'border-primary/50 bg-primary/8'
+                              : 'border-border bg-background hover:border-border/60'
                           }`}
-                          aria-pressed={isActive}
                         >
-                          <span className="flex flex-shrink-0 rounded overflow-hidden border border-white/10">
-                            <span className="w-2 h-4" style={{ backgroundColor: theme.colors.background }} />
-                            <span className="w-2 h-4" style={{ backgroundColor: theme.colors.primary }} />
-                            <span className="w-2 h-4" style={{ backgroundColor: theme.colors['syntax-keyword'] }} />
-                          </span>
-                          <span className="font-medium truncate">{theme.name}</span>
-                          {isActive && <Check className="h-3 w-3 ml-auto flex-shrink-0" />}
-                        </button>
+                          <button
+                            onClick={() => setTheme(theme.id)}
+                            className={`flex items-center gap-2.5 min-w-0 flex-1 px-3 py-1.5 text-left ${
+                              isActive ? 'text-primary' : 'text-dark-text hover:text-light-text'
+                            }`}
+                            aria-pressed={isActive}
+                            aria-label={`Use ${theme.name}`}
+                          >
+                            <span className="flex flex-shrink-0 rounded overflow-hidden border border-white/10">
+                              <span className="w-2 h-4" style={{ backgroundColor: theme.colors.background }} />
+                              <span className="w-2 h-4" style={{ backgroundColor: theme.colors.primary }} />
+                              <span className="w-2 h-4" style={{ backgroundColor: theme.colors['syntax-keyword'] }} />
+                            </span>
+                            <span className="font-medium truncate">{theme.name}</span>
+                            {isActive && <Check className="h-3 w-3 ml-auto flex-shrink-0" />}
+                          </button>
+
+                          {confirmDeleteId === theme.id ? (
+                            <span className="flex items-center gap-1 flex-shrink-0 pr-1.5">
+                              <button
+                                onClick={() => void handleDelete(theme.id)}
+                                className="px-2 py-1 rounded-md bg-error/15 text-error text-[10px] font-medium hover:bg-error/25 transition-colors"
+                              >
+                                Delete
+                              </button>
+                              <button
+                                onClick={cancelDelete}
+                                className="px-1.5 py-1 rounded-md text-dark-text text-[10px] hover:text-light-text transition-colors"
+                              >
+                                Cancel
+                              </button>
+                            </span>
+                          ) : (
+                            <span className="flex items-center gap-0.5 flex-shrink-0 pr-1.5">
+                              <button
+                                onClick={() => openEdit(theme)}
+                                className="p-1.5 rounded-md text-dark-text hover:text-light-text hover:bg-border/40 transition-colors"
+                                aria-label={`Edit ${theme.name}`}
+                              >
+                                <Pencil size={12} />
+                              </button>
+                              <button
+                                onClick={() => requestDelete(theme.id)}
+                                className="p-1.5 rounded-md text-dark-text hover:text-error hover:bg-error/10 transition-colors"
+                                aria-label={`Delete ${theme.name}`}
+                              >
+                                <Trash2 size={12} />
+                              </button>
+                            </span>
+                          )}
+                        </div>
                       );
                     })}
                   </div>
                 )}
 
-                <Link
-                  href="/profile"
-                  className="w-full flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-dark-text hover:text-primary transition-colors"
+                <button
+                  onClick={openCreate}
+                  className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border border-dashed border-border text-xs text-dark-text hover:text-primary hover:border-primary/50 transition-colors"
                 >
-                  <ChevronRight size={12} />
-                  Manage themes…
-                </Link>
+                  <Plus size={13} />
+                  New theme
+                </button>
               </div>
             ) : (
               <Link
@@ -229,5 +279,16 @@ export default function SettingsPanel() {
         </Popover.Content>
       </Popover.Portal>
     </Popover.Root>
+
+    {editor && (
+      <ThemeEditorModal
+        mode={editor.mode}
+        initialName={editor.name}
+        initialColors={editor.colors}
+        onSubmit={handleSubmit}
+        onClose={closeEditor}
+      />
+    )}
+    </>
   );
 }

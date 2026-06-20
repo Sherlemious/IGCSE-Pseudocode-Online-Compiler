@@ -13,3 +13,4 @@ export {
   presetToCustomColors,
 } from './themes';
 export { ThemeProvider, useTheme, FONT_FAMILIES, type FontFamilyId } from './ThemeContext';
+export { useThemeEditor, type EditorState } from './useThemeEditor';
