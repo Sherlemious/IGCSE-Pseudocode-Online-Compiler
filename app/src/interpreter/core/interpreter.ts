@@ -842,27 +842,20 @@ export class Interpreter {
     const exprs = ctx.expr();
     const blocks = ctx.block();
 
-    // First condition (IF)
-    const firstCond = await this.evalExpr(exprs[0]);
-    if (toBoolean(firstCond)) {
-      await this.visitBlock(blocks[0]);
-      return;
-    }
-
-    // ELSEIF conditions
-    const elseIfTokens = ctx.ELSEIF();
-    for (let i = 0; i < elseIfTokens.length; i++) {
-      const cond = await this.evalExpr(exprs[i + 1]);
+    // exprs holds the IF condition followed by each ELSEIF / ELSE IF condition;
+    // blocks pairs one-to-one with those conditions. A trailing block beyond the
+    // conditions (blocks.length > exprs.length) is the final ELSE branch.
+    for (let i = 0; i < exprs.length; i++) {
+      const cond = await this.evalExpr(exprs[i]);
       if (toBoolean(cond)) {
-        await this.visitBlock(blocks[i + 1]);
+        await this.visitBlock(blocks[i]);
         return;
       }
     }
 
     // ELSE block (if present)
-    if (ctx.ELSE()) {
-      const elseBlockIdx = 1 + elseIfTokens.length;
-      await this.visitBlock(blocks[elseBlockIdx]);
+    if (blocks.length > exprs.length) {
+      await this.visitBlock(blocks[exprs.length]);
     }
   }
 

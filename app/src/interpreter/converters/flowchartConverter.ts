@@ -256,11 +256,12 @@ class FlowchartBuilder {
   private emitIf(ctx: ReturnType<StatementContext['ifStatement']> & {}, incoming: Pending): Pending {
     const exprs = ctx.expr();
     const blocks = ctx.block();
-    const elseifCount = ctx.ELSEIF().length;
 
+    // One decision per condition (IF + each ELSEIF / ELSE IF). A trailing block
+    // beyond the conditions (blocks.length > exprs.length) is the final ELSE branch.
     let noPending = incoming; // edges flowing into the next decision
     let merged: Pending = [];
-    for (let i = 0; i <= elseifCount; i++) {
+    for (let i = 0; i < exprs.length; i++) {
       const decId = this.addNode('decision', exprText(exprs[i]));
       this.connect(noPending, decId);
       const yesTail = this.emitBlock(blocks[i].statement(), [{ from: decId, label: 'Yes' }]);
@@ -268,8 +269,8 @@ class FlowchartBuilder {
       noPending = [{ from: decId, label: 'No' }];
     }
 
-    if (ctx.ELSE()) {
-      const elseTail = this.emitBlock(blocks[blocks.length - 1].statement(), noPending);
+    if (blocks.length > exprs.length) {
+      const elseTail = this.emitBlock(blocks[exprs.length].statement(), noPending);
       merged = merged.concat(elseTail);
     } else {
       merged = merged.concat(noPending); // no ELSE → the final "No" falls through

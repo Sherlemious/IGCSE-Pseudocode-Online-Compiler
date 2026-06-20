@@ -191,6 +191,15 @@ describe('humanizeParseError — new hints', () => {
     expect(msg).toContain('ENDIF');
   });
 
+  it('unclosed ELSE IF chain points at the missing ENDIF', () => {
+    // An IF / ELSE IF chain left without ENDIF surfaces as the input running past
+    // ELSE into more tokens; it should still get the IF-block guidance, not the
+    // generic fallback.
+    const msg = humanizeParseError("no viable alternative at input '\\nELSEIFx>0THEN\\nOUTPUT\"b\"\\n'");
+    expect(msg).toContain('ELSE must belong to an open IF block');
+    expect(msg).toContain('ENDIF');
+  });
+
   it('single quote lexer error explains STRING vs CHAR quotes', () => {
     const msg = humanizeParseError("token recognition error at: '''");
     expect(msg).toContain('double quotes for STRING');
@@ -1094,6 +1103,85 @@ describe('empty blocks', () => {
     ].join('\n') + '\n';
     const { outputs } = await runCode(code);
     expect(outputs).toEqual(['end']);
+  });
+});
+
+// ─── ELSE IF (two-word) is equivalent to ELSEIF ─────────────────────────────
+
+describe('ELSE IF / ELSEIF chains', () => {
+  it('ELSE IF (two words) chains and picks the matching branch', async () => {
+    const code = [
+      'x <- 5',
+      'IF x > 10 THEN',
+      '    OUTPUT "big"',
+      'ELSE IF x > 3 THEN',
+      '    OUTPUT "medium"',
+      'ELSE',
+      '    OUTPUT "small"',
+      'ENDIF',
+    ].join('\n') + '\n';
+    const { outputs } = await runCode(code);
+    expect(outputs).toEqual(['medium']);
+  });
+
+  it('ELSE IF falls through to ELSE when no condition matches', async () => {
+    const code = [
+      'x <- 1',
+      'IF x > 10 THEN',
+      '    OUTPUT "big"',
+      'ELSE IF x > 3 THEN',
+      '    OUTPUT "medium"',
+      'ELSE',
+      '    OUTPUT "small"',
+      'ENDIF',
+    ].join('\n') + '\n';
+    const { outputs } = await runCode(code);
+    expect(outputs).toEqual(['small']);
+  });
+
+  it('mixes ELSEIF and ELSE IF in one chain', async () => {
+    const code = [
+      'x <- 7',
+      'IF x > 100 THEN',
+      '    OUTPUT "a"',
+      'ELSEIF x > 50 THEN',
+      '    OUTPUT "b"',
+      'ELSE IF x > 5 THEN',
+      '    OUTPUT "c"',
+      'ELSE',
+      '    OUTPUT "d"',
+      'ENDIF',
+    ].join('\n') + '\n';
+    const { outputs } = await runCode(code);
+    expect(outputs).toEqual(['c']);
+  });
+
+  it('ELSE IF works without THEN', async () => {
+    const code = [
+      'x <- 2',
+      'IF x > 10',
+      '    OUTPUT "big"',
+      'ELSE IF x > 1',
+      '    OUTPUT "mid"',
+      'ENDIF',
+    ].join('\n') + '\n';
+    const { outputs } = await runCode(code);
+    expect(outputs).toEqual(['mid']);
+  });
+
+  it('keeps the nested IF-inside-ELSE form (ELSE on its own line)', async () => {
+    const code = [
+      'x <- 2',
+      'IF x > 10 THEN',
+      '    OUTPUT "big"',
+      'ELSE',
+      '    IF x > 1 THEN',
+      '        OUTPUT "nested"',
+      '    ENDIF',
+      'ENDIF',
+    ].join('\n') + '\n';
+    const { outputs } = await runCode(code);
+    expect(outputs).toEqual(['nested']);
   });
 });
 

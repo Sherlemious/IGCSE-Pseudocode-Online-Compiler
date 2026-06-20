@@ -360,6 +360,10 @@ ELSE
     OUTPUT "Fail"
 ENDIF`}
           />
+          <p className="text-sm text-dark-text mt-3">
+            You can write it as <Kw>ELSEIF</Kw> (one word) or <Kw>ELSE IF</Kw> (two
+            words) on the same line — both chain conditions the same way.
+          </p>
 
           <H3 id="first-loop">Repeating Things</H3>
           <p className="text-sm text-dark-text mb-2">
@@ -748,6 +752,10 @@ ELSE
     OUTPUT "F"
 ENDIF`}
           />
+          <p className="text-sm text-dark-text mt-3">
+            <Kw>ELSEIF</Kw> may also be written as two words, <Kw>ELSE IF</Kw>, on the
+            same line.
+          </p>
 
           <H3 id="case">CASE / OTHERWISE</H3>
           <p className="text-sm text-dark-text mb-2">

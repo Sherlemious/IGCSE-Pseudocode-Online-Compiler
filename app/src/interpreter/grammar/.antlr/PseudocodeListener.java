@@ -47,6 +47,16 @@ public interface PseudocodeListener extends ParseTreeListener {
 	 */
 	void exitIdentifierList(PseudocodeParser.IdentifierListContext ctx);
 	/**
+	 * Enter a parse tree produced by {@link PseudocodeParser#identifier}.
+	 * @param ctx the parse tree
+	 */
+	void enterIdentifier(PseudocodeParser.IdentifierContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link PseudocodeParser#identifier}.
+	 * @param ctx the parse tree
+	 */
+	void exitIdentifier(PseudocodeParser.IdentifierContext ctx);
+	/**
 	 * Enter a parse tree produced by {@link PseudocodeParser#constantStatement}.
 	 * @param ctx the parse tree
 	 */
@@ -692,18 +702,6 @@ public interface PseudocodeListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitModFunctionAtom(PseudocodeParser.ModFunctionAtomContext ctx);
-	/**
-	 * Enter a parse tree produced by the {@code randomFunctionAtom}
-	 * labeled alternative in {@link PseudocodeParser#atom}.
-	 * @param ctx the parse tree
-	 */
-	void enterRandomFunctionAtom(PseudocodeParser.RandomFunctionAtomContext ctx);
-	/**
-	 * Exit a parse tree produced by the {@code randomFunctionAtom}
-	 * labeled alternative in {@link PseudocodeParser#atom}.
-	 * @param ctx the parse tree
-	 */
-	void exitRandomFunctionAtom(PseudocodeParser.RandomFunctionAtomContext ctx);
 	/**
 	 * Enter a parse tree produced by the {@code designatorAtom}
 	 * labeled alternative in {@link PseudocodeParser#atom}.

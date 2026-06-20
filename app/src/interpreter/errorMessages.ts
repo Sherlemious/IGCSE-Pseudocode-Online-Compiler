@@ -50,12 +50,17 @@ function commonParseHint(rawMessage: string): string | null {
     );
   }
 
-  if (/no viable alternative at input '(?:\\n|\n)?ELSE'/.test(rawMessage)) {
+  // Catches a stray ELSE (snippet is just `ELSE`) and an IF / ELSEIF / ELSE IF
+  // chain left unclosed (snippet runs past ELSE into more tokens because no ENDIF
+  // closed the block). Both want the same fix: a complete IF … THEN … ENDIF.
+  if (/no viable alternative at input '(?:\\n|\n)?ELSE/.test(rawMessage)) {
     return (
-      'ELSE must belong to an open IF block. Check the IF line and close the block with ENDIF.\n' +
+      'ELSE must belong to an open IF block, and the block must close with ENDIF.\n' +
       '  Example:\n' +
       '    IF Mark >= 50 THEN\n' +
       '      OUTPUT "Pass"\n' +
+      '    ELSE IF Mark >= 40 THEN\n' +
+      '      OUTPUT "Borderline"\n' +
       '    ELSE\n' +
       '      OUTPUT "Try again"\n' +
       '    ENDIF'

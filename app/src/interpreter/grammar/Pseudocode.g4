@@ -143,9 +143,13 @@ exprList
 
 // ─── IF / ELSE ──────────────────────────────────────────────────────────────
 
+// An else-if branch may be written ELSEIF (one word) or ELSE IF (two words, on the
+// same line). ELSE directly followed by IF chains as an else-if; ELSE on its own line
+// followed by a nested IF stays an ordinary ELSE block (matched by the optional ELSE
+// below), so both styles keep working.
 ifStatement
     : IF expr NEWLINE* THEN? NEWLINE* block
-      (NEWLINE* ELSEIF expr NEWLINE* THEN? NEWLINE* block)*
+      (NEWLINE* (ELSEIF | ELSE IF) expr NEWLINE* THEN? NEWLINE* block)*
       (NEWLINE* ELSE NEWLINE* block)?
       NEWLINE* ENDIF
     ;

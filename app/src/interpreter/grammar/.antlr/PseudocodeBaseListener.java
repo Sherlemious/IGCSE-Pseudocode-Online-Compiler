@@ -64,6 +64,18 @@ public class PseudocodeBaseListener implements PseudocodeListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
+	@Override public void enterIdentifier(PseudocodeParser.IdentifierContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitIdentifier(PseudocodeParser.IdentifierContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
 	@Override public void enterConstantStatement(PseudocodeParser.ConstantStatementContext ctx) { }
 	/**
 	 * {@inheritDoc}
@@ -779,18 +791,6 @@ public class PseudocodeBaseListener implements PseudocodeListener {
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override public void exitModFunctionAtom(PseudocodeParser.ModFunctionAtomContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void enterRandomFunctionAtom(PseudocodeParser.RandomFunctionAtomContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void exitRandomFunctionAtom(PseudocodeParser.RandomFunctionAtomContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *

@@ -45,6 +45,13 @@ describe('pythonConverter — statements', () => {
     expect(code).toContain('else:');
   });
 
+  it('ELSE IF (two words) also maps to elif', () => {
+    const code = py('IF a > 1 THEN\nOUTPUT 1\nELSE IF a > 0 THEN\nOUTPUT 2\nELSE\nOUTPUT 3\nENDIF\n');
+    expect(code).toContain('if a > 1:');
+    expect(code).toContain('elif a > 0:');
+    expect(code).toContain('else:');
+  });
+
   it('CASE becomes if/elif chain, with TO ranges', () => {
     const code = py('CASE OF g\n90 TO 100 : OUTPUT "A"\nOTHERWISE : OUTPUT "C"\nENDCASE\n');
     expect(code).toContain('_case = g');

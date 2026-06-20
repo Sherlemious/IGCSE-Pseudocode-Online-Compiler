@@ -63,6 +63,14 @@ describe('flowchartConverter — selection', () => {
     expect(firstNo.target).toBe(decisions[1].id);
   });
 
+  it('ELSE IF (two words) chains the same as ELSEIF', () => {
+    const r = fc('IF a > 1 THEN\nOUTPUT 1\nELSE IF a > 0 THEN\nOUTPUT 2\nELSE\nOUTPUT 3\nENDIF\n');
+    const decisions = r.nodes.filter((n) => n.shape === 'decision');
+    expect(decisions.length).toBe(2);
+    const firstNo = out(r, decisions[0].id).find((e) => e.label === 'No')!;
+    expect(firstNo.target).toBe(decisions[1].id);
+  });
+
   it('CASE makes one labeled edge per clause plus OTHERWISE', () => {
     const r = fc('CASE OF g\n1 : OUTPUT "A"\nOTHERWISE : OUTPUT "C"\nENDCASE\n');
     const dec = r.nodes.find((n) => n.shape === 'decision')!;

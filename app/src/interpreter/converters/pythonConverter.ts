@@ -638,17 +638,18 @@ class PythonConverter {
   private emitIf(ctx: IfStatementContext): void {
     const exprs = ctx.expr();
     const blocks = ctx.block();
-    const elseifs = ctx.ELSEIF();
 
+    // exprs = IF condition + each ELSEIF / ELSE IF condition; blocks pair with them.
+    // A trailing block (blocks.length > exprs.length) is the final ELSE branch.
     this.line(`if ${this.emitExpr(exprs[0], 0)}:`);
     this.emitSuite(blocks[0]);
-    for (let i = 0; i < elseifs.length; i++) {
-      this.line(`elif ${this.emitExpr(exprs[i + 1], 0)}:`);
-      this.emitSuite(blocks[i + 1]);
+    for (let i = 1; i < exprs.length; i++) {
+      this.line(`elif ${this.emitExpr(exprs[i], 0)}:`);
+      this.emitSuite(blocks[i]);
     }
-    if (ctx.ELSE()) {
+    if (blocks.length > exprs.length) {
       this.line('else:');
-      this.emitSuite(blocks[1 + elseifs.length]);
+      this.emitSuite(blocks[exprs.length]);
     }
   }
 
