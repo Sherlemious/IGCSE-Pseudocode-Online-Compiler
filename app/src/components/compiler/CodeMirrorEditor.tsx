@@ -21,6 +21,7 @@ import { bracketMatching, foldGutter, indentOnInput } from '@codemirror/language
 import { searchKeymap, highlightSelectionMatches } from '@codemirror/search';
 import { autocompletion, completionKeymap } from '@codemirror/autocomplete';
 import { pseudocodeLanguage } from '../../interpreter/pseudocode-lang';
+import { formatPseudocode } from '../../interpreter/formatter';
 import { HighlightStyle, syntaxHighlighting } from '@codemirror/language';
 import { tags as t } from '@lezer/highlight';
 
@@ -378,6 +379,19 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
         key: 'Ctrl-/',
         mac: 'Cmd-/',
         run: toggleLineCommentCmd,
+      },
+      {
+        key: 'Shift-Alt-f',
+        run: (view) => {
+          const current = view.state.doc.toString();
+          const formatted = formatPseudocode(current);
+          if (formatted !== current) {
+            view.dispatch({
+              changes: { from: 0, to: view.state.doc.length, insert: formatted },
+            });
+          }
+          return true;
+        },
       },
       indentWithTab,
       ...defaultKeymap,

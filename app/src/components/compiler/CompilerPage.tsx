@@ -5,6 +5,7 @@ import CodeInput, { type EditorTab, type CursorPosition } from './codeInput';
 import OutputDisplay from './outputDisplay';
 import { convertToPython, type PythonConversion } from '../../interpreter/converters/pythonConverter';
 import { convertToFlowchart, type FlowchartConversion } from '../../interpreter/converters/flowchartConverter';
+import { formatPseudocode } from '../../interpreter/formatter';
 import Footer from '../layout/footer';
 import OnboardingTour from '../onboarding/OnboardingTour';
 import FeedbackSurvey, { shouldShowFeedbackSurvey } from '../feedback/FeedbackSurvey';
@@ -237,6 +238,10 @@ const CompilerPage: React.FC = () => {
     [activeTabId]
   );
 
+  const handleFormat = useCallback(() => {
+    handleCodeChange(formatPseudocode(activeTab.content));
+  }, [handleCodeChange, activeTab.content]);
+
   const handleExampleSelect = useCallback((exampleCode: string) => {
     setTabs((prev) => prev.map((t) => (t.id === 'main' ? { ...t, content: exampleCode } : t)));
     setActiveTabId('main');
@@ -344,6 +349,7 @@ const CompilerPage: React.FC = () => {
             onSelectExample={handleExampleSelect}
             onConvertToPython={() => handleOutputTabChange('python')}
             onConvertToFlowchart={() => handleOutputTabChange('flowchart')}
+            onFormat={handleFormat}
             onCursorChange={setCursor}
             tabs={tabs}
             activeTabId={activeTabId}

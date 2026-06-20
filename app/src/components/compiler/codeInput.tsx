@@ -14,6 +14,7 @@ import {
   Share2,
   Check,
   Workflow,
+  Wand2,
 } from 'lucide-react';
 import PythonLogo from '../icons/PythonLogo';
 import ExamplePicker from './examplePicker';
@@ -49,6 +50,7 @@ interface CodeInputProps {
   onSelectExample: (code: string) => void;
   onConvertToPython?: () => void;
   onConvertToFlowchart?: () => void;
+  onFormat?: () => void;
   onCursorChange?: (pos: CursorPosition) => void;
   tabs: EditorTab[];
   activeTabId: string;
@@ -76,6 +78,7 @@ const CodeInput: React.FC<CodeInputProps> = ({
   onSelectExample,
   onConvertToPython,
   onConvertToFlowchart,
+  onFormat,
   onCursorChange,
   tabs,
   activeTabId,
@@ -254,6 +257,15 @@ const CodeInput: React.FC<CodeInputProps> = ({
             >
               <Workflow size={14} />
             </button>
+            {onFormat && (
+              <button
+                onClick={onFormat}
+                className="flex items-center justify-center w-7 h-7 opacity-60 hover:opacity-100 hover:bg-background rounded transition-opacity"
+                title="Format code (Shift+Alt+F)"
+              >
+                <Wand2 size={14} />
+              </button>
+            )}
           </div>
         </div>
 
