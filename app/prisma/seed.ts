@@ -7470,6 +7470,406 @@ OUTPUT "Info: " & Info`,
       { inputs: ['5', 'W One', 'E Two', 'W Three', 'E Four', 'W Five'], expectedOutput: 'Errors: 2\nWarnings: 3\nInfo: 0', description: 'No info entries', sortOrder: 2, isHidden: true },
     ],
   },
+
+  // IGCSE fundamentals inspired by common first-programming exercises.
+  {
+    title: 'Calculate Rectangle Area',
+    description: `Read the length and width of a rectangle and output its area.
+
+**Input:** The length and width as two positive numbers on separate lines.
+**Output:** The area of the rectangle.
+
+**Example:**
+\`\`\`
+Input:  5
+        3
+Output: 15
+\`\`\``,
+    difficulty: 'EASY' as const,
+    topic: 'Arithmetic',
+    tags: ['IGCSE', 'Original Practice', 'Variables', 'Input and Output', 'Arithmetic'],
+    marks: 3,
+    starterCode: `DECLARE Length : REAL
+DECLARE Width : REAL
+DECLARE Area : REAL
+
+INPUT Length
+INPUT Width
+
+// Calculate and output the area`,
+    hints: [
+      'The area of a rectangle is its length multiplied by its width.',
+      'Store Length * Width in the Area variable.',
+      'Use Area <- Length * Width, then OUTPUT Area.',
+    ],
+    solution: `DECLARE Length : REAL
+DECLARE Width : REAL
+DECLARE Area : REAL
+
+INPUT Length
+INPUT Width
+
+Area <- Length * Width
+OUTPUT Area`,
+    solutionExplanation: 'The program reads both dimensions, multiplies them, and outputs the resulting area.',
+    testCases: [
+      { inputs: ['5', '3'], expectedOutput: '15', description: 'Whole-number dimensions', sortOrder: 0 },
+      { inputs: ['7.5', '2'], expectedOutput: '15', description: 'Decimal length', sortOrder: 1 },
+      { inputs: ['0.5', '0.5'], expectedOutput: '0.25', description: 'Small decimal dimensions', sortOrder: 2, isHidden: true },
+      { inputs: ['12', '8'], expectedOutput: '96', description: null, sortOrder: 3, isHidden: true },
+    ],
+  },
+
+  {
+    title: 'Pass or Fail',
+    description: `Read a student's mark. Output \`Pass\` when the mark is 50 or more; otherwise output \`Fail\`.
+
+**Input:** One integer mark from 0 to 100.
+**Output:** \`Pass\` or \`Fail\`.
+
+**Example:**
+\`\`\`
+Input:  67
+Output: Pass
+\`\`\``,
+    difficulty: 'EASY' as const,
+    topic: 'Selection',
+    tags: ['IGCSE', 'Original Practice', 'Input', 'Selection', 'Boundary Cases'],
+    marks: 3,
+    starterCode: `DECLARE Mark : INTEGER
+
+INPUT Mark
+
+// Output Pass for marks of 50 or more, otherwise output Fail`,
+    hints: [
+      'Use an IF statement to compare Mark with the pass boundary.',
+      'A mark equal to 50 must pass, so use >= rather than >.',
+      'Use IF Mark >= 50 THEN, with an ELSE branch for Fail.',
+    ],
+    solution: `DECLARE Mark : INTEGER
+
+INPUT Mark
+
+IF Mark >= 50 THEN
+    OUTPUT "Pass"
+ELSE
+    OUTPUT "Fail"
+ENDIF`,
+    solutionExplanation: 'The IF statement includes the boundary value 50 in the passing range and sends every lower mark to the ELSE branch.',
+    testCases: [
+      { inputs: ['67'], expectedOutput: 'Pass', description: 'Passing mark', sortOrder: 0 },
+      { inputs: ['32'], expectedOutput: 'Fail', description: 'Failing mark', sortOrder: 1 },
+      { inputs: ['50'], expectedOutput: 'Pass', description: 'Exact pass boundary', sortOrder: 2, isHidden: true },
+      { inputs: ['49'], expectedOutput: 'Fail', description: 'Just below pass boundary', sortOrder: 3, isHidden: true },
+    ],
+  },
+
+  {
+    title: 'Age Validator',
+    description: `Keep reading an age until it is between 5 and 18 inclusive. Output \`Accepted\` after a valid age is entered.
+
+**Input:** One or more integer ages.
+**Output:** \`Accepted\` once the input is valid.
+
+**Example:**
+\`\`\`
+Input:  3
+        16
+Output: Accepted
+\`\`\``,
+    difficulty: 'EASY' as const,
+    topic: 'Validation',
+    tags: ['IGCSE', 'Original Practice', 'Input', 'Validation', 'REPEAT UNTIL'],
+    marks: 4,
+    starterCode: `DECLARE Age : INTEGER
+
+// Keep asking for Age until it is in the valid range
+REPEAT
+    INPUT Age
+UNTIL ...
+
+OUTPUT "Accepted"`,
+    hints: [
+      'A REPEAT loop always reads at least one age before checking it.',
+      'Both limits are valid, so the condition must include 5 and 18.',
+      'Replace the placeholder with Age >= 5 AND Age <= 18.',
+    ],
+    solution: `DECLARE Age : INTEGER
+
+REPEAT
+    INPUT Age
+UNTIL Age >= 5 AND Age <= 18
+
+OUTPUT "Accepted"`,
+    solutionExplanation: 'The post-condition loop repeats while ages are invalid and stops only when the age lies within the inclusive range.',
+    testCases: [
+      { inputs: ['3', '16'], expectedOutput: 'Accepted', description: 'Invalid then valid', sortOrder: 0 },
+      { inputs: ['10'], expectedOutput: 'Accepted', description: 'Valid first input', sortOrder: 1 },
+      { inputs: ['4', '5'], expectedOutput: 'Accepted', description: 'Lower boundary', sortOrder: 2, isHidden: true },
+      { inputs: ['22', '19', '18'], expectedOutput: 'Accepted', description: 'Upper boundary', sortOrder: 3, isHidden: true },
+    ],
+  },
+
+  {
+    title: 'Even Numbers to N',
+    description: `Read a positive integer N and output every even number from 2 to N, one number per line.
+
+**Input:** A positive integer N.
+**Output:** The even numbers no greater than N.
+
+**Example:**
+\`\`\`
+Input:  8
+Output: 2
+        4
+        6
+        8
+\`\`\``,
+    difficulty: 'EASY' as const,
+    topic: 'Loops',
+    tags: ['IGCSE', 'Original Practice', 'Loops', 'FOR Loop', 'Counting'],
+    marks: 3,
+    starterCode: `DECLARE N : INTEGER
+DECLARE Number : INTEGER
+
+INPUT N
+
+// Count from 2 to N in steps of 2`,
+    hints: [
+      'A FOR loop can use a step other than 1.',
+      'Start Number at 2 and use STEP 2 so that every value is even.',
+      'Use FOR Number <- 2 TO N STEP 2 and OUTPUT Number inside the loop.',
+    ],
+    solution: `DECLARE N : INTEGER
+DECLARE Number : INTEGER
+
+INPUT N
+
+FOR Number <- 2 TO N STEP 2
+    OUTPUT Number
+NEXT Number`,
+    solutionExplanation: 'Starting at 2 and increasing by 2 visits exactly the positive even numbers up to N.',
+    testCases: [
+      { inputs: ['8'], expectedOutput: '2\n4\n6\n8', description: 'Even upper limit', sortOrder: 0 },
+      { inputs: ['7'], expectedOutput: '2\n4\n6', description: 'Odd upper limit', sortOrder: 1 },
+      { inputs: ['2'], expectedOutput: '2', description: 'Smallest output', sortOrder: 2, isHidden: true },
+      { inputs: ['12'], expectedOutput: '2\n4\n6\n8\n10\n12', description: null, sortOrder: 3, isHidden: true },
+    ],
+  },
+
+  {
+    title: 'First and Last Character',
+    description: `Read a non-empty string. Output its first character and last character on separate lines.
+
+**Input:** One non-empty string.
+**Output:** The first character, then the last character.
+
+**Example:**
+\`\`\`
+Input:  Computer
+Output: C
+        r
+\`\`\``,
+    difficulty: 'EASY' as const,
+    topic: 'String Processing',
+    tags: ['IGCSE', 'Original Practice', 'Strings', 'SUBSTRING', 'LENGTH'],
+    marks: 4,
+    starterCode: `DECLARE Text : STRING
+DECLARE LastPosition : INTEGER
+
+INPUT Text
+
+// Output the first and last characters`,
+    hints: [
+      'SUBSTRING uses a 1-based starting position in Cambridge pseudocode.',
+      'The last character starts at position LENGTH(Text).',
+      'Use SUBSTRING(Text, 1, 1) and SUBSTRING(Text, LENGTH(Text), 1).',
+    ],
+    solution: `DECLARE Text : STRING
+DECLARE LastPosition : INTEGER
+
+INPUT Text
+
+LastPosition <- LENGTH(Text)
+OUTPUT SUBSTRING(Text, 1, 1)
+OUTPUT SUBSTRING(Text, LastPosition, 1)`,
+    solutionExplanation: 'The first character is at position 1. The string length is also the 1-based position of its final character.',
+    testCases: [
+      { inputs: ['Computer'], expectedOutput: 'C\nr', description: 'Typical word', sortOrder: 0 },
+      { inputs: ['A'], expectedOutput: 'A\nA', description: 'Single character', sortOrder: 1 },
+      { inputs: ['hello world'], expectedOutput: 'h\nd', description: 'String containing a space', sortOrder: 2, isHidden: true },
+      { inputs: ['12345'], expectedOutput: '1\n5', description: null, sortOrder: 3, isHidden: true },
+    ],
+  },
+
+  {
+    title: 'BMI Calculator',
+    description: `Read a person's mass in kilograms and height in metres. Calculate their body mass index (BMI), then output the category.
+
+- Below 18.5: \`Underweight\`
+- 18.5 to below 25: \`Normal\`
+- 25 to below 30: \`Overweight\`
+- 30 or above: \`Obese\`
+
+**Input:** Mass followed by height.
+**Output:** The BMI category.
+
+**Example:**
+\`\`\`
+Input:  70
+        1.75
+Output: Normal
+\`\`\``,
+    difficulty: 'MEDIUM' as const,
+    topic: 'Selection',
+    tags: ['IGCSE', 'Original Practice', 'Arithmetic', 'Selection', 'Real Numbers'],
+    marks: 6,
+    starterCode: `DECLARE Mass : REAL
+DECLARE Height : REAL
+DECLARE BMI : REAL
+
+INPUT Mass
+INPUT Height
+
+BMI <- Mass / (Height * Height)
+
+// Output the correct BMI category`,
+    hints: [
+      'Test the category boundaries from smallest to largest.',
+      'After BMI < 18.5 is false, the next branch only needs to test BMI < 25.',
+      'Use an IF / ELSEIF chain with upper boundaries 18.5, 25, and 30.',
+    ],
+    solution: `DECLARE Mass : REAL
+DECLARE Height : REAL
+DECLARE BMI : REAL
+
+INPUT Mass
+INPUT Height
+
+BMI <- Mass / (Height * Height)
+
+IF BMI < 18.5 THEN
+    OUTPUT "Underweight"
+ELSEIF BMI < 25 THEN
+    OUTPUT "Normal"
+ELSEIF BMI < 30 THEN
+    OUTPUT "Overweight"
+ELSE
+    OUTPUT "Obese"
+ENDIF`,
+    solutionExplanation: 'BMI is mass divided by height squared. Testing ascending upper bounds ensures exactly one category is selected, including all boundary values correctly.',
+    testCases: [
+      { inputs: ['70', '1.75'], expectedOutput: 'Normal', description: 'Normal category', sortOrder: 0 },
+      { inputs: ['50', '1.8'], expectedOutput: 'Underweight', description: 'Underweight category', sortOrder: 1 },
+      { inputs: ['100', '2'], expectedOutput: 'Overweight', description: 'BMI exactly 25', sortOrder: 2, isHidden: true },
+      { inputs: ['120', '2'], expectedOutput: 'Obese', description: 'BMI exactly 30', sortOrder: 3, isHidden: true },
+    ],
+  },
+
+  {
+    title: 'Reverse an Array',
+    description: `Read five integers into an array, then output them in reverse order with one value per line.
+
+**Input:** Five integers on separate lines.
+**Output:** The same five integers in reverse order.
+
+**Example:**
+\`\`\`
+Input:  10 20 30 40 50
+Output: 50
+        40
+        30
+        20
+        10
+\`\`\``,
+    difficulty: 'EASY' as const,
+    topic: 'Arrays',
+    tags: ['IGCSE', 'Original Practice', 'Arrays', 'Loops', 'Reverse Traversal'],
+    marks: 5,
+    starterCode: `DECLARE Values : ARRAY[1:5] OF INTEGER
+DECLARE Index : INTEGER
+
+// Input five values, then output the array in reverse`,
+    hints: [
+      'Use one loop to fill array positions 1 through 5.',
+      'A second loop can visit the positions from 5 down to 1.',
+      'Use FOR Index <- 5 TO 1 STEP -1 for the output loop.',
+    ],
+    solution: `DECLARE Values : ARRAY[1:5] OF INTEGER
+DECLARE Index : INTEGER
+
+FOR Index <- 1 TO 5
+    INPUT Values[Index]
+NEXT Index
+
+FOR Index <- 5 TO 1 STEP -1
+    OUTPUT Values[Index]
+NEXT Index`,
+    solutionExplanation: 'The first loop stores each input in ascending index order. The second traverses those indices backwards to reverse the output order.',
+    testCases: [
+      { inputs: ['10', '20', '30', '40', '50'], expectedOutput: '50\n40\n30\n20\n10', description: 'Ascending values', sortOrder: 0 },
+      { inputs: ['5', '4', '3', '2', '1'], expectedOutput: '1\n2\n3\n4\n5', description: 'Descending values', sortOrder: 1 },
+      { inputs: ['7', '7', '7', '7', '7'], expectedOutput: '7\n7\n7\n7\n7', description: 'Repeated values', sortOrder: 2, isHidden: true },
+      { inputs: ['-2', '0', '6', '-8', '4'], expectedOutput: '4\n-8\n6\n0\n-2', description: 'Mixed values', sortOrder: 3, isHidden: true },
+    ],
+  },
+
+  {
+    title: 'Simple Interest',
+    description: `Read a principal amount, annual interest rate, and number of years. Calculate and output the simple interest.
+
+Use the formula:
+
+\`interest = principal * rate * years / 100\`
+
+**Input:** Principal, annual percentage rate, then years.
+**Output:** The simple interest.
+
+**Example:**
+\`\`\`
+Input:  1000
+        5
+        3
+Output: 150
+\`\`\``,
+    difficulty: 'EASY' as const,
+    topic: 'Arithmetic',
+    tags: ['IGCSE', 'Original Practice', 'Variables', 'Arithmetic', 'Real Numbers'],
+    marks: 4,
+    starterCode: `DECLARE Principal : REAL
+DECLARE Rate : REAL
+DECLARE Years : INTEGER
+DECLARE Interest : REAL
+
+INPUT Principal
+INPUT Rate
+INPUT Years
+
+// Calculate and output the simple interest`,
+    hints: [
+      'Multiply the principal by both the percentage rate and the number of years.',
+      'Divide by 100 because Rate is supplied as a percentage.',
+      'Use Interest <- Principal * Rate * Years / 100.',
+    ],
+    solution: `DECLARE Principal : REAL
+DECLARE Rate : REAL
+DECLARE Years : INTEGER
+DECLARE Interest : REAL
+
+INPUT Principal
+INPUT Rate
+INPUT Years
+
+Interest <- Principal * Rate * Years / 100
+OUTPUT Interest`,
+    solutionExplanation: 'The formula applies the annual percentage rate to the principal for the given number of years, dividing by 100 to convert the percentage.',
+    testCases: [
+      { inputs: ['1000', '5', '3'], expectedOutput: '150', description: 'Typical values', sortOrder: 0 },
+      { inputs: ['500', '4', '2'], expectedOutput: '40', description: 'Whole-number result', sortOrder: 1 },
+      { inputs: ['2500', '3.5', '4'], expectedOutput: '350', description: 'Decimal rate', sortOrder: 2, isHidden: true },
+      { inputs: ['1200', '2.5', '1'], expectedOutput: '30', description: null, sortOrder: 3, isHidden: true },
+    ],
+  },
 ];
 
 // ─── Main seed function ────────────────────────────────────────────────────────
