@@ -1,8 +1,7 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
-  FolderOpen,
   FileText,
   Trash2,
   X,
@@ -23,10 +22,14 @@ interface FileEntry {
 
 interface FileViewerProps {
   onOpenFile?: (fileName: string, content: string) => void;
+  /** Controlled open state — the trigger now lives in the editor's Open menu. */
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  /** Open straight into the "new file" input (used by the Open → New file action). */
+  initialCreating?: boolean;
 }
 
-const FileViewer: React.FC<FileViewerProps> = ({ onOpenFile }) => {
-  const [isOpen, setIsOpen] = useState(false);
+const FileViewer: React.FC<FileViewerProps> = ({ onOpenFile, open, onOpenChange, initialCreating = false }) => {
   const [files, setFiles] = useState<FileEntry[]>([]);
   const [selectedFile, setSelectedFile] = useState<FileEntry | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
@@ -39,7 +42,7 @@ const FileViewer: React.FC<FileViewerProps> = ({ onOpenFile }) => {
   const modalRef = useRef<HTMLDivElement>(null);
   const newFileInputRef = useRef<HTMLInputElement>(null);
 
-  const loadFiles = () => {
+  const loadFiles = useCallback(() => {
     const entries: FileEntry[] = [];
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
@@ -52,17 +55,19 @@ const FileViewer: React.FC<FileViewerProps> = ({ onOpenFile }) => {
     }
     entries.sort((a, b) => a.name.localeCompare(b.name));
     setFiles(entries);
-  };
+  }, []);
 
-  const handleOpen = () => {
+  // Reset to a clean state each time it opens (optionally straight into create mode).
+  useEffect(() => {
+    if (!open) return;
     loadFiles();
     setSelectedFile(null);
     setConfirmDelete(null);
     setMobileView('list');
-    setIsCreating(false);
+    setIsCreating(initialCreating);
+    setNewFileName('');
     setCreateFileError('');
-    setIsOpen(true);
-  };
+  }, [open, initialCreating, loadFiles]);
 
   const handleSelectFile = (file: FileEntry) => {
     setSelectedFile(file);
@@ -111,7 +116,7 @@ const FileViewer: React.FC<FileViewerProps> = ({ onOpenFile }) => {
       setNewFileName('');
       // Auto-open
       onOpenFile?.(name, '');
-      setIsOpen(false);
+      onOpenChange(false);
     } catch {
       setCreateFileError('Failed to create file: Storage full?');
     }
@@ -119,23 +124,23 @@ const FileViewer: React.FC<FileViewerProps> = ({ onOpenFile }) => {
 
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setIsOpen(false);
+      if (e.key === 'Escape') onOpenChange(false);
     };
     window.addEventListener('keydown', handleEsc);
     return () => window.removeEventListener('keydown', handleEsc);
-  }, []);
+  }, [onOpenChange]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (modalRef.current && !modalRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
+        onOpenChange(false);
       }
     };
-    if (isOpen) {
+    if (open) {
       document.addEventListener('mousedown', handleClickOutside);
     }
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [isOpen]);
+  }, [open, onOpenChange]);
 
   // Focus the new file input when creating a file
   useEffect(() => {
@@ -207,7 +212,7 @@ const FileViewer: React.FC<FileViewerProps> = ({ onOpenFile }) => {
 
         {files.length === 0 && !isCreating ? (
           <div className="flex flex-col items-center justify-center h-full gap-3 px-4 py-8">
-            <FolderOpen size={28} className="text-dark-text opacity-30" />
+            <HardDrive size={28} className="text-dark-text opacity-30" />
             <div className="text-xs text-dark-text text-center leading-relaxed">
               No files yet.
               <br />
@@ -297,7 +302,7 @@ const FileViewer: React.FC<FileViewerProps> = ({ onOpenFile }) => {
                 <button
                   onClick={() => {
                     onOpenFile(selectedFile.name, selectedFile.content);
-                    setIsOpen(false);
+                    onOpenChange(false);
                   }}
                   className="flex items-center gap-1 px-2 py-0.5 text-[10px] text-primary hover:text-light-text
                     bg-primary/10 hover:bg-primary/20 rounded transition-colors"
@@ -337,93 +342,83 @@ const FileViewer: React.FC<FileViewerProps> = ({ onOpenFile }) => {
     </div>
   );
 
+  if (!open) return null;
+
   return (
-    <>
-      <button
-        onClick={handleOpen}
-        className="flex items-center justify-center w-7 h-7 text-dark-text hover:text-light-text
-          hover:bg-background rounded transition-colors"
-        title="View Files"
+    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center md:p-3">
+      <div
+        ref={modalRef}
+        className="bg-background border-0 md:border border-border md:rounded-md
+          w-full h-full md:h-auto md:max-w-4xl md:max-h-[80vh]
+          flex flex-col shadow-intense overflow-hidden"
       >
-        <FolderOpen size={15} />
-      </button>
-
-      {isOpen && (
-        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center md:p-3">
-          <div
-            ref={modalRef}
-            className="bg-background border-0 md:border border-border md:rounded-md
-              w-full h-full md:h-auto md:max-w-4xl md:max-h-[80vh]
-              flex flex-col shadow-intense overflow-hidden"
-          >
-            {/* Header bar */}
-            <div className="h-10 md:h-9 bg-surface border-b border-border flex items-center justify-between px-3 shrink-0">
-              <div className="flex items-center gap-2">
-                <HardDrive className="h-3.5 w-3.5 text-primary" />
-                <span className="text-xs font-semibold tracking-wider text-light-text uppercase">Files</span>
-                {files.length > 0 && <span className="text-xs text-dark-text">({files.length})</span>}
+        {/* Header bar */}
+        <div className="h-10 md:h-9 bg-surface border-b border-border flex items-center justify-between px-3 shrink-0">
+          <div className="flex items-center gap-2">
+            <HardDrive className="h-3.5 w-3.5 text-primary" />
+            <span className="text-xs font-semibold tracking-wider text-light-text uppercase">Files</span>
+            {files.length > 0 && <span className="text-xs text-dark-text">({files.length})</span>}
+            <button
+              onClick={() => {
+                setIsCreating(true);
+                setNewFileName('');
+                setCreateFileError('');
+              }}
+              className="ml-2 text-dark-text hover:text-primary p-0.5 rounded hover:bg-background transition-colors"
+              title="New File"
+            >
+              <Plus size={14} />
+            </button>
+          </div>
+          <div className="flex items-center gap-1">
+            {files.length > 0 &&
+              (confirmDelete === '__all__' ? (
+                <div className="flex items-center gap-1 mr-1">
+                  <span className="text-xs text-dark-text">Delete all?</span>
+                  <button
+                    onClick={handleDeleteAll}
+                    className="text-xs px-1.5 py-0.5 bg-error/20 text-error rounded hover:bg-error/30 transition-colors"
+                  >
+                    Yes
+                  </button>
+                  <button
+                    onClick={() => setConfirmDelete(null)}
+                    className="text-xs px-1.5 py-0.5 text-dark-text hover:text-light-text rounded hover:bg-background transition-colors"
+                  >
+                    No
+                  </button>
+                </div>
+              ) : (
                 <button
-                  onClick={() => {
-                    setIsCreating(true);
-                    setNewFileName('');
-                    setCreateFileError('');
-                  }}
-                  className="ml-2 text-dark-text hover:text-primary p-0.5 rounded hover:bg-background transition-colors"
-                  title="New File"
+                  onClick={() => setConfirmDelete('__all__')}
+                  className="text-dark-text hover:text-error p-1 rounded hover:bg-background transition-colors"
+                  title="Delete all files"
                 >
-                  <Plus size={14} />
+                  <Trash2 size={13} />
                 </button>
-              </div>
-              <div className="flex items-center gap-1">
-                {files.length > 0 &&
-                  (confirmDelete === '__all__' ? (
-                    <div className="flex items-center gap-1 mr-1">
-                      <span className="text-xs text-dark-text">Delete all?</span>
-                      <button
-                        onClick={handleDeleteAll}
-                        className="text-xs px-1.5 py-0.5 bg-error/20 text-error rounded hover:bg-error/30 transition-colors"
-                      >
-                        Yes
-                      </button>
-                      <button
-                        onClick={() => setConfirmDelete(null)}
-                        className="text-xs px-1.5 py-0.5 text-dark-text hover:text-light-text rounded hover:bg-background transition-colors"
-                      >
-                        No
-                      </button>
-                    </div>
-                  ) : (
-                    <button
-                      onClick={() => setConfirmDelete('__all__')}
-                      className="text-dark-text hover:text-error p-1 rounded hover:bg-background transition-colors"
-                      title="Delete all files"
-                    >
-                      <Trash2 size={13} />
-                    </button>
-                  ))}
-                <button
-                  onClick={() => setIsOpen(false)}
-                  className="text-dark-text hover:text-light-text p-1 rounded hover:bg-background transition-colors"
-                >
-                  <X size={16} className="md:w-3.5 md:h-3.5" />
-                </button>
-              </div>
-            </div>
-
-            {/* Desktop: side-by-side layout */}
-            <div className="hidden md:flex flex-1 min-h-0">
-              <div className="w-56 border-r border-border flex flex-col min-h-0 shrink-0">{renderFileList()}</div>
-              {renderFileContent()}
-            </div>
-
-            {/* Mobile: single-pane navigation */}
-            <div className="flex md:hidden flex-1 min-h-0">
-              {mobileView === 'list' ? renderFileList() : renderFileContent()}
-            </div>
+              ))}
+            <button
+              onClick={() => onOpenChange(false)}
+              className="text-dark-text hover:text-light-text p-1 rounded hover:bg-background transition-colors"
+              aria-label="Close files"
+            >
+              <X size={16} className="md:w-3.5 md:h-3.5" />
+            </button>
           </div>
         </div>
-      )}
-    </>
+
+        {/* Desktop: side-by-side layout */}
+        <div className="hidden md:flex flex-1 min-h-0">
+          <div className="w-56 border-r border-border flex flex-col min-h-0 shrink-0">{renderFileList()}</div>
+          {renderFileContent()}
+        </div>
+
+        {/* Mobile: single-pane navigation */}
+        <div className="flex md:hidden flex-1 min-h-0">
+          {mobileView === 'list' ? renderFileList() : renderFileContent()}
+        </div>
+      </div>
+    </div>
   );
 };
 

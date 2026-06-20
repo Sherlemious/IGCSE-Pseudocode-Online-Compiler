@@ -4,8 +4,14 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Book, Search, X, ChevronRight, ChevronLeft, FileCode, ArrowRight } from 'lucide-react';
 import { examples as staticExamples, type Example } from '../../data/examples';
 
-const ExamplePicker: React.FC<{ onSelectExample: (code: string) => void }> = ({ onSelectExample }) => {
-  const [isOpen, setIsOpen] = useState(false);
+interface ExamplePickerProps {
+  onSelectExample: (code: string) => void;
+  /** Controlled open state — the trigger now lives in the editor's Open menu. */
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
+const ExamplePicker: React.FC<ExamplePickerProps> = ({ onSelectExample, open, onOpenChange }) => {
   const [search, setSearch] = useState('');
   const [selectedExample, setSelectedExample] = useState<Example | null>(null);
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
@@ -33,33 +39,45 @@ const ExamplePicker: React.FC<{ onSelectExample: (code: string) => void }> = ({ 
   const modalRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
 
+  const categories = useMemo(() => [...new Set(examples.map((ex) => ex.category))], [examples]);
+
+  // Reset the browser to a clean state each time it opens.
+  useEffect(() => {
+    if (open) {
+      setSearch('');
+      setSelectedExample(null);
+      setMobileView('list');
+      setExpandedCategories(new Set(categories[0] ? [categories[0]] : []));
+    }
+    // categories is read only to seed the first expanded group on open
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setIsOpen(false);
+      if (e.key === 'Escape') onOpenChange(false);
     };
     window.addEventListener('keydown', handleEsc);
     return () => window.removeEventListener('keydown', handleEsc);
-  }, []);
+  }, [onOpenChange]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (modalRef.current && !modalRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
+        onOpenChange(false);
       }
     };
-    if (isOpen) {
+    if (open) {
       document.addEventListener('mousedown', handleClickOutside);
     }
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [isOpen]);
+  }, [open, onOpenChange]);
 
   useEffect(() => {
-    if (isOpen && searchRef.current) {
+    if (open && searchRef.current) {
       searchRef.current.focus();
     }
-  }, [isOpen]);
-
-  const categories = useMemo(() => [...new Set(examples.map((ex) => ex.category))], [examples]);
+  }, [open]);
 
   useEffect(() => {
     if (search) {
@@ -81,14 +99,6 @@ const ExamplePicker: React.FC<{ onSelectExample: (code: string) => void }> = ({ 
     });
   };
 
-  const handleOpen = () => {
-    setSearch('');
-    setSelectedExample(null);
-    setMobileView('list');
-    setExpandedCategories(new Set([categories[0]]));
-    setIsOpen(true);
-  };
-
   const handleSelectExample = (example: Example) => {
     setSelectedExample(example);
     setMobileView('detail');
@@ -97,7 +107,7 @@ const ExamplePicker: React.FC<{ onSelectExample: (code: string) => void }> = ({ 
   const handleUse = () => {
     if (selectedExample) {
       onSelectExample(selectedExample.code);
-      setIsOpen(false);
+      onOpenChange(false);
     }
   };
 
@@ -229,56 +239,46 @@ const ExamplePicker: React.FC<{ onSelectExample: (code: string) => void }> = ({ 
     </div>
   );
 
+  if (!open) return null;
+
   return (
-    <>
-      <button
-        onClick={handleOpen}
-        className="flex items-center justify-center w-7 h-7 text-dark-text hover:text-light-text
-          hover:bg-background rounded transition-colors"
-        title="Browse Examples"
+    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center md:p-3">
+      <div
+        ref={modalRef}
+        className="bg-background border-0 md:border border-border md:rounded-md
+          w-full h-full md:h-auto md:max-w-5xl md:max-h-[85vh]
+          flex flex-col shadow-intense overflow-hidden"
       >
-        <Book size={15} />
-      </button>
-
-      {isOpen && (
-        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center md:p-3">
-          <div
-            ref={modalRef}
-            className="bg-background border-0 md:border border-border md:rounded-md
-              w-full h-full md:h-auto md:max-w-5xl md:max-h-[85vh]
-              flex flex-col shadow-intense overflow-hidden"
-          >
-            {/* Header bar */}
-            <div className="h-10 md:h-9 bg-surface border-b border-border flex items-center justify-between px-3 shrink-0">
-              <div className="flex items-center gap-2">
-                <Book className="h-3.5 w-3.5 text-primary" />
-                <span className="text-xs font-semibold tracking-wider text-light-text uppercase">Examples</span>
-                <span className="text-xs text-dark-text">({filteredExamples.length})</span>
-              </div>
-              <button
-                onClick={() => setIsOpen(false)}
-                className="text-dark-text hover:text-light-text p-1 rounded hover:bg-background transition-colors"
-              >
-                <X size={16} className="md:w-3.5 md:h-3.5" />
-              </button>
-            </div>
-
-            {/* Desktop: side-by-side layout */}
-            <div className="hidden md:flex flex-1 min-h-0">
-              {/* Left panel */}
-              <div className="w-64 border-r border-border flex flex-col min-h-0 shrink-0">{renderBrowser()}</div>
-              {/* Right panel */}
-              {renderPreview()}
-            </div>
-
-            {/* Mobile: single-pane navigation */}
-            <div className="flex md:hidden flex-1 min-h-0">
-              {mobileView === 'list' ? renderBrowser() : renderPreview()}
-            </div>
+        {/* Header bar */}
+        <div className="h-10 md:h-9 bg-surface border-b border-border flex items-center justify-between px-3 shrink-0">
+          <div className="flex items-center gap-2">
+            <Book className="h-3.5 w-3.5 text-primary" />
+            <span className="text-xs font-semibold tracking-wider text-light-text uppercase">Examples</span>
+            <span className="text-xs text-dark-text">({filteredExamples.length})</span>
           </div>
+          <button
+            onClick={() => onOpenChange(false)}
+            className="text-dark-text hover:text-light-text p-1 rounded hover:bg-background transition-colors"
+            aria-label="Close examples"
+          >
+            <X size={16} className="md:w-3.5 md:h-3.5" />
+          </button>
         </div>
-      )}
-    </>
+
+        {/* Desktop: side-by-side layout */}
+        <div className="hidden md:flex flex-1 min-h-0">
+          {/* Left panel */}
+          <div className="w-64 border-r border-border flex flex-col min-h-0 shrink-0">{renderBrowser()}</div>
+          {/* Right panel */}
+          {renderPreview()}
+        </div>
+
+        {/* Mobile: single-pane navigation */}
+        <div className="flex md:hidden flex-1 min-h-0">
+          {mobileView === 'list' ? renderBrowser() : renderPreview()}
+        </div>
+      </div>
+    </div>
   );
 };
 

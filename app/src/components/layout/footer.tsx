@@ -5,6 +5,9 @@ import { Circle, Loader } from 'lucide-react';
 import type { CursorPosition } from '../compiler/codeInput';
 import { PREMIUM_GATING_ENABLED } from '@/lib/featureFlags';
 
+const GITHUB_URL = 'https://github.com/Sherlemious/IGCSE-Pseudocode-Online-Compiler';
+const PORTFOLIO_URL = 'https://www.sherlemious.com';
+
 interface FooterProps {
   isRunning?: boolean;
   cursor?: CursorPosition;
@@ -45,8 +48,23 @@ const Footer: React.FC<FooterProps> = ({ isRunning = false, cursor, lineCount })
         {lineCount !== undefined && (
           <span className="hidden sm:inline">{lineCount} lines</span>
         )}
-        <span className="hidden sm:inline text-header-text/50">Pseudocode</span>
-        <span className="text-header-text/40">&copy; {new Date().getFullYear()}</span>
+        <a
+          href={GITHUB_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="hidden sm:inline text-header-text/50 hover:text-primary transition-colors"
+        >
+          GitHub
+        </a>
+        <a
+          href={PORTFOLIO_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="hidden sm:inline text-header-text/50 hover:text-primary transition-colors"
+        >
+          Portfolio
+        </a>
+        <span className="text-header-text/40">&copy; {new Date().getFullYear()} Sherlemious</span>
       </div>
     </footer>
   );

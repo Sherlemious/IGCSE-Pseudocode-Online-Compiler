@@ -10,17 +10,21 @@ import {
   Bug,
   SkipForward,
   FastForward,
+  ChevronDown,
+  Book,
+  HardDrive,
+  FilePlus,
   Download,
-  Share2,
-  Check,
-  Workflow,
-  Wand2,
+  Link2,
+  Copy,
 } from 'lucide-react';
-import PythonLogo from '../icons/PythonLogo';
+import * as Popover from '@radix-ui/react-popover';
+import { toast } from 'sonner';
 import ExamplePicker from './examplePicker';
 import FileViewer from './fileViewer';
 import CodeMirrorEditor from './CodeMirrorEditor';
 import { useTheme } from '../../theme/ThemeContext';
+import { useRegisterCommands } from '../common/CommandPalette';
 
 const SHORTCUT_HINT_KEY = 'pseudocode_seen_shortcut_hint';
 
@@ -48,9 +52,6 @@ interface CodeInputProps {
   onContinue: () => void;
   onStop: () => void;
   onSelectExample: (code: string) => void;
-  onConvertToPython?: () => void;
-  onConvertToFlowchart?: () => void;
-  onFormat?: () => void;
   onCursorChange?: (pos: CursorPosition) => void;
   tabs: EditorTab[];
   activeTabId: string;
@@ -62,6 +63,24 @@ interface CodeInputProps {
   jumpToLine?: number | null;
   onJumpToLineConsumed?: () => void;
 }
+
+/** A labelled item inside the Open / Export dropdowns. */
+const MenuItem: React.FC<{
+  icon: React.ReactNode;
+  label: string;
+  onSelect: () => void;
+}> = ({ icon, label, onSelect }) => (
+  <Popover.Close asChild>
+    <button
+      onClick={onSelect}
+      className="w-full flex items-center gap-2.5 px-2.5 py-1.5 text-xs text-light-text rounded-md
+        hover:bg-background transition-colors text-left"
+    >
+      <span className="text-dark-text shrink-0">{icon}</span>
+      {label}
+    </button>
+  </Popover.Close>
+);
 
 const CodeInput: React.FC<CodeInputProps> = ({
   code,
@@ -76,9 +95,6 @@ const CodeInput: React.FC<CodeInputProps> = ({
   onContinue,
   onStop,
   onSelectExample,
-  onConvertToPython,
-  onConvertToFlowchart,
-  onFormat,
   onCursorChange,
   tabs,
   activeTabId,
@@ -91,9 +107,13 @@ const CodeInput: React.FC<CodeInputProps> = ({
   onJumpToLineConsumed,
 }) => {
   const tabsContainerRef = useRef<HTMLDivElement>(null);
-  const [shareStatus, setShareStatus] = useState<'idle' | 'copied'>('idle');
   const [showShortcutHint, setShowShortcutHint] = useState(false);
   const { wordWrap } = useTheme();
+
+  // Controlled modals — the triggers live in the Open menu (and the palette).
+  const [examplesOpen, setExamplesOpen] = useState(false);
+  const [filesOpen, setFilesOpen] = useState(false);
+  const [filesCreating, setFilesCreating] = useState(false);
 
   // Flash the Run button once when a run settles — success-tinted on a clean
   // finish, error-tinted when the run produced an error. Watches the falling
@@ -170,14 +190,33 @@ const CodeInput: React.FC<CodeInputProps> = ({
     URL.revokeObjectURL(url);
   }, [code, tabs, activeTabId]);
 
-  const handleShare = useCallback(() => {
+  const handleShareCode = useCallback(() => {
     const encoded = btoa(encodeURIComponent(code));
     const url = `${window.location.origin}${window.location.pathname}?code=${encoded}`;
     navigator.clipboard.writeText(url).then(() => {
-      setShareStatus('copied');
-      setTimeout(() => setShareStatus('idle'), 2000);
-    });
+      toast.success('Link to your code copied to clipboard');
+    }).catch(() => { /* clipboard unavailable */ });
   }, [code]);
+
+  const handleCopyCode = useCallback(() => {
+    navigator.clipboard.writeText(code).then(() => {
+      toast.success('Code copied to clipboard');
+    }).catch(() => { /* clipboard unavailable */ });
+  }, [code]);
+
+  const openExamples = useCallback(() => setExamplesOpen(true), []);
+  const browseFiles = useCallback(() => { setFilesCreating(false); setFilesOpen(true); }, []);
+  const newFile = useCallback(() => { setFilesCreating(true); setFilesOpen(true); }, []);
+
+  // Register the editor's open/export actions in the command palette.
+  useRegisterCommands([
+    { id: 'open-examples', label: 'Open example…', group: 'Open', keywords: 'sample template browse', run: () => openExamples() },
+    { id: 'open-files', label: 'Browse files', group: 'Open', keywords: 'storage localstorage', run: () => browseFiles() },
+    { id: 'open-new-file', label: 'New file', group: 'Open', keywords: 'create', run: () => newFile() },
+    { id: 'code-download', label: 'Download code (.pseudo)', group: 'Code', keywords: 'save export', run: () => handleDownload() },
+    { id: 'code-share', label: 'Share code (copy link)', group: 'Code', keywords: 'permalink url', run: () => handleShareCode() },
+    { id: 'code-copy', label: 'Copy code', group: 'Code', keywords: 'clipboard', run: () => handleCopyCode() },
+  ]);
 
   const activeTab = tabs.find((t) => t.id === activeTabId) ?? tabs[0];
   const activeTabName = activeTab.name;
@@ -225,47 +264,57 @@ const CodeInput: React.FC<CodeInputProps> = ({
             })}
           </div>
 
-          {/* Tool buttons */}
+          {/* Tool menus — Open (bring code in) · Export (act on this file) */}
           <div className="flex items-center gap-0.5 ml-1 px-1 shrink-0">
-            <ExamplePicker onSelectExample={onSelectExample} />
-            <FileViewer onOpenFile={onOpenFile} />
-            <button
-              onClick={handleDownload}
-              className="flex items-center justify-center w-7 h-7 opacity-60 hover:opacity-100 hover:bg-background rounded transition-opacity"
-              title="Download code"
-            >
-              <Download size={14} />
-            </button>
-            <button
-              onClick={handleShare}
-              className="flex items-center justify-center w-7 h-7 opacity-60 hover:opacity-100 hover:bg-background rounded transition-opacity"
-              title="Copy share link"
-            >
-              {shareStatus === 'copied' ? <Check size={14} className="text-success" /> : <Share2 size={14} />}
-            </button>
-            <button
-              onClick={onConvertToPython}
-              className="flex items-center justify-center w-7 h-7 opacity-60 hover:opacity-100 hover:bg-background rounded transition-opacity"
-              title="Convert to Python"
-            >
-              <PythonLogo className="w-3.5 h-3.5" />
-            </button>
-            <button
-              onClick={onConvertToFlowchart}
-              className="flex items-center justify-center w-7 h-7 opacity-60 hover:opacity-100 hover:bg-background rounded transition-opacity"
-              title="Convert to Flowchart"
-            >
-              <Workflow size={14} />
-            </button>
-            {onFormat && (
-              <button
-                onClick={onFormat}
-                className="flex items-center justify-center w-7 h-7 opacity-60 hover:opacity-100 hover:bg-background rounded transition-opacity"
-                title="Format code (Shift+Alt+F)"
-              >
-                <Wand2 size={14} />
-              </button>
-            )}
+            <Popover.Root>
+              <Popover.Trigger asChild>
+                <button
+                  className="flex items-center gap-1 px-2 h-7 text-xs text-dark-text hover:text-light-text
+                    hover:bg-background rounded transition-colors"
+                  title="Open examples or files"
+                >
+                  <Book size={14} />
+                  <span className="hidden sm:inline">Open</span>
+                  <ChevronDown size={12} className="opacity-60" />
+                </button>
+              </Popover.Trigger>
+              <Popover.Portal>
+                <Popover.Content
+                  sideOffset={6}
+                  align="start"
+                  className="z-50 min-w-[200px] rounded-lg bg-surface border border-border p-1 shadow-intense"
+                >
+                  <MenuItem icon={<Book size={13} />} label="Examples…" onSelect={openExamples} />
+                  <MenuItem icon={<HardDrive size={13} />} label="Browse files" onSelect={browseFiles} />
+                  <MenuItem icon={<FilePlus size={13} />} label="New file" onSelect={newFile} />
+                </Popover.Content>
+              </Popover.Portal>
+            </Popover.Root>
+
+            <Popover.Root>
+              <Popover.Trigger asChild>
+                <button
+                  className="flex items-center gap-1 px-2 h-7 text-xs text-dark-text hover:text-light-text
+                    hover:bg-background rounded transition-colors"
+                  title="Download, share or copy this code"
+                >
+                  <Download size={14} />
+                  <span className="hidden sm:inline">Export</span>
+                  <ChevronDown size={12} className="opacity-60" />
+                </button>
+              </Popover.Trigger>
+              <Popover.Portal>
+                <Popover.Content
+                  sideOffset={6}
+                  align="start"
+                  className="z-50 min-w-[200px] rounded-lg bg-surface border border-border p-1 shadow-intense"
+                >
+                  <MenuItem icon={<Download size={13} />} label="Download (.pseudo)" onSelect={handleDownload} />
+                  <MenuItem icon={<Link2 size={13} />} label="Copy link to this code" onSelect={handleShareCode} />
+                  <MenuItem icon={<Copy size={13} />} label="Copy code" onSelect={handleCopyCode} />
+                </Popover.Content>
+              </Popover.Portal>
+            </Popover.Root>
           </div>
         </div>
 
@@ -334,7 +383,7 @@ const CodeInput: React.FC<CodeInputProps> = ({
       {showShortcutHint && (
         <div className="hidden md:flex items-center justify-between px-3 py-1 bg-primary/5 border-b border-primary/15 text-[11px] text-primary/60 animate-fade-in shrink-0">
           <span>
-            <kbd className="font-mono">Ctrl+Enter</kbd> run &middot; <kbd className="font-mono">Ctrl+Shift+K</kbd> stop &middot; <kbd className="font-mono">Ctrl+/</kbd> all shortcuts
+            <kbd className="font-mono">Ctrl+Enter</kbd> run &middot; <kbd className="font-mono">Ctrl+K</kbd> command palette &middot; <kbd className="font-mono">Ctrl+Shift+K</kbd> stop
           </span>
           <button onClick={dismissShortcutHint} aria-label="Dismiss shortcut hint" className="ml-3 text-primary/40 hover:text-primary/70 transition-colors leading-none">
             <X size={11} />
@@ -373,6 +422,10 @@ const CodeInput: React.FC<CodeInputProps> = ({
           </div>
         )}
       </div>
+
+      {/* Controlled modals (render nothing until opened) */}
+      <ExamplePicker open={examplesOpen} onOpenChange={setExamplesOpen} onSelectExample={onSelectExample} />
+      <FileViewer open={filesOpen} onOpenChange={setFilesOpen} initialCreating={filesCreating} onOpenFile={onOpenFile} />
     </div>
   );
 };

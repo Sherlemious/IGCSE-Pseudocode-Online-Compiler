@@ -2,6 +2,7 @@
 
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import CodeInput, { type EditorTab, type CursorPosition } from './codeInput';
+import { useRegisterCommands } from '../common/CommandPalette';
 import OutputDisplay from './outputDisplay';
 import { convertToPython, type PythonConversion } from '../../interpreter/converters/pythonConverter';
 import { convertToFlowchart, type FlowchartConversion } from '../../interpreter/converters/flowchartConverter';
@@ -329,6 +330,18 @@ const CompilerPage: React.FC = () => {
     await debugRun(activeTab.content);
   };
 
+  // Register run/convert/format actions in the command palette.
+  useRegisterCommands([
+    { id: 'run-run', label: 'Run', group: 'Run', keywords: 'execute play', run: () => handleRunCode() },
+    { id: 'run-debug', label: 'Debug (step through)', group: 'Run', keywords: 'breakpoint', run: () => handleDebugCode() },
+    { id: 'run-stop', label: 'Stop execution', group: 'Run', keywords: 'cancel halt', run: () => stop() },
+    { id: 'run-step', label: 'Step over', group: 'Run', keywords: 'next', run: () => step() },
+    { id: 'run-continue', label: 'Continue', group: 'Run', keywords: 'resume', run: () => continueExecution() },
+    { id: 'code-python', label: 'Convert to Python', group: 'Code', keywords: 'translate', run: () => handleOutputTabChange('python') },
+    { id: 'code-flowchart', label: 'Convert to Flowchart', group: 'Code', keywords: 'diagram', run: () => handleOutputTabChange('flowchart') },
+    { id: 'code-format', label: 'Format code', group: 'Code', keywords: 'tidy indent prettify', run: () => handleFormat() },
+  ]);
+
   return (
     <div className="flex-1 min-h-0 flex flex-col bg-background text-light-text overflow-hidden">
       <div ref={containerRef} className="flex-1 min-h-0 flex flex-col lg:flex-row">
@@ -347,9 +360,6 @@ const CompilerPage: React.FC = () => {
             onContinue={continueExecution}
             onStop={stop}
             onSelectExample={handleExampleSelect}
-            onConvertToPython={() => handleOutputTabChange('python')}
-            onConvertToFlowchart={() => handleOutputTabChange('flowchart')}
-            onFormat={handleFormat}
             onCursorChange={setCursor}
             tabs={tabs}
             activeTabId={activeTabId}
