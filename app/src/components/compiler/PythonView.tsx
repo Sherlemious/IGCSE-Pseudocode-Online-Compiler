@@ -40,11 +40,19 @@ const PythonView: React.FC<{ code: string }> = ({ code }) => {
       '.cm-lineNumbers .cm-gutterElement': { minWidth: '2.5rem', textAlign: 'right', fontVariantNumeric: 'tabular-nums' },
       '.cm-line': { padding: '0 0.75rem' },
       '.cm-selectionBackground': { backgroundColor: 'rgba(var(--color-primary-rgb), 0.15) !important' },
-      '.cm-scroller': { scrollbarWidth: 'thin', scrollbarColor: 'var(--color-primary) var(--color-background)' },
+      '.cm-scroller': {
+        scrollbarWidth: 'thin',
+        scrollbarColor: 'color-mix(in srgb, var(--color-dark-text) 35%, transparent) transparent',
+      },
       '.cm-scroller::-webkit-scrollbar': { width: '8px', height: '8px' },
-      '.cm-scroller::-webkit-scrollbar-track': { background: 'var(--color-background)' },
-      '.cm-scroller::-webkit-scrollbar-thumb': { background: 'var(--color-primary)', borderRadius: '10px' },
-      '.cm-scroller::-webkit-scrollbar-thumb:hover': { background: 'var(--color-primary-hover)' },
+      '.cm-scroller::-webkit-scrollbar-track': { background: 'transparent' },
+      '.cm-scroller::-webkit-scrollbar-thumb': {
+        background: 'color-mix(in srgb, var(--color-dark-text) 35%, transparent)',
+        borderRadius: '10px',
+      },
+      '.cm-scroller::-webkit-scrollbar-thumb:hover': {
+        background: 'color-mix(in srgb, var(--color-primary) 55%, transparent)',
+      },
       '&.cm-focused': { outline: 'none' },
     });
 

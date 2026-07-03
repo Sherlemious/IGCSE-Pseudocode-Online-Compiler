@@ -222,8 +222,9 @@ const CodeInput: React.FC<CodeInputProps> = ({
   const activeTabName = activeTab.name;
 
   return (
-    <div className="flex-1 min-h-0 flex flex-col">
-      {/* Tab bar */}
+    <div className="@container flex-1 min-h-0 flex flex-col">
+      {/* Tab bar — button labels collapse to icon-only when the pane is
+          narrow (container query on the pane, not the viewport). */}
       <div className="h-9 bg-surface border-b border-border flex items-center justify-between shrink-0">
         {/* Left: tabs + tools (scrollable) */}
         <div className="flex items-center min-w-0 flex-1 overflow-hidden">
@@ -274,7 +275,7 @@ const CodeInput: React.FC<CodeInputProps> = ({
                   title="Open examples or files"
                 >
                   <Book size={14} />
-                  <span className="hidden sm:inline">Open</span>
+                  <span className="hidden @md:inline">Open</span>
                   <ChevronDown size={12} className="opacity-60" />
                 </button>
               </Popover.Trigger>
@@ -299,7 +300,7 @@ const CodeInput: React.FC<CodeInputProps> = ({
                   title="Download, share or copy this code"
                 >
                   <Download size={14} />
-                  <span className="hidden sm:inline">Export</span>
+                  <span className="hidden @md:inline">Export</span>
                   <ChevronDown size={12} className="opacity-60" />
                 </button>
               </Popover.Trigger>
@@ -328,7 +329,7 @@ const CodeInput: React.FC<CodeInputProps> = ({
                 title="Step Over (next statement)"
               >
                 <SkipForward className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">Step</span>
+                <span className="hidden @md:inline">Step</span>
               </button>
               <button
                 onClick={onContinue}
@@ -336,7 +337,7 @@ const CodeInput: React.FC<CodeInputProps> = ({
                 title="Continue execution"
               >
                 <FastForward className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">Continue</span>
+                <span className="hidden @md:inline">Continue</span>
               </button>
             </>
           )}
@@ -348,7 +349,7 @@ const CodeInput: React.FC<CodeInputProps> = ({
               title="Stop (Ctrl+Shift+K)"
             >
               <Square className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Stop</span>
+              <span className="hidden @md:inline">Stop</span>
             </button>
           )}
 
@@ -360,7 +361,7 @@ const CodeInput: React.FC<CodeInputProps> = ({
                 title="Debug (step through code)"
               >
                 <Bug className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">Debug</span>
+                <span className="hidden @md:inline">Debug</span>
               </button>
               <button
                 onClick={onRunCode}
@@ -371,8 +372,8 @@ const CodeInput: React.FC<CodeInputProps> = ({
                 data-tour="run-button"
               >
                 <Play className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">Run</span>
-                <kbd className="hidden lg:inline ml-1">Ctrl+Enter</kbd>
+                <span className="hidden @md:inline">Run</span>
+                <kbd className="hidden @2xl:inline ml-1">Ctrl+Enter</kbd>
               </button>
             </>
           )}

@@ -11,6 +11,9 @@ import {
   ExternalLink,
   Plus,
   Check,
+  Search,
+  Copy,
+  Download,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { FILE_PREFIX } from '../../utils/constants';
@@ -38,6 +41,8 @@ const FileViewer: React.FC<FileViewerProps> = ({ onOpenFile, open, onOpenChange,
   const [isCreating, setIsCreating] = useState(false);
   const [newFileName, setNewFileName] = useState('');
   const [createFileError, setCreateFileError] = useState<string>('');
+  const [filter, setFilter] = useState('');
+  const [copied, setCopied] = useState(false);
 
   const modalRef = useRef<HTMLDivElement>(null);
   const newFileInputRef = useRef<HTMLInputElement>(null);
@@ -67,6 +72,8 @@ const FileViewer: React.FC<FileViewerProps> = ({ onOpenFile, open, onOpenChange,
     setIsCreating(initialCreating);
     setNewFileName('');
     setCreateFileError('');
+    setFilter('');
+    setCopied(false);
   }, [open, initialCreating, loadFiles]);
 
   const handleSelectFile = (file: FileEntry) => {
@@ -151,14 +158,63 @@ const FileViewer: React.FC<FileViewerProps> = ({ onOpenFile, open, onOpenChange,
 
   const lineCount = (content: string) => content.split('\n').length;
 
+  const formatSize = (chars: number) =>
+    chars < 1024 ? `${chars} B` : `${(chars / 1024).toFixed(1)} KB`;
+
+  const totalSize = files.reduce((sum, f) => sum + f.content.length, 0);
+
+  const visibleFiles = filter
+    ? files.filter((f) => f.name.toLowerCase().includes(filter.toLowerCase()))
+    : files;
+
+  const handleCopyFile = () => {
+    if (!selectedFile) return;
+    navigator.clipboard.writeText(selectedFile.content).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    });
+  };
+
+  const handleDownloadFile = () => {
+    if (!selectedFile) return;
+    const blob = new Blob([selectedFile.content], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = selectedFile.name;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   /* ── File list panel ─────────────────────────────────── */
   const renderFileList = () => (
     <div className="flex-1 flex flex-col min-h-0">
-      <div
-        className="flex-1 overflow-y-auto py-1
-          scrollbar-thin scrollbar-thumb-primary hover:scrollbar-thumb-primary-hover
-          scrollbar-track-background scrollbar-thumb-rounded-full"
-      >
+      {/* Filter — pinned above the scrolling list */}
+      {files.length > 0 && (
+        <div className="px-2 pt-2 pb-1 shrink-0">
+          <div className="flex items-center gap-1.5 px-2 py-1.5 md:py-1 rounded-sm bg-surface border border-border focus-within:border-primary/40 transition-colors">
+            <Search size={12} className="text-dark-text shrink-0" />
+            <input
+              type="text"
+              value={filter}
+              onChange={(e) => setFilter(e.target.value)}
+              placeholder="Filter files"
+              className="flex-1 bg-transparent border-none outline-none text-xs font-mono text-light-text placeholder-dark-text/40 min-w-0"
+            />
+            {filter && (
+              <button
+                onClick={() => setFilter('')}
+                className="text-dark-text hover:text-light-text p-0.5 rounded transition-colors"
+                aria-label="Clear filter"
+              >
+                <X size={11} />
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      <div className="flex-1 overflow-y-auto py-1 scrollbar-pretty">
         {/* New file input */}
         {isCreating && (
           <div className="mx-1 mb-1">
@@ -221,8 +277,12 @@ const FileViewer: React.FC<FileViewerProps> = ({ onOpenFile, open, onOpenChange,
               pseudocode to create files.
             </div>
           </div>
+        ) : visibleFiles.length === 0 && filter ? (
+          <div className="px-3 py-6 text-xs text-dark-text text-center">
+            No files match &ldquo;{filter}&rdquo;
+          </div>
         ) : (
-          files.map((file) => {
+          visibleFiles.map((file) => {
             const isSelected = selectedFile?.name === file.name;
             return (
               <div
@@ -294,10 +354,24 @@ const FileViewer: React.FC<FileViewerProps> = ({ onOpenFile, open, onOpenChange,
               <FileText size={12} className="text-primary shrink-0" />
               <span className="text-xs font-mono text-light-text truncate">{selectedFile.name}</span>
             </div>
-            <div className="flex items-center gap-2 shrink-0">
-              <span className="text-[10px] text-dark-text">
-                {lineCount(selectedFile.content)} lines · {selectedFile.content.length} chars
+            <div className="flex items-center gap-1.5 shrink-0">
+              <span className="hidden sm:inline text-[10px] text-dark-text">
+                {lineCount(selectedFile.content)} lines · {formatSize(selectedFile.content.length)}
               </span>
+              <button
+                onClick={handleCopyFile}
+                className="text-dark-text hover:text-light-text p-1 rounded hover:bg-background transition-colors"
+                title="Copy contents"
+              >
+                {copied ? <Check size={12} className="text-success" /> : <Copy size={12} />}
+              </button>
+              <button
+                onClick={handleDownloadFile}
+                className="text-dark-text hover:text-light-text p-1 rounded hover:bg-background transition-colors"
+                title="Download file"
+              >
+                <Download size={12} />
+              </button>
               {onOpenFile && (
                 <button
                   onClick={() => {
@@ -316,15 +390,26 @@ const FileViewer: React.FC<FileViewerProps> = ({ onOpenFile, open, onOpenChange,
             </div>
           </div>
 
-          {/* File content */}
-          <pre
+          {/* File content — line-numbered read-only view */}
+          <div
             style={{ fontSize: 'var(--editor-font-size)' }}
-            className="flex-1 p-4 font-mono text-light-text overflow-auto leading-relaxed
-              scrollbar-thin scrollbar-thumb-primary hover:scrollbar-thumb-primary-hover
-              scrollbar-track-background scrollbar-thumb-rounded-full"
+            className="flex-1 font-mono overflow-auto leading-relaxed scrollbar-pretty"
           >
-            <code>{selectedFile.content || <span className="text-dark-text italic">(empty file)</span>}</code>
-          </pre>
+            {selectedFile.content ? (
+              <div className="py-3 min-w-max">
+                {selectedFile.content.split('\n').map((line, i) => (
+                  <div key={i} className="flex hover:bg-surface/40">
+                    <span className="w-12 shrink-0 pr-3 text-right text-dark-text/40 select-none tabular-nums">
+                      {i + 1}
+                    </span>
+                    <span className="whitespace-pre pr-4 text-light-text">{line}</span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="p-4 text-dark-text italic text-xs">(empty file)</div>
+            )}
+          </div>
         </>
       ) : (
         <div className="flex-1 flex flex-col items-center justify-center gap-3 text-dark-text">
@@ -357,7 +442,11 @@ const FileViewer: React.FC<FileViewerProps> = ({ onOpenFile, open, onOpenChange,
           <div className="flex items-center gap-2">
             <HardDrive className="h-3.5 w-3.5 text-primary" />
             <span className="text-xs font-semibold tracking-wider text-light-text uppercase">Files</span>
-            {files.length > 0 && <span className="text-xs text-dark-text">({files.length})</span>}
+            {files.length > 0 && (
+              <span className="text-xs text-dark-text">
+                ({files.length} · {formatSize(totalSize)})
+              </span>
+            )}
             <button
               onClick={() => {
                 setIsCreating(true);

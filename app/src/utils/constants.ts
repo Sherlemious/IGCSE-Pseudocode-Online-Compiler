@@ -19,6 +19,9 @@ export const SPLIT_COMPILER_KEY = 'pseudocode-split-compiler';
 export const SPLIT_PRACTICE_KEY = 'pseudocode-split-practice';
 export const SPLIT_VARS_KEY = 'pseudocode-split-vars';
 
+/** Which compiler pane is collapsed to a rail ('editor' | 'output'), if any */
+export const SPLIT_COMPILER_COLLAPSED_KEY = 'pseudocode-split-compiler-collapsed';
+
 /**
  * Read a persisted split-pane percentage, clamped to [min, max].
  * Falls back to `fallback` when unset or invalid.

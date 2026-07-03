@@ -3,6 +3,7 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import CodeMirrorEditor from '../compiler/CodeMirrorEditor';
 import TraceTable from '../compiler/TraceTable';
+import SplitDivider from '../common/SplitDivider';
 import PracticeStartGate from './PracticeStartGate';
 import { useInterpreter } from '../../interpreter/useInterpreter';
 import { AUTOSAVE_DELAY, SPLIT_PRACTICE_KEY, loadSplitPercent } from '../../utils/constants';
@@ -533,11 +534,18 @@ export default function PracticeWorkspace({ questionId, starterCode, savedCode, 
         </div>
 
         {/* Drag handle - desktop only */}
-        <div
-          className="hidden lg:block shrink-0 h-1 w-full bg-border hover:bg-primary transition-colors cursor-row-resize"
-          onMouseDown={handleDragStart}
-          onTouchStart={handleDragStart}
-        />
+        <div className="hidden lg:block shrink-0">
+          <SplitDivider
+            orientation="row"
+            onDragStart={handleDragStart}
+            onDoubleClick={() => {
+              setSplitPercent(55);
+              try { localStorage.setItem(SPLIT_PRACTICE_KEY, '55'); } catch { /* ignore */ }
+            }}
+            ariaLabel="Resize editor and output panels"
+            ariaValueNow={Math.round(splitPercent)}
+          />
+        </div>
 
         {/* Output panel */}
         <div className={`min-h-0 flex-col overflow-hidden ${mobileView === 'editor' ? 'hidden lg:flex' : 'flex'} flex-1`}>

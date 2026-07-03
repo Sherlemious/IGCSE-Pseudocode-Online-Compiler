@@ -8,6 +8,7 @@ import type { FlowNode, FlowEdge } from '../../interpreter/converters/flowchartC
 import TraceTable from './TraceTable';
 import PythonView from './PythonView';
 import PythonLogo from '../icons/PythonLogo';
+import SplitDivider from '../common/SplitDivider';
 import { SPLIT_VARS_KEY, loadSplitPercent } from '../../utils/constants';
 
 // React Flow + dagre are heavy and only needed when the Flowchart tab is opened,
@@ -235,11 +236,7 @@ const OutputDisplay: React.FC<OutputDisplayProps> = ({
           </button>
 
           {varsExpanded && (
-            <div
-              className="flex-1 overflow-y-auto px-3 pb-2
-                scrollbar-thin scrollbar-thumb-primary hover:scrollbar-thumb-primary-hover
-                scrollbar-track-background scrollbar-thumb-rounded-full"
-            >
+            <div className="flex-1 overflow-y-auto px-3 pb-2 scrollbar-pretty">
               {debugVariables.length === 0 ? (
                 <div className="text-xs text-dark-text/50 py-1 italic">No variables declared yet</div>
               ) : (
@@ -271,10 +268,11 @@ const OutputDisplay: React.FC<OutputDisplayProps> = ({
 
         {/* Drag handle for resizing variables panel */}
         {varsExpanded && (
-          <div
-            className="shrink-0 h-1 w-full bg-border hover:bg-primary transition-colors cursor-row-resize"
-            onMouseDown={handleVarsDragStart}
-            onTouchStart={handleVarsDragStart}
+          <SplitDivider
+            orientation="row"
+            onDragStart={handleVarsDragStart}
+            ariaLabel="Resize variables panel"
+            ariaValueNow={Math.round(varsPanelHeight)}
           />
         )}
       </>
@@ -330,7 +328,7 @@ const OutputDisplay: React.FC<OutputDisplayProps> = ({
           <FlowchartView nodes={flowchartNodes} edges={flowchartEdges} />
         </div>
         {flowchartNotes.length > 0 && (
-          <div className="shrink-0 max-h-24 overflow-y-auto border-t border-border bg-surface/50 px-3 py-1.5 text-[11px] text-dark-text/70">
+          <div className="shrink-0 max-h-24 overflow-y-auto scrollbar-pretty border-t border-border bg-surface/50 px-3 py-1.5 text-[11px] text-dark-text/70">
             {flowchartNotes.map((note, i) => (
               <div key={i} className="flex gap-1.5">
                 <span className="text-warning/70">•</span>
@@ -508,20 +506,23 @@ const OutputDisplay: React.FC<OutputDisplayProps> = ({
   };
 
   return (
-    <div className="flex-1 min-h-0 flex flex-col">
-      {/* Panel header — Terminal / Trace tabs */}
+    <div className="@container flex-1 min-h-0 flex flex-col">
+      {/* Panel header — Terminal / Trace tabs. Icons never disappear; labels
+          collapse to icon-only (except the active tab) when the pane is
+          narrow, keyed to the pane's own width via container queries. */}
       <div className="h-9 bg-surface border-b border-border flex items-center gap-1 px-1 sm:px-2 shrink-0">
-        <div className="flex min-w-0 flex-1 items-center gap-0.5 overflow-x-auto">
+        <div className="flex min-w-0 flex-1 items-center gap-0.5 overflow-x-auto scrollbar-none">
           <button
             onClick={() => onTabChange?.('terminal')}
-            className={`flex shrink-0 items-center gap-1 px-1.5 py-1 text-xs rounded transition-colors sm:gap-1.5 sm:px-2.5 ${
+            className={`flex shrink-0 items-center gap-1.5 px-2 py-1 text-xs rounded transition-colors @md:px-2.5 ${
               activeTab === 'terminal'
                 ? 'bg-background text-light-text font-medium'
                 : 'text-dark-text hover:text-light-text hover:bg-background/50'
             }`}
+            title="Program output and input"
           >
-            <Terminal className="hidden h-3.5 w-3.5 sm:block" />
-            Terminal
+            <Terminal className="h-3.5 w-3.5 shrink-0" />
+            <span className={activeTab === 'terminal' ? '' : 'hidden @md:inline'}>Terminal</span>
             {isStepping && <Bug size={12} className="text-warning" />}
             {isRunning && !isStepping && (
               <span className="inline-block w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
@@ -529,41 +530,42 @@ const OutputDisplay: React.FC<OutputDisplayProps> = ({
           </button>
           <button
             onClick={() => onTabChange?.('trace')}
-            className={`flex shrink-0 items-center gap-1 px-1.5 py-1 text-xs rounded transition-colors sm:gap-1.5 sm:px-2.5 ${
+            className={`flex shrink-0 items-center gap-1.5 px-2 py-1 text-xs rounded transition-colors @md:px-2.5 ${
               activeTab === 'trace'
                 ? 'bg-background text-light-text font-medium'
                 : 'text-dark-text hover:text-light-text hover:bg-background/50'
             }`}
+            title="Trace table (dry run)"
           >
-            <Table2 className="hidden h-3.5 w-3.5 sm:block" />
-            Trace
+            <Table2 className="h-3.5 w-3.5 shrink-0" />
+            <span className={activeTab === 'trace' ? '' : 'hidden @md:inline'}>Trace</span>
             {traceRows.length > 0 && (
               <span className="text-[10px] font-mono text-dark-text/60">{traceRows.length}</span>
             )}
           </button>
           <button
             onClick={() => onTabChange?.('python')}
-            className={`flex shrink-0 items-center gap-1 px-1.5 py-1 text-xs rounded transition-colors sm:gap-1.5 sm:px-2.5 ${
+            className={`flex shrink-0 items-center gap-1.5 px-2 py-1 text-xs rounded transition-colors @md:px-2.5 ${
               activeTab === 'python'
                 ? 'bg-background text-light-text font-medium'
                 : 'text-dark-text hover:text-light-text hover:bg-background/50'
             }`}
             title="Convert this pseudocode to Python"
           >
-            <PythonLogo className="hidden h-3.5 w-3.5 sm:block" />
-            Python
+            <PythonLogo className="h-3.5 w-3.5 shrink-0" />
+            <span className={activeTab === 'python' ? '' : 'hidden @md:inline'}>Python</span>
           </button>
           <button
             onClick={() => onTabChange?.('flowchart')}
-            className={`flex shrink-0 items-center gap-1 px-1.5 py-1 text-xs rounded transition-colors sm:gap-1.5 sm:px-2.5 ${
+            className={`flex shrink-0 items-center gap-1.5 px-2 py-1 text-xs rounded transition-colors @md:px-2.5 ${
               activeTab === 'flowchart'
                 ? 'bg-background text-light-text font-medium'
                 : 'text-dark-text hover:text-light-text hover:bg-background/50'
             }`}
             title="Convert this pseudocode to a flowchart"
           >
-            <Workflow className="hidden h-3.5 w-3.5 sm:block" />
-            Flowchart
+            <Workflow className="h-3.5 w-3.5 shrink-0" />
+            <span className={activeTab === 'flowchart' ? '' : 'hidden @md:inline'}>Flowchart</span>
           </button>
         </div>
         <div className="flex shrink-0 items-center gap-0.5">
@@ -658,11 +660,7 @@ const OutputDisplay: React.FC<OutputDisplayProps> = ({
           <div className="flex-1 min-h-0">{renderFlowchartContent()}</div>
         </div>
       ) : activeTab === 'trace' ? (
-        <div
-          className="flex-1 min-h-0 bg-background overflow-auto
-            scrollbar-thin scrollbar-thumb-primary hover:scrollbar-thumb-primary-hover
-            scrollbar-track-background scrollbar-thumb-rounded-full"
-        >
+        <div className="flex-1 min-h-0 bg-background overflow-auto scrollbar-pretty">
           <TraceTable rows={traceRows} maxRows={maxTraceRows} isLive={isRunning || isStepping} />
         </div>
       ) : (
@@ -671,12 +669,7 @@ const OutputDisplay: React.FC<OutputDisplayProps> = ({
           {renderVariablePanel()}
 
           {/* Terminal output */}
-          <div
-            ref={scrollRef}
-            className="flex-1 min-h-0 bg-background overflow-y-auto
-              scrollbar-thin scrollbar-thumb-primary hover:scrollbar-thumb-primary-hover
-              scrollbar-track-background scrollbar-thumb-rounded-full"
-          >
+          <div ref={scrollRef} className="flex-1 min-h-0 bg-background overflow-y-auto scrollbar-pretty">
             {renderContent()}
           </div>
         </div>

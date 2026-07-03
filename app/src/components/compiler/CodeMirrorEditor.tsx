@@ -281,21 +281,21 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
       },
       '.cm-scroller': {
         scrollbarWidth: 'thin',
-        scrollbarColor: 'var(--color-primary) var(--color-background)',
+        scrollbarColor: 'color-mix(in srgb, var(--color-dark-text) 35%, transparent) transparent',
       },
       '.cm-scroller::-webkit-scrollbar': {
         width: '8px',
         height: '8px',
       },
       '.cm-scroller::-webkit-scrollbar-track': {
-        background: 'var(--color-background)',
+        background: 'transparent',
       },
       '.cm-scroller::-webkit-scrollbar-thumb': {
-        background: 'var(--color-primary)',
+        background: 'color-mix(in srgb, var(--color-dark-text) 35%, transparent)',
         borderRadius: '10px',
       },
       '.cm-scroller::-webkit-scrollbar-thumb:hover': {
-        background: 'var(--color-primary-hover)',
+        background: 'color-mix(in srgb, var(--color-primary) 55%, transparent)',
       },
       '&.cm-focused': {
         outline: 'none',

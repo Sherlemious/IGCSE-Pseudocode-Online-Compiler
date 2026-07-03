@@ -1,9 +1,11 @@
 'use client';
 
 import React, { useState, useCallback, useEffect, useRef } from 'react';
+import { PanelLeftOpen, PanelRightOpen, PanelTopOpen, PanelBottomOpen } from 'lucide-react';
 import CodeInput, { type EditorTab, type CursorPosition } from './codeInput';
 import { useRegisterCommands } from '../common/CommandPalette';
 import OutputDisplay from './outputDisplay';
+import SplitDivider from '../common/SplitDivider';
 import { convertToPython, type PythonConversion } from '../../interpreter/converters/pythonConverter';
 import { convertToFlowchart, type FlowchartConversion } from '../../interpreter/converters/flowchartConverter';
 import { formatPseudocode } from '../../interpreter/formatter';
@@ -12,7 +14,7 @@ import OnboardingTour from '../onboarding/OnboardingTour';
 import FeedbackSurvey, { shouldShowFeedbackSurvey } from '../feedback/FeedbackSurvey';
 import { useInterpreter } from '../../interpreter/useInterpreter';
 import { toast } from 'sonner';
-import { AUTOSAVE_KEY, FILE_PREFIX, AUTOSAVE_DELAY, ONBOARDING_KEY, SPLIT_COMPILER_KEY, loadSplitPercent } from '../../utils/constants';
+import { AUTOSAVE_KEY, FILE_PREFIX, AUTOSAVE_DELAY, ONBOARDING_KEY, SPLIT_COMPILER_KEY, SPLIT_COMPILER_COLLAPSED_KEY, loadSplitPercent } from '../../utils/constants';
 
 const FEEDBACK_RUN_THRESHOLD = 2;
 const FEEDBACK_RUN_LS_KEY = 'compiler_run_count';
@@ -187,13 +189,34 @@ const CompilerPage: React.FC = () => {
     return () => clearTimeout(saveTimer.current);
   }, [tabs]);
 
-  // Resizable split pane (persisted; loaded post-mount to avoid SSR mismatch)
+  // Resizable split pane (persisted; loaded post-mount to avoid SSR mismatch).
+  // Dragging past the clamp zone snaps the pane shut, leaving a slim rail
+  // that reopens it at its previous size.
+  const COLLAPSE_SNAP = 10; // % from either edge where the pane snaps closed
   const [splitPercent, setSplitPercent] = useState(50);
+  const [collapsed, setCollapsed] = useState<'editor' | 'output' | null>(null);
   const splitPercentRef = useRef(splitPercent);
+  const collapsedRef = useRef(collapsed);
   useEffect(() => { splitPercentRef.current = splitPercent; }, [splitPercent]);
-  useEffect(() => { setSplitPercent(loadSplitPercent(SPLIT_COMPILER_KEY, 50, 20, 80)); }, []);
+  useEffect(() => { collapsedRef.current = collapsed; }, [collapsed]);
+  useEffect(() => {
+    setSplitPercent(loadSplitPercent(SPLIT_COMPILER_KEY, 50, 20, 80));
+    try {
+      const c = localStorage.getItem(SPLIT_COMPILER_COLLAPSED_KEY);
+      if (c === 'editor' || c === 'output') setCollapsed(c);
+    } catch { /* ignore */ }
+  }, []);
   const containerRef = useRef<HTMLDivElement>(null);
   const dragging = useRef(false);
+
+  const persistSplit = useCallback(() => {
+    try {
+      localStorage.setItem(SPLIT_COMPILER_KEY, String(splitPercentRef.current));
+      const c = collapsedRef.current;
+      if (c) localStorage.setItem(SPLIT_COMPILER_COLLAPSED_KEY, c);
+      else localStorage.removeItem(SPLIT_COMPILER_COLLAPSED_KEY);
+    } catch { /* ignore */ }
+  }, []);
 
   const handleDragStart = useCallback((e: React.MouseEvent | React.TouchEvent) => {
     e.preventDefault();
@@ -210,6 +233,16 @@ const CompilerPage: React.FC = () => {
       } else {
         pct = ((clientPos.clientY - rect.top) / rect.height) * 100;
       }
+      // Magnetic collapse: the pane resists below 20%, then snaps shut.
+      if (pct < COLLAPSE_SNAP) {
+        setCollapsed('editor');
+        return;
+      }
+      if (pct > 100 - COLLAPSE_SNAP) {
+        setCollapsed('output');
+        return;
+      }
+      setCollapsed(null);
       setSplitPercent(Math.max(20, Math.min(80, pct)));
     };
 
@@ -221,7 +254,7 @@ const CompilerPage: React.FC = () => {
       document.removeEventListener('touchend', onEnd);
       document.body.style.cursor = '';
       document.body.style.userSelect = '';
-      try { localStorage.setItem(SPLIT_COMPILER_KEY, String(splitPercentRef.current)); } catch { /* ignore */ }
+      persistSplit();
     };
 
     document.body.style.cursor = window.innerWidth >= 1024 ? 'col-resize' : 'row-resize';
@@ -230,7 +263,52 @@ const CompilerPage: React.FC = () => {
     document.addEventListener('mouseup', onEnd);
     document.addEventListener('touchmove', onMove);
     document.addEventListener('touchend', onEnd);
-  }, []);
+  }, [persistSplit]);
+
+  const setSplit = useCallback((pct: number, coll: 'editor' | 'output' | null) => {
+    splitPercentRef.current = pct;
+    collapsedRef.current = coll;
+    setSplitPercent(pct);
+    setCollapsed(coll);
+    persistSplit();
+  }, [persistSplit]);
+
+  const reopenPane = useCallback(() => {
+    setSplit(splitPercentRef.current, null);
+  }, [setSplit]);
+
+  const resetSplit = useCallback(() => {
+    setSplit(50, null);
+  }, [setSplit]);
+
+  // Keyboard resizing on the divider: arrows nudge, Home/End collapse, Enter resets.
+  const handleDividerKeyDown = useCallback((e: React.KeyboardEvent) => {
+    const step = e.shiftKey ? 10 : 4;
+    const nudge = (delta: number) =>
+      setSplit(Math.max(20, Math.min(80, splitPercentRef.current + delta)), null);
+    switch (e.key) {
+      case 'ArrowLeft':
+      case 'ArrowUp':
+        nudge(-step);
+        break;
+      case 'ArrowRight':
+      case 'ArrowDown':
+        nudge(step);
+        break;
+      case 'Home':
+        setSplit(splitPercentRef.current, 'editor');
+        break;
+      case 'End':
+        setSplit(splitPercentRef.current, 'output');
+        break;
+      case 'Enter':
+        resetSplit();
+        break;
+      default:
+        return;
+    }
+    e.preventDefault();
+  }, [setSplit, resetSplit]);
 
   const handleCodeChange = useCallback(
     (newCode: string) => {
@@ -345,8 +423,33 @@ const CompilerPage: React.FC = () => {
   return (
     <div className="flex-1 min-h-0 flex flex-col bg-background text-light-text overflow-hidden">
       <div ref={containerRef} className="flex-1 min-h-0 flex flex-col lg:flex-row">
-        {/* Editor pane */}
-        <div className="min-h-0 flex flex-col overflow-hidden" style={{ flex: `0 0 ${splitPercent}%` }}>
+        {/* Collapsed-editor rail — click to bring the editor back */}
+        {collapsed === 'editor' && (
+          <button
+            onClick={reopenPane}
+            className="group shrink-0 flex items-center justify-center gap-2 bg-surface text-dark-text
+              hover:text-light-text hover:bg-surface/70 transition-colors
+              h-9 w-full border-b border-border lg:h-auto lg:w-9 lg:border-b-0 lg:border-r"
+            title="Show editor"
+            aria-label="Show editor pane"
+          >
+            <PanelTopOpen className="h-3.5 w-3.5 text-primary/70 group-hover:text-primary transition-colors lg:hidden" />
+            <PanelLeftOpen className="hidden h-3.5 w-3.5 text-primary/70 group-hover:text-primary transition-colors lg:block" />
+            <span className="text-[10px] font-semibold tracking-[0.18em] uppercase lg:[writing-mode:vertical-rl]">
+              Editor
+            </span>
+          </button>
+        )}
+
+        {/* Editor pane — kept mounted while collapsed so editor state survives */}
+        <div
+          className={`min-h-0 flex-col overflow-hidden ${collapsed === 'editor' ? 'hidden' : 'flex'}`}
+          style={
+            collapsed === 'editor'
+              ? undefined
+              : { flex: collapsed === 'output' ? '1 1 0%' : `0 0 ${splitPercent}%` }
+          }
+        >
           <CodeInput
             code={activeTab.content}
             onCodeChange={handleCodeChange}
@@ -373,17 +476,20 @@ const CompilerPage: React.FC = () => {
           />
         </div>
 
-        {/* Drag handle */}
-        <div
-          className="shrink-0 bg-border hover:bg-primary transition-colors
-            lg:w-1 lg:cursor-col-resize lg:h-auto
-            w-auto h-1 cursor-row-resize"
-          onMouseDown={handleDragStart}
-          onTouchStart={handleDragStart}
-        />
+        {/* Drag handle — double-click resets, arrows nudge, Home/End collapse */}
+        {collapsed === null && (
+          <SplitDivider
+            orientation="responsive"
+            onDragStart={handleDragStart}
+            onDoubleClick={resetSplit}
+            onKeyDown={handleDividerKeyDown}
+            ariaLabel="Resize editor and output panes"
+            ariaValueNow={Math.round(splitPercent)}
+          />
+        )}
 
         {/* Terminal pane */}
-        <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+        <div className={`flex-1 min-h-0 flex-col overflow-hidden ${collapsed === 'output' ? 'hidden' : 'flex'}`}>
           <OutputDisplay
             entries={entries}
             isRunning={interpreterRunning}
@@ -409,6 +515,24 @@ const CompilerPage: React.FC = () => {
             onRefreshFlowchart={convertToFlowchartNow}
           />
         </div>
+
+        {/* Collapsed-output rail — click to bring the terminal back */}
+        {collapsed === 'output' && (
+          <button
+            onClick={reopenPane}
+            className="group shrink-0 flex items-center justify-center gap-2 bg-surface text-dark-text
+              hover:text-light-text hover:bg-surface/70 transition-colors
+              h-9 w-full border-t border-border lg:h-auto lg:w-9 lg:border-t-0 lg:border-l"
+            title="Show output"
+            aria-label="Show output pane"
+          >
+            <PanelBottomOpen className="h-3.5 w-3.5 text-primary/70 group-hover:text-primary transition-colors lg:hidden" />
+            <PanelRightOpen className="hidden h-3.5 w-3.5 text-primary/70 group-hover:text-primary transition-colors lg:block" />
+            <span className="text-[10px] font-semibold tracking-[0.18em] uppercase lg:[writing-mode:vertical-rl]">
+              Output
+            </span>
+          </button>
+        )}
       </div>
       <Footer isRunning={isRunning} cursor={cursor} lineCount={lineCount} />
       <OnboardingTour />

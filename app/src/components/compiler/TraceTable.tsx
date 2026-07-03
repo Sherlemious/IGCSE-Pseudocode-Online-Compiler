@@ -112,7 +112,7 @@ const TraceTable: React.FC<TraceTableProps> = ({ rows, maxRows, isLive = false }
         </button>
       </div>
 
-      <div className="flex-1 min-h-0 overflow-auto px-3 pb-3 scrollbar-thin scrollbar-thumb-primary scrollbar-track-background scrollbar-thumb-rounded-full">
+      <div className="flex-1 min-h-0 overflow-auto px-3 pb-3 scrollbar-pretty">
         <table className="w-full text-xs font-mono border-collapse mt-1">
           <thead>
             {/* Sticky header — inset box-shadow (not border-b) so the divider
