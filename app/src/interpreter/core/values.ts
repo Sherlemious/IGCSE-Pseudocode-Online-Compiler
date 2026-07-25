@@ -151,6 +151,11 @@ export function toString(v: RuntimeValue): string {
   const kind = compositeKind(v);
   if (kind) throw new RuntimeError(`This value is ${kind}; it cannot be displayed directly`);
   if (v.value === null) return '';
+  // Display ±infinity (from the INFINITY constant or arithmetic overflow) with the
+  // keyword form rather than JS's "Infinity", so OUTPUT stays consistent with input.
+  if (typeof v.value === 'number' && !Number.isFinite(v.value) && !Number.isNaN(v.value)) {
+    return v.value > 0 ? 'INFINITY' : '-INFINITY';
+  }
   return String(v.value);
 }
 

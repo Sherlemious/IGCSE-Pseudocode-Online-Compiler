@@ -780,10 +780,15 @@ export class Interpreter {
         return smartParse(raw);
       }
 
-      // Enum members are readable as bare identifiers, e.g. ThisSeason <- Spring
+      // Enum members are readable as bare identifiers, e.g. ThisSeason <- Spring,
+      // and the predefined INFINITY / INF constant (a REAL) for min/max seeding,
+      // e.g. MaxValue <- -INFINITY. Both only resolve when the student hasn't
+      // declared their own variable of that name, so a user `Infinity` shadows it.
       if (!this.env.has(name)) {
         const enumVal = this.enumMembers.get(name.toUpperCase());
         if (enumVal) return enumVal;
+        const upper = name.toUpperCase();
+        if (upper === 'INFINITY' || upper === 'INF') return mkReal(Infinity);
       }
 
       return this.env.get(name);

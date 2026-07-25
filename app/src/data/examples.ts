@@ -283,6 +283,43 @@ NEXT i
 OUTPUT "Maximum: ", Max`,
   },
   {
+    title: '1D Array - Min and Max with INFINITY',
+    category: 'Arrays',
+    code: `// Seed the accumulators with the INFINITY constant so the
+// very first array value always replaces them. INFINITY is a
+// REAL value; put a minus sign in front for negative infinity.
+DECLARE Numbers : ARRAY[1:8] OF INTEGER
+DECLARE i : INTEGER
+DECLARE Smallest : REAL
+DECLARE Largest : REAL
+
+// Sample data
+Numbers[1] <- 42
+Numbers[2] <- 17
+Numbers[3] <- 89
+Numbers[4] <- 6
+Numbers[5] <- 55
+Numbers[6] <- 31
+Numbers[7] <- 74
+Numbers[8] <- 23
+
+Smallest <- INFINITY      // nothing is bigger than +infinity
+Largest <- -INFINITY      // nothing is smaller than -infinity
+
+FOR i <- 1 TO 8
+    IF Numbers[i] < Smallest THEN
+        Smallest <- Numbers[i]
+    ENDIF
+    IF Numbers[i] > Largest THEN
+        Largest <- Numbers[i]
+    ENDIF
+NEXT i
+
+OUTPUT "Smallest: ", Smallest
+OUTPUT "Largest:  ", Largest
+OUTPUT "Range:    ", Largest - Smallest`,
+  },
+  {
     title: '1D Array - Calculate Average',
     category: 'Arrays',
     code: `DECLARE Scores : ARRAY[1:5] OF INTEGER
