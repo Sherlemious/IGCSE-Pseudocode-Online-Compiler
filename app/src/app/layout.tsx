@@ -39,7 +39,12 @@ export const metadata: Metadata = {
     index: true,
     follow: true,
   },
-  icons: { icon: '/favicon.svg', shortcut: '/favicon.svg' },
+  // Keep one stable crawler-facing favicon. A leftover App Router favicon.ico
+  // previously added a competing Next/Vercel icon to the generated page.
+  icons: {
+    icon: [{ url: '/favicon.png', type: 'image/png', sizes: '512x512' }],
+    apple: [{ url: '/favicon.png', type: 'image/png', sizes: '512x512' }],
+  },
   openGraph: {
     type: 'website',
     siteName: SITE_NAME,
