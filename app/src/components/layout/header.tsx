@@ -15,10 +15,12 @@ import {
   Clock,
   ArrowLeft,
   Search,
+  Bug,
 } from 'lucide-react';
 import SettingsPanel from './settingsPanel';
 import UserMenu from '../auth/UserMenu';
 import { useCommands } from '../common/CommandPalette';
+import { OPEN_BUG_REPORT_EVENT } from '@/utils/constants';
 
 const GITHUB_URL = 'https://github.com/Sherlemious/IGCSE-Pseudocode-Online-Compiler';
 const PORTFOLIO_URL = 'https://www.sherlemious.com';
@@ -119,6 +121,14 @@ const Header: React.FC = () => {
               <Search size={13} />
               <kbd className="text-[10px] text-header-text/50">Ctrl K</kbd>
             </button>
+            <button
+              data-tour="report-bug"
+              onClick={() => window.dispatchEvent(new CustomEvent(OPEN_BUG_REPORT_EVENT))}
+              className="flex items-center gap-1.5 px-2 py-1 rounded text-header-text/70 hover:text-header-text hover:bg-white/10 transition duration-200"
+              title="Report a bug"
+            >
+              <Bug size={13} />
+            </button>
             <SettingsPanel />
             <UserMenu />
           </nav>
@@ -197,6 +207,16 @@ const Header: React.FC = () => {
               <ExternalLink size={14} />
               Portfolio
             </a>
+            <button
+              className="w-full flex items-center gap-2 text-header-text/70 hover:text-header-text transition duration-200 py-1.5 px-1 rounded hover:bg-white/10"
+              onClick={() => {
+                setIsMenuOpen(false);
+                window.dispatchEvent(new CustomEvent(OPEN_BUG_REPORT_EVENT));
+              }}
+            >
+              <Bug size={14} />
+              Report a bug
+            </button>
           </nav>
         )}
       </div>

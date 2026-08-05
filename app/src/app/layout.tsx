@@ -11,6 +11,7 @@ import OnboardingNudges from '../components/onboarding/OnboardingNudges';
 import { CommandProvider } from '../components/common/CommandPalette';
 import GlobalCommands from '../components/common/GlobalCommands';
 import KeyboardShortcutsModal from '../components/common/KeyboardShortcutsModal';
+import ReportBugModal from '../components/feedback/ReportBugModal';
 import {
   DEFAULT_DESCRIPTION,
   DEFAULT_TITLE,
@@ -178,6 +179,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <main className="flex-1 min-h-0 flex flex-col overflow-hidden">{children}</main>
                 <GlobalCommands />
                 <KeyboardShortcutsModal />
+                <ReportBugModal />
                 <Toaster position="top-center" theme="dark" richColors />
               </CommandProvider>
             </ThemeProvider>

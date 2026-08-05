@@ -131,6 +131,7 @@ npm run antlr:generate  # regenerate parser from grammar
 | `nudge_clicked` | `nudge` |
 | `nav_clicked` | `destination`, `from` |
 | `feedback_submitted` | — |
+| `bug_reported` | `category`, `has_code`, `page` |
 
 ## Environment Variables
 

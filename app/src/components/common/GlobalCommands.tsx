@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { useTheme, themes, type PresetThemeId } from '../../theme';
 import { useRegisterCommands, type Command } from './CommandPalette';
 import { SITE_URL } from '@/lib/seo';
+import { OPEN_BUG_REPORT_EVENT } from '@/utils/constants';
 
 const GITHUB_URL = 'https://github.com/Sherlemious/IGCSE-Pseudocode-Online-Compiler';
 const PORTFOLIO_URL = 'https://www.sherlemious.com';
@@ -59,6 +60,7 @@ export default function GlobalCommands() {
     { id: 'link-github', label: 'GitHub repository', group: 'Links', keywords: 'source code', run: () => window.open(GITHUB_URL, '_blank', 'noopener,noreferrer') },
     { id: 'link-portfolio', label: 'Portfolio — Sherlemious', group: 'Links', keywords: 'author about', run: () => window.open(PORTFOLIO_URL, '_blank', 'noopener,noreferrer') },
     { id: 'link-share', label: 'Share this tool', group: 'Links', keywords: 'recommend classmates teacher', run: shareTool },
+    { id: 'report-bug', label: 'Report a bug', group: 'Links', keywords: 'issue problem broken crash feedback', run: () => window.dispatchEvent(new CustomEvent(OPEN_BUG_REPORT_EVENT)) },
   ];
 
   useRegisterCommands(commands);

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Braces, Play, BookOpen, GraduationCap, X } from 'lucide-react';
+import { Braces, Play, BookOpen, GraduationCap, Bug, X } from 'lucide-react';
 import { ONBOARDING_KEY } from '../../utils/constants';
 
 interface TourStep {
@@ -39,6 +39,13 @@ const STEPS: TourStep[] = [
     title: 'Practice Questions',
     description: 'Test your skills with autograded questions. Track your progress, get hints, and compare with model solutions.',
     icon: <GraduationCap size={16} className="text-warning" />,
+    position: 'bottom',
+  },
+  {
+    targetSelector: '[data-tour="report-bug"]',
+    title: 'Hit a Snag?',
+    description: 'Found a bug or have an idea? Click here to report it — your current code is attached automatically so we can reproduce it. You can also open it any time from the command palette (Ctrl+K).',
+    icon: <Bug size={16} className="text-error" />,
     position: 'bottom',
   },
 ];
@@ -145,9 +152,14 @@ export default function OnboardingTour() {
       };
     }
     if (step.position === 'bottom') {
+      // Clamp the horizontal centre so the tooltip stays on-screen for anchors
+      // near the right edge of the header (e.g. the Report-a-bug button).
+      const half = tooltipWidth / 2;
+      const rawCenter = targetRect.left + targetRect.width / 2;
+      const center = Math.min(Math.max(rawCenter, half + 8), window.innerWidth - half - 8);
       return {
         top: targetRect.top + targetRect.height + pad,
-        left: targetRect.left + targetRect.width / 2,
+        left: center,
         transform: 'translateX(-50%)',
         maxWidth: tooltipWidth,
       };

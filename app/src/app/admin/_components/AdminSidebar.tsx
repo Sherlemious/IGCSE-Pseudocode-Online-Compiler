@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, MessageSquare, Users, ArrowLeft, BarChart3 } from 'lucide-react';
+import { LayoutDashboard, MessageSquare, Users, ArrowLeft, BarChart3, Bug } from 'lucide-react';
 
 interface User {
   name?: string | null;
@@ -18,6 +18,7 @@ interface Props {
 const NAV = [
   { href: '/admin',          label: 'Overview', icon: LayoutDashboard },
   { href: '/admin/feedback', label: 'Feedback', icon: MessageSquare   },
+  { href: '/admin/bugs',     label: 'Bugs',     icon: Bug             },
   { href: '/admin/users',    label: 'Users',    icon: Users           },
   { href: '/admin/analytics', label: 'Analytics', icon: BarChart3       },
 ];

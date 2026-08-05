@@ -37,6 +37,7 @@ model User {
   progress     Progress[]
   examAttempts ExamAttempt[]
   feedbackSubmissions FeedbackSubmission[]
+  bugReports   BugReport[]
   customThemes CustomTheme[]
 
   createdAt DateTime @default(now())
@@ -234,6 +235,23 @@ model FeedbackSubmission {
   tags      String[] @default([])
   comment   String?  @db.Text
   createdAt DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
+  @@index([userId])
+}
+
+model BugReport {
+  id          String   @id @default(cuid())
+  userId      String?
+  email       String?
+  category    String   @default("bug") // bug | suggestion | other
+  description String   @db.Text
+  code        String?  @db.Text // attached editor code (optional / user-editable)
+  pageUrl     String?
+  userAgent   String?  @db.Text
+  createdAt   DateTime @default(now())
 
   user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
 
