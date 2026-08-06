@@ -47,14 +47,14 @@ const Header: React.FC = () => {
   const isPractice = pathname === '/practice' || pathname.startsWith('/practice/');
   const isExam = pathname === '/exam' || pathname.startsWith('/exam/');
   const isCompilerPage = pathname === '/';
+  const activeNavIndex = isDocs ? 0 : isPractice ? 1 : isExam ? 2 : -1;
 
-  // Text-only nav links; the active route is marked with the accent + a 2px
-  // underline that echoes the editor's active-tab indicator.
+  // Text-only nav links with a shared underline that glides between routes.
   const navLinkClass = (active: boolean) =>
-    `px-2 py-1 rounded-t border-b-2 transition duration-200 ${
+    `relative z-10 rounded px-1.5 py-1 text-center transition-colors duration-200 ${
       active
-        ? 'text-primary border-primary'
-        : 'text-header-text/70 border-transparent hover:text-header-text hover:bg-white/10'
+        ? 'text-primary'
+        : 'text-header-text/70 hover:text-header-text hover:bg-white/10'
     }`;
 
   return (
@@ -100,20 +100,46 @@ const Header: React.FC = () => {
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center gap-1 text-xs">
-            <Link href="/docs" data-tour="docs-link" onClick={() => trackNav('docs')} className={navLinkClass(isDocs)}>
-              Docs
-            </Link>
-            <Link
-              href="/practice"
-              data-tour="practice-link"
-              onClick={() => trackNav('practice')}
-              className={navLinkClass(isPractice)}
-            >
-              Practice
-            </Link>
-            <Link href="/exam" onClick={() => trackNav('exam')} className={navLinkClass(isExam)}>
-              Exam
-            </Link>
+            <div className="relative grid w-45 grid-cols-3">
+              <Link
+                href="/docs"
+                data-tour="docs-link"
+                onClick={() => trackNav('docs')}
+                className={navLinkClass(isDocs)}
+                aria-current={isDocs ? 'page' : undefined}
+              >
+                Docs
+              </Link>
+              <Link
+                href="/practice"
+                data-tour="practice-link"
+                onClick={() => trackNav('practice')}
+                className={navLinkClass(isPractice)}
+                aria-current={isPractice ? 'page' : undefined}
+              >
+                Practice
+              </Link>
+              <Link
+                href="/exam"
+                onClick={() => trackNav('exam')}
+                className={navLinkClass(isExam)}
+                aria-current={isExam ? 'page' : undefined}
+              >
+                Exam
+              </Link>
+              <span
+                aria-hidden="true"
+                className={`pointer-events-none absolute bottom-0 left-0 w-1/3 transition-[transform,opacity] duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] motion-reduce:transition-none ${
+                  activeNavIndex === 1
+                    ? 'translate-x-full'
+                    : activeNavIndex === 2
+                      ? 'translate-x-[200%]'
+                      : 'translate-x-0'
+                } ${activeNavIndex === -1 ? 'opacity-0' : 'opacity-100'}`}
+              >
+                <span className="mx-1.5 block h-0.5 rounded-full bg-primary shadow-[0_0_6px_var(--color-primary)]" />
+              </span>
+            </div>
             <div className="w-px h-4 bg-header-text/20 mx-1" />
             <button
               onClick={openPalette}
