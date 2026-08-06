@@ -5,7 +5,7 @@ import { Bug, X, Check, ChevronDown, ChevronRight, Paperclip } from 'lucide-reac
 import { usePostHog } from 'posthog-js/react';
 import { useSession } from 'next-auth/react';
 import { toast } from 'sonner';
-import { AUTOSAVE_KEY, OPEN_BUG_REPORT_EVENT } from '@/utils/constants';
+import { AUTOSAVE_KEY, BUG_REPORT_OUTPUT_KEY, OPEN_BUG_REPORT_EVENT } from '@/utils/constants';
 
 type Category = 'bug' | 'suggestion' | 'other';
 
@@ -21,9 +21,9 @@ const CATEGORIES: { id: Category; label: string }[] = [
  * same decoupled pattern as KeyboardShortcutsModal, so it needs no props and is
  * mounted once in the root layout.
  *
- * On open it snapshots reproduction context: the current editor code (from the
- * autosave key), the page path and the browser user-agent. The code is shown
- * editable so the user can trim or remove it before sending.
+ * On open it snapshots reproduction context: the current editor code, latest
+ * terminal output, page path and browser user-agent. Code and output are shown
+ * editable so the user can trim or remove them before sending.
  */
 export default function ReportBugModal() {
   const ph = usePostHog();
@@ -39,6 +39,8 @@ export default function ReportBugModal() {
 
   const [includeCode, setIncludeCode] = useState(false);
   const [code, setCode] = useState('');
+  const [includeOutput, setIncludeOutput] = useState(false);
+  const [output, setOutput] = useState('');
   const [attachedOpen, setAttachedOpen] = useState(false);
   const [pageUrl, setPageUrl] = useState('');
   const [userAgent, setUserAgent] = useState('');
@@ -59,11 +61,15 @@ export default function ReportBugModal() {
         try { return window.location.pathname === '/'; } catch { return false; }
       })();
       let saved = '';
+      let savedOutput = '';
       if (onCompiler) {
         try { saved = localStorage.getItem(AUTOSAVE_KEY) ?? ''; } catch { saved = ''; }
+        try { savedOutput = sessionStorage.getItem(BUG_REPORT_OUTPUT_KEY) ?? ''; } catch { savedOutput = ''; }
       }
       setCode(saved);
       setIncludeCode(onCompiler && saved.trim().length > 0);
+      setOutput(savedOutput);
+      setIncludeOutput(onCompiler && savedOutput.trim().length > 0);
       try {
         setPageUrl(window.location.pathname + window.location.search);
         setUserAgent(navigator.userAgent);
@@ -91,6 +97,7 @@ export default function ReportBugModal() {
 
   const canSubmit = description.trim().length > 0 && !submitting;
   const attachedCode = includeCode ? code.trim() || null : null;
+  const attachedOutput = includeOutput ? output.trim() || null : null;
 
   const submit = async () => {
     if (!canSubmit) return;
@@ -99,6 +106,7 @@ export default function ReportBugModal() {
     ph?.capture('bug_reported', {
       category,
       has_code: !!attachedCode,
+      has_output: !!attachedOutput,
       page: pageUrl || undefined,
     });
 
@@ -110,6 +118,7 @@ export default function ReportBugModal() {
           category,
           description: description.trim(),
           code: attachedCode,
+          output: attachedOutput,
           pageUrl: pageUrl || null,
           userAgent: userAgent || null,
           email: !session?.user?.email && email.trim() ? email.trim() : null,
@@ -225,7 +234,7 @@ export default function ReportBugModal() {
                 <Paperclip size={11} />
                 <span className="font-medium">Attached context</span>
                 <span className="ml-auto text-[10px] text-dark-text/60">
-                  {attachedCode ? 'code + page' : 'page only'}
+                  {[attachedCode && 'code', attachedOutput && 'output', 'page'].filter(Boolean).join(' + ')}
                 </span>
               </button>
 
@@ -245,6 +254,27 @@ export default function ReportBugModal() {
                     <textarea
                       value={code}
                       onChange={(e) => setCode(e.target.value)}
+                      rows={4}
+                      spellCheck={false}
+                      className="w-full font-mono text-[11px] leading-relaxed bg-background border border-border rounded-lg px-2.5 py-2
+                        text-light-text placeholder-dark-text/40 resize-y outline-none
+                        focus:border-primary/50 transition-colors scrollbar-pretty"
+                    />
+                  )}
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] text-dark-text/70">Program output (editable)</span>
+                    <button
+                      type="button"
+                      onClick={() => setIncludeOutput((v) => !v)}
+                      className="text-[10px] text-primary hover:underline"
+                    >
+                      {includeOutput ? 'Remove output' : 'Attach output'}
+                    </button>
+                  </div>
+                  {includeOutput && (
+                    <textarea
+                      value={output}
+                      onChange={(e) => setOutput(e.target.value)}
                       rows={4}
                       spellCheck={false}
                       className="w-full font-mono text-[11px] leading-relaxed bg-background border border-border rounded-lg px-2.5 py-2

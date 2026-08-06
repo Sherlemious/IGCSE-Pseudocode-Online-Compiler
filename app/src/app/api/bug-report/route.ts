@@ -18,6 +18,7 @@ export async function POST(req: Request) {
       description?: unknown;
       category?: unknown;
       code?: unknown;
+      output?: unknown;
       pageUrl?: unknown;
       userAgent?: unknown;
       email?: unknown;
@@ -32,6 +33,7 @@ export async function POST(req: Request) {
       ? body.category
       : 'bug';
     const code = cappedString(body.code, 20000);
+    const output = cappedString(body.output, 20000);
     const pageUrl = cappedString(body.pageUrl, 500);
     const userAgent = cappedString(body.userAgent, 500);
 
@@ -45,6 +47,7 @@ export async function POST(req: Request) {
         category,
         description,
         code,
+        output,
         pageUrl,
         userAgent,
       },

@@ -249,6 +249,7 @@ model BugReport {
   category    String   @default("bug") // bug | suggestion | other
   description String   @db.Text
   code        String?  @db.Text // attached editor code (optional / user-editable)
+  output      String?  @db.Text // attached terminal output (optional / user-editable)
   pageUrl     String?
   userAgent   String?  @db.Text
   createdAt   DateTime @default(now())

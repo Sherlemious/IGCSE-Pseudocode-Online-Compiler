@@ -12,7 +12,7 @@ const CATEGORY_FILTERS = ['all', 'bug', 'suggestion', 'other'] as const;
 export default function BugReportTable({ reports }: Props) {
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [codeId, setCodeId] = useState<string | null>(null);
+  const [contextId, setContextId] = useState<string | null>(null);
 
   const filtered = reports.filter((r) => categoryFilter === 'all' || r.category === categoryFilter);
 
@@ -49,7 +49,7 @@ export default function BugReportTable({ reports }: Props) {
                 <th className="text-left px-4 py-3 text-dark-text font-medium w-44">Email</th>
                 <th className="text-left px-4 py-3 text-dark-text font-medium w-20">Category</th>
                 <th className="text-left px-4 py-3 text-dark-text font-medium">Description</th>
-                <th className="text-left px-4 py-3 text-dark-text font-medium w-28">Code</th>
+                <th className="text-left px-4 py-3 text-dark-text font-medium w-28">Context</th>
                 <th className="text-left px-4 py-3 text-dark-text font-medium w-40">Page</th>
               </tr>
             </thead>
@@ -81,13 +81,13 @@ export default function BugReportTable({ reports }: Props) {
                       <p className={expandedId === r.id ? 'whitespace-pre-wrap break-words' : 'truncate'}>{r.description}</p>
                     </td>
                     <td className="px-4 py-3">
-                      {r.code
+                      {r.code || r.output
                         ? (
                           <button
-                            onClick={() => setCodeId(codeId === r.id ? null : r.id)}
+                            onClick={() => setContextId(contextId === r.id ? null : r.id)}
                             className="px-2 py-0.5 rounded border border-border text-[10px] text-primary hover:bg-primary/10 transition-colors"
                           >
-                            {codeId === r.id ? 'Hide code' : 'View code'}
+                            {contextId === r.id ? 'Hide' : 'View'}
                           </button>
                         )
                         : <span className="italic text-dark-text/40">—</span>}
@@ -96,12 +96,27 @@ export default function BugReportTable({ reports }: Props) {
                       {r.pageUrl ?? <span className="italic text-dark-text/40">—</span>}
                     </td>
                   </tr>
-                  {codeId === r.id && r.code && (
+                  {contextId === r.id && (r.code || r.output) && (
                     <tr className="bg-background/40">
                       <td colSpan={6} className="px-4 py-3">
-                        <pre className="text-[11px] leading-relaxed font-mono text-light-text bg-background border border-border rounded-lg p-3 overflow-x-auto scrollbar-pretty whitespace-pre">
-                          {r.code}
-                        </pre>
+                        <div className="grid gap-3 lg:grid-cols-2">
+                          {r.code && (
+                            <div className="min-w-0">
+                              <p className="mb-1.5 text-[10px] font-medium uppercase tracking-wider text-dark-text">Code</p>
+                              <pre className="text-[11px] leading-relaxed font-mono text-light-text bg-background border border-border rounded-lg p-3 overflow-x-auto scrollbar-pretty whitespace-pre">
+                                {r.code}
+                              </pre>
+                            </div>
+                          )}
+                          {r.output && (
+                            <div className="min-w-0">
+                              <p className="mb-1.5 text-[10px] font-medium uppercase tracking-wider text-dark-text">Output</p>
+                              <pre className="text-[11px] leading-relaxed font-mono text-light-text bg-background border border-border rounded-lg p-3 overflow-x-auto scrollbar-pretty whitespace-pre-wrap break-words">
+                                {r.output}
+                              </pre>
+                            </div>
+                          )}
+                        </div>
                         {r.userAgent && (
                           <p className="mt-2 text-[10px] text-dark-text/50 break-words">{r.userAgent}</p>
                         )}

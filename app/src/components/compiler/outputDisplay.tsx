@@ -10,6 +10,7 @@ import PythonView from './PythonView';
 import PythonLogo from '../icons/PythonLogo';
 import SplitDivider from '../common/SplitDivider';
 import { SPLIT_VARS_KEY, loadSplitPercent } from '../../utils/constants';
+import { formatOutputEntries } from '../../utils/formatOutputEntries';
 
 // React Flow + dagre are heavy and only needed when the Flowchart tab is opened,
 // so the whole view (and its deps) is code-split out of the main bundle.
@@ -157,15 +158,7 @@ const OutputDisplay: React.FC<OutputDisplayProps> = ({
   };
 
   const handleCopyOutput = () => {
-    const text = entries
-      .map((e) => {
-        if (e.kind === 'output') return e.text;
-        if (e.kind === 'error') return `[ERROR] ${e.text}`;
-        if (e.kind === 'input' && e.submitted) return `[INPUT] ${e.variableName}: ${e.value}`;
-        return '';
-      })
-      .filter(Boolean)
-      .join('\n');
+    const text = formatOutputEntries(entries);
     navigator.clipboard.writeText(text).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);

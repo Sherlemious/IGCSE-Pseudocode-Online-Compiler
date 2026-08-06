@@ -14,7 +14,8 @@ import OnboardingTour from '../onboarding/OnboardingTour';
 import FeedbackSurvey, { shouldShowFeedbackSurvey } from '../feedback/FeedbackSurvey';
 import { useInterpreter } from '../../interpreter/useInterpreter';
 import { toast } from 'sonner';
-import { AUTOSAVE_KEY, FILE_PREFIX, AUTOSAVE_DELAY, ONBOARDING_KEY, SPLIT_COMPILER_KEY, SPLIT_COMPILER_COLLAPSED_KEY, loadSplitPercent } from '../../utils/constants';
+import { AUTOSAVE_KEY, BUG_REPORT_OUTPUT_KEY, FILE_PREFIX, AUTOSAVE_DELAY, ONBOARDING_KEY, SPLIT_COMPILER_KEY, SPLIT_COMPILER_COLLAPSED_KEY, loadSplitPercent } from '../../utils/constants';
+import { formatOutputEntries } from '../../utils/formatOutputEntries';
 
 const FEEDBACK_RUN_THRESHOLD = 2;
 const FEEDBACK_RUN_LS_KEY = 'compiler_run_count';
@@ -150,6 +151,18 @@ const CompilerPage: React.FC = () => {
   useEffect(() => {
     setIsRunning(interpreterRunning);
   }, [interpreterRunning]);
+
+  // Keep a session-only snapshot so the global bug-report modal can attach the
+  // exact terminal context without coupling itself to the compiler component.
+  useEffect(() => {
+    try {
+      const output = formatOutputEntries(entries);
+      if (output.trim()) sessionStorage.setItem(BUG_REPORT_OUTPUT_KEY, output);
+      else sessionStorage.removeItem(BUG_REPORT_OUTPUT_KEY);
+    } catch {
+      /* ignore unavailable/full storage */
+    }
+  }, [entries]);
 
   // The INPUT field lives in the Terminal tab. If the student is watching the
   // Trace table when the program asks for input, pull them back to the Terminal

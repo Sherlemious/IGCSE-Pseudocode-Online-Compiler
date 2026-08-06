@@ -25,6 +25,9 @@ export const SPLIT_COMPILER_COLLAPSED_KEY = 'pseudocode-split-compiler-collapsed
 /** Window CustomEvent name that opens the global "Report a bug" modal */
 export const OPEN_BUG_REPORT_EVENT = 'pseudocode:open-bug-report';
 
+/** Session-only snapshot of the main compiler's latest terminal output. */
+export const BUG_REPORT_OUTPUT_KEY = 'pseudocode_bug_report_output';
+
 /**
  * Read a persisted split-pane percentage, clamped to [min, max].
  * Falls back to `fallback` when unset or invalid.

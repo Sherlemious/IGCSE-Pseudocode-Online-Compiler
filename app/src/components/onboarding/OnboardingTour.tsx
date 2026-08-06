@@ -141,14 +141,16 @@ export default function OnboardingTour() {
     if (!targetRect) return { top: '50%', left: '50%', transform: 'translate(-50%, -50%)' };
 
     const pad = 12;
-    const tooltipWidth = 300;
+    const viewportMargin = 8;
+    const tooltipWidth = Math.min(300, window.innerWidth - viewportMargin * 2);
 
     if (step.position === 'right') {
+      const rawLeft = targetRect.left + targetRect.width + pad;
       return {
         top: targetRect.top + targetRect.height / 2,
-        left: targetRect.left + targetRect.width + pad,
+        left: Math.min(Math.max(rawLeft, viewportMargin), window.innerWidth - tooltipWidth - viewportMargin),
         transform: 'translateY(-50%)',
-        maxWidth: tooltipWidth,
+        width: tooltipWidth,
       };
     }
     if (step.position === 'bottom') {
@@ -156,20 +158,24 @@ export default function OnboardingTour() {
       // near the right edge of the header (e.g. the Report-a-bug button).
       const half = tooltipWidth / 2;
       const rawCenter = targetRect.left + targetRect.width / 2;
-      const center = Math.min(Math.max(rawCenter, half + 8), window.innerWidth - half - 8);
+      const center = Math.min(
+        Math.max(rawCenter, half + viewportMargin),
+        window.innerWidth - half - viewportMargin,
+      );
       return {
         top: targetRect.top + targetRect.height + pad,
         left: center,
         transform: 'translateX(-50%)',
-        maxWidth: tooltipWidth,
+        width: tooltipWidth,
       };
     }
     // left
+    const rawLeft = targetRect.left - pad - tooltipWidth;
     return {
       top: targetRect.top + targetRect.height / 2,
-      left: targetRect.left - pad,
-      transform: 'translate(-100%, -50%)',
-      maxWidth: tooltipWidth,
+      left: Math.min(Math.max(rawLeft, viewportMargin), window.innerWidth - tooltipWidth - viewportMargin),
+      transform: 'translateY(-50%)',
+      width: tooltipWidth,
     };
   };
 
@@ -180,86 +186,98 @@ export default function OnboardingTour() {
 
       {/* Spotlight */}
       {targetRect && (() => {
+        const viewportInset = 2;
         const rawLeft = targetRect.left - 4;
-        const clampedLeft = Math.max(2, rawLeft);
-        const clampedWidth = targetRect.width + 8 - (clampedLeft - rawLeft);
+        const rawTop = targetRect.top - 4;
+        const rawRight = targetRect.left + targetRect.width + 4;
+        const rawBottom = targetRect.top + targetRect.height + 4;
+        const clampedLeft = Math.max(viewportInset, rawLeft);
+        const clampedTop = Math.max(viewportInset, rawTop);
+        const clampedRight = Math.min(window.innerWidth - viewportInset, rawRight);
+        const clampedBottom = Math.min(window.innerHeight - viewportInset, rawBottom);
+        const clampedWidth = Math.max(0, clampedRight - clampedLeft);
+        const clampedHeight = Math.max(0, clampedBottom - clampedTop);
+        if (clampedWidth === 0 || clampedHeight === 0) return null;
         return (
           <div
             className="absolute tour-spotlight pointer-events-none"
             style={{
-              top: targetRect.top - 4,
+              top: clampedTop,
               left: clampedLeft,
               width: clampedWidth,
-              height: targetRect.height + 8,
+              height: clampedHeight,
             }}
           />
         );
       })()}
 
-      {/* Tooltip card */}
+      {/* Position and animation use separate elements so the scale animation
+          cannot overwrite the translate used to anchor the card. */}
       <div
-        className="fixed bg-surface border border-border rounded-xl p-4 shadow-intense animate-scale-in z-[101]"
+        className="fixed z-[101]"
         style={getTooltipStyle()}
       >
-        {/* Close button */}
-        <button
-          onClick={complete}
-          className="absolute top-2 right-2 text-dark-text hover:text-light-text p-0.5 rounded transition-colors"
-          aria-label="Skip tour"
-        >
-          <X size={12} />
-        </button>
+        <div className="relative w-full bg-surface border border-border rounded-xl p-4 shadow-intense animate-scale-in">
+          {/* Close button */}
+          <button
+            onClick={complete}
+            className="absolute top-2 right-2 text-dark-text hover:text-light-text p-0.5 rounded transition-colors"
+            aria-label="Skip tour"
+          >
+            <X size={12} />
+          </button>
 
-        {/* Content */}
-        <div className="flex items-center gap-2 mb-2">
-          {step.icon}
-          <h3 className="text-sm font-bold text-light-text">{step.title}</h3>
-        </div>
-        <p className="text-xs text-dark-text leading-relaxed mb-4">
-          {step.description}
-        </p>
-
-        {/* Footer */}
-        <div className="flex items-center justify-between">
-          {/* Step dots */}
-          <div className="flex items-center gap-1.5">
-            {Array.from({ length: totalSteps }).map((_, i) => (
-              <div
-                key={i}
-                className={`h-1.5 rounded-full transition-all duration-300 ${
-                  i === currentStep
-                    ? 'w-4 bg-primary'
-                    : i < currentStep
-                      ? 'w-1.5 bg-primary/50'
-                      : 'w-1.5 bg-border'
-                }`}
-              />
-            ))}
+          {/* Content */}
+          <div className="flex items-center gap-2 mb-2">
+            {step.icon}
+            <h3 className="text-sm font-bold text-light-text">{step.title}</h3>
           </div>
+          <p className="text-xs text-dark-text leading-relaxed mb-4">
+            {step.description}
+          </p>
 
-          {/* Buttons */}
-          <div className="flex items-center gap-2">
-            {currentStep === 0 ? (
+          {/* Footer */}
+          <div className="flex items-center justify-between">
+            {/* Step dots */}
+            <div className="flex items-center gap-1.5">
+              {Array.from({ length: totalSteps }).map((_, i) => (
+                <div
+                  key={i}
+                  className={`h-1.5 rounded-full transition-all duration-300 ${
+                    i === currentStep
+                      ? 'w-4 bg-primary'
+                      : i < currentStep
+                        ? 'w-1.5 bg-primary/50'
+                        : 'w-1.5 bg-border'
+                  }`}
+                />
+              ))}
+            </div>
+
+            {/* Buttons */}
+            <div className="flex items-center gap-2">
+              {currentStep === 0 ? (
+                <button
+                  onClick={complete}
+                  className="text-[10px] text-dark-text hover:text-light-text transition-colors px-2 py-1"
+                >
+                  Skip
+                </button>
+              ) : (
+                <button
+                  onClick={prev}
+                  className="text-[10px] text-dark-text hover:text-light-text transition-colors px-2 py-1"
+                >
+                  Back
+                </button>
+              )}
               <button
-                onClick={complete}
-                className="text-[10px] text-dark-text hover:text-light-text transition-colors px-2 py-1"
+                onClick={next}
+                className="text-xs font-medium text-on-primary bg-primary hover:opacity-90 px-3 py-1.5 rounded-lg transition-opacity"
               >
-                Skip
+                {currentStep >= totalSteps - 1 ? 'Get Started' : 'Next'}
               </button>
-            ) : (
-              <button
-                onClick={prev}
-                className="text-[10px] text-dark-text hover:text-light-text transition-colors px-2 py-1"
-              >
-                Back
-              </button>
-            )}
-            <button
-              onClick={next}
-              className="text-xs font-medium text-on-primary bg-primary hover:opacity-90 px-3 py-1.5 rounded-lg transition-opacity"
-            >
-              {currentStep >= totalSteps - 1 ? 'Get Started' : 'Next'}
-            </button>
+            </div>
           </div>
         </div>
       </div>
