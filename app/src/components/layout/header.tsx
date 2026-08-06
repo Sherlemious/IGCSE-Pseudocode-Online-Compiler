@@ -65,22 +65,24 @@ const Header: React.FC = () => {
           <div className="flex items-center gap-2 min-w-0">
             <Link
               href="/"
-              className={`flex items-center gap-2 transition duration-200 ${
+              className={`group flex items-center gap-2 rounded-sm transition duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/70 ${
                 isCompilerPage ? 'text-header-text' : 'text-header-text hover:text-primary'
               }`}
-              title={isCompilerPage ? 'Pseudocode Compiler' : 'Back to Compiler'}
-              aria-label={isCompilerPage ? 'Pseudocode Compiler home' : 'Back to Compiler'}
+              title="Pseudocode Compiler"
+              aria-label={isCompilerPage ? 'Pseudocode Compiler home' : 'Open Pseudocode Compiler'}
             >
-              <Braces className="h-4 w-4 text-header-text" strokeWidth={2.5} />
+              {isCompilerPage ? (
+                <Braces className="h-4 w-4 text-header-text" strokeWidth={2.5} aria-hidden="true" />
+              ) : (
+                <ArrowLeft
+                  className="h-4 w-4 text-header-text/60 transition-transform duration-200 group-hover:-translate-x-0.5 group-hover:text-primary"
+                  strokeWidth={2.25}
+                  aria-hidden="true"
+                />
+              )}
               <span className="text-sm font-bold tracking-tight text-header-text whitespace-nowrap">
                 Pseudocode <span className="font-normal text-header-text/60">Compiler</span>
               </span>
-              {!isCompilerPage && (
-                <span className="hidden sm:inline-flex items-center gap-1 rounded border border-primary/40 bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-primary">
-                  <ArrowLeft size={10} />
-                  Back
-                </span>
-              )}
             </Link>
             <span className="hidden md:inline text-header-text/20 select-none" aria-hidden>
               ·
