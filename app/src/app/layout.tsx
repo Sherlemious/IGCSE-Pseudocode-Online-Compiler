@@ -12,6 +12,7 @@ import { CommandProvider } from '../components/common/CommandPalette';
 import GlobalCommands from '../components/common/GlobalCommands';
 import KeyboardShortcutsModal from '../components/common/KeyboardShortcutsModal';
 import ReportBugModal from '../components/feedback/ReportBugModal';
+import PageTransition from '../components/layout/PageTransition';
 import {
   DEFAULT_DESCRIPTION,
   DEFAULT_TITLE,
@@ -176,7 +177,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <ThemeProvider>
               <CommandProvider>
                 <Header />
-                <main className="flex-1 min-h-0 flex flex-col overflow-hidden">{children}</main>
+                <main className="flex-1 min-h-0 flex flex-col overflow-hidden">
+                  <PageTransition>{children}</PageTransition>
+                </main>
                 <GlobalCommands />
                 <KeyboardShortcutsModal />
                 <ReportBugModal />

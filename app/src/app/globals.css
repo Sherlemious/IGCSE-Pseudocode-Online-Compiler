@@ -276,6 +276,54 @@ textarea:focus-visible {
   }
 }
 
+/* Directional transitions between the compiler's primary sections. */
+@keyframes page-slide-forward {
+  from {
+    opacity: 0.72;
+    transform: translate3d(20px, 0, 0);
+  }
+
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes page-slide-backward {
+  from {
+    opacity: 0.72;
+    transform: translate3d(-20px, 0, 0);
+  }
+
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+.page-slide-forward,
+.page-slide-backward {
+  animation-duration: 260ms;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  animation-fill-mode: both;
+  will-change: transform, opacity;
+}
+
+.page-slide-forward {
+  animation-name: page-slide-forward;
+}
+
+.page-slide-backward {
+  animation-name: page-slide-backward;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page-slide-forward,
+  .page-slide-backward {
+    animation: none;
+  }
+}
+
 @keyframes glow-pulse {
 
   0%,
