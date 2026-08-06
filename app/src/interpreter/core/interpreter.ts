@@ -110,6 +110,7 @@ import {
   toString,
   isNumeric,
   smartParse,
+  parseInputForTarget,
 } from './values';
 import { getBuiltin, registerFileBuiltins } from './builtins';
 import { VirtualFileSystem } from './filesystem';
@@ -824,7 +825,17 @@ export class Interpreter {
     const raw = await this.requestInput(desig.getText(), prompt);
     this.callbacks.onInputComplete();
     const ref = await this.resolveDesignator(desig);
-    ref.set(smartParse(raw));
+    let currentValue: RuntimeValue;
+    try {
+      currentValue = ref.get();
+    } catch (error) {
+      if (error instanceof RuntimeError && error.message.startsWith('Variable ') && error.message.endsWith(' is not defined')) {
+        ref.set(smartParse(raw));
+        return;
+      }
+      throw error;
+    }
+    ref.set(parseInputForTarget(raw, currentValue, ref.describe(), ctx.start?.line));
   }
 
   // ─── OUTPUT ─────────────────────────────────────────────────────

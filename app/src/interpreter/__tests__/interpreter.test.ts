@@ -407,6 +407,45 @@ describe('execute — INPUT into array element', () => {
     const { outputs } = await runCode('INPUT arr[2]\nOUTPUT arr[2]\n', ['42']);
     expect(outputs).toEqual(['42']);
   });
+
+  it('keeps type inference for an undeclared scalar target', async () => {
+    const { outputs } = await runCode('INPUT value\nOUTPUT value + 1\n', ['41']);
+    expect(outputs).toEqual(['42']);
+  });
+});
+
+describe('execute - INPUT type validation', () => {
+  it('rejects text entered for a declared INTEGER', async () => {
+    await expect(
+      runCode('DECLARE age : INTEGER\nINPUT age\nOUTPUT age\n', ['df']),
+    ).rejects.toThrow(/Input for 'age' must be an INTEGER/);
+  });
+
+  it('rejects a decimal entered for a declared INTEGER', async () => {
+    await expect(
+      runCode('DECLARE count : INTEGER\nINPUT count\nOUTPUT count\n', ['2.5']),
+    ).rejects.toThrow(/Input for 'count' must be an INTEGER/);
+  });
+
+  it('preserves numeric-looking input for a declared STRING', async () => {
+    const { outputs } = await runCode(
+      'DECLARE value : STRING\nINPUT value\nOUTPUT value & "0"\n',
+      ['12'],
+    );
+    expect(outputs).toEqual(['120']);
+  });
+
+  it('validates BOOLEAN input case-insensitively', async () => {
+    const { outputs } = await runCode(
+      'DECLARE answer : BOOLEAN\nINPUT answer\nOUTPUT answer\n',
+      ['true'],
+    );
+    expect(outputs).toEqual(['TRUE']);
+
+    await expect(
+      runCode('DECLARE answer : BOOLEAN\nINPUT answer\n', ['yes']),
+    ).rejects.toThrow(/Input for 'answer' must be TRUE or FALSE/);
+  });
 });
 
 describe('execute — parameter passing', () => {

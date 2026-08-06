@@ -173,3 +173,71 @@ export function smartParse(input: string): RuntimeValue {
   }
   return mkString(input);
 }
+
+/** Parse interactive INPUT text according to an already-declared target value. */
+export function parseInputForTarget(
+  input: string,
+  target: RuntimeValue,
+  targetLabel: string,
+  line?: number,
+): RuntimeValue {
+  const trimmed = input.trim();
+
+  switch (target.type) {
+    case 'INTEGER': {
+      if (!/^[+-]?\d+$/.test(trimmed)) {
+        throw new RuntimeError(`Input for ${targetLabel} must be an INTEGER (a whole number)`, line);
+      }
+      const value = Number(trimmed);
+      if (!Number.isSafeInteger(value)) {
+        throw new RuntimeError(`Input for ${targetLabel} must be an INTEGER within the supported range`, line);
+      }
+      return mkInteger(value);
+    }
+
+    case 'REAL': {
+      const value = Number(trimmed);
+      if (trimmed === '' || !Number.isFinite(value)) {
+        throw new RuntimeError(`Input for ${targetLabel} must be a REAL number`, line);
+      }
+      return mkReal(value);
+    }
+
+    case 'BOOLEAN': {
+      const upper = trimmed.toUpperCase();
+      if (upper !== 'TRUE' && upper !== 'FALSE') {
+        throw new RuntimeError(`Input for ${targetLabel} must be TRUE or FALSE`, line);
+      }
+      return mkBoolean(upper === 'TRUE');
+    }
+
+    case 'CHAR':
+      if (input.length !== 1) {
+        throw new RuntimeError(`Input for ${targetLabel} must be exactly one character`, line);
+      }
+      return mkChar(input);
+
+    case 'STRING':
+      return mkString(input);
+
+    case 'DATE': {
+      const match = trimmed.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+      if (!match) {
+        throw new RuntimeError(`Input for ${targetLabel} must be a DATE in dd/mm/yyyy format`, line);
+      }
+      try {
+        return mkDateFromParts(Number(match[1]), Number(match[2]), Number(match[3]));
+      } catch {
+        throw new RuntimeError(`Input for ${targetLabel} must be a valid DATE in dd/mm/yyyy format`, line);
+      }
+    }
+
+    case 'NONE':
+      // Preserve the language's existing convenience for undeclared scalar
+      // variables, whose type is inferred from their first input.
+      return smartParse(input);
+
+    default:
+      throw new RuntimeError(`INPUT cannot store text directly in ${targetLabel} because it is ${target.type}`, line);
+  }
+}
