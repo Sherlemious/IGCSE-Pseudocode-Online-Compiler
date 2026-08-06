@@ -23,7 +23,7 @@ const CATEGORIES: { id: Category; label: string }[] = [
  *
  * On open it snapshots reproduction context: the current editor code, latest
  * terminal output, page path and browser user-agent. Code and output are shown
- * editable so the user can trim or remove them before sending.
+ * read-only so reports preserve the exact context; either can still be omitted.
  */
 export default function ReportBugModal() {
   const ph = usePostHog();
@@ -241,7 +241,7 @@ export default function ReportBugModal() {
               {attachedOpen && (
                 <div className="px-2.5 pb-2.5 space-y-2 border-t border-border/60 pt-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] text-dark-text/70">Your code (editable)</span>
+                    <span className="text-[10px] text-dark-text/70">Your code (read-only)</span>
                     <button
                       type="button"
                       onClick={() => setIncludeCode((v) => !v)}
@@ -251,18 +251,12 @@ export default function ReportBugModal() {
                     </button>
                   </div>
                   {includeCode && (
-                    <textarea
-                      value={code}
-                      onChange={(e) => setCode(e.target.value)}
-                      rows={4}
-                      spellCheck={false}
-                      className="w-full font-mono text-[11px] leading-relaxed bg-background border border-border rounded-lg px-2.5 py-2
-                        text-light-text placeholder-dark-text/40 resize-y outline-none
-                        focus:border-primary/50 transition-colors scrollbar-pretty"
-                    />
+                    <pre className="max-h-40 w-full overflow-auto whitespace-pre-wrap break-words rounded-lg border border-border bg-background px-2.5 py-2 font-mono text-[11px] leading-relaxed text-light-text scrollbar-pretty">
+                      {code}
+                    </pre>
                   )}
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] text-dark-text/70">Program output (editable)</span>
+                    <span className="text-[10px] text-dark-text/70">Program output (read-only)</span>
                     <button
                       type="button"
                       onClick={() => setIncludeOutput((v) => !v)}
@@ -272,15 +266,9 @@ export default function ReportBugModal() {
                     </button>
                   </div>
                   {includeOutput && (
-                    <textarea
-                      value={output}
-                      onChange={(e) => setOutput(e.target.value)}
-                      rows={4}
-                      spellCheck={false}
-                      className="w-full font-mono text-[11px] leading-relaxed bg-background border border-border rounded-lg px-2.5 py-2
-                        text-light-text placeholder-dark-text/40 resize-y outline-none
-                        focus:border-primary/50 transition-colors scrollbar-pretty"
-                    />
+                    <pre className="max-h-40 w-full overflow-auto whitespace-pre-wrap break-words rounded-lg border border-border bg-background px-2.5 py-2 font-mono text-[11px] leading-relaxed text-light-text scrollbar-pretty">
+                      {output}
+                    </pre>
                   )}
                   <div className="text-[10px] text-dark-text/60 break-words">
                     <span className="text-dark-text/80">Page:</span> {pageUrl || '—'}
