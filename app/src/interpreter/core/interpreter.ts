@@ -53,6 +53,7 @@ import {
   OrExprContext,
   AtomExprContext,
   ParenAtomContext,
+  ArrayLiteralAtomContext,
   FunctionCallAtomContext,
   NewInstanceAtomContext,
   AddressOfAtomContext,
@@ -1356,6 +1357,18 @@ export class Interpreter {
   private async evalAtom(ctx: ReturnType<AtomExprContext['atom']>): Promise<RuntimeValue> {
     if (ctx instanceof ParenAtomContext) {
       return this.evalExpr(ctx.expr());
+    }
+
+    if (ctx instanceof ArrayLiteralAtomContext) {
+      const values = ctx.exprList() ? await this.evalArgList(ctx.exprList()!) : [];
+      const elementTypes = new Set(values.map((value) => value.type));
+      const elementType = elementTypes.size === 1 ? values[0].type : 'MIXED';
+      const array = new PseudocodeArray(
+        [{ lower: 1, upper: values.length }],
+        elementType,
+      );
+      values.forEach((value, index) => array.set([index + 1], value));
+      return mkArray(array);
     }
 
     if (ctx instanceof IntegerAtomContext) {

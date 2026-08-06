@@ -63,6 +63,7 @@ import { MulDivExprContext } from "./PseudocodeParser.js";
 import { ConcatExprContext } from "./PseudocodeParser.js";
 import { AndExprContext } from "./PseudocodeParser.js";
 import { ParenAtomContext } from "./PseudocodeParser.js";
+import { ArrayLiteralAtomContext } from "./PseudocodeParser.js";
 import { FunctionCallAtomContext } from "./PseudocodeParser.js";
 import { NewInstanceAtomContext } from "./PseudocodeParser.js";
 import { AddressOfAtomContext } from "./PseudocodeParser.js";
@@ -464,6 +465,13 @@ export class PseudocodeVisitor<Result> extends AbstractParseTreeVisitor<Result> 
      * @return the visitor result
      */
     visitParenAtom?: (ctx: ParenAtomContext) => Result;
+    /**
+     * Visit a parse tree produced by the `arrayLiteralAtom`
+     * labeled alternative in `PseudocodeParser.atom`.
+     * @param ctx the parse tree
+     * @return the visitor result
+     */
+    visitArrayLiteralAtom?: (ctx: ArrayLiteralAtomContext) => Result;
     /**
      * Visit a parse tree produced by the `functionCallAtom`
      * labeled alternative in `PseudocodeParser.atom`.

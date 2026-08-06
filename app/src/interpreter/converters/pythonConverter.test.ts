@@ -120,6 +120,12 @@ describe('pythonConverter — declarations and arrays', () => {
     expect(code).toContain('a[i - 1]');
   });
 
+  it('converts an array literal and preserves its 1-based indexing', () => {
+    const code = py('x = [1,3,8,10,12]\nOUTPUT x[1]\n');
+    expect(code).toContain('x = [1, 3, 8, 10, 12]');
+    expect(code).toContain('print(x[1 - 1])');
+  });
+
   it('INPUT coerces by declared type', () => {
     expect(py('DECLARE n : INTEGER\nINPUT n\n')).toContain('n = int(input())');
     expect(py('DECLARE s : STRING\nINPUT s\n')).toContain('s = input()');

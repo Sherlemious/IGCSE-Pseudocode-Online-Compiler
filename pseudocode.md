@@ -102,6 +102,16 @@ NoughtsAndCrosses[2,3] <- 'X'
 StudentNames[n+1] <- StudentNames[n]
 ```
 
+### Array Literals
+
+A one-dimensional array can also be created directly from a list of values. Array
+literals use 1-based bounds, so this example creates `Numbers[1]` through `Numbers[5]`:
+
+```
+Numbers <- [1, 3, 8, 10, 12]
+OUTPUT Numbers[1]
+```
+
 ## Input and Output
 
 ### Input

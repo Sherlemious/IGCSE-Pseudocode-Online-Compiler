@@ -62,6 +62,7 @@ import {
   OrExprContext,
   AtomExprContext,
   ParenAtomContext,
+  ArrayLiteralAtomContext,
   FunctionCallAtomContext,
   NewInstanceAtomContext,
   AddressOfAtomContext,
@@ -573,7 +574,15 @@ class PythonConverter {
 
   private emitAssignment(ctx: AssignmentStatementContext): void {
     for (const sa of ctx.singleAssignment()) {
-      this.line(`${this.emitDesignator(sa.designator())} = ${this.emitRhs(sa.expr())}`);
+      const target = sa.designator();
+      const expr = sa.expr();
+      const atom = expr instanceof AtomExprContext ? expr.atom() : null;
+      if (isBareDesignator(target) && atom instanceof ArrayLiteralAtomContext) {
+        const name = target.identifier()!.getText();
+        this.arrayBounds.set(name, { lower: '1' });
+        this.varKinds.set(name, 'ARRAY');
+      }
+      this.line(`${this.emitDesignator(target)} = ${this.emitRhs(expr)}`);
     }
   }
 
@@ -975,6 +984,10 @@ class PythonConverter {
 
   private emitAtom(ctx: ReturnType<AtomExprContext['atom']>, minPrec: number): string {
     if (ctx instanceof ParenAtomContext) return this.emitExpr(ctx.expr(), minPrec);
+    if (ctx instanceof ArrayLiteralAtomContext) {
+      const elements = ctx.exprList()?.expr() ?? [];
+      return `[${elements.map((element) => this.emitExpr(element, 0)).join(', ')}]`;
+    }
     if (ctx instanceof IntegerAtomContext) return ctx.INTEGER_LITERAL().getText();
     if (ctx instanceof RealAtomContext) return ctx.REAL_LITERAL().getText();
     if (ctx instanceof StringAtomContext) return pyStr(ctx.STRING_LITERAL().getText().slice(1, -1));

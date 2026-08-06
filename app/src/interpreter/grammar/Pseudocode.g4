@@ -290,6 +290,7 @@ expr
 
 atom
     : LPAREN expr RPAREN                                # parenAtom
+    | LBRACKET exprList? RBRACKET                       # arrayLiteralAtom
     | identifier LPAREN argList? RPAREN                 # functionCallAtom
     | NEW IDENTIFIER LPAREN argList? RPAREN             # newInstanceAtom
     | CARET designator                                  # addressOfAtom

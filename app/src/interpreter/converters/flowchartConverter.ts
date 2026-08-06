@@ -20,10 +20,10 @@ import {
   DataTypeContext,
   DesignatorContext,
   ExprContext,
-  ArgListContext,
   ParamListContext,
   AtomExprContext,
   ParenAtomContext,
+  ArrayLiteralAtomContext,
   FunctionCallAtomContext,
   NewInstanceAtomContext,
   DivFunctionAtomContext,
@@ -413,6 +413,7 @@ function exprText(ctx: ExprContext): string {
 
 function atomText(a: ReturnType<AtomExprContext['atom']>): string {
   if (a instanceof ParenAtomContext) return `(${exprText(a.expr())})`;
+  if (a instanceof ArrayLiteralAtomContext) return `[${argText(a.exprList())}]`;
   if (a instanceof FunctionCallAtomContext) return `${a.identifier().getText()}(${argText(a.argList())})`;
   if (a instanceof NewInstanceAtomContext) return `NEW ${a.IDENTIFIER().getText()}(${argText(a.argList())})`;
   if (a instanceof DivFunctionAtomContext) return `DIV(${exprText(a.expr(0)!)}, ${exprText(a.expr(1)!)})`;
@@ -421,7 +422,7 @@ function atomText(a: ReturnType<AtomExprContext['atom']>): string {
   return a.getText(); // literals, TRUE/FALSE, dates, address-of
 }
 
-function argText(ctx: ArgListContext | null): string {
+function argText(ctx: { expr(): ExprContext[] } | null): string {
   if (!ctx) return '';
   return ctx.expr().map(exprText).join(', ');
 }

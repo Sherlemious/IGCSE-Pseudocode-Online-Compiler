@@ -63,6 +63,7 @@ import { MulDivExprContext } from "./PseudocodeParser.js";
 import { ConcatExprContext } from "./PseudocodeParser.js";
 import { AndExprContext } from "./PseudocodeParser.js";
 import { ParenAtomContext } from "./PseudocodeParser.js";
+import { ArrayLiteralAtomContext } from "./PseudocodeParser.js";
 import { FunctionCallAtomContext } from "./PseudocodeParser.js";
 import { NewInstanceAtomContext } from "./PseudocodeParser.js";
 import { AddressOfAtomContext } from "./PseudocodeParser.js";
@@ -719,6 +720,18 @@ export class PseudocodeListener implements ParseTreeListener {
      * @param ctx the parse tree
      */
     exitParenAtom?: (ctx: ParenAtomContext) => void;
+    /**
+     * Enter a parse tree produced by the `arrayLiteralAtom`
+     * labeled alternative in `PseudocodeParser.atom`.
+     * @param ctx the parse tree
+     */
+    enterArrayLiteralAtom?: (ctx: ArrayLiteralAtomContext) => void;
+    /**
+     * Exit a parse tree produced by the `arrayLiteralAtom`
+     * labeled alternative in `PseudocodeParser.atom`.
+     * @param ctx the parse tree
+     */
+    exitArrayLiteralAtom?: (ctx: ArrayLiteralAtomContext) => void;
     /**
      * Enter a parse tree produced by the `functionCallAtom`
      * labeled alternative in `PseudocodeParser.atom`.

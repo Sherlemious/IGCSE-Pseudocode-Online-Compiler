@@ -38,6 +38,11 @@ describe('flowchartConverter — sequence & I/O', () => {
     const r = fc('OUTPUT "Sum: ", x\n');
     expect(r.nodes.some((n) => n.shape === 'io' && n.label === 'OUTPUT "Sum: ", x')).toBe(true);
   });
+
+  it('renders array literal assignments', () => {
+    const r = fc('x = [1,3,8,10,12]\n');
+    expect(r.nodes.some((n) => n.shape === 'process' && n.label === 'x ← [1, 3, 8, 10, 12]')).toBe(true);
+  });
 });
 
 describe('flowchartConverter — selection', () => {

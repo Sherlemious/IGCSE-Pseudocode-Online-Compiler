@@ -78,6 +78,10 @@ describe('parse — single assignment', () => {
   it('parses 2D array element assignment', () => {
     expect(parseErrors('grid[1, 2] <- 99\n')).toEqual([]);
   });
+
+  it('parses an array literal assignment', () => {
+    expect(parseErrors('x = [1,3,8,10,12]\n')).toEqual([]);
+  });
 });
 
 describe('parse — multi-assignment (comma-separated)', () => {
@@ -151,6 +155,18 @@ describe('execute — multi-assignment', () => {
 });
 
 describe('execute — array assignment', () => {
+  it('initializes a 1-based array from a literal', async () => {
+    const { outputs } = await runCode(
+      'x = [1,3,8,10,12]\nOUTPUT x[1]\nOUTPUT x[5]\n',
+    );
+    expect(outputs).toEqual(['1', '12']);
+  });
+
+  it('evaluates expressions inside an array literal', async () => {
+    const { outputs } = await runCode('x <- [1 + 2, 4 * 2]\nOUTPUT x[1] & " " & x[2]\n');
+    expect(outputs).toEqual(['3 8']);
+  });
+
   it('assigns to a 1D array element', async () => {
     const { outputs } = await runCode(
       'DECLARE arr : ARRAY[1:3] OF INTEGER\narr[2] <- 99\nOUTPUT arr[2]\n',
