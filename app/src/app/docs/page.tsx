@@ -872,6 +872,12 @@ ENDFUNCTION
 OUTPUT "Larger: ", Max(10, 25)`}
           />
 
+          <p className="text-sm text-dark-text mt-3 mb-2">
+            If the returned value is intentionally not needed, use <Kw>CALL</Kw> to execute the function and discard
+            its result:
+          </p>
+          <CodeBlock code={`CALL Max(10, 25)`} />
+
           {/* ──────────────────────────────────────────────── */}
           {/*  Built-in Functions                              */}
           {/* ──────────────────────────────────────────────── */}

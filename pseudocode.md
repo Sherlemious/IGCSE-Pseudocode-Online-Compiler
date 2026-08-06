@@ -315,7 +315,7 @@ ENDFUNCTION
 
 ### Calling Functions
 
-Functions are called as part of expressions (not with `CALL`):
+Functions are normally called as part of expressions so their returned value can be used:
 
 ```
 OUTPUT "Sum of squares = ", SumSquare(10, 20)
@@ -329,6 +329,12 @@ FUNCTION SumSquare(Number1:INTEGER, Number2:INTEGER) RETURNS INTEGER
 ENDFUNCTION
 
 OUTPUT SumSquare(3, 4)
+```
+
+When the returned value is intentionally not needed, `CALL` can execute the function and discard its result:
+
+```
+CALL SumSquare(3, 4)
 ```
 
 ## File Handling

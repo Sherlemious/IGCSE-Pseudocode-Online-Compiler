@@ -418,6 +418,39 @@ describe('execute — parameter passing', () => {
     const { outputs } = await runCode(code);
     expect(outputs).toEqual(['5']);
   });
+
+  it('allows CALL to discard a user function return value', async () => {
+    const code = [
+      'FUNCTION Announce(value : INTEGER) RETURNS INTEGER',
+      '  OUTPUT value',
+      '  RETURN value + 1',
+      'ENDFUNCTION',
+      'CALL Announce(4)',
+      'OUTPUT "done"',
+    ].join('\n') + '\n';
+    const { outputs } = await runCode(code);
+    expect(outputs).toEqual(['4', 'done']);
+  });
+
+  it('rejects too few arguments for a user function', async () => {
+    const code = [
+      'FUNCTION Add(a : INTEGER, b : INTEGER) RETURNS INTEGER',
+      '  RETURN a + b',
+      'ENDFUNCTION',
+      'OUTPUT Add(1)',
+    ].join('\n') + '\n';
+    await expect(runCode(code)).rejects.toThrow("'Add' expects 2 arguments, but 1 was provided");
+  });
+
+  it('rejects too many arguments for a user procedure', async () => {
+    const code = [
+      'PROCEDURE Show(value : INTEGER)',
+      '  OUTPUT value',
+      'ENDPROCEDURE',
+      'CALL Show(1, 2)',
+    ].join('\n') + '\n';
+    await expect(runCode(code)).rejects.toThrow("'Show' expects 1 argument, but 2 were provided");
+  });
 });
 
 describe('execute — RANDOM builtin', () => {
@@ -914,6 +947,28 @@ describe('A Level — classes', () => {
     ].join('\n') + '\n';
     const { outputs } = await runCode(code);
     expect(outputs).toEqual(['5', '3']);
+  });
+
+  it('rejects the wrong number of method arguments', async () => {
+    const code = [
+      'CLASS Player',
+      '  PUBLIC PROCEDURE SetAttempts(Number : INTEGER)',
+      '  ENDPROCEDURE',
+      'ENDCLASS',
+      'P1 <- NEW Player()',
+      'P1.SetAttempts()',
+    ].join('\n') + '\n';
+    await expect(runCode(code)).rejects.toThrow("'SetAttempts' expects 1 argument, but 0 were provided");
+  });
+
+  it('rejects constructor arguments when no constructor is declared', async () => {
+    const code = [
+      'CLASS Counter',
+      '  PUBLIC Count : INTEGER',
+      'ENDCLASS',
+      'c <- NEW Counter(1)',
+    ].join('\n') + '\n';
+    await expect(runCode(code)).rejects.toThrow("'Counter' expects 0 arguments, but 1 was provided");
   });
 
   it('fields default per their declared type', async () => {

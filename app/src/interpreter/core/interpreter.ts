@@ -568,11 +568,14 @@ export class Interpreter {
     if (!classDef) {
       throw new RuntimeError(`Class '${className}' is not defined`, line);
     }
+    const ctor = classDef.findMethod('NEW');
+    if (!ctor) {
+      this.assertArgumentCount(0, argListCtx?.expr().length ?? 0, className, line);
+    }
     const instance = new ClassInstance(classDef);
     for (const f of classDef.allFields()) {
       instance.fields.set(f.name.toUpperCase(), await this.defaultForDataType(f.dataTypeCtx));
     }
-    const ctor = classDef.findMethod('NEW');
     if (ctor) {
       await this.invokeMethodOn(instance, ctor, argListCtx, line);
     }
@@ -1032,13 +1035,11 @@ export class Interpreter {
     line?: number,
   ): Promise<void> {
     const argExprs = argListCtx?.expr() ?? [];
+    this.assertArgumentCount(params.length, argExprs.length, calleeName, line);
     for (let i = 0; i < params.length; i++) {
       const p = params[i];
       const argExpr = argExprs[i];
       if (p.mode === 'BYREF') {
-        if (!argExpr) {
-          throw new RuntimeError(`'${calleeName}' needs an argument for BYREF parameter '${p.name}'`, line);
-        }
         const desig = this.designatorFromExpr(argExpr);
         if (!desig) {
           throw new RuntimeError(
@@ -1052,6 +1053,16 @@ export class Interpreter {
         localEnv.declare(p.name, value);
       }
     }
+  }
+
+  private assertArgumentCount(expected: number, actual: number, calleeName: string, line?: number): void {
+    if (actual === expected) return;
+    const expectedLabel = expected === 1 ? 'argument' : 'arguments';
+    const actualVerb = actual === 1 ? 'was' : 'were';
+    throw new RuntimeError(
+      `'${calleeName}' expects ${expected} ${expectedLabel}, but ${actual} ${actualVerb} provided`,
+      line,
+    );
   }
 
   private designatorFromExpr(expr: ExprContext): DesignatorContext | null {
@@ -1076,6 +1087,10 @@ export class Interpreter {
       const sibling = this.currentInstanceMethod(name);
       if (sibling) {
         await this.invokeMethodOn(sibling.instance, sibling.found, argListCtx, line);
+        return;
+      }
+      if (this.functions.has(name.toUpperCase())) {
+        await this.callFunction(name, argListCtx, line);
         return;
       }
       throw new RuntimeError(`Procedure '${name}' is not defined`, line);
