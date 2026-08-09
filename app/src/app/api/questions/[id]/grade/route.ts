@@ -3,10 +3,18 @@ import { prisma } from '../../../../../lib/prisma';
 import { gradeSubmission } from '../../../../../lib/autograder';
 import { auth } from '../../../../../lib/auth';
 import { PREMIUM_GATING_ENABLED } from '../../../../../lib/featureFlags';
+import { rateLimit, clientIp } from '../../../../../lib/rateLimit';
 
 interface Props {
   params: Promise<{ id: string }>;
 }
+
+// Grading runs the interpreter server-side (one run per test case), so it is
+// comparatively expensive. Cap how often a single client can trigger it.
+// Env-overridable; defaults allow generous bursts for real students while
+// blocking floods.
+const GRADE_RATE_LIMIT = Number(process.env.GRADE_RATELIMIT_MAX) || 20;
+const GRADE_RATE_WINDOW_MS = Number(process.env.GRADE_RATELIMIT_WINDOW_MS) || 60_000;
 
 export async function POST(request: NextRequest, { params }: Props) {
   const { id } = await params;
@@ -28,6 +36,17 @@ export async function POST(request: NextRequest, { params }: Props) {
 
   // Get session (optional — anonymous users can grade EASY questions)
   const session = await auth();
+
+  // Throttle before the expensive question fetch + grading. Key by user when
+  // signed in, otherwise by client IP.
+  const rateKey = session?.user?.id ? `grade:user:${session.user.id}` : `grade:ip:${clientIp(request)}`;
+  const limit = rateLimit(rateKey, { limit: GRADE_RATE_LIMIT, windowMs: GRADE_RATE_WINDOW_MS });
+  if (!limit.ok) {
+    return NextResponse.json(
+      { error: `You're grading too fast. Please wait ${limit.retryAfterSec}s and try again.` },
+      { status: 429, headers: { 'Retry-After': String(limit.retryAfterSec) } },
+    );
+  }
 
   let question;
   try {

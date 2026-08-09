@@ -247,8 +247,15 @@ export default function PracticeWorkspace({ questionId, starterCode, savedCode, 
         body: JSON.stringify({ code }),
       });
       if (!res.ok) {
-        const text = await res.text().catch(() => 'Unknown error');
-        setGradingError(`Server error (${res.status}): ${text}`);
+        // Prefer a clean JSON `error` message (e.g. rate-limit / access errors);
+        // fall back to raw text for unexpected failures.
+        const body = await res.json().catch(() => null);
+        const message = body && typeof body.error === 'string' ? body.error : null;
+        if (res.status === 429) {
+          setGradingError(message ?? 'You are grading too fast. Please wait a moment and try again.');
+        } else {
+          setGradingError(message ?? `Server error (${res.status}). Please try again.`);
+        }
         return;
       }
       const data: GradeResponse = await res.json();
