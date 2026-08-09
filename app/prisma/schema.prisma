@@ -36,6 +36,7 @@ model User {
   sessions     Session[]
   progress     Progress[]
   examAttempts ExamAttempt[]
+  exams        Exam[]
   feedbackSubmissions FeedbackSubmission[]
   bugReports   BugReport[]
   customThemes CustomTheme[]
@@ -141,6 +142,7 @@ model Question {
   testCases   TestCase[]
   progress    Progress[]
   examAnswers ExamAnswer[]
+  examLinks   ExamQuestion[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -203,6 +205,11 @@ model ExamAttempt {
   userId        String
   user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  // Null for legacy self-service (random) exams; set when the attempt is a
+  // run of a shared Exam definition.
+  examId        String?
+  exam          Exam?       @relation(fields: [examId], references: [id], onDelete: SetNull)
+
   topic         String?
   difficulty    Difficulty?
   questionCount Int
@@ -222,6 +229,41 @@ model ExamAttempt {
 
   @@index([userId])
   @@index([userId, status])
+  @@index([examId])
+}
+
+// ── Shareable Exams (instructor-authored, reusable) ─────────
+
+model Exam {
+  id           String         @id @default(cuid())
+  ownerId      String
+  owner        User           @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  title        String
+  description  String?        @db.Text
+  timeLimitMin Int
+  shareCode    String         @unique
+  isPublished  Boolean        @default(true) // link active / disabled
+
+  questions ExamQuestion[]
+  attempts  ExamAttempt[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([ownerId])
+}
+
+model ExamQuestion {
+  id         String   @id @default(cuid())
+  examId     String
+  exam       Exam     @relation(fields: [examId], references: [id], onDelete: Cascade)
+  questionId String
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  sortOrder  Int      @default(0)
+
+  @@unique([examId, questionId])
+  @@index([examId])
 }
 
 // ── Admin / Reporting ───────────────────────────────────────

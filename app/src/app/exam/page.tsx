@@ -4,8 +4,9 @@ import Link from 'next/link';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { PREMIUM_GATING_ENABLED } from '@/lib/featureFlags';
-import { Clock, Trophy, ArrowRight, Hourglass } from 'lucide-react';
+import { Clock, Trophy, ArrowRight, Hourglass, FileStack, KeyRound } from 'lucide-react';
 import ExamConfigForm from '@/components/exam/ExamConfigForm';
+import JoinExamForm from '@/components/exam/JoinExamForm';
 
 export const metadata: Metadata = {
   title: 'Pseudocode Practice Exam Simulator - Timed Cambridge CS',
@@ -84,6 +85,34 @@ export default async function ExamPage() {
             hasFullAccess={hasFullAccess}
             premiumGatingEnabled={PREMIUM_GATING_ENABLED}
           />
+        </div>
+
+        {/* Shareable exams: create or join */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-8 animate-fade-in-up" style={{ animationDelay: '120ms' }}>
+          <Link
+            href="/exams"
+            className="group bg-surface/80 backdrop-blur-sm rounded-xl border border-border p-5 hover:border-primary/30
+              hover:bg-surface transition-all duration-200"
+          >
+            <div className="flex items-center gap-2 mb-2">
+              <FileStack size={14} className="text-primary" />
+              <h2 className="mono-label text-light-text">Create &amp; share</h2>
+            </div>
+            <p className="text-xs text-dark-text leading-relaxed">
+              Build a reusable exam from the question bank and share it with your students via a link or code.
+            </p>
+            <span className="inline-flex items-center gap-1 text-xs text-primary mt-3 group-hover:gap-1.5 transition-all">
+              My exams <ArrowRight size={12} />
+            </span>
+          </Link>
+
+          <div className="bg-surface/80 backdrop-blur-sm rounded-xl border border-border p-5">
+            <div className="flex items-center gap-2 mb-3">
+              <KeyRound size={14} className="text-primary" />
+              <h2 className="mono-label text-light-text">Join an exam</h2>
+            </div>
+            <JoinExamForm />
+          </div>
         </div>
 
         {/* Recent attempts */}

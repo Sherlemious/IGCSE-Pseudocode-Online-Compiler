@@ -24,14 +24,23 @@ const ERROR_MESSAGES: Record<string, string> = {
 };
 
 interface SignInPageProps {
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; callbackUrl?: string }>;
+}
+
+// Only allow same-origin relative paths as post-login destinations (no open redirects).
+function safeCallback(url: string | undefined, fallback: string): string {
+  if (!url) return fallback;
+  if (!url.startsWith('/') || url.startsWith('//') || url.startsWith('/\\')) return fallback;
+  return url;
 }
 
 export default async function SignInPage({ searchParams }: SignInPageProps) {
-  const session = await auth();
-  if (session) redirect('/');
+  const { error, callbackUrl } = await searchParams;
+  const redirectTo = safeCallback(callbackUrl, '/practice');
 
-  const { error } = await searchParams;
+  const session = await auth();
+  if (session) redirect(redirectTo);
+
   const errorMessage = error ? (ERROR_MESSAGES[error] ?? ERROR_MESSAGES.default) : null;
 
   return (
@@ -72,7 +81,7 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
               <form
                 action={async () => {
                   'use server';
-                  await signIn('google', { redirectTo: '/practice' });
+                  await signIn('google', { redirectTo });
                 }}
               >
                 <button

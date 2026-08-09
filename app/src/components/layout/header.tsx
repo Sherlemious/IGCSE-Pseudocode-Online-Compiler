@@ -45,7 +45,12 @@ const Header: React.FC = () => {
   );
   const isDocs = pathname === '/docs' || pathname.startsWith('/docs/');
   const isPractice = pathname === '/practice' || pathname.startsWith('/practice/');
-  const isExam = pathname === '/exam' || pathname.startsWith('/exam/');
+  const isExam =
+    pathname === '/exam' ||
+    pathname.startsWith('/exam/') ||
+    pathname === '/exams' ||
+    pathname.startsWith('/exams/') ||
+    pathname.startsWith('/e/');
   const isCompilerPage = pathname === '/';
   const activeNavIndex = isDocs ? 0 : isPractice ? 1 : isExam ? 2 : -1;
 

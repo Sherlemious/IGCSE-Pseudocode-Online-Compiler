@@ -100,8 +100,11 @@ Additional patterns (based on PostHog top-error analysis, Apr 2026):
 - `User` / `Account` / `Session` — NextAuth tables
 - `Question` / `TestCase` — practice questions with test cases
 - `Progress` — per-user question completion state
-- `ExamAttempt` / `ExamAnswer` — timed exam sessions
+- `ExamAttempt` / `ExamAnswer` — a student's run of an exam (timed session). `examId` is null for the self-service random simulator; set when the attempt is a run of a shared `Exam`.
+- `Exam` / `ExamQuestion` — instructor-authored, reusable, shareable exam **definitions** (fixed ordered question set, `shareCode`, `isPublished`). Any signed-in user can create one and share it via `/e/[code]`; taking it materializes an `ExamAttempt` (`api/exams/[examId]/start`) so the existing take→grade→results pipeline is reused unchanged.
 - `Example` — built-in code examples (also seeded in `data/examples.ts`)
+
+> **DB workflow:** the migration history under `prisma/migrations/` is stale/incomplete — `prisma migrate dev` fails on shadow-DB replay of an older migration. Apply schema changes to the dev DB with `npx prisma db push` (schema-diff, no shadow replay). Purely additive changes are non-destructive.
 
 ## Dev Commands
 
