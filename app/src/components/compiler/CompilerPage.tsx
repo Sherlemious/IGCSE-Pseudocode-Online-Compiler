@@ -82,6 +82,8 @@ const CompilerPage: React.FC = () => {
     isStepping,
     debugLine,
     debugVariables,
+    debugCursor,
+    debugStepCount,
     errorLine,
     breakpoints,
     traceRows,
@@ -89,6 +91,7 @@ const CompilerPage: React.FC = () => {
     run,
     debugRun,
     step,
+    stepBack,
     continueExecution,
     provideInput,
     stop,
@@ -426,7 +429,8 @@ const CompilerPage: React.FC = () => {
     { id: 'run-run', label: 'Run', group: 'Run', keywords: 'execute play', run: () => handleRunCode() },
     { id: 'run-debug', label: 'Debug (step through)', group: 'Run', keywords: 'breakpoint', run: () => handleDebugCode() },
     { id: 'run-stop', label: 'Stop execution', group: 'Run', keywords: 'cancel halt', run: () => stop() },
-    { id: 'run-step', label: 'Step over', group: 'Run', keywords: 'next', run: () => step() },
+    { id: 'run-step', label: 'Step over', group: 'Run', keywords: 'next forward line', run: () => step() },
+    { id: 'run-step-back', label: 'Step back', group: 'Run', keywords: 'previous back line', run: () => stepBack() },
     { id: 'run-continue', label: 'Continue', group: 'Run', keywords: 'resume', run: () => continueExecution() },
     { id: 'code-python', label: 'Convert to Python', group: 'Code', keywords: 'translate', run: () => handleOutputTabChange('python') },
     { id: 'code-flowchart', label: 'Convert to Flowchart', group: 'Code', keywords: 'diagram', run: () => handleOutputTabChange('flowchart') },
@@ -473,6 +477,9 @@ const CompilerPage: React.FC = () => {
             debugLine={debugLine}
             errorLine={errorLine}
             onStep={step}
+            onStepBack={stepBack}
+            debugCursor={debugCursor}
+            debugStepCount={debugStepCount}
             onContinue={continueExecution}
             onStop={stop}
             onSelectExample={handleExampleSelect}

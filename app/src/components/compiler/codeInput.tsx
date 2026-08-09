@@ -8,6 +8,7 @@ import {
   Keyboard,
   X,
   Bug,
+  SkipBack,
   SkipForward,
   FastForward,
   ChevronDown,
@@ -49,6 +50,9 @@ interface CodeInputProps {
   debugLine: number | null;
   errorLine?: number | null;
   onStep: () => void;
+  onStepBack: () => void;
+  debugCursor: number;
+  debugStepCount: number;
   onContinue: () => void;
   onStop: () => void;
   onSelectExample: (code: string) => void;
@@ -92,6 +96,9 @@ const CodeInput: React.FC<CodeInputProps> = ({
   debugLine,
   errorLine,
   onStep,
+  onStepBack,
+  debugCursor,
+  debugStepCount,
   onContinue,
   onStop,
   onSelectExample,
@@ -324,9 +331,31 @@ const CodeInput: React.FC<CodeInputProps> = ({
           {isStepping && (
             <>
               <button
+                onClick={onStepBack}
+                disabled={debugCursor <= 0}
+                className="flex items-center gap-1 px-2 py-1 text-xs text-info hover:bg-info/10 rounded transition-colors
+                  disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+                title="Step Back (previous statement)"
+              >
+                <SkipBack className="h-3.5 w-3.5" />
+                <span className="hidden @md:inline">Back</span>
+              </button>
+              {debugStepCount > 0 && (
+                <span
+                  className="px-0.5 text-[10px] font-mono text-dark-text/60 tabular-nums select-none"
+                  title="Current statement / statements stepped through"
+                >
+                  {debugCursor + 1}/{debugStepCount}
+                </span>
+              )}
+              <button
                 onClick={onStep}
                 className="flex items-center gap-1 px-2 py-1 text-xs text-info hover:bg-info/10 rounded transition-colors"
-                title="Step Over (next statement)"
+                title={
+                  debugCursor < debugStepCount - 1
+                    ? 'Forward (next recorded statement)'
+                    : 'Step Over (next statement)'
+                }
               >
                 <SkipForward className="h-3.5 w-3.5" />
                 <span className="hidden @md:inline">Step</span>

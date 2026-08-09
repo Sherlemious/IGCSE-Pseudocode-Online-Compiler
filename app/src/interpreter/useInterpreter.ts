@@ -30,6 +30,10 @@ export function useInterpreter() {
   const [isStepping, setIsStepping] = useState(false);
   const [debugLine, setDebugLine] = useState<number | null>(null);
   const [debugVariables, setDebugVariables] = useState<DebugVariable[]>([]);
+  // Step history — lets the user scrub back through statements already stepped
+  // through (display-only; execution stays parked at the furthest point).
+  const [debugCursor, setDebugCursor] = useState(-1); // index into the history
+  const [debugStepCount, setDebugStepCount] = useState(0); // history length
 
   // Breakpoints
   const [breakpoints, setBreakpoints] = useState<Set<number>>(new Set());
@@ -44,6 +48,32 @@ export function useInterpreter() {
   const abortRef = useRef<AbortController | null>(null);
   const outputBuffer = useRef<string[]>([]);
   const flushTimeout = useRef<number | null>(null);
+
+  // Step-history buffer. Refs are the source of truth for step/stepBack logic
+  // (read synchronously, immune to React batching / StrictMode double-invokes);
+  // the mirrored state above drives rendering.
+  const debugHistoryRef = useRef<{ line: number; variables: DebugVariable[] }[]>([]);
+  const debugCursorRef = useRef(-1);
+
+  const resetDebugHistory = useCallback(() => {
+    debugHistoryRef.current = [];
+    debugCursorRef.current = -1;
+    setDebugCursor(-1);
+    setDebugStepCount(0);
+    setDebugLine(null);
+    setDebugVariables([]);
+  }, []);
+
+  // Record a fresh pause point (from onBeforeStep / onBreakpoint) and move the
+  // cursor to the live edge. line + variables always come from the same snapshot.
+  const pushDebugSnapshot = useCallback((line: number, variables: DebugVariable[]) => {
+    debugHistoryRef.current.push({ line, variables });
+    debugCursorRef.current = debugHistoryRef.current.length - 1;
+    setDebugLine(line);
+    setDebugVariables(variables);
+    setDebugCursor(debugCursorRef.current);
+    setDebugStepCount(debugHistoryRef.current.length);
+  }, []);
 
   // Trace buffers — accumulated off-React and flushed via rAF to avoid a state
   // update per executed statement. `traceOutputBuffer` collects output emitted
@@ -120,8 +150,7 @@ export function useInterpreter() {
       setIsRunning(true);
       setWaitingForInput(false);
       setIsStepping(stepMode);
-      setDebugLine(null);
-      setDebugVariables([]);
+      resetDebugHistory();
       setErrorLine(null);
 
       const abortController = new AbortController();
@@ -183,7 +212,7 @@ export function useInterpreter() {
             setIsRunning(false);
             setWaitingForInput(false);
             setIsStepping(false);
-            setDebugLine(null);
+            resetDebugHistory();
           },
           onError(error: PseudocodeError) {
             flushOutputSync();
@@ -201,14 +230,12 @@ export function useInterpreter() {
             ]);
           },
           onBeforeStep(line: number, variables: DebugVariable[]) {
-            setDebugLine(line);
-            setDebugVariables(variables);
+            pushDebugSnapshot(line, variables);
           },
           onBreakpoint(line: number, variables: DebugVariable[]) {
             // When breakpoint is hit, enter step mode
             setIsStepping(true);
-            setDebugLine(line);
-            setDebugVariables(variables);
+            pushDebugSnapshot(line, variables);
           },
           onTrace(line: number, variables: DebugVariable[]) {
             const output = traceOutputBuffer.current;
@@ -258,10 +285,10 @@ export function useInterpreter() {
         setIsRunning(false);
         setWaitingForInput(false);
         setIsStepping(false);
-        setDebugLine(null);
+        resetDebugHistory();
       }
     },
-    [breakpoints]
+    [breakpoints, resetDebugHistory, pushDebugSnapshot]
   );
 
   const run = useCallback(
@@ -279,15 +306,36 @@ export function useInterpreter() {
   );
 
   const step = useCallback(() => {
-    interpreterRef.current?.step();
+    const history = debugHistoryRef.current;
+    if (debugCursorRef.current < history.length - 1) {
+      // Reviewing earlier steps — advance the display only, no execution.
+      const next = debugCursorRef.current + 1;
+      debugCursorRef.current = next;
+      const snap = history[next];
+      setDebugLine(snap.line);
+      setDebugVariables(snap.variables);
+      setDebugCursor(next);
+    } else {
+      // At the live edge — actually advance execution to the next statement.
+      interpreterRef.current?.step();
+    }
+  }, []);
+
+  const stepBack = useCallback(() => {
+    if (debugCursorRef.current <= 0) return;
+    const prev = debugCursorRef.current - 1;
+    debugCursorRef.current = prev;
+    const snap = debugHistoryRef.current[prev];
+    setDebugLine(snap.line);
+    setDebugVariables(snap.variables);
+    setDebugCursor(prev);
   }, []);
 
   const continueExecution = useCallback(() => {
     setIsStepping(false);
-    setDebugLine(null);
-    setDebugVariables([]);
+    resetDebugHistory();
     interpreterRef.current?.setStepMode(false);
-  }, []);
+  }, [resetDebugHistory]);
 
   const provideInput = useCallback((value: string) => {
     if (interpreterRef.current) {
@@ -323,9 +371,8 @@ export function useInterpreter() {
     setIsRunning(false);
     setWaitingForInput(false);
     setIsStepping(false);
-    setDebugLine(null);
-    setDebugVariables([]);
-  }, [flushTraceSync]);
+    resetDebugHistory();
+  }, [flushTraceSync, resetDebugHistory]);
 
   const clearEntries = useCallback(() => {
     if (flushTimeout.current !== null) {
@@ -366,6 +413,8 @@ export function useInterpreter() {
     isStepping,
     debugLine,
     debugVariables,
+    debugCursor,
+    debugStepCount,
     errorLine,
     // Breakpoints
     breakpoints,
@@ -376,6 +425,7 @@ export function useInterpreter() {
     run,
     debugRun,
     step,
+    stepBack,
     continueExecution,
     provideInput,
     stop,
