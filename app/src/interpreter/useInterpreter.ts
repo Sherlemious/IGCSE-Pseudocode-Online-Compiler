@@ -34,6 +34,9 @@ export function useInterpreter() {
   // through (display-only; execution stays parked at the furthest point).
   const [debugCursor, setDebugCursor] = useState(-1); // index into the history
   const [debugStepCount, setDebugStepCount] = useState(0); // history length
+  // Terminal-output boundary for the step being reviewed: how many entries were
+  // visible at that pause. null = show everything (live edge / not stepping).
+  const [debugVisibleLen, setDebugVisibleLen] = useState<number | null>(null);
 
   // Breakpoints
   const [breakpoints, setBreakpoints] = useState<Set<number>>(new Set());
@@ -48,11 +51,16 @@ export function useInterpreter() {
   const abortRef = useRef<AbortController | null>(null);
   const outputBuffer = useRef<string[]>([]);
   const flushTimeout = useRef<number | null>(null);
+  // Running count of terminal entries, kept in sync synchronously at every
+  // append site. `entries.length` isn't reliable at pause time because output
+  // is rAF-buffered; this ref lets us record an accurate boundary per step.
+  const entriesLenRef = useRef(0);
 
   // Step-history buffer. Refs are the source of truth for step/stepBack logic
   // (read synchronously, immune to React batching / StrictMode double-invokes);
-  // the mirrored state above drives rendering.
-  const debugHistoryRef = useRef<{ line: number; variables: DebugVariable[] }[]>([]);
+  // the mirrored state above drives rendering. `outputLen` is the entry count
+  // that was visible at each pause, so step-back can hide later output.
+  const debugHistoryRef = useRef<{ line: number; variables: DebugVariable[]; outputLen: number }[]>([]);
   const debugCursorRef = useRef(-1);
 
   const resetDebugHistory = useCallback(() => {
@@ -62,18 +70,23 @@ export function useInterpreter() {
     setDebugStepCount(0);
     setDebugLine(null);
     setDebugVariables([]);
+    setDebugVisibleLen(null);
   }, []);
 
   // Record a fresh pause point (from onBeforeStep / onBreakpoint) and move the
   // cursor to the live edge. line + variables always come from the same snapshot.
-  const pushDebugSnapshot = useCallback((line: number, variables: DebugVariable[]) => {
-    debugHistoryRef.current.push({ line, variables });
-    debugCursorRef.current = debugHistoryRef.current.length - 1;
-    setDebugLine(line);
-    setDebugVariables(variables);
-    setDebugCursor(debugCursorRef.current);
-    setDebugStepCount(debugHistoryRef.current.length);
-  }, []);
+  const pushDebugSnapshot = useCallback(
+    (line: number, variables: DebugVariable[], outputLen: number) => {
+      debugHistoryRef.current.push({ line, variables, outputLen });
+      debugCursorRef.current = debugHistoryRef.current.length - 1;
+      setDebugLine(line);
+      setDebugVariables(variables);
+      setDebugCursor(debugCursorRef.current);
+      setDebugStepCount(debugHistoryRef.current.length);
+      setDebugVisibleLen(outputLen);
+    },
+    []
+  );
 
   // Trace buffers — accumulated off-React and flushed via rAF to avoid a state
   // update per executed statement. `traceOutputBuffer` collects output emitted
@@ -96,6 +109,7 @@ export function useInterpreter() {
   const flushOutput = useCallback(() => {
     if (outputBuffer.current.length > 0) {
       const newEntries = outputBuffer.current.map((text) => ({ kind: 'output' as const, text }));
+      entriesLenRef.current += newEntries.length;
       setEntries((prev) => [...prev, ...newEntries]);
       outputBuffer.current = [];
     }
@@ -137,6 +151,7 @@ export function useInterpreter() {
         traceFlushTimeout.current = null;
       }
       outputBuffer.current = [];
+      entriesLenRef.current = 0;
       traceBuffer.current = [];
       traceOutputBuffer.current = [];
       traceStepRef.current = 0;
@@ -169,6 +184,7 @@ export function useInterpreter() {
             text: `Line ${e.line ?? '?'} — ${humanizeParseError(e.message, e.line != null ? sourceLines[e.line - 1] : undefined)}`,
           }))
         );
+        entriesLenRef.current = errors.length;
         // Mark first error line
         const firstLine = errors.find((e) => e.line != null)?.line;
         if (firstLine != null) setErrorLine(firstLine);
@@ -179,6 +195,7 @@ export function useInterpreter() {
 
       if (!tree) {
         setEntries([{ kind: 'error', text: 'Failed to parse pseudocode' }]);
+        entriesLenRef.current = 1;
         setIsRunning(false);
         setIsStepping(false);
         return;
@@ -199,6 +216,7 @@ export function useInterpreter() {
           onInputRequest(variableName: string, prompt?: string) {
             // Flush any pending output before requesting input
             flushOutputSync();
+            entriesLenRef.current += 1;
             setWaitingForInput(true);
             setEntries((prev) => [...prev, { kind: 'input', variableName, prompt, value: '', submitted: false }]);
           },
@@ -219,6 +237,7 @@ export function useInterpreter() {
             flushTraceSync();
             captureError('runtime', error.message, error.line, sourceCode.split('\n').length);
             if (error.line != null) setErrorLine(error.line);
+            entriesLenRef.current += 1;
             setEntries((prev) => [
               ...prev,
               {
@@ -230,12 +249,15 @@ export function useInterpreter() {
             ]);
           },
           onBeforeStep(line: number, variables: DebugVariable[]) {
-            pushDebugSnapshot(line, variables);
+            // Materialize buffered output so the recorded boundary is accurate.
+            flushOutputSync();
+            pushDebugSnapshot(line, variables, entriesLenRef.current);
           },
           onBreakpoint(line: number, variables: DebugVariable[]) {
             // When breakpoint is hit, enter step mode
+            flushOutputSync();
             setIsStepping(true);
-            pushDebugSnapshot(line, variables);
+            pushDebugSnapshot(line, variables, entriesLenRef.current);
           },
           onTrace(line: number, variables: DebugVariable[]) {
             const output = traceOutputBuffer.current;
@@ -269,6 +291,7 @@ export function useInterpreter() {
         if (e instanceof PseudocodeError) {
           captureError('runtime', e.message, e.line, sourceCode.split('\n').length);
           if (e.line != null) setErrorLine(e.line);
+          entriesLenRef.current += 1;
           setEntries((prev) => [
             ...prev,
             {
@@ -280,6 +303,7 @@ export function useInterpreter() {
           ]);
         } else if (e instanceof Error && e.message !== 'Execution cancelled') {
           captureError('runtime', e.message, null, sourceCode.split('\n').length);
+          entriesLenRef.current += 1;
           setEntries((prev) => [...prev, { kind: 'error', text: `Error: ${e.message}` }]);
         }
         setIsRunning(false);
@@ -315,6 +339,7 @@ export function useInterpreter() {
       setDebugLine(snap.line);
       setDebugVariables(snap.variables);
       setDebugCursor(next);
+      setDebugVisibleLen(snap.outputLen);
     } else {
       // At the live edge — actually advance execution to the next statement.
       interpreterRef.current?.step();
@@ -329,6 +354,7 @@ export function useInterpreter() {
     setDebugLine(snap.line);
     setDebugVariables(snap.variables);
     setDebugCursor(prev);
+    setDebugVisibleLen(snap.outputLen);
   }, []);
 
   const continueExecution = useCallback(() => {
@@ -384,6 +410,7 @@ export function useInterpreter() {
       traceFlushTimeout.current = null;
     }
     outputBuffer.current = [];
+    entriesLenRef.current = 0;
     traceBuffer.current = [];
     setEntries([]);
     setTraceRows([]);
@@ -405,8 +432,15 @@ export function useInterpreter() {
     setBreakpoints(new Set());
   }, []);
 
+  // While reviewing an earlier step (cursor behind the live edge), hide the
+  // terminal output produced after that point so the console matches the step.
+  // Never slice while awaiting INPUT — that would hide the pending input field.
+  const reviewingHistory =
+    isStepping && !waitingForInput && debugVisibleLen != null && debugCursor < debugStepCount - 1;
+  const visibleEntries = reviewingHistory ? entries.slice(0, debugVisibleLen) : entries;
+
   return {
-    entries,
+    entries: visibleEntries,
     isRunning,
     waitingForInput,
     // Debug
