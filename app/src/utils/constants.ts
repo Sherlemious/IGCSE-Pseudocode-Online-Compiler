@@ -25,6 +25,13 @@ export const SPLIT_COMPILER_COLLAPSED_KEY = 'pseudocode-split-compiler-collapsed
 /** Window CustomEvent name that opens the global "Report a bug" modal */
 export const OPEN_BUG_REPORT_EVENT = 'pseudocode:open-bug-report';
 
+/**
+ * Window CustomEvent fired when the interpreter persists file(s) to localStorage
+ * (on WRITEFILE/PUTRECORD flush, CLOSEFILE, or end-of-run). `detail.files` lists
+ * the changed file names so an open Files panel can refresh live.
+ */
+export const FILES_CHANGED_EVENT = 'pseudocode:files-changed';
+
 /** Session-only snapshot of the main compiler's latest terminal output. */
 export const BUG_REPORT_OUTPUT_KEY = 'pseudocode_bug_report_output';
 

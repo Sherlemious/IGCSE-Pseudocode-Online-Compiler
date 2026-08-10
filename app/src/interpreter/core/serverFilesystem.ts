@@ -148,6 +148,24 @@ export class ServerVirtualFileSystem {
     this.store.set(filename, content);
   }
 
+  /**
+   * Flush every still-open writable file to the backing store and drop all handles.
+   * Mirrors {@link VirtualFileSystem.closeAll}: the interpreter calls this when a run
+   * ends so data survives even when the student forgot CLOSEFILE. Writes stay buffered
+   * (no per-line persistence) since there is no live viewer to feed server-side. Never
+   * throws — it runs in the interpreter's `finally`.
+   */
+  closeAll(): void {
+    for (const [name, file] of this.openFiles) {
+      if (file.mode === 'WRITE' || file.mode === 'APPEND') {
+        this.store.set(name, file.lines.join('\n'));
+      } else if (file.mode === 'RANDOM') {
+        this.store.set(name, stringifyRandomFile(file.records!));
+      }
+    }
+    this.openFiles.clear();
+  }
+
   reset(): void {
     this.openFiles.clear();
     this.store.clear();

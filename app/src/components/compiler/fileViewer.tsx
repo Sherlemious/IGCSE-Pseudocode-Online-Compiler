@@ -16,7 +16,7 @@ import {
   Download,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { FILE_PREFIX } from '../../utils/constants';
+import { FILE_PREFIX, FILES_CHANGED_EVENT } from '../../utils/constants';
 
 interface FileEntry {
   name: string;
@@ -75,6 +75,23 @@ const FileViewer: React.FC<FileViewerProps> = ({ onOpenFile, open, onOpenChange,
     setFilter('');
     setCopied(false);
   }, [open, initialCreating, loadFiles]);
+
+  // Live updates: when the interpreter persists files mid-run (WRITEFILE/CLOSEFILE/end-of-run),
+  // refresh the list and the currently-viewed file so students can watch a file fill in.
+  useEffect(() => {
+    if (!open) return;
+    const handleFilesChanged = () => {
+      loadFiles();
+      setSelectedFile((cur) => {
+        if (!cur) return cur;
+        const latest = localStorage.getItem(FILE_PREFIX + cur.name);
+        if (latest === null) return null; // file was removed
+        return latest === cur.content ? cur : { ...cur, content: latest };
+      });
+    };
+    window.addEventListener(FILES_CHANGED_EVENT, handleFilesChanged);
+    return () => window.removeEventListener(FILES_CHANGED_EVENT, handleFilesChanged);
+  }, [open, loadFiles]);
 
   const handleSelectFile = (file: FileEntry) => {
     setSelectedFile(file);
