@@ -14,6 +14,7 @@ import { examples } from '../../data/examples';
 async function runCode(
   source: string,
   inputs: string[] = [],
+  fs: ServerVirtualFileSystem = new ServerVirtualFileSystem(),
 ): Promise<{ outputs: string[]; errors: PseudocodeError[] }> {
   const { tree, errors } = parse(source);
   if (errors.length > 0 || !tree) return { outputs: [], errors };
@@ -31,7 +32,7 @@ async function runCode(
       onError: () => {},
     },
     controller.signal,
-    new ServerVirtualFileSystem(),
+    fs,
   );
 
   // Feed queued inputs automatically
@@ -949,6 +950,26 @@ describe('A Level — random-access files', () => {
     ].join('\n') + '\n';
     const { outputs } = await runCode(code);
     expect(outputs).toEqual(['hello']);
+  });
+
+  it('persists a file even when the program forgets CLOSEFILE', async () => {
+    const fs = new ServerVirtualFileSystem();
+
+    // First run writes but never closes the file — closeAll() should flush it at end-of-run.
+    const write = [
+      'OPENFILE "kept.txt" FOR WRITE',
+      'WRITEFILE "kept.txt", "kept"',
+    ].join('\n') + '\n';
+    await runCode(write, [], fs);
+
+    // A later run on the same filesystem can read what was written.
+    const read = [
+      'OPENFILE "kept.txt" FOR READ',
+      'READFILE "kept.txt", line',
+      'OUTPUT line',
+    ].join('\n') + '\n';
+    const { outputs } = await runCode(read, [], fs);
+    expect(outputs).toEqual(['kept']);
   });
 });
 

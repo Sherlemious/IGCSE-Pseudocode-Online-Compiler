@@ -294,6 +294,11 @@ export class Interpreter {
       } else {
         throw e;
       }
+    } finally {
+      // Durability backstop: flush any file the student left open (forgot CLOSEFILE) and
+      // force out the final pending flush frame. Runs on every exit — success, abort,
+      // RETURN-at-top-level and runtime error alike. closeAll() never throws.
+      this.fileSystem.closeAll();
     }
   }
 
