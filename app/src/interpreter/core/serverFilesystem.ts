@@ -55,6 +55,9 @@ export class ServerVirtualFileSystem {
         records = parsed;
       }
       this.openFiles.set(filename, { mode, lines: [], pointer: 1, records });
+      if (content === undefined) {
+        this.store.set(filename, stringifyRandomFile(records));
+      }
       return;
     }
 
@@ -70,11 +73,16 @@ export class ServerVirtualFileSystem {
       this.openFiles.set(filename, { mode, lines, pointer: 0, records: null });
     } else if (mode === 'WRITE') {
       this.openFiles.set(filename, { mode, lines: [], pointer: 0, records: null });
+      this.store.set(filename, '');
     } else {
       // APPEND
-      const content = this.store.get(filename) ?? '';
+      const stored = this.store.get(filename);
+      const content = stored ?? '';
       const lines = content === '' ? [] : content.split('\n');
       this.openFiles.set(filename, { mode, lines, pointer: lines.length, records: null });
+      if (stored === undefined) {
+        this.store.set(filename, '');
+      }
     }
   }
 

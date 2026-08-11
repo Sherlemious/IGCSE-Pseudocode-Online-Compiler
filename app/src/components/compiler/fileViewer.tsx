@@ -451,7 +451,7 @@ const FileViewer: React.FC<FileViewerProps> = ({ onOpenFile, open, onOpenChange,
       <div
         ref={modalRef}
         className="bg-background border-0 md:border border-border md:rounded-md
-          w-full h-full md:h-auto md:max-w-4xl md:max-h-[80vh]
+          w-full h-full md:w-[94vw] md:h-[90vh] md:max-w-[1400px]
           flex flex-col shadow-intense overflow-hidden"
       >
         {/* Header bar */}
@@ -515,7 +515,7 @@ const FileViewer: React.FC<FileViewerProps> = ({ onOpenFile, open, onOpenChange,
 
         {/* Desktop: side-by-side layout */}
         <div className="hidden md:flex flex-1 min-h-0">
-          <div className="w-56 border-r border-border flex flex-col min-h-0 shrink-0">{renderFileList()}</div>
+          <div className="w-64 border-r border-border flex flex-col min-h-0 shrink-0">{renderFileList()}</div>
           {renderFileContent()}
         </div>
 

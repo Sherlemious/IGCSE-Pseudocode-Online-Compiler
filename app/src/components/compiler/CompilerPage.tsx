@@ -14,7 +14,17 @@ import OnboardingTour from '../onboarding/OnboardingTour';
 import FeedbackSurvey, { shouldShowFeedbackSurvey } from '../feedback/FeedbackSurvey';
 import { useInterpreter } from '../../interpreter/useInterpreter';
 import { toast } from 'sonner';
-import { AUTOSAVE_KEY, BUG_REPORT_OUTPUT_KEY, FILE_PREFIX, AUTOSAVE_DELAY, ONBOARDING_KEY, SPLIT_COMPILER_KEY, SPLIT_COMPILER_COLLAPSED_KEY, loadSplitPercent } from '../../utils/constants';
+import {
+  AUTOSAVE_KEY,
+  BUG_REPORT_OUTPUT_KEY,
+  FILE_PREFIX,
+  FILES_CHANGED_EVENT,
+  AUTOSAVE_DELAY,
+  ONBOARDING_KEY,
+  SPLIT_COMPILER_KEY,
+  SPLIT_COMPILER_COLLAPSED_KEY,
+  loadSplitPercent,
+} from '../../utils/constants';
 import { formatOutputEntries } from '../../utils/formatOutputEntries';
 
 const FEEDBACK_RUN_THRESHOLD = 2;
@@ -185,25 +195,48 @@ const CompilerPage: React.FC = () => {
     setLineCount(activeTab.content.split('\n').length);
   }, [activeTab.content]);
 
-  // Auto-save tabs with debounce
+  // Auto-save the main scratch file with a debounce. Files opened from the
+  // virtual filesystem are persisted immediately in handleCodeChange so a
+  // stale open tab cannot overwrite fresh WRITEFILE output on this timer.
   const saveTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const mainTabContent = tabs.find((tab) => tab.id === 'main')?.content ?? '';
   useEffect(() => {
     clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(() => {
-      tabs.forEach((tab) => {
-        try {
-          if (tab.id === 'main') {
-            localStorage.setItem(AUTOSAVE_KEY, tab.content);
-          } else if (tab.id.startsWith('file:')) {
-            localStorage.setItem(FILE_PREFIX + tab.name, tab.content);
-          }
-        } catch {
-          toast.error('Autosave failed: Storage full?');
-        }
-      });
+      try {
+        localStorage.setItem(AUTOSAVE_KEY, mainTabContent);
+      } catch {
+        toast.error('Autosave failed: Storage full?');
+      }
     }, AUTOSAVE_DELAY);
     return () => clearTimeout(saveTimer.current);
-  }, [tabs]);
+  }, [mainTabContent]);
+
+  // Keep file editor tabs in sync with WRITEFILE/PUTRECORD and editor saves.
+  // This prevents an open, stale tab from later restoring old
+  // content over an interpreter write.
+  useEffect(() => {
+    const handleFilesChanged = (event: Event) => {
+      const changedFiles = (event as CustomEvent<{ files?: string[] }>).detail?.files;
+      if (!changedFiles?.length) return;
+      const changed = new Set(changedFiles);
+
+      setTabs((prev) => {
+        let didChange = false;
+        const next = prev.map((tab) => {
+          if (!tab.id.startsWith('file:') || !changed.has(tab.name)) return tab;
+          const latest = localStorage.getItem(FILE_PREFIX + tab.name);
+          if (latest === null || latest === tab.content) return tab;
+          didChange = true;
+          return { ...tab, content: latest };
+        });
+        return didChange ? next : prev;
+      });
+    };
+
+    window.addEventListener(FILES_CHANGED_EVENT, handleFilesChanged);
+    return () => window.removeEventListener(FILES_CHANGED_EVENT, handleFilesChanged);
+  }, []);
 
   // Resizable split pane (persisted; loaded post-mount to avoid SSR mismatch).
   // Dragging past the clamp zone snaps the pane shut, leaving a slim rail
@@ -329,6 +362,18 @@ const CompilerPage: React.FC = () => {
   const handleCodeChange = useCallback(
     (newCode: string) => {
       setTabs((prev) => prev.map((t) => (t.id === activeTabId ? { ...t, content: newCode } : t)));
+
+      if (activeTabId.startsWith('file:')) {
+        const fileName = activeTabId.slice('file:'.length);
+        try {
+          localStorage.setItem(FILE_PREFIX + fileName, newCode);
+          window.dispatchEvent(
+            new CustomEvent(FILES_CHANGED_EVENT, { detail: { files: [fileName] } }),
+          );
+        } catch {
+          toast.error('Autosave failed: Storage full?');
+        }
+      }
     },
     [activeTabId]
   );

@@ -53,7 +53,12 @@ export class VirtualFileSystem {
         }
         records = parsed;
       }
-      this.openFiles.set(filename, { mode, lines: [], pointer: 1, records });
+      const file = { mode, lines: [], pointer: 1, records } satisfies OpenFile;
+      this.openFiles.set(filename, file);
+      if (content === null) {
+        this.persist(filename, file);
+        this.emitChange([filename]);
+      }
       return;
     }
 
@@ -68,12 +73,22 @@ export class VirtualFileSystem {
       const lines = content === '' ? [] : content.split('\n');
       this.openFiles.set(filename, { mode, lines, pointer: 0, records: null });
     } else if (mode === 'WRITE') {
-      this.openFiles.set(filename, { mode, lines: [], pointer: 0, records: null });
+      const file = { mode, lines: [], pointer: 0, records: null } satisfies OpenFile;
+      this.openFiles.set(filename, file);
+      // FOR WRITE creates (or truncates) the file as soon as OPENFILE succeeds.
+      this.persist(filename, file);
+      this.emitChange([filename]);
     } else {
       // APPEND
-      const content = localStorage.getItem(FILE_PREFIX + filename) ?? '';
+      const stored = localStorage.getItem(FILE_PREFIX + filename);
+      const content = stored ?? '';
       const lines = content === '' ? [] : content.split('\n');
-      this.openFiles.set(filename, { mode, lines, pointer: lines.length, records: null });
+      const file = { mode, lines, pointer: lines.length, records: null } satisfies OpenFile;
+      this.openFiles.set(filename, file);
+      if (stored === null) {
+        this.persist(filename, file);
+        this.emitChange([filename]);
+      }
     }
   }
 
