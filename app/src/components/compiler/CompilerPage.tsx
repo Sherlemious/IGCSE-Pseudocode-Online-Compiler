@@ -1,7 +1,14 @@
 'use client';
 
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { PanelLeftOpen, PanelRightOpen, PanelTopOpen, PanelBottomOpen } from 'lucide-react';
+import {
+  FileText,
+  PanelLeftOpen,
+  PanelRightOpen,
+  PanelTopOpen,
+  PanelBottomOpen,
+  Undo2,
+} from 'lucide-react';
 import CodeInput, { type EditorTab, type CursorPosition } from './codeInput';
 import { useRegisterCommands } from '../common/CommandPalette';
 import OutputDisplay from './outputDisplay';
@@ -402,17 +409,59 @@ const CompilerPage: React.FC = () => {
   const handleCloseTab = useCallback(
     (tabId: string) => {
       if (tabId === 'main') return;
-      setTabs((prev) => {
-        const newTabs = prev.filter((t) => t.id !== tabId);
-        if (tabId === activeTabId) {
-          const closedIndex = prev.findIndex((t) => t.id === tabId);
-          const newActive = newTabs[Math.min(closedIndex, newTabs.length - 1)] ?? newTabs[0];
-          setActiveTabId(newActive.id);
+      const closedIndex = tabs.findIndex((tab) => tab.id === tabId);
+      if (closedIndex === -1) return;
+
+      const closed = tabs[closedIndex];
+      const newTabs = tabs.filter((tab) => tab.id !== tabId);
+      setTabs(newTabs);
+
+      if (tabId === activeTabId) {
+        const newActive = newTabs[Math.min(closedIndex, newTabs.length - 1)] ?? newTabs[0];
+        setActiveTabId(newActive.id);
+      }
+
+      toast.custom(
+        (toastId) => (
+          <div className="relative flex min-w-[280px] max-w-[calc(100vw-2rem)] items-center gap-3 overflow-hidden rounded-2xl border border-border/80 bg-surface/95 p-2.5 pr-3 text-light-text shadow-intense backdrop-blur-md">
+            <span className="absolute inset-y-2 left-0 w-0.5 rounded-r-full bg-primary" />
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary ring-1 ring-inset ring-primary/20">
+              <FileText size={17} aria-hidden="true" />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block truncate text-xs font-semibold" title={closed.name}>
+                {closed.name}
+              </span>
+              <span className="block text-[10px] text-dark-text">Closed · saved in Files</span>
+            </span>
+            <button
+              type="button"
+              onClick={() => {
+                setTabs((currentTabs) => {
+                  if (currentTabs.some((tab) => tab.id === closed.id)) return currentTabs;
+                  const restoredTabs = [...currentTabs];
+                  restoredTabs.splice(Math.min(closedIndex, restoredTabs.length), 0, closed);
+                  return restoredTabs;
+                });
+                setActiveTabId(closed.id);
+                toast.dismiss(toastId);
+              }}
+              className="flex shrink-0 items-center gap-1.5 rounded-lg border border-primary/20 bg-primary/10 px-2.5 py-1.5 text-[11px] font-semibold text-primary transition-colors hover:border-primary/40 hover:bg-primary/20"
+              aria-label={`Undo closing ${closed.name}`}
+            >
+              <Undo2 size={12} aria-hidden="true" />
+              Undo
+            </button>
+          </div>
+        ),
+        {
+          duration: 3500,
+          position: 'bottom-right',
+          unstyled: true,
         }
-        return newTabs;
-      });
+      );
     },
-    [activeTabId]
+    [activeTabId, tabs]
   );
 
   const handleTabSwitch = useCallback((tabId: string) => {
