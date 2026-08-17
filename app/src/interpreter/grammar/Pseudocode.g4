@@ -174,7 +174,7 @@ caseLabel
 // ─── FOR / NEXT ─────────────────────────────────────────────────────────────
 
 forStatement
-    : FOR identifier (LARROW | EQUALS) expr TO expr (STEP expr)? NEWLINE* block NEWLINE* NEXT identifier
+    : FOR identifier (LARROW | EQUALS) expr TO expr (STEP expr)? NEWLINE* block NEWLINE* NEXT identifier?
     ;
 
 // ─── WHILE / ENDWHILE ──────────────────────────────────────────────────────
