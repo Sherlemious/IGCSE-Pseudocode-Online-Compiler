@@ -15,11 +15,17 @@ export interface GradeResult {
 /**
  * Runs pseudocode with a queue of pre-supplied inputs and compares the output
  * against expectedOutput (whitespace-normalised).
+ *
+ * `initialFiles` is the same JSON-encoded `{ filename: content }` string
+ * stored in `TestCase.initialFiles` — it pre-populates the virtual file
+ * system for questions that read from a file the student didn't create
+ * (e.g. "names.txt"). Malformed JSON is ignored rather than thrown.
  */
 export async function gradeSubmission(
   code: string,
   inputs: string[],
   expectedOutput: string,
+  initialFiles?: string | null,
   timeoutMs = 10_000,
 ): Promise<GradeResult> {
   const start = Date.now();
@@ -54,6 +60,17 @@ export async function gradeSubmission(
   let interpreterRef: Interpreter | null = null;
 
   const fs = new ServerVirtualFileSystem();
+  if (initialFiles) {
+    try {
+      const files = JSON.parse(initialFiles) as Record<string, string>;
+      for (const [filename, content] of Object.entries(files)) {
+        fs.seedFile(filename, content);
+      }
+    } catch {
+      // Malformed initialFiles shouldn't block grading — the program will
+      // surface its own "file does not exist" error if it tries to read one.
+    }
+  }
 
   const interpreter = new Interpreter(
     {

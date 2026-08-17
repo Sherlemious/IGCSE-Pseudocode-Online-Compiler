@@ -77,7 +77,7 @@ export async function POST(request: NextRequest, { params }: Props) {
   // Grade all test cases in parallel
   const settled = await Promise.allSettled(
     question.testCases.map((tc) =>
-      gradeSubmission(code, tc.inputs, tc.expectedOutput, timeout)
+      gradeSubmission(code, tc.inputs, tc.expectedOutput, tc.initialFiles, timeout)
     )
   );
 

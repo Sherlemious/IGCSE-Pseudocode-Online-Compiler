@@ -34,7 +34,7 @@ export async function POST(req: Request, { params }: Context) {
 
   // Grade all test cases in parallel
   const results = await Promise.allSettled(
-    testCases.map((tc) => gradeSubmission(code, tc.inputs, tc.expectedOutput))
+    testCases.map((tc) => gradeSubmission(code, tc.inputs, tc.expectedOutput, tc.initialFiles))
   );
 
   let passCount = 0;

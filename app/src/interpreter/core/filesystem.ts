@@ -119,6 +119,16 @@ export class VirtualFileSystem {
     this.scheduleFlush(filename);
   }
 
+  /**
+   * Pre-populate a file's stored content before the program runs, without
+   * going through OPENFILE. Mirrors ServerVirtualFileSystem.seedFile — used
+   * to seed TestCase.initialFiles for questions that read from a file the
+   * student didn't create (e.g. "names.txt").
+   */
+  seedFile(filename: string, content: string): void {
+    localStorage.setItem(FILE_PREFIX + filename, content);
+  }
+
   closeFile(filename: string): void {
     const file = this.openFiles.get(filename);
     if (!file) {

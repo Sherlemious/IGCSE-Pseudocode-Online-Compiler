@@ -9,10 +9,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }
 
-  const { code, inputs, expectedOutput, timeoutMs } = body as {
+  const { code, inputs, expectedOutput, initialFiles, timeoutMs } = body as {
     code?: unknown;
     inputs?: unknown;
     expectedOutput?: unknown;
+    initialFiles?: unknown;
     timeoutMs?: unknown;
   };
 
@@ -25,9 +26,17 @@ export async function POST(request: NextRequest) {
   if (typeof expectedOutput !== 'string') {
     return NextResponse.json({ error: '`expectedOutput` is required' }, { status: 400 });
   }
+  if (
+    initialFiles !== undefined &&
+    (typeof initialFiles !== 'object' || initialFiles === null || Array.isArray(initialFiles) ||
+      !Object.values(initialFiles).every((v) => typeof v === 'string'))
+  ) {
+    return NextResponse.json({ error: '`initialFiles` must be an object of filename → content strings' }, { status: 400 });
+  }
 
   const timeout = typeof timeoutMs === 'number' ? Math.min(timeoutMs, 30_000) : 10_000;
+  const filesJson = initialFiles !== undefined ? JSON.stringify(initialFiles) : undefined;
 
-  const result = await gradeSubmission(code, inputs as string[], expectedOutput, timeout);
+  const result = await gradeSubmission(code, inputs as string[], expectedOutput, filesJson, timeout);
   return NextResponse.json(result);
 }

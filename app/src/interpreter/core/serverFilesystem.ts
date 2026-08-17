@@ -103,6 +103,16 @@ export class ServerVirtualFileSystem {
     file.lines.push(data);
   }
 
+  /**
+   * Pre-populate a file's stored content before the program runs, without
+   * going through OPENFILE. Used to seed TestCase.initialFiles for questions
+   * that read from a file the student didn't create (e.g. "names.txt").
+   * Must not be called while the same file is already open.
+   */
+  seedFile(filename: string, content: string): void {
+    this.store.set(filename, content);
+  }
+
   closeFile(filename: string): void {
     const file = this.openFiles.get(filename);
     if (!file) throw new RuntimeError(`File '${filename}' is not open`);
