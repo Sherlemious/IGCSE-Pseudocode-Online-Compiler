@@ -324,6 +324,7 @@ export default function PracticeWorkspace({ questionId, starterCode, savedCode, 
       document.removeEventListener('mouseup', onEnd);
       document.removeEventListener('touchmove', onMove);
       document.removeEventListener('touchend', onEnd);
+      document.removeEventListener('touchcancel', onEnd);
       document.body.style.cursor = '';
       document.body.style.userSelect = '';
       try { localStorage.setItem(SPLIT_PRACTICE_KEY, String(splitPercentRef.current)); } catch { /* ignore */ }
@@ -334,6 +335,9 @@ export default function PracticeWorkspace({ questionId, starterCode, savedCode, 
     document.addEventListener('mouseup', onEnd);
     document.addEventListener('touchmove', onMove);
     document.addEventListener('touchend', onEnd);
+    // A cancelled touch (e.g. divider unmounts mid-drag) fires touchcancel,
+    // not touchend — clean up on both so a stale drag can't hijack scrolling.
+    document.addEventListener('touchcancel', onEnd);
   }, []);
 
   /* ── Derived state ──────────────────────────────────── */

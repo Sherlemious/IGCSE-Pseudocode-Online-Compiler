@@ -308,6 +308,7 @@ const CompilerPage: React.FC = () => {
       document.removeEventListener('mouseup', onEnd);
       document.removeEventListener('touchmove', onMove);
       document.removeEventListener('touchend', onEnd);
+      document.removeEventListener('touchcancel', onEnd);
       document.body.style.cursor = '';
       document.body.style.userSelect = '';
       persistSplit();
@@ -319,6 +320,10 @@ const CompilerPage: React.FC = () => {
     document.addEventListener('mouseup', onEnd);
     document.addEventListener('touchmove', onMove);
     document.addEventListener('touchend', onEnd);
+    // Snapping the pane shut unmounts the divider mid-drag, so the browser
+    // fires touchcancel instead of touchend. Without this the drag never ends
+    // and the next scroll re-expands the collapsed pane.
+    document.addEventListener('touchcancel', onEnd);
   }, [persistSplit]);
 
   const setSplit = useCallback((pct: number, coll: 'editor' | 'output' | null) => {

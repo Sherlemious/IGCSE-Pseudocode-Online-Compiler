@@ -39,9 +39,13 @@ const SplitDivider: React.FC<SplitDividerProps> = ({
         setDragging(false);
         document.removeEventListener('mouseup', clear);
         document.removeEventListener('touchend', clear);
+        document.removeEventListener('touchcancel', clear);
       };
       document.addEventListener('mouseup', clear);
       document.addEventListener('touchend', clear);
+      // Collapsing a pane can unmount this divider mid-drag, which fires
+      // touchcancel rather than touchend — clear on both so state doesn't stick.
+      document.addEventListener('touchcancel', clear);
       onDragStart(e);
     },
     [onDragStart]

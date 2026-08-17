@@ -134,6 +134,7 @@ const OutputDisplay: React.FC<OutputDisplayProps> = ({
         document.removeEventListener('mouseup', onEnd);
         document.removeEventListener('touchmove', onMove);
         document.removeEventListener('touchend', onEnd);
+        document.removeEventListener('touchcancel', onEnd);
         document.body.style.cursor = '';
         document.body.style.userSelect = '';
         try { localStorage.setItem(SPLIT_VARS_KEY, String(varsPanelHeightRef.current)); } catch { /* ignore */ }
@@ -145,6 +146,9 @@ const OutputDisplay: React.FC<OutputDisplayProps> = ({
       document.addEventListener('mouseup', onEnd);
       document.addEventListener('touchmove', onMove);
       document.addEventListener('touchend', onEnd);
+      // Collapsing the panel mid-drag fires touchcancel, not touchend — clean
+      // up on both so a stale drag listener can't hijack later scrolling.
+      document.addEventListener('touchcancel', onEnd);
     },
     [isStepping, varsExpanded]
   );
