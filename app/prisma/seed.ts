@@ -8375,6 +8375,1582 @@ NEXT Index`,
       { inputs: ['5', 'P', '-4', 'P', '0', 'O', 'P', '9', 'O'], expectedOutput: 'TRUE\nTRUE\n0\nTRUE\n9', description: 'Interleaved operations', sortOrder: 3, isHidden: true },
     ],
   },
+
+  // ════════════════════════════════════════ PAST-PAPER BATCH — Aug 2026 ═══
+  // 9618 sessions/papers previously uncovered (Oct/Nov 2023, May/June 2023,
+  // June 2025, Oct/Nov 2024) and 0478 sessions previously uncovered
+  // (May/June 2024, Oct/Nov 2024, Feb/Mar 2021). Each question below is an
+  // original problem written in the style of that real session/paper, not a
+  // reproduction of the actual exam text.
+
+  {
+    title: 'Balanced Brackets Checker',
+    description: `A string contains only the characters \`(\` and \`)\`. Use an array-based stack to check whether the brackets are balanced — every \`(\` must have a matching \`)\`, closing brackets may never appear before their opener, and no bracket may be left unmatched at the end.
+
+**Input:** One string of brackets.
+**Output:** \`TRUE\` if balanced, \`FALSE\` otherwise.
+
+**Example:**
+\`\`\`
+Input:  (())
+Output: TRUE
+\`\`\``,
+    difficulty: 'HARD' as const,
+    topic: 'Stacks',
+    tags: ['AS & A Level', '9618', 'Oct/Nov 2023', 'Paper 22', 'Past Paper', 'Unseen', 'Stacks'],
+    year: 2023,
+    session: 'Oct/Nov',
+    variant: 2,
+    paper: '9618/22',
+    starterCode: `FUNCTION IsBalanced(Expr : STRING) RETURNS BOOLEAN
+    DECLARE StackData : ARRAY[0:49] OF STRING
+    DECLARE Top : INTEGER
+    DECLARE Index : INTEGER
+    DECLARE Ch : STRING
+
+    Top <- -1
+    // Push "(" onto the stack. When you see ")", pop — unless the stack is empty.
+
+ENDFUNCTION
+
+DECLARE Expr : STRING
+INPUT Expr
+OUTPUT IsBalanced(Expr)`,
+    hints: [
+      'Push "(" onto the stack. When you see ")", the stack must not be empty — pop it.',
+      'If you ever try to pop from an empty stack, the brackets are unbalanced immediately — return FALSE.',
+      'After scanning the whole string, the expression is only balanced if the stack is empty (Top = -1).',
+    ],
+    solution: `FUNCTION IsBalanced(Expr : STRING) RETURNS BOOLEAN
+    DECLARE StackData : ARRAY[0:49] OF STRING
+    DECLARE Top : INTEGER
+    DECLARE Index : INTEGER
+    DECLARE Ch : STRING
+
+    Top <- -1
+    FOR Index <- 1 TO LENGTH(Expr)
+        Ch <- SUBSTRING(Expr, Index, 1)
+        IF Ch = "(" THEN
+            Top <- Top + 1
+            StackData[Top] <- Ch
+        ELSE
+            IF Ch = ")" THEN
+                IF Top = -1 THEN
+                    RETURN FALSE
+                ELSE
+                    Top <- Top - 1
+                ENDIF
+            ENDIF
+        ENDIF
+    NEXT Index
+
+    IF Top = -1 THEN
+        RETURN TRUE
+    ELSE
+        RETURN FALSE
+    ENDIF
+ENDFUNCTION
+
+DECLARE Expr : STRING
+INPUT Expr
+OUTPUT IsBalanced(Expr)`,
+    solutionExplanation: "Each '(' is pushed onto the stack. Each ')' must pop a matching '(' — popping an empty stack means the brackets are unbalanced immediately. The expression is only balanced once the whole string has been scanned and the stack is completely empty.",
+    testCases: [
+      { inputs: ['(())'], expectedOutput: 'TRUE', description: 'Nested brackets balance', sortOrder: 0 },
+      { inputs: ['(()'], expectedOutput: 'FALSE', description: 'Missing closing bracket', sortOrder: 1 },
+      { inputs: [')('], expectedOutput: 'FALSE', description: 'Closing bracket before any opener', sortOrder: 2 },
+      { inputs: ['((()))()'], expectedOutput: 'TRUE', description: 'Longer balanced expression', sortOrder: 3, isHidden: true },
+      { inputs: ['(())(('], expectedOutput: 'FALSE', description: 'Unmatched opens left at the end', sortOrder: 4, isHidden: true },
+    ],
+  },
+
+  {
+    title: 'Bubble Sort Pass Counter',
+    description: `Sort 6 integers into ascending order using bubble sort, and count how many swaps the algorithm performs. Output the sorted array (one value per line), then the swap count on the final line.
+
+**Input:** 6 integers.
+**Output:** The 6 sorted values, one per line, followed by the number of swaps.
+
+**Example:**
+\`\`\`
+Input:  5
+        3
+        8
+        4
+        2
+        7
+Output: 2
+        3
+        4
+        5
+        7
+        8
+        8
+\`\`\``,
+    difficulty: 'MEDIUM' as const,
+    topic: 'Algorithms',
+    tags: ['AS & A Level', '9618', 'Oct/Nov 2023', 'Paper 22', 'Past Paper', 'Unseen', 'Sorting'],
+    year: 2023,
+    session: 'Oct/Nov',
+    variant: 2,
+    paper: '9618/22',
+    starterCode: `DECLARE Data : ARRAY[1:6] OF INTEGER
+DECLARE Swaps : INTEGER
+
+PROCEDURE BubbleSort()
+    // Sort Data ascending, counting every swap in Swaps
+ENDPROCEDURE
+
+DECLARE Index : INTEGER
+FOR Index <- 1 TO 6
+    INPUT Data[Index]
+NEXT Index
+
+CALL BubbleSort()
+
+FOR Index <- 1 TO 6
+    OUTPUT Data[Index]
+NEXT Index
+OUTPUT Swaps`,
+    hints: [
+      'Use the standard nested bubble sort loops: an outer pass counter and an inner comparison loop that shrinks each pass.',
+      'Set Swaps <- 0 before sorting, and increase it by 1 every time you actually swap two elements.',
+      'Swap Data[j] and Data[j + 1] with a Temp variable whenever Data[j] > Data[j + 1].',
+    ],
+    solution: `DECLARE Data : ARRAY[1:6] OF INTEGER
+DECLARE Swaps : INTEGER
+
+PROCEDURE BubbleSort()
+    DECLARE i, j, Temp : INTEGER
+    Swaps <- 0
+    FOR i <- 1 TO 5
+        FOR j <- 1 TO 6 - i
+            IF Data[j] > Data[j + 1] THEN
+                Temp <- Data[j]
+                Data[j] <- Data[j + 1]
+                Data[j + 1] <- Temp
+                Swaps <- Swaps + 1
+            ENDIF
+        NEXT j
+    NEXT i
+ENDPROCEDURE
+
+DECLARE Index : INTEGER
+FOR Index <- 1 TO 6
+    INPUT Data[Index]
+NEXT Index
+
+CALL BubbleSort()
+
+FOR Index <- 1 TO 6
+    OUTPUT Data[Index]
+NEXT Index
+OUTPUT Swaps`,
+    solutionExplanation: 'Each pass compares adjacent elements and swaps out-of-order pairs, counting every swap. Later passes only need to check a shrinking prefix because the largest remaining values have already bubbled to the end.',
+    testCases: [
+      { inputs: ['5', '3', '8', '4', '2', '7'], expectedOutput: '2\n3\n4\n5\n7\n8\n8', description: 'Mixed values', sortOrder: 0 },
+      { inputs: ['1', '2', '3', '4', '5', '6'], expectedOutput: '1\n2\n3\n4\n5\n6\n0', description: 'Already sorted — no swaps', sortOrder: 1 },
+      { inputs: ['6', '5', '4', '3', '2', '1'], expectedOutput: '1\n2\n3\n4\n5\n6\n15', description: 'Reverse sorted — maximum swaps', sortOrder: 2 },
+      { inputs: ['4', '4', '4', '4', '4', '4'], expectedOutput: '4\n4\n4\n4\n4\n4\n0', description: 'All equal — no swaps', sortOrder: 3, isHidden: true },
+      { inputs: ['2', '1', '4', '3', '6', '5'], expectedOutput: '1\n2\n3\n4\n5\n6\n3', description: 'Three adjacent pairs swapped', sortOrder: 4, isHidden: true },
+    ],
+  },
+
+  {
+    title: 'Singly Linked List Traversal',
+    description: `A singly linked list is represented using two parallel arrays: \`ListData\` holds the value stored at each index, and \`NextPointer\` holds the index of the next node (or \`-1\` for the end of the list). \`StartPointer\` holds the index of the first node.
+
+Nodes are **not** necessarily stored in list order — you must follow the pointers, not the array index order. Write procedure \`PrintList()\` that outputs each value from \`StartPointer\` to the end of the list.
+
+**Input:** Number of nodes, then for each storage index: its value and its next-pointer, then \`StartPointer\`.
+**Output:** Each value in list order, one per line.
+
+**Example:**
+\`\`\`
+Input:  3
+        Bob
+        2
+        Amy
+        -1
+        Cy
+        1
+        0
+Output: Bob
+        Cy
+        Amy
+\`\`\``,
+    difficulty: 'MEDIUM' as const,
+    topic: 'Linked Lists',
+    tags: ['AS & A Level', '9618', 'June 2025', 'Paper 12', 'Past Paper', 'Unseen', 'Linked Lists'],
+    year: 2025,
+    session: 'May/June',
+    variant: 2,
+    paper: '9618/12',
+    starterCode: `DECLARE ListData : ARRAY[0:9] OF STRING
+DECLARE NextPointer : ARRAY[0:9] OF INTEGER
+DECLARE StartPointer : INTEGER
+DECLARE NodeCount : INTEGER
+
+PROCEDURE PrintList()
+    // Follow the pointers from StartPointer and output each value
+ENDPROCEDURE
+
+DECLARE Index : INTEGER
+INPUT NodeCount
+FOR Index <- 0 TO NodeCount - 1
+    INPUT ListData[Index]
+    INPUT NextPointer[Index]
+NEXT Index
+INPUT StartPointer
+
+CALL PrintList()`,
+    hints: [
+      'Do not loop through the array in index order — follow NextPointer starting from StartPointer instead.',
+      'Use a Current variable initialised to StartPointer, and stop the loop when Current = -1.',
+      'Inside the loop: OUTPUT ListData[Current], then move on with Current <- NextPointer[Current].',
+    ],
+    solution: `DECLARE ListData : ARRAY[0:9] OF STRING
+DECLARE NextPointer : ARRAY[0:9] OF INTEGER
+DECLARE StartPointer : INTEGER
+DECLARE NodeCount : INTEGER
+
+PROCEDURE PrintList()
+    DECLARE Current : INTEGER
+    Current <- StartPointer
+    WHILE Current <> -1 DO
+        OUTPUT ListData[Current]
+        Current <- NextPointer[Current]
+    ENDWHILE
+ENDPROCEDURE
+
+DECLARE Index : INTEGER
+INPUT NodeCount
+FOR Index <- 0 TO NodeCount - 1
+    INPUT ListData[Index]
+    INPUT NextPointer[Index]
+NEXT Index
+INPUT StartPointer
+
+CALL PrintList()`,
+    solutionExplanation: 'A Current index starts at StartPointer. Each iteration outputs the value stored at Current, then jumps to the next node using NextPointer[Current]. The traversal stops once Current reaches -1.',
+    testCases: [
+      { inputs: ['3', 'Bob', '2', 'Amy', '-1', 'Cy', '1', '0'], expectedOutput: 'Bob\nCy\nAmy', description: 'Nodes stored out of list order', sortOrder: 0 },
+      { inputs: ['1', 'Solo', '-1', '0'], expectedOutput: 'Solo', description: 'Single-node list', sortOrder: 1 },
+      { inputs: ['4', 'D', '-1', 'C', '0', 'B', '1', 'A', '2', '3'], expectedOutput: 'A\nB\nC\nD', description: 'Reversed storage order', sortOrder: 2, isHidden: true },
+      { inputs: ['3', 'X', '1', 'Y', '2', 'Z', '-1', '1'], expectedOutput: 'Y\nZ', description: 'StartPointer skips an unused node', sortOrder: 3, isHidden: true },
+    ],
+  },
+
+  {
+    title: 'Insertion Sort an Array',
+    description: `Sort 6 integers into ascending order using **insertion sort** — build up a sorted section on the left of the array, inserting each new element into its correct position.
+
+**Input:** 6 integers.
+**Output:** The sorted array, one value per line.
+
+**Example:**
+\`\`\`
+Input:  5
+        3
+        8
+        4
+        2
+        7
+Output: 2
+        3
+        4
+        5
+        7
+        8
+\`\`\``,
+    difficulty: 'MEDIUM' as const,
+    topic: 'Algorithms',
+    tags: ['AS & A Level', '9618', 'June 2025', 'Paper 22', 'Past Paper', 'Unseen', 'Sorting'],
+    year: 2025,
+    session: 'May/June',
+    variant: 2,
+    paper: '9618/22',
+    starterCode: `DECLARE Data : ARRAY[1:6] OF INTEGER
+
+PROCEDURE InsertionSort()
+    // Sort Data ascending using insertion sort
+ENDPROCEDURE
+
+DECLARE Index : INTEGER
+FOR Index <- 1 TO 6
+    INPUT Data[Index]
+NEXT Index
+
+CALL InsertionSort()
+
+FOR Index <- 1 TO 6
+    OUTPUT Data[Index]
+NEXT Index`,
+    hints: [
+      'Insertion sort builds the sorted section on the left, one element at a time, starting from index 2.',
+      'Store the current element in Key, then shift larger elements one position to the right to make space.',
+      'Use a WHILE loop with condition j >= 1 AND Data[j] > Key to shift, then place Key at Data[j + 1] once the loop stops.',
+    ],
+    solution: `DECLARE Data : ARRAY[1:6] OF INTEGER
+
+PROCEDURE InsertionSort()
+    DECLARE i, j, Key : INTEGER
+    FOR i <- 2 TO 6
+        Key <- Data[i]
+        j <- i - 1
+        WHILE j >= 1 AND Data[j] > Key DO
+            Data[j + 1] <- Data[j]
+            j <- j - 1
+        ENDWHILE
+        Data[j + 1] <- Key
+    NEXT i
+ENDPROCEDURE
+
+DECLARE Index : INTEGER
+FOR Index <- 1 TO 6
+    INPUT Data[Index]
+NEXT Index
+
+CALL InsertionSort()
+
+FOR Index <- 1 TO 6
+    OUTPUT Data[Index]
+NEXT Index`,
+    solutionExplanation: 'Each new element is held in Key while everything larger than it in the sorted prefix shifts one place right, opening a gap. The loop stops as soon as it finds an element that is not larger than Key, and Key is dropped into that gap.',
+    testCases: [
+      { inputs: ['5', '3', '8', '4', '2', '7'], expectedOutput: '2\n3\n4\n5\n7\n8', description: 'Mixed values', sortOrder: 0 },
+      { inputs: ['1', '2', '3', '4', '5', '6'], expectedOutput: '1\n2\n3\n4\n5\n6', description: 'Already sorted', sortOrder: 1 },
+      { inputs: ['6', '5', '4', '3', '2', '1'], expectedOutput: '1\n2\n3\n4\n5\n6', description: 'Reverse sorted', sortOrder: 2, isHidden: true },
+      { inputs: ['4', '2', '4', '1', '4', '3'], expectedOutput: '1\n2\n3\n4\n4\n4', description: 'Duplicate values', sortOrder: 3, isHidden: true },
+    ],
+  },
+
+  {
+    title: 'Word Count Across a File',
+    description: `Write function \`CountWords(FileName)\` that opens a text file, reads it line by line, and returns the total number of space-separated words across the **whole file**. Each non-empty line has single spaces between words with no leading or trailing spaces; blank lines contain no words.
+
+The test harness reads a number of lines from the user, writes them to \`report.txt\`, then calls \`CountWords("report.txt")\` and outputs the result.
+
+**Input:** Number of lines, then each line of text.
+**Output:** The total word count.
+
+**Example:**
+\`\`\`
+Input:  2
+        The cat sat
+        A dog ran fast
+Output: 7
+\`\`\``,
+    difficulty: 'MEDIUM' as const,
+    topic: 'File Handling',
+    tags: ['AS & A Level', '9618', 'June 2025', 'Paper 22', 'Past Paper', 'Unseen', 'File Handling'],
+    year: 2025,
+    session: 'May/June',
+    variant: 2,
+    paper: '9618/22',
+    starterCode: `FUNCTION CountWords(FileName : STRING) RETURNS INTEGER
+    // Read every line of FileName and count the space-separated words
+ENDFUNCTION
+
+DECLARE LineCount, Index : INTEGER
+DECLARE Line : STRING
+
+INPUT LineCount
+OPENFILE "report.txt" FOR WRITE
+FOR Index <- 1 TO LineCount
+    INPUT Line
+    WRITEFILE "report.txt", Line
+NEXT Index
+CLOSEFILE "report.txt"
+
+OUTPUT CountWords("report.txt")`,
+    hints: [
+      'Open the file, then loop with WHILE NOT EOF, reading one line at a time with READFILE.',
+      "On a non-empty line, the number of words equals the number of spaces plus one — count every space character with SUBSTRING.",
+      'Add each line\'s word count to a running Total, skip blank lines entirely, and RETURN Total after CLOSEFILE.',
+    ],
+    solution: `FUNCTION CountWords(FileName : STRING) RETURNS INTEGER
+    DECLARE Line : STRING
+    DECLARE Total, Index : INTEGER
+
+    Total <- 0
+    OPENFILE FileName FOR READ
+    WHILE NOT EOF(FileName) DO
+        READFILE FileName, Line
+        IF LENGTH(Line) > 0 THEN
+            Total <- Total + 1
+            FOR Index <- 1 TO LENGTH(Line)
+                IF SUBSTRING(Line, Index, 1) = " " THEN
+                    Total <- Total + 1
+                ENDIF
+            NEXT Index
+        ENDIF
+    ENDWHILE
+    CLOSEFILE FileName
+
+    RETURN Total
+ENDFUNCTION
+
+DECLARE LineCount, Index : INTEGER
+DECLARE Line : STRING
+
+INPUT LineCount
+OPENFILE "report.txt" FOR WRITE
+FOR Index <- 1 TO LineCount
+    INPUT Line
+    WRITEFILE "report.txt", Line
+NEXT Index
+CLOSEFILE "report.txt"
+
+OUTPUT CountWords("report.txt")`,
+    solutionExplanation: 'The harness writes the entered lines to report.txt first, then CountWords reopens it for reading. Every non-blank line contributes (number of spaces + 1) words, found by counting space characters with SUBSTRING; blank lines are skipped entirely.',
+    testCases: [
+      { inputs: ['2', 'The cat sat', 'A dog ran fast'], expectedOutput: '7', description: 'Two lines of text', sortOrder: 0 },
+      { inputs: ['1', 'Hello'], expectedOutput: '1', description: 'Single word', sortOrder: 1 },
+      { inputs: ['3', 'One two three four five', 'Six seven', 'Eight'], expectedOutput: '8', description: 'Three lines', sortOrder: 2 },
+      { inputs: ['3', 'Hi there', '', 'Bye'], expectedOutput: '3', description: 'A blank line between text is skipped', sortOrder: 3, isHidden: true },
+      { inputs: ['1', 'A B C D E'], expectedOutput: '5', description: 'Several single-letter words', sortOrder: 4, isHidden: true },
+    ],
+  },
+
+  {
+    title: 'Insert at the Front of a Linked List',
+    description: `A singly linked list and a free list share the same pair of arrays, \`ListData\` and \`NextPointer\` (a classic technique for simulating pointers with arrays). \`StartPointer\` is the head of the list; \`FreePointer\` is the head of the chain of unused slots.
+
+Write procedure \`InsertFront(Value)\` that:
+
+- takes the next available node from the free list (advancing \`FreePointer\`)
+- stores \`Value\` in it and links it in front of the current list (updating \`StartPointer\`)
+- outputs \`"List full"\` instead, without changing anything, if there is no free node (\`FreePointer = -1\`)
+
+The program starts with the list \`Bob → Amy\` already stored, and a free chain of 3 unused slots. It then performs the given number of insertions and prints the final list.
+
+**Input:** Number of names to insert, then each name.
+**Output:** The final list, one name per line (plus \`"List full"\` for any insertion that could not be completed).
+
+**Example:**
+\`\`\`
+Input:  1
+        Zoe
+Output: Zoe
+        Bob
+        Amy
+\`\`\``,
+    difficulty: 'HARD' as const,
+    topic: 'Linked Lists',
+    tags: ['AS & A Level', '9618', 'Oct/Nov 2023', 'Paper 42', 'Past Paper', 'Unseen', 'Linked Lists'],
+    year: 2023,
+    session: 'Oct/Nov',
+    variant: 2,
+    paper: '9618/42',
+    starterCode: `DECLARE ListData : ARRAY[0:4] OF STRING
+DECLARE NextPointer : ARRAY[0:4] OF INTEGER
+DECLARE StartPointer : INTEGER
+DECLARE FreePointer : INTEGER
+
+PROCEDURE InsertFront(Value : STRING)
+    // Take a node from the free list and link it in front of StartPointer
+ENDPROCEDURE
+
+DECLARE InsertCount, Index : INTEGER
+DECLARE NewName : STRING
+
+// Initial list: Bob -> Amy (stored at indices 2 and 4)
+ListData[2] <- "Bob"
+NextPointer[2] <- 4
+ListData[4] <- "Amy"
+NextPointer[4] <- -1
+StartPointer <- 2
+
+// Initial free chain: 0 -> 1 -> 3
+NextPointer[0] <- 1
+NextPointer[1] <- 3
+NextPointer[3] <- -1
+FreePointer <- 0
+
+INPUT InsertCount
+FOR Index <- 1 TO InsertCount
+    INPUT NewName
+    CALL InsertFront(NewName)
+NEXT Index
+
+Index <- StartPointer
+WHILE Index <> -1 DO
+    OUTPUT ListData[Index]
+    Index <- NextPointer[Index]
+ENDWHILE`,
+    hints: [
+      'The next free slot is stored in FreePointer — that is the index you should reuse for the new node.',
+      'Before overwriting anything, advance FreePointer to NextPointer[FreePointer], since that node is about to be claimed.',
+      'Link the new node in front of the list with NextPointer[NewNode] <- StartPointer, then StartPointer <- NewNode. If FreePointer = -1 the list is full — output "List full" instead.',
+    ],
+    solution: `DECLARE ListData : ARRAY[0:4] OF STRING
+DECLARE NextPointer : ARRAY[0:4] OF INTEGER
+DECLARE StartPointer : INTEGER
+DECLARE FreePointer : INTEGER
+
+PROCEDURE InsertFront(Value : STRING)
+    DECLARE NewNode : INTEGER
+
+    IF FreePointer = -1 THEN
+        OUTPUT "List full"
+    ELSE
+        NewNode <- FreePointer
+        FreePointer <- NextPointer[FreePointer]
+        ListData[NewNode] <- Value
+        NextPointer[NewNode] <- StartPointer
+        StartPointer <- NewNode
+    ENDIF
+ENDPROCEDURE
+
+DECLARE InsertCount, Index : INTEGER
+DECLARE NewName : STRING
+
+ListData[2] <- "Bob"
+NextPointer[2] <- 4
+ListData[4] <- "Amy"
+NextPointer[4] <- -1
+StartPointer <- 2
+
+NextPointer[0] <- 1
+NextPointer[1] <- 3
+NextPointer[3] <- -1
+FreePointer <- 0
+
+INPUT InsertCount
+FOR Index <- 1 TO InsertCount
+    INPUT NewName
+    CALL InsertFront(NewName)
+NEXT Index
+
+Index <- StartPointer
+WHILE Index <> -1 DO
+    OUTPUT ListData[Index]
+    Index <- NextPointer[Index]
+ENDWHILE`,
+    solutionExplanation: 'InsertFront claims the head of the free chain, advancing FreePointer past it before the node is reused. The claimed node stores the new value and points to the old StartPointer, which then moves to the new node — a constant-time insertion at the front.',
+    testCases: [
+      { inputs: ['3', 'Cy', 'Dee', 'Eli'], expectedOutput: 'Eli\nDee\nCy\nBob\nAmy', description: 'Three insertions in a row', sortOrder: 0 },
+      { inputs: ['1', 'Zoe'], expectedOutput: 'Zoe\nBob\nAmy', description: 'Single insertion', sortOrder: 1 },
+      { inputs: ['0'], expectedOutput: 'Bob\nAmy', description: 'No insertions — list unchanged', sortOrder: 2, isHidden: true },
+      { inputs: ['4', 'Cy', 'Dee', 'Eli', 'Fay'], expectedOutput: 'List full\nEli\nDee\nCy\nBob\nAmy', description: 'Fourth insertion has no free node left', sortOrder: 3, isHidden: true },
+    ],
+  },
+
+  {
+    title: 'Circular Queue Enqueue and Dequeue',
+    description: `Implement a **circular** queue of up to 4 strings using array \`QueueData\`, with \`Head\`, \`Tail\` and a \`Count\` of items currently stored (\`Count\` avoids the usual ambiguity of \`Head = Tail\` meaning both empty and full).
+
+Write:
+
+- function \`Enqueue(Value)\` — insert at \`Tail\`, wrapping around with \`MOD\`, and return \`TRUE\`; return \`FALSE\` if the queue is full
+- function \`Dequeue()\` — remove from \`Head\`, wrapping around with \`MOD\`, and return the removed value; return \`"false"\` if the queue is empty
+
+**Input:** An operation count, then operations. \`E\` is followed by a value to enqueue; \`D\` dequeues.
+**Output:** One result per operation.
+
+**Example:**
+\`\`\`
+Input:  1
+        D
+Output: false
+\`\`\``,
+    difficulty: 'HARD' as const,
+    topic: 'Queues',
+    tags: ['AS & A Level', '9618', 'Oct/Nov 2023', 'Paper 42', 'Past Paper', 'Unseen', 'Queues'],
+    year: 2023,
+    session: 'Oct/Nov',
+    variant: 2,
+    paper: '9618/42',
+    starterCode: `DECLARE QueueData : ARRAY[0:3] OF STRING
+DECLARE Head, Tail, Count : INTEGER
+
+FUNCTION Enqueue(Value : STRING) RETURNS BOOLEAN
+    // Insert at Tail if the queue is not full, wrapping with MOD
+ENDFUNCTION
+
+FUNCTION Dequeue() RETURNS STRING
+    // Remove from Head if the queue is not empty, wrapping with MOD
+ENDFUNCTION
+
+DECLARE OperationCount, Index : INTEGER
+DECLARE Operation, Value : STRING
+
+Head <- 0
+Tail <- 0
+Count <- 0
+
+INPUT OperationCount
+FOR Index <- 1 TO OperationCount
+    INPUT Operation
+    IF Operation = "E" THEN
+        INPUT Value
+        OUTPUT Enqueue(Value)
+    ELSE
+        OUTPUT Dequeue()
+    ENDIF
+NEXT Index`,
+    hints: [
+      'A circular queue wraps Tail and Head back to 0 using MOD(Position + 1, 4) instead of always incrementing.',
+      'Head = Tail alone cannot tell you full from empty in a circular queue — keep a separate Count variable instead.',
+      'Enqueue is rejected when Count = 4; Dequeue returns "false" when Count = 0. Both success cases update Count by 1.',
+    ],
+    solution: `DECLARE QueueData : ARRAY[0:3] OF STRING
+DECLARE Head, Tail, Count : INTEGER
+
+FUNCTION Enqueue(Value : STRING) RETURNS BOOLEAN
+    IF Count = 4 THEN
+        RETURN FALSE
+    ENDIF
+    QueueData[Tail] <- Value
+    Tail <- MOD(Tail + 1, 4)
+    Count <- Count + 1
+    RETURN TRUE
+ENDFUNCTION
+
+FUNCTION Dequeue() RETURNS STRING
+    DECLARE Value : STRING
+    IF Count = 0 THEN
+        RETURN "false"
+    ENDIF
+    Value <- QueueData[Head]
+    Head <- MOD(Head + 1, 4)
+    Count <- Count - 1
+    RETURN Value
+ENDFUNCTION
+
+DECLARE OperationCount, Index : INTEGER
+DECLARE Operation, Value : STRING
+
+Head <- 0
+Tail <- 0
+Count <- 0
+
+INPUT OperationCount
+FOR Index <- 1 TO OperationCount
+    INPUT Operation
+    IF Operation = "E" THEN
+        INPUT Value
+        OUTPUT Enqueue(Value)
+    ELSE
+        OUTPUT Dequeue()
+    ENDIF
+NEXT Index`,
+    solutionExplanation: 'Count tracks how many items are stored, so full and empty can be told apart even when Head equals Tail. Both pointers wrap back to 0 with MOD once they pass the last index, giving the queue its circular behaviour.',
+    testCases: [
+      { inputs: ['6', 'E', 'A', 'E', 'B', 'D', 'E', 'C', 'E', 'Q', 'D'], expectedOutput: 'TRUE\nTRUE\nA\nTRUE\nTRUE\nB', description: 'Interleaved enqueue and dequeue', sortOrder: 0 },
+      { inputs: ['1', 'D'], expectedOutput: 'false', description: 'Dequeue when empty', sortOrder: 1 },
+      { inputs: ['9', 'E', 'A', 'E', 'B', 'E', 'C', 'E', 'S', 'E', 'T', 'D', 'E', 'R', 'D', 'D'], expectedOutput: 'TRUE\nTRUE\nTRUE\nTRUE\nFALSE\nA\nTRUE\nB\nC', description: 'Queue full rejects enqueue, then wraps around', sortOrder: 2, isHidden: true },
+      { inputs: ['9', 'E', 'A', 'E', 'B', 'E', 'C', 'E', 'S', 'D', 'D', 'D', 'D', 'D'], expectedOutput: 'TRUE\nTRUE\nTRUE\nTRUE\nA\nB\nC\nS\nfalse', description: 'Fill, drain completely, then dequeue empty', sortOrder: 3, isHidden: true },
+    ],
+  },
+
+  {
+    title: 'Shape Class Hierarchy',
+    description: `Class \`Shape\` stores a private \`ShapeName\` and exposes \`GetName()\`. It also defines \`GetArea()\`, returning \`0\` by default.
+
+Classes \`Circle\` (\`INHERITS Shape\`, adds \`Radius\`) and \`Square\` (\`INHERITS Shape\`, adds \`Side\`) each call \`SUPER.NEW(N)\` in their constructor and **override** \`GetArea()\` with the correct formula (use \`3.14159\` for π; no square root needed).
+
+Write procedure \`DescribeShape(S : Shape)\` that outputs \`<name> area = <area rounded to 2 dp>\`, calling \`S.GetArea()\` polymorphically — it must work for either subclass through the same \`Shape\`-typed parameter.
+
+The test harness reads \`"circle"\` or \`"square"\` and a measurement (radius or side), creates the matching object named \`"MyCircle"\` / \`"MySquare"\`, and calls \`DescribeShape\`.
+
+**Input:** \`circle\` or \`square\`, then a number.
+**Output:** One formatted line.
+
+**Example:**
+\`\`\`
+Input:  circle
+        2
+Output: MyCircle area = 12.57
+\`\`\``,
+    difficulty: 'HARD' as const,
+    topic: 'Object-Oriented Programming',
+    tags: ['AS & A Level', '9618', 'Oct/Nov 2023', 'Paper 42', 'Past Paper', 'Unseen', 'OOP', 'Classes'],
+    year: 2023,
+    session: 'Oct/Nov',
+    variant: 2,
+    paper: '9618/42',
+    starterCode: `CLASS Shape
+    // Declare a private ShapeName, a constructor, GetName(), and a default GetArea()
+ENDCLASS
+
+CLASS Circle INHERITS Shape
+    // Add a private Radius, a constructor calling SUPER.NEW, and an overridden GetArea()
+ENDCLASS
+
+CLASS Square INHERITS Shape
+    // Add a private Side, a constructor calling SUPER.NEW, and an overridden GetArea()
+ENDCLASS
+
+PROCEDURE DescribeShape(S : Shape)
+    OUTPUT S.GetName(), " area = ", ROUND(S.GetArea(), 2)
+ENDPROCEDURE
+
+DECLARE Kind : STRING
+DECLARE Measurement : REAL
+DECLARE C : Circle
+DECLARE Sq : Square
+
+INPUT Kind
+INPUT Measurement
+
+IF Kind = "circle" THEN
+    C <- NEW Circle("MyCircle", Measurement)
+    CALL DescribeShape(C)
+ELSE
+    Sq <- NEW Square("MySquare", Measurement)
+    CALL DescribeShape(Sq)
+ENDIF`,
+    hints: [
+      'Shape needs a PUBLIC constructor storing ShapeName, a PUBLIC GetName() getter, and a PUBLIC GetArea() that RETURNs 0.',
+      'Each subclass constructor should call SUPER.NEW(N) first, then store its own extra field (Radius or Side).',
+      'Override GetArea() in each subclass with its own formula: 3.14159 * Radius ^ 2 for Circle, Side ^ 2 for Square. DescribeShape calls S.GetArea() without knowing which one it is — that is polymorphism.',
+    ],
+    solution: `CLASS Shape
+    PRIVATE ShapeName : STRING
+
+    PUBLIC PROCEDURE NEW(N : STRING)
+        ShapeName <- N
+    ENDPROCEDURE
+
+    PUBLIC FUNCTION GetName() RETURNS STRING
+        RETURN ShapeName
+    ENDFUNCTION
+
+    PUBLIC FUNCTION GetArea() RETURNS REAL
+        RETURN 0
+    ENDFUNCTION
+ENDCLASS
+
+CLASS Circle INHERITS Shape
+    PRIVATE Radius : REAL
+
+    PUBLIC PROCEDURE NEW(N : STRING, R : REAL)
+        SUPER.NEW(N)
+        Radius <- R
+    ENDPROCEDURE
+
+    PUBLIC FUNCTION GetArea() RETURNS REAL
+        RETURN 3.14159 * Radius ^ 2
+    ENDFUNCTION
+ENDCLASS
+
+CLASS Square INHERITS Shape
+    PRIVATE Side : REAL
+
+    PUBLIC PROCEDURE NEW(N : STRING, S : REAL)
+        SUPER.NEW(N)
+        Side <- S
+    ENDPROCEDURE
+
+    PUBLIC FUNCTION GetArea() RETURNS REAL
+        RETURN Side ^ 2
+    ENDFUNCTION
+ENDCLASS
+
+PROCEDURE DescribeShape(S : Shape)
+    OUTPUT S.GetName(), " area = ", ROUND(S.GetArea(), 2)
+ENDPROCEDURE
+
+DECLARE Kind : STRING
+DECLARE Measurement : REAL
+DECLARE C : Circle
+DECLARE Sq : Square
+
+INPUT Kind
+INPUT Measurement
+
+IF Kind = "circle" THEN
+    C <- NEW Circle("MyCircle", Measurement)
+    CALL DescribeShape(C)
+ELSE
+    Sq <- NEW Square("MySquare", Measurement)
+    CALL DescribeShape(Sq)
+ENDIF`,
+    solutionExplanation: 'SUPER.NEW(N) lets each subclass constructor reuse the parent logic for ShapeName before adding its own field. Because GetArea() is overridden in both subclasses, DescribeShape gets the correct area from S.GetArea() no matter which shape was actually created.',
+    testCases: [
+      { inputs: ['circle', '2'], expectedOutput: 'MyCircle area = 12.57', description: 'Circle of radius 2', sortOrder: 0 },
+      { inputs: ['square', '5'], expectedOutput: 'MySquare area = 25', description: 'Square of side 5', sortOrder: 1 },
+      { inputs: ['circle', '1'], expectedOutput: 'MyCircle area = 3.14', description: 'Unit circle', sortOrder: 2, isHidden: true },
+      { inputs: ['square', '3.5'], expectedOutput: 'MySquare area = 12.25', description: 'Non-integer side length', sortOrder: 3, isHidden: true },
+    ],
+  },
+
+  {
+    title: 'Recursive Sum of Digits',
+    description: `Write a recursive function \`SumDigits(N)\` that returns the sum of the decimal digits of a non-negative integer \`N\`.
+
+**Input:** One non-negative integer.
+**Output:** The sum of its digits.
+
+**Example:**
+\`\`\`
+Input:  48291
+Output: 24
+\`\`\``,
+    difficulty: 'MEDIUM' as const,
+    topic: 'Recursion',
+    tags: ['AS & A Level', '9618', 'Oct/Nov 2024', 'Paper 41', 'Past Paper', 'Unseen', 'Recursion'],
+    year: 2024,
+    session: 'Oct/Nov',
+    variant: 1,
+    paper: '9618/41',
+    starterCode: `FUNCTION SumDigits(N : INTEGER) RETURNS INTEGER
+    // Add a base case (N < 10) and a recursive case
+ENDFUNCTION
+
+DECLARE Number : INTEGER
+INPUT Number
+OUTPUT SumDigits(Number)`,
+    hints: [
+      'A number less than 10 is already a single digit — that is your base case.',
+      'MOD(N, 10) gives the last digit; DIV(N, 10) removes it.',
+      'Return MOD(N, 10) + SumDigits(DIV(N, 10)) for the recursive case.',
+    ],
+    solution: `FUNCTION SumDigits(N : INTEGER) RETURNS INTEGER
+    IF N < 10 THEN
+        RETURN N
+    ELSE
+        RETURN MOD(N, 10) + SumDigits(DIV(N, 10))
+    ENDIF
+ENDFUNCTION
+
+DECLARE Number : INTEGER
+INPUT Number
+OUTPUT SumDigits(Number)`,
+    solutionExplanation: 'The base case stops the recursion once N has only one digit. Each earlier call adds its own last digit (MOD(N, 10)) to the sum returned for the rest of the number (DIV(N, 10)).',
+    testCases: [
+      { inputs: ['5'], expectedOutput: '5', description: 'Single digit — base case only', sortOrder: 0 },
+      { inputs: ['48291'], expectedOutput: '24', description: 'Five-digit number', sortOrder: 1 },
+      { inputs: ['0'], expectedOutput: '0', description: 'Zero', sortOrder: 2 },
+      { inputs: ['999'], expectedOutput: '27', description: 'Repeated digits', sortOrder: 3, isHidden: true },
+      { inputs: ['100'], expectedOutput: '1', description: 'Trailing zeros contribute nothing', sortOrder: 4, isHidden: true },
+    ],
+  },
+
+  {
+    title: 'Binary Search on a Sorted Array',
+    description: `Array \`Data\` holds 8 integers already sorted into ascending order. Write function \`BinarySearch(Target)\` that returns the 1-based index of \`Target\`, or \`-1\` if it is not present, using the binary search algorithm (not a linear scan).
+
+**Input:** 8 sorted integers, then the target value.
+**Output:** The 1-based index, or \`-1\`.
+
+**Example:**
+\`\`\`
+Input:  2
+        5
+        8
+        12
+        16
+        23
+        38
+        45
+        23
+Output: 6
+\`\`\``,
+    difficulty: 'MEDIUM' as const,
+    topic: 'Algorithms',
+    tags: ['AS & A Level', '9618', 'Oct/Nov 2024', 'Paper 41', 'Past Paper', 'Unseen', 'Searching'],
+    year: 2024,
+    session: 'Oct/Nov',
+    variant: 1,
+    paper: '9618/41',
+    starterCode: `DECLARE Data : ARRAY[1:8] OF INTEGER
+
+FUNCTION BinarySearch(Target : INTEGER) RETURNS INTEGER
+    // Search Data for Target using Low/High/Mid pointers
+ENDFUNCTION
+
+DECLARE Index, Target : INTEGER
+FOR Index <- 1 TO 8
+    INPUT Data[Index]
+NEXT Index
+INPUT Target
+
+OUTPUT BinarySearch(Target)`,
+    hints: [
+      'Keep Low and High pointers; Mid is always DIV(Low + High, 2).',
+      'If Data[Mid] equals Target, return Mid immediately.',
+      'If Data[Mid] is too small move Low above Mid; if too large move High below Mid. Return -1 once Low > High.',
+    ],
+    solution: `DECLARE Data : ARRAY[1:8] OF INTEGER
+
+FUNCTION BinarySearch(Target : INTEGER) RETURNS INTEGER
+    DECLARE Low, High, Mid : INTEGER
+    Low <- 1
+    High <- 8
+    WHILE Low <= High DO
+        Mid <- DIV(Low + High, 2)
+        IF Data[Mid] = Target THEN
+            RETURN Mid
+        ELSE
+            IF Data[Mid] < Target THEN
+                Low <- Mid + 1
+            ELSE
+                High <- Mid - 1
+            ENDIF
+        ENDIF
+    ENDWHILE
+    RETURN -1
+ENDFUNCTION
+
+DECLARE Index, Target : INTEGER
+FOR Index <- 1 TO 8
+    INPUT Data[Index]
+NEXT Index
+INPUT Target
+
+OUTPUT BinarySearch(Target)`,
+    solutionExplanation: 'Each iteration halves the search space by comparing Target against the middle element and discarding the half that cannot contain it. The loop ends either by finding Target or by Low crossing High, which means it is not present.',
+    testCases: [
+      { inputs: ['2', '5', '8', '12', '16', '23', '38', '45', '23'], expectedOutput: '6', description: 'Middle-ish value found', sortOrder: 0 },
+      { inputs: ['2', '5', '8', '12', '16', '23', '38', '45', '2'], expectedOutput: '1', description: 'First element', sortOrder: 1 },
+      { inputs: ['2', '5', '8', '12', '16', '23', '38', '45', '100'], expectedOutput: '-1', description: 'Not present, larger than every element', sortOrder: 2 },
+      { inputs: ['2', '5', '8', '12', '16', '23', '38', '45', '45'], expectedOutput: '8', description: 'Last element', sortOrder: 3, isHidden: true },
+      { inputs: ['2', '5', '8', '12', '16', '23', '38', '45', '16'], expectedOutput: '5', description: 'Another present value', sortOrder: 4, isHidden: true },
+    ],
+  },
+
+  {
+    title: 'Tokenise a Sentence into Words',
+    description: `A sentence contains words separated by single spaces, with no leading or trailing spaces. Write procedure \`SplitWords(Sentence)\` that outputs each word on its own line.
+
+**Input:** One sentence.
+**Output:** Each word on its own line.
+
+**Example:**
+\`\`\`
+Input:  The cat sat
+Output: The
+        cat
+        sat
+\`\`\``,
+    difficulty: 'MEDIUM' as const,
+    topic: 'String Processing',
+    tags: ['AS & A Level', '9618', 'May/June 2023', 'Paper 21', 'Past Paper', 'Unseen', 'String Processing'],
+    year: 2023,
+    session: 'May/June',
+    variant: 1,
+    paper: '9618/21',
+    starterCode: `PROCEDURE SplitWords(Sentence : STRING)
+    // Build up each word character by character, outputting it at every space
+ENDPROCEDURE
+
+DECLARE Text : STRING
+INPUT Text
+CALL SplitWords(Text)`,
+    hints: [
+      'Scan the sentence one character at a time with MID(Sentence, Index, 1), building up Word.',
+      'Whenever you find a space, OUTPUT the word built so far and reset Word to an empty string.',
+      'After the loop ends, OUTPUT Word once more — the last word has no trailing space to trigger it.',
+    ],
+    solution: `PROCEDURE SplitWords(Sentence : STRING)
+    DECLARE Word : STRING
+    DECLARE Ch : STRING
+    DECLARE Index : INTEGER
+
+    Word <- ""
+    FOR Index <- 1 TO LENGTH(Sentence)
+        Ch <- MID(Sentence, Index, 1)
+        IF Ch = " " THEN
+            OUTPUT Word
+            Word <- ""
+        ELSE
+            Word <- Word & Ch
+        ENDIF
+    NEXT Index
+    OUTPUT Word
+ENDPROCEDURE
+
+DECLARE Text : STRING
+INPUT Text
+CALL SplitWords(Text)`,
+    solutionExplanation: 'Word accumulates characters until a space is found, at which point it is output and reset. Because the sentence has no trailing space, one extra OUTPUT after the loop flushes the final word.',
+    testCases: [
+      { inputs: ['The cat sat'], expectedOutput: 'The\ncat\nsat', description: 'Three words', sortOrder: 0 },
+      { inputs: ['Hello'], expectedOutput: 'Hello', description: 'Single word, no spaces', sortOrder: 1 },
+      { inputs: ['A B C D'], expectedOutput: 'A\nB\nC\nD', description: 'Several single-character words', sortOrder: 2, isHidden: true },
+      { inputs: ['Hi there world today'], expectedOutput: 'Hi\nthere\nworld\ntoday', description: 'Four words', sortOrder: 3, isHidden: true },
+    ],
+  },
+
+  {
+    title: 'Matrix Row and Column Totals',
+    description: `A 3×3 grid of integers is stored in \`Grid\`. Output the total of each row (top to bottom), then the total of each column (left to right).
+
+**Input:** 9 integers, filling the grid row by row.
+**Output:** 3 row totals, then 3 column totals — one per line.
+
+**Example:**
+\`\`\`
+Input:  1
+        2
+        3
+        4
+        5
+        6
+        7
+        8
+        9
+Output: 6
+        15
+        24
+        12
+        15
+        18
+\`\`\``,
+    difficulty: 'MEDIUM' as const,
+    topic: 'Arrays',
+    tags: ['AS & A Level', '9618', 'May/June 2023', 'Paper 21', 'Past Paper', 'Unseen', '2D Arrays'],
+    year: 2023,
+    session: 'May/June',
+    variant: 1,
+    paper: '9618/21',
+    starterCode: `DECLARE Grid : ARRAY[1:3, 1:3] OF INTEGER
+DECLARE Row, Col, Total : INTEGER
+
+FOR Row <- 1 TO 3
+    FOR Col <- 1 TO 3
+        INPUT Grid[Row, Col]
+    NEXT Col
+NEXT Row
+
+// Output the three row totals, then the three column totals`,
+    hints: [
+      'Read the grid with nested FOR loops: outer for Row, inner for Col, using Grid[Row, Col].',
+      'For row totals, loop through each Row and sum across all Col values in that row.',
+      'For column totals, loop through each Col and sum across all Row values in that column — swap which loop is outer.',
+    ],
+    solution: `DECLARE Grid : ARRAY[1:3, 1:3] OF INTEGER
+DECLARE Row, Col, Total : INTEGER
+
+FOR Row <- 1 TO 3
+    FOR Col <- 1 TO 3
+        INPUT Grid[Row, Col]
+    NEXT Col
+NEXT Row
+
+FOR Row <- 1 TO 3
+    Total <- 0
+    FOR Col <- 1 TO 3
+        Total <- Total + Grid[Row, Col]
+    NEXT Col
+    OUTPUT Total
+NEXT Row
+
+FOR Col <- 1 TO 3
+    Total <- 0
+    FOR Row <- 1 TO 3
+        Total <- Total + Grid[Row, Col]
+    NEXT Row
+    OUTPUT Total
+NEXT Col`,
+    solutionExplanation: 'Row totals sum across the second index while the first index (Row) stays fixed. Column totals do the reverse — the outer loop fixes Col while the inner loop sums across every Row.',
+    testCases: [
+      { inputs: ['1', '2', '3', '4', '5', '6', '7', '8', '9'], expectedOutput: '6\n15\n24\n12\n15\n18', description: 'Sequential grid', sortOrder: 0 },
+      { inputs: ['2', '2', '2', '2', '2', '2', '2', '2', '2'], expectedOutput: '6\n6\n6\n6\n6\n6', description: 'All values equal', sortOrder: 1 },
+      { inputs: ['-1', '-2', '-3', '-4', '-5', '-6', '-7', '-8', '-9'], expectedOutput: '-6\n-15\n-24\n-12\n-15\n-18', description: 'Negative values', sortOrder: 2, isHidden: true },
+      { inputs: ['5', '0', '1', '2', '9', '4', '3', '3', '3'], expectedOutput: '6\n15\n9\n10\n12\n8', description: 'Asymmetric grid', sortOrder: 3, isHidden: true },
+    ],
+  },
+
+  {
+    title: 'Rounded Average of a Value List',
+    description: `A program must read a number of values (between 1 and 20) and then that many integers, calculating their total and average.
+
+Validate the count with a loop that rejects anything outside 1 to 20. Output the total, then the average rounded to 1 decimal place.
+
+**Input:** A count (validated 1–20), then that many integers.
+**Output:** \`Total: <total>\` then \`Average: <average to 1 dp>\`.
+
+**Example:**
+\`\`\`
+Input:  5
+        10
+        20
+        30
+        40
+        50
+Output: Total: 150
+        Average: 30
+\`\`\``,
+    difficulty: 'EASY' as const,
+    topic: 'Loops',
+    tags: ['IGCSE', '0478', 'May/June 2024', 'Paper 22', 'Past Paper', 'Adapted', 'Validation', 'Totalling'],
+    year: 2024,
+    session: 'May/June',
+    variant: 2,
+    starterCode: `DECLARE Count, Index, Value, Total : INTEGER
+DECLARE Average : REAL
+
+// Validate Count is between 1 and 20 using REPEAT ... UNTIL
+
+// Read Count values, adding each one to Total
+
+// Output the total and the average rounded to 1 decimal place`,
+    hints: [
+      'Use REPEAT ... UNTIL Count >= 1 AND Count <= 20 so the user is asked again for an invalid count.',
+      'Use a FOR loop from 1 to Count to read the values and build up Total.',
+      'Average <- Total / Count, then OUTPUT ROUND(Average, 1) for the rounded value.',
+    ],
+    solution: `DECLARE Count, Index, Value, Total : INTEGER
+DECLARE Average : REAL
+
+REPEAT
+    INPUT Count
+UNTIL Count >= 1 AND Count <= 20
+
+Total <- 0
+FOR Index <- 1 TO Count
+    INPUT Value
+    Total <- Total + Value
+NEXT Index
+
+Average <- Total / Count
+
+OUTPUT "Total: " & Total
+OUTPUT "Average: " & ROUND(Average, 1)`,
+    solutionExplanation: 'The REPEAT/UNTIL loop keeps rejecting the count until it falls within 1 to 20. The FOR loop then reads exactly that many values into Total, and the average is rounded to 1 decimal place before being output.',
+    testCases: [
+      { inputs: ['5', '10', '20', '30', '40', '50'], expectedOutput: 'Total: 150\nAverage: 30', description: 'Five values, whole-number average', sortOrder: 0 },
+      { inputs: ['3', '1', '2', '2'], expectedOutput: 'Total: 5\nAverage: 1.7', description: 'Average rounds to one decimal place', sortOrder: 1 },
+      { inputs: ['0', '4', '5', '5', '5', '5'], expectedOutput: 'Total: 20\nAverage: 5', description: 'Invalid count (0) is rejected before a valid one is accepted', sortOrder: 2, isHidden: true },
+      { inputs: ['1', '7'], expectedOutput: 'Total: 7\nAverage: 7', description: 'Single-value list', sortOrder: 3, isHidden: true },
+    ],
+  },
+
+  {
+    title: 'Output Array Contents Until Data Ends',
+    description: `Array \`Names\` can hold up to 10 strings, but it might not be completely full — any unused slot holds the empty string \`""\`. Add code that outputs the stored names, stopping as soon as it reaches the first empty slot (or the end of the array, whichever comes first).
+
+**Input:** 10 strings (some may be empty, representing unused slots).
+**Output:** Each non-empty name up to the first empty slot, one per line.
+
+**Example:**
+\`\`\`
+Input:  Amy
+        Bo
+        Cy
+        (7 blank lines)
+Output: Amy
+        Bo
+        Cy
+\`\`\``,
+    difficulty: 'MEDIUM' as const,
+    topic: 'Arrays',
+    tags: ['IGCSE', '0478', 'May/June 2024', 'Paper 22', 'Past Paper', 'Adapted', 'Sentinel Loop'],
+    year: 2024,
+    session: 'May/June',
+    variant: 2,
+    starterCode: `DECLARE Names : ARRAY[1:10] OF STRING
+DECLARE Index : INTEGER
+
+FOR Index <- 1 TO 10
+    INPUT Names[Index]
+NEXT Index
+
+// Output each name until you reach the first empty slot (or the end of the array)`,
+    hints: [
+      'An unused array slot holds the empty string "" — that is your stopping signal.',
+      'Use a WHILE loop with condition Index <= 10 AND Names[Index] <> "".',
+      'OUTPUT Names[Index] inside the loop, then increase Index — the loop naturally stops at the first blank slot (or the end of the array).',
+    ],
+    solution: `DECLARE Names : ARRAY[1:10] OF STRING
+DECLARE Index : INTEGER
+
+FOR Index <- 1 TO 10
+    INPUT Names[Index]
+NEXT Index
+
+Index <- 1
+WHILE Index <= 10 AND Names[Index] <> "" DO
+    OUTPUT Names[Index]
+    Index <- Index + 1
+ENDWHILE`,
+    solutionExplanation: 'The WHILE condition combines the array bound with a check for the empty-string sentinel, so the loop stops the moment it finds an unused slot — or safely reaches the end of the array if every slot is filled.',
+    testCases: [
+      { inputs: ['Amy', 'Bo', 'Cy', '', '', '', '', '', '', ''], expectedOutput: 'Amy\nBo\nCy', description: 'Stops at the first blank slot', sortOrder: 0 },
+      { inputs: ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'], expectedOutput: 'A\nB\nC\nD\nE\nF\nG\nH\nI\nJ', description: 'No blanks — the whole array prints', sortOrder: 1 },
+      { inputs: ['Solo', '', '', '', '', '', '', '', '', ''], expectedOutput: 'Solo', description: 'Only one name stored', sortOrder: 2, isHidden: true },
+      { inputs: ['', '', '', '', '', '', '', '', '', ''], expectedOutput: '', description: 'Empty array produces no output', sortOrder: 3, isHidden: true },
+    ],
+  },
+
+  {
+    title: 'Bubble Sort a List of Item Names',
+    description: `Array \`ItemList\` holds 5 item names as strings. Write procedure \`BubbleSort()\` that sorts \`ItemList\` into alphabetical order using the bubble sort algorithm.
+
+**Input:** 5 item names.
+**Output:** The names in alphabetical order, one per line.
+
+**Example:**
+\`\`\`
+Input:  Pen
+        Eraser
+        Ruler
+        Book
+        Marker
+Output: Book
+        Eraser
+        Marker
+        Pen
+        Ruler
+\`\`\``,
+    difficulty: 'MEDIUM' as const,
+    topic: 'Algorithms',
+    tags: ['IGCSE', '0478', 'Oct/Nov 2024', 'Paper 22', 'Past Paper', 'Adapted', 'Sorting', 'Strings'],
+    year: 2024,
+    session: 'Oct/Nov',
+    variant: 2,
+    starterCode: `DECLARE ItemList : ARRAY[1:5] OF STRING
+
+PROCEDURE BubbleSort()
+    // Sort ItemList into alphabetical order
+ENDPROCEDURE
+
+DECLARE Index : INTEGER
+FOR Index <- 1 TO 5
+    INPUT ItemList[Index]
+NEXT Index
+
+CALL BubbleSort()
+
+FOR Index <- 1 TO 5
+    OUTPUT ItemList[Index]
+NEXT Index`,
+    hints: [
+      'Bubble sort works the same way for strings — just compare with > instead of doing anything numeric.',
+      'Swap ItemList[j] and ItemList[j + 1] whenever ItemList[j] > ItemList[j + 1], using a Temp variable.',
+      'Nest the pass loop inside a loop that runs once per item, shrinking the comparison range each pass (1 TO 5 - i).',
+    ],
+    solution: `DECLARE ItemList : ARRAY[1:5] OF STRING
+
+PROCEDURE BubbleSort()
+    DECLARE i, j : INTEGER
+    DECLARE Temp : STRING
+    FOR i <- 1 TO 4
+        FOR j <- 1 TO 5 - i
+            IF ItemList[j] > ItemList[j + 1] THEN
+                Temp <- ItemList[j]
+                ItemList[j] <- ItemList[j + 1]
+                ItemList[j + 1] <- Temp
+            ENDIF
+        NEXT j
+    NEXT i
+ENDPROCEDURE
+
+DECLARE Index : INTEGER
+FOR Index <- 1 TO 5
+    INPUT ItemList[Index]
+NEXT Index
+
+CALL BubbleSort()
+
+FOR Index <- 1 TO 5
+    OUTPUT ItemList[Index]
+NEXT Index`,
+    solutionExplanation: 'The same pass-and-compare bubble sort structure works for strings: each pass compares neighbouring names and swaps them if they are out of alphabetical order, gradually bubbling the alphabetically-latest names to the end.',
+    testCases: [
+      { inputs: ['Pen', 'Eraser', 'Ruler', 'Book', 'Marker'], expectedOutput: 'Book\nEraser\nMarker\nPen\nRuler', description: 'Five names, mixed order', sortOrder: 0 },
+      { inputs: ['Apple', 'Banana', 'Cherry', 'Date', 'Fig'], expectedOutput: 'Apple\nBanana\nCherry\nDate\nFig', description: 'Already alphabetical', sortOrder: 1 },
+      { inputs: ['Zebra', 'Yak', 'Wolf', 'Vole', 'Tiger'], expectedOutput: 'Tiger\nVole\nWolf\nYak\nZebra', description: 'Reverse alphabetical', sortOrder: 2, isHidden: true },
+      { inputs: ['Cat', 'Ant', 'Cat', 'Bat', 'Ant'], expectedOutput: 'Ant\nAnt\nBat\nCat\nCat', description: 'Duplicate names', sortOrder: 3, isHidden: true },
+    ],
+  },
+
+  {
+    title: 'Find an Item in the Sorted List',
+    description: `\`ItemList\` (5 strings) is already sorted alphabetically. Write function \`FindItem()\` that searches for \`Target\` and returns its 1-based position as a string, or \`"Not found"\` if it is not present.
+
+**Input:** 5 sorted item names, then the target to find.
+**Output:** The position, or \`"Not found"\`.
+
+**Example:**
+\`\`\`
+Input:  Book
+        Eraser
+        Marker
+        Pen
+        Ruler
+        Marker
+Output: 3
+\`\`\``,
+    difficulty: 'EASY' as const,
+    topic: 'Arrays',
+    tags: ['IGCSE', '0478', 'Oct/Nov 2024', 'Paper 22', 'Past Paper', 'Adapted', 'Searching'],
+    year: 2024,
+    session: 'Oct/Nov',
+    variant: 2,
+    starterCode: `DECLARE ItemList : ARRAY[1:5] OF STRING
+DECLARE Target : STRING
+
+FUNCTION FindItem() RETURNS STRING
+    // Search ItemList for Target; return its position as a string, or "Not found"
+ENDFUNCTION
+
+DECLARE Index : INTEGER
+FOR Index <- 1 TO 5
+    INPUT ItemList[Index]
+NEXT Index
+INPUT Target
+
+OUTPUT FindItem()`,
+    hints: [
+      'Loop through ItemList checking ItemList[Index] = Target.',
+      'When you find a match, RETURN the position as a string — use Index & "" to convert it.',
+      'If the loop finishes with no match, RETURN "Not found".',
+    ],
+    solution: `DECLARE ItemList : ARRAY[1:5] OF STRING
+DECLARE Target : STRING
+
+FUNCTION FindItem() RETURNS STRING
+    DECLARE Index : INTEGER
+    FOR Index <- 1 TO 5
+        IF ItemList[Index] = Target THEN
+            RETURN Index & ""
+        ENDIF
+    NEXT Index
+    RETURN "Not found"
+ENDFUNCTION
+
+DECLARE Index : INTEGER
+FOR Index <- 1 TO 5
+    INPUT ItemList[Index]
+NEXT Index
+INPUT Target
+
+OUTPUT FindItem()`,
+    solutionExplanation: 'A simple linear scan compares each element against Target. The matching position is converted to a string with & "" so it can be returned from a STRING function; if the loop finishes without a match, "Not found" is returned instead.',
+    testCases: [
+      { inputs: ['Book', 'Eraser', 'Marker', 'Pen', 'Ruler', 'Marker'], expectedOutput: '3', description: 'Middle item found', sortOrder: 0 },
+      { inputs: ['Book', 'Eraser', 'Marker', 'Pen', 'Ruler', 'Zebra'], expectedOutput: 'Not found', description: 'Target not in the list', sortOrder: 1 },
+      { inputs: ['Book', 'Eraser', 'Marker', 'Pen', 'Ruler', 'Book'], expectedOutput: '1', description: 'First item', sortOrder: 2, isHidden: true },
+      { inputs: ['Book', 'Eraser', 'Marker', 'Pen', 'Ruler', 'Ruler'], expectedOutput: '5', description: 'Last item', sortOrder: 3, isHidden: true },
+    ],
+  },
+
+  {
+    title: 'Validated Stock Count Total',
+    description: `Read 4 stock counts, one at a time. Each count must be validated so that only values from 0 to 999 (inclusive) are accepted — reject and re-ask for anything outside that range. Output the total of the 4 valid counts.
+
+**Input:** Stock count entries (some may be invalid and re-entered) until 4 valid values have been read.
+**Output:** \`Total stock: <total>\`.
+
+**Example:**
+\`\`\`
+Input:  10
+        20
+        30
+        40
+Output: Total stock: 100
+\`\`\``,
+    difficulty: 'EASY' as const,
+    topic: 'Loops',
+    tags: ['IGCSE', '0478', 'May/June 2024', 'Paper 21', 'Past Paper', 'Unseen', 'Validation'],
+    year: 2024,
+    session: 'May/June',
+    variant: 1,
+    starterCode: `DECLARE Stock, Total, Index : INTEGER
+
+// Read 4 stock counts (each validated to 0-999) and total them`,
+    hints: [
+      'Wrap each INPUT in a REPEAT ... UNTIL loop so invalid values are rejected immediately.',
+      'The valid range is 0 to 999 inclusive — the UNTIL condition should combine both bounds with AND.',
+      'Only add Stock to Total once a valid value has been entered, then move on to the next of the four counts.',
+    ],
+    solution: `DECLARE Stock, Total, Index : INTEGER
+
+Total <- 0
+FOR Index <- 1 TO 4
+    REPEAT
+        INPUT Stock
+    UNTIL Stock >= 0 AND Stock <= 999
+    Total <- Total + Stock
+NEXT Index
+
+OUTPUT "Total stock: " & Total`,
+    solutionExplanation: 'An inner REPEAT/UNTIL loop keeps re-reading Stock until it falls within 0 to 999, and only then is it added to Total. The outer FOR loop repeats this validation four times.',
+    testCases: [
+      { inputs: ['10', '20', '30', '40'], expectedOutput: 'Total stock: 100', description: 'Four valid entries', sortOrder: 0 },
+      { inputs: ['-5', '10', '20', '30', '40'], expectedOutput: 'Total stock: 100', description: 'A negative entry is rejected and re-entered', sortOrder: 1 },
+      { inputs: ['1000', '999', '0', '0', '0'], expectedOutput: 'Total stock: 999', description: 'A too-large entry is rejected and re-entered', sortOrder: 2, isHidden: true },
+      { inputs: ['0', '0', '0', '0'], expectedOutput: 'Total stock: 0', description: 'All zero, all valid', sortOrder: 3, isHidden: true },
+    ],
+  },
+
+  {
+    title: 'Weekly Temperature Grid Average',
+    description: `A 2D array \`Temps\` stores two readings (morning, afternoon) for each of 3 days: \`Temps[1]\` is the morning row, \`Temps[2]\` is the afternoon row, and the second index is the day. Read all six readings, then output the overall average of all six, rounded to 1 decimal place.
+
+**Input:** 6 real numbers (row by row: 3 morning readings, then 3 afternoon readings).
+**Output:** \`Average temperature: <average to 1 dp>\`.
+
+**Example:**
+\`\`\`
+Input:  10
+        12
+        14
+        18
+        20
+        22
+Output: Average temperature: 16
+\`\`\``,
+    difficulty: 'MEDIUM' as const,
+    topic: 'Arrays',
+    tags: ['IGCSE', '0478', 'Oct/Nov 2024', 'Paper 23', 'Past Paper', 'Unseen', '2D Arrays'],
+    year: 2024,
+    session: 'Oct/Nov',
+    variant: 3,
+    starterCode: `DECLARE Temps : ARRAY[1:2, 1:3] OF REAL
+DECLARE Row, Col : INTEGER
+DECLARE Total : REAL
+
+FOR Row <- 1 TO 2
+    FOR Col <- 1 TO 3
+        INPUT Temps[Row, Col]
+    NEXT Col
+NEXT Row
+
+// Calculate and output the overall average of all six readings, rounded to 1 dp`,
+    hints: [
+      'Use nested FOR loops (Row 1 to 2, Col 1 to 3) to read all six readings into Temps.',
+      'Add each value straight into a running Total as you read it, inside the same nested loop.',
+      'Divide Total by 6 (the total number of readings) and use ROUND(..., 1) for the final output.',
+    ],
+    solution: `DECLARE Temps : ARRAY[1:2, 1:3] OF REAL
+DECLARE Row, Col : INTEGER
+DECLARE Total : REAL
+
+Total <- 0
+FOR Row <- 1 TO 2
+    FOR Col <- 1 TO 3
+        INPUT Temps[Row, Col]
+        Total <- Total + Temps[Row, Col]
+    NEXT Col
+NEXT Row
+
+OUTPUT "Average temperature: " & ROUND(Total / 6, 1)`,
+    solutionExplanation: 'Every reading is added to Total as it is read, regardless of which row (morning or afternoon) it came from. Dividing by the fixed count of 6 readings and rounding to 1 decimal place gives the overall average.',
+    testCases: [
+      { inputs: ['10', '12', '14', '18', '20', '22'], expectedOutput: 'Average temperature: 16', description: 'Whole-number average', sortOrder: 0 },
+      { inputs: ['20', '20', '20', '20', '20', '20'], expectedOutput: 'Average temperature: 20', description: 'All readings equal', sortOrder: 1 },
+      { inputs: ['1', '2', '3', '4', '5', '6'], expectedOutput: 'Average temperature: 3.5', description: 'Average rounds to one decimal place', sortOrder: 2, isHidden: true },
+      { inputs: ['-5', '-10', '-15', '0', '5', '10'], expectedOutput: 'Average temperature: -2.5', description: 'Negative readings', sortOrder: 3, isHidden: true },
+    ],
+  },
+
+  {
+    title: 'Ticket Price by Age Band',
+    description: `A cinema prices tickets by age: under 5 is Free, 5–12 is Child ($5), 13–64 is Adult ($10), 65 and over is Senior ($6). Read an age and output the correct category and price.
+
+**Input:** One integer age.
+**Output:** \`Free\`, \`Child: $5\`, \`Adult: $10\`, or \`Senior: $6\`.
+
+**Example:**
+\`\`\`
+Input:  10
+Output: Child: $5
+\`\`\``,
+    difficulty: 'EASY' as const,
+    topic: 'Selection',
+    tags: ['IGCSE', '0478', 'Feb/Mar 2021', 'Paper 22', 'Past Paper', 'Unseen', 'Selection'],
+    year: 2021,
+    session: 'Feb/Mar',
+    variant: 2,
+    starterCode: `DECLARE Age : INTEGER
+INPUT Age
+
+// Output the ticket category and price based on Age`,
+    hints: [
+      'Use nested IF/ELSE statements with boundaries at 5, 13, and 65.',
+      'Check the youngest band first: Age < 5 is Free.',
+      'Age <= 12 is Child, Age <= 64 is Adult, anything else is Senior.',
+    ],
+    solution: `DECLARE Age : INTEGER
+INPUT Age
+
+IF Age < 5 THEN
+    OUTPUT "Free"
+ELSE
+    IF Age <= 12 THEN
+        OUTPUT "Child: $5"
+    ELSE
+        IF Age <= 64 THEN
+            OUTPUT "Adult: $10"
+        ELSE
+            OUTPUT "Senior: $6"
+        ENDIF
+    ENDIF
+ENDIF`,
+    solutionExplanation: 'Nested IF/ELSE statements test the age bands from youngest to oldest. Each ELSE branch narrows the remaining possibilities until the correct band is found.',
+    testCases: [
+      { inputs: ['3'], expectedOutput: 'Free', description: 'Under 5', sortOrder: 0 },
+      { inputs: ['10'], expectedOutput: 'Child: $5', description: 'Child band', sortOrder: 1 },
+      { inputs: ['30'], expectedOutput: 'Adult: $10', description: 'Adult band', sortOrder: 2 },
+      { inputs: ['65'], expectedOutput: 'Senior: $6', description: 'Senior boundary', sortOrder: 3, isHidden: true },
+      { inputs: ['12'], expectedOutput: 'Child: $5', description: 'Child upper boundary', sortOrder: 4, isHidden: true },
+    ],
+  },
+
+  {
+    title: 'Count Vowels and Consonants',
+    description: `Read a word made only of letters. Count how many vowels (A, E, I, O, U) and how many consonants it contains — treat \`Y\` as a consonant, and ignore case.
+
+**Input:** One word.
+**Output:** \`Vowels: <count>\` then \`Consonants: <count>\`.
+
+**Example:**
+\`\`\`
+Input:  Computer
+Output: Vowels: 3
+        Consonants: 5
+\`\`\``,
+    difficulty: 'EASY' as const,
+    topic: 'String Processing',
+    tags: ['IGCSE', '0478', 'Feb/Mar 2021', 'Paper 21', 'Past Paper', 'Unseen', 'String Processing'],
+    year: 2021,
+    session: 'Feb/Mar',
+    variant: 1,
+    starterCode: `DECLARE Word : STRING
+DECLARE Index, VowelCount, ConsonantCount : INTEGER
+DECLARE Ch : STRING
+
+INPUT Word
+
+// Count vowels and consonants in Word`,
+    hints: [
+      'Loop through each character using SUBSTRING(Word, Index, 1), and use UCASE() so the check works regardless of case.',
+      'Compare the uppercase character against "A", "E", "I", "O", "U" using OR.',
+      'Treat Y as a consonant — anything that is not one of the five vowels increases ConsonantCount.',
+    ],
+    solution: `DECLARE Word : STRING
+DECLARE Index, VowelCount, ConsonantCount : INTEGER
+DECLARE Ch : STRING
+
+INPUT Word
+VowelCount <- 0
+ConsonantCount <- 0
+
+FOR Index <- 1 TO LENGTH(Word)
+    Ch <- UCASE(SUBSTRING(Word, Index, 1))
+    IF Ch = "A" OR Ch = "E" OR Ch = "I" OR Ch = "O" OR Ch = "U" THEN
+        VowelCount <- VowelCount + 1
+    ELSE
+        ConsonantCount <- ConsonantCount + 1
+    ENDIF
+NEXT Index
+
+OUTPUT "Vowels: " & VowelCount
+OUTPUT "Consonants: " & ConsonantCount`,
+    solutionExplanation: 'Each character is converted to uppercase so the comparison is case-insensitive, then checked against the five vowels. Every character that is not a vowel — including Y — increases the consonant count.',
+    testCases: [
+      { inputs: ['Computer'], expectedOutput: 'Vowels: 3\nConsonants: 5', description: 'Mixed vowels and consonants', sortOrder: 0 },
+      { inputs: ['Sky'], expectedOutput: 'Vowels: 0\nConsonants: 3', description: 'Y counted as a consonant', sortOrder: 1 },
+      { inputs: ['AEIOU'], expectedOutput: 'Vowels: 5\nConsonants: 0', description: 'All vowels', sortOrder: 2, isHidden: true },
+      { inputs: ['rhythm'], expectedOutput: 'Vowels: 0\nConsonants: 6', description: 'No vowels at all', sortOrder: 3, isHidden: true },
+    ],
+  },
 ];
 
 // ─── Main seed function ────────────────────────────────────────────────────────
