@@ -3,6 +3,7 @@
 import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { Table2, Copy, Check, AlertTriangle } from 'lucide-react';
 import type { TraceRow } from '../../interpreter/core/types';
+import { formatTraceVar, traceColumns } from '../../lib/traceTableModel';
 
 interface TraceTableProps {
   rows: TraceRow[];
@@ -24,26 +25,7 @@ interface TraceTableProps {
 const TraceTable: React.FC<TraceTableProps> = ({ rows, maxRows, isLive = false }) => {
   const [copied, setCopied] = useState(false);
 
-  // Column order = variables in the order they first appear across the trace.
-  const columns = useMemo(() => {
-    const seen: string[] = [];
-    const set = new Set<string>();
-    for (const row of rows) {
-      for (const v of row.variables) {
-        if (!set.has(v.name)) {
-          set.add(v.name);
-          seen.push(v.name);
-        }
-      }
-    }
-    return seen;
-  }, [rows]);
-
-  const formatVar = (value: string, type: string) => {
-    if (type === 'STRING') return `"${value}"`;
-    if (type === 'CHAR') return `'${value}'`;
-    return value;
-  };
+  const columns = useMemo(() => traceColumns(rows), [rows]);
 
   // Follow execution: keep the most recent (current) row in view while live.
   const lastRowRef = useRef<HTMLTableRowElement>(null);
@@ -56,7 +38,7 @@ const TraceTable: React.FC<TraceTableProps> = ({ rows, maxRows, isLive = false }
   const handleCopy = () => {
     const header = ['Step', 'Line', ...columns, 'OUTPUT'].join('\t');
     const lines = rows.map((row) => {
-      const byName = new Map(row.variables.map((v) => [v.name, formatVar(v.value, v.type)]));
+      const byName = new Map(row.variables.map((v) => [v.name, formatTraceVar(v.value, v.type)]));
       const cells = columns.map((c) => byName.get(c) ?? '');
       return [row.step, row.line, ...cells, row.output.join(' ')].join('\t');
     });
@@ -165,7 +147,7 @@ const TraceTable: React.FC<TraceTableProps> = ({ rows, maxRows, isLive = false }
                           changed ? 'text-info font-medium bg-primary/[0.12]' : 'text-light-text/70'
                         }`}
                       >
-                        {formatVar(v.value, v.type)}
+                        {formatTraceVar(v.value, v.type)}
                       </td>
                     );
                   })}

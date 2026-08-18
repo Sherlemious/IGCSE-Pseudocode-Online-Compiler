@@ -36,6 +36,7 @@
     "@xyflow/react": "^12.11.0",
     "antlr4ng": "^3.0.16",
     "bcryptjs": "^3.0.3",
+    "html-to-image": "^1.11.13",
     "lucide-react": "^0.577.0",
     "next": "^16.2.9",
     "next-auth": "^5.0.0-beta.30",

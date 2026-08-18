@@ -18,14 +18,18 @@ import {
   Download,
   Link2,
   Copy,
+  Image as ImageIcon,
 } from 'lucide-react';
 import * as Popover from '@radix-ui/react-popover';
 import { toast } from 'sonner';
 import ExamplePicker from './examplePicker';
 import FileViewer from './fileViewer';
 import CodeMirrorEditor from './CodeMirrorEditor';
+import ExportStudio from './export/ExportStudio';
 import { useTheme } from '../../theme/ThemeContext';
 import { useRegisterCommands } from '../common/CommandPalette';
+import { editorCodeUrl } from '../../lib/editorShare';
+import type { OutputEntry, TraceRow } from '../../interpreter/core/types';
 
 const SHORTCUT_HINT_KEY = 'pseudocode_seen_shortcut_hint';
 
@@ -66,6 +70,9 @@ interface CodeInputProps {
   onBreakpointToggle?: (line: number) => void;
   jumpToLine?: number | null;
   onJumpToLineConsumed?: () => void;
+  entries?: OutputEntry[];
+  traceRows?: TraceRow[];
+  outputTab?: 'terminal' | 'trace' | 'python' | 'flowchart';
 }
 
 /** A labelled item inside the Open / Export dropdowns. */
@@ -112,6 +119,9 @@ const CodeInput: React.FC<CodeInputProps> = ({
   onBreakpointToggle,
   jumpToLine,
   onJumpToLineConsumed,
+  entries = [],
+  traceRows = [],
+  outputTab,
 }) => {
   const tabsContainerRef = useRef<HTMLDivElement>(null);
   const [showShortcutHint, setShowShortcutHint] = useState(false);
@@ -121,6 +131,7 @@ const CodeInput: React.FC<CodeInputProps> = ({
   const [examplesOpen, setExamplesOpen] = useState(false);
   const [filesOpen, setFilesOpen] = useState(false);
   const [filesCreating, setFilesCreating] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
 
   // Flash the Run button once when a run settles — success-tinted on a clean
   // finish, error-tinted when the run produced an error. Watches the falling
@@ -198,9 +209,7 @@ const CodeInput: React.FC<CodeInputProps> = ({
   }, [code, tabs, activeTabId]);
 
   const handleShareCode = useCallback(() => {
-    const encoded = btoa(encodeURIComponent(code));
-    const url = `${window.location.origin}${window.location.pathname}?code=${encoded}`;
-    navigator.clipboard.writeText(url).then(() => {
+    navigator.clipboard.writeText(editorCodeUrl(code)).then(() => {
       toast.success('Link to your code copied to clipboard');
     }).catch(() => { /* clipboard unavailable */ });
   }, [code]);
@@ -214,12 +223,14 @@ const CodeInput: React.FC<CodeInputProps> = ({
   const openExamples = useCallback(() => setExamplesOpen(true), []);
   const browseFiles = useCallback(() => { setFilesCreating(false); setFilesOpen(true); }, []);
   const newFile = useCallback(() => { setFilesCreating(true); setFilesOpen(true); }, []);
+  const openExportStudio = useCallback(() => setExportOpen(true), []);
 
   // Register the editor's open/export actions in the command palette.
   useRegisterCommands([
     { id: 'open-examples', label: 'Open example…', group: 'Open', keywords: 'sample template browse', run: () => openExamples() },
     { id: 'open-files', label: 'Browse files', group: 'Open', keywords: 'storage localstorage', run: () => browseFiles() },
     { id: 'open-new-file', label: 'New file', group: 'Open', keywords: 'create', run: () => newFile() },
+    { id: 'code-export-image', label: 'Export as image…', group: 'Code', keywords: 'png screenshot share card trace', run: () => openExportStudio() },
     { id: 'code-download', label: 'Download code (.pseudo)', group: 'Code', keywords: 'save export', run: () => handleDownload() },
     { id: 'code-share', label: 'Share code (copy link)', group: 'Code', keywords: 'permalink url', run: () => handleShareCode() },
     { id: 'code-copy', label: 'Copy code', group: 'Code', keywords: 'clipboard', run: () => handleCopyCode() },
@@ -304,7 +315,7 @@ const CodeInput: React.FC<CodeInputProps> = ({
                 <button
                   className="flex items-center gap-1 px-2 h-7 text-xs text-dark-text hover:text-light-text
                     hover:bg-background rounded transition-colors"
-                  title="Download, share or copy this code"
+                  title="Download, share, or export this code as an image"
                 >
                   <Download size={14} />
                   <span className="hidden @md:inline">Export</span>
@@ -317,6 +328,8 @@ const CodeInput: React.FC<CodeInputProps> = ({
                   align="start"
                   className="z-50 min-w-[200px] rounded-lg bg-surface border border-border p-1 shadow-intense"
                 >
+                  <MenuItem icon={<ImageIcon size={13} />} label="Export as image…" onSelect={openExportStudio} />
+                  <div className="h-px bg-border my-1 mx-1" />
                   <MenuItem icon={<Download size={13} />} label="Download (.pseudo)" onSelect={handleDownload} />
                   <MenuItem icon={<Link2 size={13} />} label="Copy link to this code" onSelect={handleShareCode} />
                   <MenuItem icon={<Copy size={13} />} label="Copy code" onSelect={handleCopyCode} />
@@ -456,6 +469,15 @@ const CodeInput: React.FC<CodeInputProps> = ({
       {/* Controlled modals (render nothing until opened) */}
       <ExamplePicker open={examplesOpen} onOpenChange={setExamplesOpen} onSelectExample={onSelectExample} />
       <FileViewer open={filesOpen} onOpenChange={setFilesOpen} initialCreating={filesCreating} onOpenFile={onOpenFile} />
+      <ExportStudio
+        open={exportOpen}
+        onOpenChange={setExportOpen}
+        code={code}
+        fileName={activeTabName}
+        entries={entries}
+        traceRows={traceRows}
+        outputTab={outputTab}
+      />
     </div>
   );
 };

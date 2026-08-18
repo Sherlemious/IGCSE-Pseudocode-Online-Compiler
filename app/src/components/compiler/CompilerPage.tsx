@@ -576,6 +576,9 @@ const CompilerPage: React.FC = () => {
             onBreakpointToggle={toggleBreakpoint}
             jumpToLine={jumpToLine}
             onJumpToLineConsumed={() => setJumpToLine(null)}
+            entries={entries}
+            traceRows={traceRows}
+            outputTab={outputTab}
           />
         </div>
 
