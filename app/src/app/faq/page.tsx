@@ -59,7 +59,7 @@ function Inline({ text }: { text: string }) {
 
 export default function FaqPage() {
   return (
-    <div className="flex-1 overflow-y-auto bg-background bg-dot-grid">
+    <div className="flex-1 min-h-0 overflow-y-auto bg-background bg-dot-grid scrollbar-pretty">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <div
         className="pointer-events-none absolute inset-0"

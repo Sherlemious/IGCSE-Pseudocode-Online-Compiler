@@ -5,8 +5,10 @@ export default function robots(): MetadataRoute.Robots {
   return {
     rules: {
       userAgent: '*',
-      allow: '/',
-      disallow: ['/api/', '/auth/', '/admin/', '/profile/', '/analytics/', '/exam', '/exam/'],
+      // `/examples` must be allowed explicitly: a `Disallow: /exam` prefix
+      // also matches `/examples` (robots.txt is longest-prefix, not exact).
+      allow: ['/', '/examples', '/examples/'],
+      disallow: ['/api/', '/auth/', '/admin/', '/profile/', '/analytics/', '/exam$', '/exam/'],
     },
     sitemap: `${SITE_URL}/sitemap.xml`,
   };

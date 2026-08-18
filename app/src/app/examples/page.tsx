@@ -44,7 +44,7 @@ function categoryAnchor(category: string) {
 
 export default function ExamplesPage() {
   return (
-    <div className="flex-1 overflow-y-auto bg-background bg-dot-grid">
+    <div className="flex-1 min-h-0 overflow-y-auto bg-background bg-dot-grid scrollbar-pretty">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <div
         className="pointer-events-none absolute inset-0"
@@ -61,12 +61,13 @@ export default function ExamplesPage() {
             Cambridge pseudocode examples
           </h1>
           <p className="text-sm text-dark-text mt-2 leading-relaxed">
-            {examples.length} runnable snippets for IGCSE (0478/0984), O Level (2210) and AS &amp; A
-            Level (9618). Open any example in the{' '}
+            Runnable Cambridge IGCSE (0478/0984), O Level (2210) and AS &amp; A Level (9618)
+            snippets. Open any example in the{' '}
             <Link href="/" className="text-primary hover:text-primary-hover">
               compiler
             </Link>
-            . These are the same programs as the in-editor Examples picker.
+            {' '}
+            — same programs as the in-editor Examples picker.
           </p>
 
           <nav aria-label="Example categories" className="mt-6 flex flex-wrap gap-2">
@@ -98,7 +99,7 @@ export default function ExamplesPage() {
                             <summary className="cursor-pointer text-sm font-medium text-light-text hover:text-primary list-outside ml-4">
                               {example.title}
                             </summary>
-                            <pre className="mt-2 mb-1 overflow-x-auto rounded-md border border-border bg-code-bg p-3 font-mono text-xs text-light-text leading-relaxed scrollbar-thin scrollbar-thumb-primary scrollbar-track-background">
+                            <pre className="mt-2 mb-1 overflow-x-auto rounded-md border border-border bg-code-bg p-3 font-mono text-xs text-light-text leading-relaxed scrollbar-pretty">
                               <code>{example.code}</code>
                             </pre>
                           </details>
