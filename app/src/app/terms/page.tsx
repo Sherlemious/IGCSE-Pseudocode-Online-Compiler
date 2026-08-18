@@ -1,9 +1,13 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import IndexLinks from '@/components/layout/IndexLinks';
 
 export const metadata: Metadata = {
   title: 'Terms & Conditions',
   description: 'Terms for using IGCSE Pseudocode Compiler.',
+  alternates: {
+    canonical: '/terms',
+  },
 };
 
 const sections = [
@@ -80,6 +84,8 @@ export default function TermsPage() {
               Privacy Policy
             </Link>
           </div>
+
+          <IndexLinks current="/terms" />
         </div>
       </div>
     </div>

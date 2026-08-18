@@ -1444,3 +1444,31 @@ MyCat <- NEW Cat("Kitty", "Shorthaired")
 OUTPUT MyCat.Describe()`,
   },
 ];
+
+export function exampleSlug(title: string) {
+  return title
+    .toLowerCase()
+    .replace(/&/g, 'and')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+export function examplesByCategory() {
+  const order: string[] = [];
+  const grouped = new Map<string, Example[]>();
+
+  for (const example of examples) {
+    const existing = grouped.get(example.category);
+    if (existing) {
+      existing.push(example);
+    } else {
+      order.push(example.category);
+      grouped.set(example.category, [example]);
+    }
+  }
+
+  return order.map((category) => ({
+    category,
+    items: grouped.get(category) ?? [],
+  }));
+}

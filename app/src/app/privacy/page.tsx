@@ -1,9 +1,13 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import IndexLinks from '@/components/layout/IndexLinks';
 
 export const metadata: Metadata = {
   title: 'Privacy Policy',
   description: 'How IGCSE Pseudocode Compiler collects, uses, and protects personal data.',
+  alternates: {
+    canonical: '/privacy',
+  },
 };
 
 const sections = [
@@ -94,6 +98,8 @@ export default function PrivacyPolicyPage() {
               Terms &amp; Conditions
             </Link>
           </div>
+
+          <IndexLinks current="/privacy" />
         </div>
       </div>
     </div>

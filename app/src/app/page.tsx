@@ -6,6 +6,8 @@ const FEATURE_LINKS = [
   { label: 'Language Docs', href: '/docs' },
   { label: 'Timed Exams', href: '/exam' },
   { label: 'Progress Analytics', href: '/analytics' },
+  { label: 'FAQ', href: '/faq' },
+  { label: 'Cambridge Pseudocode Examples', href: '/examples' },
 ] as const;
 
 const FEATURE_TAGS = [
@@ -59,6 +61,9 @@ export default function Home() {
               {tag}
             </span>
           ))}
+          <a href="/llms.txt" className="sr-only">
+            LLM index of docs, examples and practice questions
+          </a>
         </nav>
       </section>
 

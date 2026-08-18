@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
+import Link from 'next/link';
 import { ChevronRight, List, X, Search } from 'lucide-react';
 
 import CodeBlock from '../../components/common/CodeBlock';
@@ -1386,6 +1387,11 @@ OUTPUT "Valid mark entered: ", Mark`}
           />
 
           <div className="h-8" />
+          <p className="text-[11px] text-dark-text/40 pb-4">
+            <Link href="/faq" className="hover:text-primary">FAQ</Link>
+            <span className="mx-1.5">·</span>
+            <Link href="/examples" className="hover:text-primary">Examples</Link>
+          </p>
         </div>
       </div>
     </div>
