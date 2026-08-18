@@ -1,8 +1,10 @@
 import { toBlob } from 'html-to-image';
 
-export const EXPORT_CARD_WIDTH = 720;
+export const EXPORT_CARD_WIDTH = 680;
 export const MAX_EXPORT_CODE_LINES = 80;
-export const MAX_EXPORT_TRACE_ROWS = 60;
+export const MAX_EXPORT_TRACE_ROWS = 40;
+/** Tighter cap when the card also includes code, so Lab exports stay shareable. */
+export const MAX_EXPORT_TRACE_ROWS_WITH_CODE = 24;
 
 export async function captureExportCard(node: HTMLElement): Promise<Blob> {
   const blob = await toBlob(node, {

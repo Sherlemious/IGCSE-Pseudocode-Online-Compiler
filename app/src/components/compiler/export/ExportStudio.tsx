@@ -314,7 +314,8 @@ export default function ExportStudio({
           </div>
         </div>
 
-        <div className="flex-1 min-h-0 overflow-auto scrollbar-pretty flex justify-center p-4"
+        <div
+          className="flex-1 min-h-0 overflow-auto scrollbar-pretty flex justify-center items-start p-4"
           style={{ backgroundColor: 'rgba(0, 0, 0, 0.28)' }}
         >
           <ExportCard
