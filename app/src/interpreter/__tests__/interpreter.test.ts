@@ -4,7 +4,7 @@ import { resolve } from 'node:path';
 import { parse } from '../parser';
 import { Interpreter } from '../core/interpreter';
 import { ServerVirtualFileSystem } from '../core/serverFilesystem';
-import { humanizeParseError } from '../errorMessages';
+import { formatPrimaryParseError, humanizeParseError, humanizeRuntimeError } from '../errorMessages';
 import type { PseudocodeError } from '../core/types';
 import { examples } from '../../data/examples';
 
@@ -196,14 +196,14 @@ describe('humanizeParseError — new hints', () => {
   it('unclosed IF at end of program includes a complete IF example', () => {
     const raw = "extraneous input '<EOF>' expecting {ENDIF, NEWLINE}";
     const msg = humanizeParseError(raw);
-    expect(msg).toContain('IF block is not closed');
+    expect(msg).toContain('This IF never ended');
     expect(msg).toContain('IF Score >= 50 THEN');
     expect(msg).toContain('ENDIF');
   });
 
   it('ELSE without a matching IF explains the block shape', () => {
     const msg = humanizeParseError("no viable alternative at input '\\nELSE'");
-    expect(msg).toContain('ELSE must belong to an open IF block');
+    expect(msg).toContain('ELSE has to sit inside an IF');
     expect(msg).toContain('ELSE');
     expect(msg).toContain('ENDIF');
   });
@@ -213,7 +213,7 @@ describe('humanizeParseError — new hints', () => {
     // ELSE into more tokens; it should still get the IF-block guidance, not the
     // generic fallback.
     const msg = humanizeParseError("no viable alternative at input '\\nELSEIFx>0THEN\\nOUTPUT\"b\"\\n'");
-    expect(msg).toContain('ELSE must belong to an open IF block');
+    expect(msg).toContain('ELSE has to sit inside an IF');
     expect(msg).toContain('ENDIF');
   });
 
@@ -321,7 +321,7 @@ describe('humanizeParseError — misspelled block closers', () => {
   it('truncated ENDCLASS (ENDCLA) is identified as the root cause', () => {
     const msg = humanizeParseError(NEWLINE_SYMPTOM, 'ENDCLA');
     expect(msg).toContain('did you mean ENDCLASS?');
-    expect(msg).toContain('leaves its block open');
+    expect(msg).toContain('leaves the block open');
   });
 
   it('truncated ENDPROCEDURE (ENDPROC) maps to ENDPROCEDURE', () => {
@@ -347,6 +347,70 @@ describe('humanizeParseError — misspelled block closers', () => {
     const msg = humanizeParseError("mismatched input '<-' expecting ':'", 'MyCat <- NEW Cat("Kitty")');
     expect(msg).not.toContain('did you mean');
     expect(msg).toContain('variable name before `<-`');
+  });
+});
+
+describe('formatPrimaryParseError — first real problem only', () => {
+  it('keeps a single error unchanged aside from the line prefix', () => {
+    const shown = formatPrimaryParseError(
+      [{ message: "extraneous input '<EOF>' expecting {ENDIF, NEWLINE}", line: 4 }],
+      ['IF Score >= 50 THEN', '  OUTPUT "Pass"', ''],
+    );
+    expect(shown?.line).toBe(4);
+    expect(shown?.text).toMatch(/^Line 4 — This IF never ended/);
+    expect(shown?.text).not.toContain('later messages');
+  });
+
+  it('hides cascading follow-on errors and asks the student to fix the first one', () => {
+    const shown = formatPrimaryParseError(
+      [
+        { message: "extraneous input '<EOF>' expecting {ENDIF, NEWLINE}", line: 3 },
+        { message: "mismatched input 'OUTPUT' expecting ENDIF", line: 5 },
+        { message: "extraneous input 'NEXT' expecting <EOF>", line: 8 },
+      ],
+      ['IF Score >= 50 THEN', '  OUTPUT "Pass"', ''],
+    );
+    expect(shown?.text).toMatch(/^Line 3 — This IF never ended/);
+    expect(shown?.text).toContain('Fix this one first — later messages often disappear.');
+    expect(shown?.text).not.toContain('NEXT');
+    expect(shown?.text).not.toContain('mismatched');
+  });
+
+  it('a missing ENDIF is reported as that IF, even when ANTLR only complains about a newline', () => {
+    const source = [
+      'DECLARE Score : INTEGER',
+      'Score <- 40',
+      'IF Score >= 50 THEN',
+      '    OUTPUT "Pass"',
+      'OUTPUT "Done"',
+      '',
+    ].join('\n');
+    const { errors } = parse(source);
+    expect(errors.length).toBeGreaterThan(0);
+    const shown = formatPrimaryParseError(errors, source.split('\n'));
+    expect(shown?.text).toContain('This IF never ended');
+    expect(shown?.text).not.toContain('mismatched');
+    expect(shown?.text).not.toContain('no viable alternative');
+  });
+});
+
+describe('humanizeRuntimeError — undeclared names', () => {
+  it('talks about a missing box, not a compiler "not defined"', () => {
+    const msg = humanizeRuntimeError("Variable 'Scroe' is not defined");
+    expect(msg).toContain('There is no box called Scroe yet');
+    expect(msg).toContain('DECLARE Scroe : INTEGER');
+    expect(msg).not.toContain('is not defined');
+  });
+
+  it('suggests a nearby declared name', () => {
+    const msg = humanizeRuntimeError("Variable 'Scroe' is not defined", ['Score', 'Total']);
+    expect(msg).toBe('There is no box called Scroe yet. Did you mean Score?');
+  });
+
+  it('explains case-sensitive names', () => {
+    const msg = humanizeRuntimeError("Variable 'score' is not defined", ['Score']);
+    expect(msg).toContain('case-sensitive');
+    expect(msg).toContain('Score');
   });
 });
 

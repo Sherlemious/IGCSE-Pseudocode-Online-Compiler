@@ -42,7 +42,7 @@ function commonParseHint(rawMessage: string): string | null {
 
   if (rawMessage.includes("extraneous input '<EOF>'") && rawMessage.includes('ENDIF')) {
     return (
-      'Your IF block is not closed. Add ENDIF after the last statement in the block.\n' +
+      'This IF never ended. Add ENDIF after the last statement in the block.\n' +
       '  Example:\n' +
       '    IF Score >= 50 THEN\n' +
       '      OUTPUT "Pass"\n' +
@@ -55,7 +55,7 @@ function commonParseHint(rawMessage: string): string | null {
   // closed the block). Both want the same fix: a complete IF … THEN … ENDIF.
   if (/no viable alternative at input '(?:\\n|\n)?ELSE/.test(rawMessage)) {
     return (
-      'ELSE must belong to an open IF block, and the block must close with ENDIF.\n' +
+      'ELSE has to sit inside an IF, and that IF still needs ENDIF at the end.\n' +
       '  Example:\n' +
       '    IF Mark >= 50 THEN\n' +
       '      OUTPUT "Pass"\n' +
@@ -160,17 +160,17 @@ function nearestKeyword(token: string): string | null {
 // ── Parse error humanization ────────────────────────────────────────────────
 
 const SYNTAX_HINTS: Record<string, string> = {
-  ENDIF:        'ENDIF — every IF block must close with ENDIF\n  Example:\n    IF condition THEN\n      ...\n    ENDIF',
-  ENDWHILE:     'ENDWHILE — every WHILE loop must close with ENDWHILE\n  Example:\n    WHILE condition DO\n      ...\n    ENDWHILE',
-  NEXT:         'NEXT — every FOR loop must close with NEXT <variable>\n  Example:\n    FOR i ← 1 TO 10\n      ...\n    NEXT i',
-  UNTIL:        'UNTIL <condition> — every REPEAT loop must end with UNTIL\n  Example:\n    REPEAT\n      ...\n    UNTIL condition',
-  ENDFUNCTION:  'ENDFUNCTION — close your FUNCTION block\n  Example:\n    FUNCTION name() RETURNS INTEGER\n      ...\n    ENDFUNCTION',
-  ENDPROCEDURE: 'ENDPROCEDURE — close your PROCEDURE block\n  Example:\n    PROCEDURE name()\n      ...\n    ENDPROCEDURE',
-  ENDCASE:      'ENDCASE — every CASE block must close with ENDCASE',
-  ENDTYPE:      'ENDTYPE — every record TYPE must close with ENDTYPE\n  Example:\n    TYPE StudentRecord\n      DECLARE Name : STRING\n    ENDTYPE',
-  ENDCLASS:     'ENDCLASS — every CLASS must close with ENDCLASS\n  Example:\n    CLASS Pet\n      PRIVATE Name : STRING\n    ENDCLASS',
-  DO:           'DO after the WHILE condition\n  Example: WHILE x < 10 DO',
-  ':':          'colon `:` — colons are used in DECLARE and CASE:\n  DECLARE x : INTEGER\n  DECLARE x : REAL\n  CASE clause →  value : action\n  Also check you\'re using ← (or <-) for assignment, not :=',
+  ENDIF:        'This IF never ended. Add ENDIF on its own line when the extra statements are done.\n  Example:\n    IF Score >= 50 THEN\n      OUTPUT "Pass"\n    ENDIF',
+  ENDWHILE:     'This WHILE never ended. Add ENDWHILE after the last line inside the loop.\n  Example:\n    WHILE Count < 10 DO\n      OUTPUT Count\n    ENDWHILE',
+  NEXT:         'This FOR loop never ended. Close it with NEXT and the loop variable.\n  Example:\n    FOR i ← 1 TO 10\n      OUTPUT i\n    NEXT i',
+  UNTIL:        'This REPEAT loop never ended. Finish it with UNTIL and a condition.\n  Example:\n    REPEAT\n      INPUT Answer\n    UNTIL Answer = "Y"',
+  ENDFUNCTION:  'This FUNCTION never ended. Add ENDFUNCTION after the last line inside it.\n  Example:\n    FUNCTION name() RETURNS INTEGER\n      RETURN 0\n    ENDFUNCTION',
+  ENDPROCEDURE: 'This PROCEDURE never ended. Add ENDPROCEDURE after the last line inside it.\n  Example:\n    PROCEDURE name()\n      OUTPUT "Hi"\n    ENDPROCEDURE',
+  ENDCASE:      'This CASE never ended. Add ENDCASE when the cases are done.',
+  ENDTYPE:      'This TYPE never ended. Add ENDTYPE after the last field.\n  Example:\n    TYPE StudentRecord\n      DECLARE Name : STRING\n    ENDTYPE',
+  ENDCLASS:     'This CLASS never ended. Add ENDCLASS after the last member.\n  Example:\n    CLASS Pet\n      PRIVATE Name : STRING\n    ENDCLASS',
+  DO:           'WHILE needs DO at the end of that line.\n  Example: WHILE x < 10 DO',
+  ':':          'A colon is missing. Colons are used in DECLARE and CASE:\n  DECLARE x : INTEGER\n  CASE clause →  value : action\n  Also check you are using ← (or <-) for assignment, not :=',
 };
 
 /** Non-standard tokens students often write by accident */
@@ -230,6 +230,56 @@ function portugolHint(token: string): string | null {
   );
 }
 
+const BLOCK_OPENERS: Record<string, string> = {
+  IF: 'ENDIF',
+  WHILE: 'ENDWHILE',
+  FOR: 'NEXT',
+  REPEAT: 'UNTIL',
+  FUNCTION: 'ENDFUNCTION',
+  PROCEDURE: 'ENDPROCEDURE',
+  CASE: 'ENDCASE',
+  TYPE: 'ENDTYPE',
+  CLASS: 'ENDCLASS',
+};
+
+const BLOCK_CLOSER_SET = new Set(Object.values(BLOCK_OPENERS));
+
+function leadingKeyword(line: string): string | null {
+  const trimmed = line.replace(/\/\/.*$/, '').trim();
+  if (!trimmed) return null;
+  const m = trimmed.match(/^([A-Za-z]+)/);
+  return m ? m[1].toUpperCase() : null;
+}
+
+/** Innermost block that never got its closer — used when ANTLR only reports a stray newline at EOF. */
+function unclosedBlockHint(sourceLines: string[]): string | null {
+  const stack: string[] = [];
+  for (const line of sourceLines) {
+    const kw = leadingKeyword(line);
+    if (!kw) continue;
+    const closer = BLOCK_OPENERS[kw];
+    if (closer) {
+      stack.push(closer);
+      continue;
+    }
+    if (BLOCK_CLOSER_SET.has(kw)) {
+      const idx = stack.lastIndexOf(kw);
+      if (idx >= 0) stack.splice(idx, 1);
+    }
+  }
+  const missing = stack[stack.length - 1];
+  if (!missing) return null;
+  return SYNTAX_HINTS[missing] ?? `This block never ended. Add ${missing} when you are done.`;
+}
+
+function isEofOrNewlineError(rawMessage: string): boolean {
+  if (rawMessage.includes('<EOF>')) return true;
+  const token = extractToken(rawMessage);
+  if (!token) return false;
+  const cleaned = cleanToken(token);
+  return cleaned === '' || token === '\\n' || token === '\n';
+}
+
 /** Block-closing keywords. A misspelled one alone on a line silently lexes as an
  *  identifier, leaving the block open and cascading confusing errors onto later lines. */
 const BLOCK_CLOSERS = [
@@ -273,17 +323,24 @@ function closerSuggestion(sourceLine: string | undefined): string | null {
   }
 
   return (
-    `"${word}" is not recognised — did you mean ${best}?\n` +
-    `  A misspelled closing keyword leaves its block open, so the lines below are misread as part of it.\n` +
+    `"${word}" looks unfinished — did you mean ${best}?\n` +
+    `  A misspelled ending leaves the block open, so the lines below get mixed into it.\n` +
     `  ${SYNTAX_HINTS[best]}`
   );
 }
 
-export function humanizeParseError(rawMessage: string, sourceLine?: string): string {
+export function humanizeParseError(rawMessage: string, sourceLine?: string, sourceLines?: string[]): string {
   // Root-cause check: a botched closer (e.g. ENDCLA) is the real error even though
   // ANTLR reports the symptom (a stray newline) — surface it before anything else.
   const closer = closerSuggestion(sourceLine);
   if (closer) return closer;
+
+  // Missing ENDIF/ENDWHILE/… often surfaces only as a stray newline at EOF because
+  // the rest of the program was swallowed into the open block.
+  if (sourceLines && isEofOrNewlineError(rawMessage)) {
+    const unclosed = unclosedBlockHint(sourceLines);
+    if (unclosed) return unclosed;
+  }
 
   const lower = rawMessage.toLowerCase();
   const commonHint = commonParseHint(rawMessage);
@@ -309,8 +366,8 @@ export function humanizeParseError(rawMessage: string, sourceLine?: string): str
   if (missingMatch) {
     const missing = missingMatch[1].toUpperCase();
     const hint = SYNTAX_HINTS[missing];
-    if (hint) return `Missing ${hint}`;
-    return `Missing "${missingMatch[1]}" — check your syntax around this line`;
+    if (hint) return hint;
+    return `Something is missing here ("${missingMatch[1]}"). Check the spelling and punctuation on this line.`;
   }
 
   // ── mismatched / extraneous input ─────────────────────────────────────
@@ -321,9 +378,9 @@ export function humanizeParseError(rawMessage: string, sourceLine?: string): str
     // EOF mismatches → missing closing keyword
     if (token === '<EOF>') {
       for (const [kw, hint] of Object.entries(SYNTAX_HINTS)) {
-        if (rawMessage.includes(kw)) return `Missing ${hint}`;
+        if (rawMessage.includes(kw)) return hint;
       }
-      return 'Unexpected end of program — you may be missing a closing keyword (ENDIF, ENDWHILE, etc.)';
+      return 'The program ended too early — a block is probably missing its ending (ENDIF, ENDWHILE, NEXT, or similar).';
     }
 
     if (token) {
@@ -394,7 +451,7 @@ export function humanizeParseError(rawMessage: string, sourceLine?: string): str
       // Casing issue or near-misspelling
       const nearest = nearestKeyword(token);
       if (nearest) {
-        return `"${token}" is not recognised — did you mean ${nearest}?`;
+        return `I do not know "${token}" — did you mean ${nearest}?`;
       }
 
       // Expecting specific things
@@ -412,13 +469,13 @@ export function humanizeParseError(rawMessage: string, sourceLine?: string): str
 
       // NEXT appearing outside a FOR loop (e.g. '\nNEXT' at top level)
       if (tokenUpper === 'NEXT')
-        return 'NEXT must close a FOR loop. Make sure you have a matching `FOR ... TO ...` statement above it.\n  Example:\n    FOR i <- 1 TO 10\n      OUTPUT i\n    NEXT i';
+        return 'NEXT belongs with a FOR loop. I cannot find a matching `FOR ... TO ...` above it.\n  Example:\n    FOR i <- 1 TO 10\n      OUTPUT i\n    NEXT i';
 
       if (tokenUpper === 'ENDIF')
-        return 'ENDIF closes an IF block. Check that there is a matching `IF ... THEN` above it.\n  Example:\n    IF Score >= 50 THEN\n      OUTPUT "Pass"\n    ENDIF';
+        return 'ENDIF belongs with an IF. I cannot find a matching `IF ... THEN` above it.\n  Example:\n    IF Score >= 50 THEN\n      OUTPUT "Pass"\n    ENDIF';
 
       if (tokenUpper === 'UNTIL')
-        return 'UNTIL closes a REPEAT loop. Check that there is a matching REPEAT above it.\n  Example:\n    REPEAT\n      INPUT Answer\n    UNTIL Answer = "Y"';
+        return 'UNTIL belongs with a REPEAT loop. I cannot find a matching REPEAT above it.\n  Example:\n    REPEAT\n      INPUT Answer\n    UNTIL Answer = "Y"';
 
       if (['START', 'STOP', 'END'].includes(tokenUpper))
         return 'Cambridge IGCSE pseudocode does not need START, STOP, BEGIN, or a general END wrapper.\n  Write statements directly, and use specific closers such as ENDIF, NEXT i, ENDWHILE, and ENDFUNCTION.';
@@ -429,7 +486,7 @@ export function humanizeParseError(rawMessage: string, sourceLine?: string): str
       const phint = portugolHint(token);
       if (phint) return phint;
       const nearest = nearestKeyword(token);
-      if (nearest) return `"${token}" is not recognised — did you mean ${nearest}?`;
+      if (nearest) return `I do not know "${token}" — did you mean ${nearest}?`;
 
       if (/^[A-Za-z][A-Za-z0-9_]*$/.test(token))
         return (
@@ -439,17 +496,40 @@ export function humanizeParseError(rawMessage: string, sourceLine?: string): str
           `  To display text:   OUTPUT "${token}"`
         );
     }
-    return 'Unexpected input — check the syntax on this line';
+    return 'This line is not written in a way the compiler understands yet. Check spelling, and put each statement on its own line.';
   }
 
-  // ── fallback: strip ANTLR token-set noise ─────────────────────────────
+  // ── fallback: never show raw ANTLR ────────────────────────────────────
   // ANTLR dumps full expected-set like "expecting {T__0, T__1, 'THEN', ...}"
-  // Trim it to just the human-readable part
-  const cleaned = rawMessage
-    .replace(/expecting \{[^}]+\}/g, '')
-    .replace(/expecting '[^']+'/g, '')
-    .trim();
-  return cleaned || rawMessage;
+  return 'This line is not written in a way the compiler understands yet. Check spelling, and put each statement on its own line.';
+}
+
+/**
+ * Pick the first parse error for the student terminal. ANTLR recovery often
+ * emits a cascade of later nonsense after one real mistake (e.g. a missing
+ * ENDIF); those extra messages stay in PostHog but not on screen.
+ */
+export function formatPrimaryParseError(
+  errors: Array<{ message: string; line?: number | null }>,
+  sourceLines: string[],
+): { text: string; line: number | null } | null {
+  if (errors.length === 0) return null;
+  const e = errors[0];
+  const human = humanizeParseError(
+    e.message,
+    e.line != null ? sourceLines[e.line - 1] : undefined,
+    sourceLines,
+  );
+  const cascade = errors.length > 1
+    ? ' Fix this one first — later messages often disappear.'
+    : '';
+  const nl = human.indexOf('\n');
+  const first = nl === -1 ? human : human.slice(0, nl);
+  const rest = nl === -1 ? '' : human.slice(nl);
+  return {
+    text: `Line ${e.line ?? '?'} — ${first}${cascade}${rest}`,
+    line: e.line ?? null,
+  };
 }
 
 // ── Built-in function registry (for typo suggestions) ──────────────────────
@@ -489,9 +569,42 @@ function nearestBuiltin(name: string): string | null {
   return best;
 }
 
+function nearestKnownName(
+  name: string,
+  known: string[],
+): { match: string; caseOnly: boolean } | null {
+  if (known.length === 0) return null;
+  const caseOnly = known.find((k) => k.toLowerCase() === name.toLowerCase() && k !== name);
+  if (caseOnly) return { match: caseOnly, caseOnly: true };
+
+  if (name.length < 3) return null;
+  const maxDist = name.length <= 3 ? 1 : 2;
+  let best: string | null = null;
+  let bestDist = Infinity;
+  let tie = false;
+  for (const k of known) {
+    if (k === name) continue;
+    const d = levenshtein(name.toLowerCase(), k.toLowerCase());
+    if (d < bestDist) { bestDist = d; best = k; tie = false; }
+    else if (d === bestDist) tie = true;
+  }
+  if (best === null || tie || bestDist > maxDist) return null;
+  return { match: best, caseOnly: false };
+}
+
+function undeclaredBoxHint(name: string): string {
+  return (
+    `There is no box called ${name} yet. Create it before you use it:\n` +
+    `  DECLARE ${name} : INTEGER   // whole numbers\n` +
+    `  DECLARE ${name} : REAL      // decimals\n` +
+    `  DECLARE ${name} : STRING    // text\n` +
+    `  DECLARE ${name} : BOOLEAN   // TRUE / FALSE`
+  );
+}
+
 // ── Runtime error humanization ──────────────────────────────────────────────
 
-export function humanizeRuntimeError(rawMessage: string): string {
+export function humanizeRuntimeError(rawMessage: string, knownNames: string[] = []): string {
   // Variable not defined
   const notDefined = rawMessage.match(/Variable '([^']+)' is not defined/);
   if (notDefined) {
@@ -500,13 +613,16 @@ export function humanizeRuntimeError(rawMessage: string): string {
     if (name.toLowerCase() === 'console') {
       return 'Use OUTPUT instead of console.log\n  Example: OUTPUT "Hello"';
     }
-    return (
-      `'${name}' has not been declared. Add a DECLARE statement before using it:\n` +
-      `  DECLARE ${name} : INTEGER   // whole numbers\n` +
-      `  DECLARE ${name} : REAL      // decimals\n` +
-      `  DECLARE ${name} : STRING    // text\n` +
-      `  DECLARE ${name} : BOOLEAN   // TRUE / FALSE`
-    );
+    const near = nearestKnownName(name, knownNames);
+    if (near?.caseOnly) {
+      return (
+        `There is no box called ${name} yet. Names are case-sensitive — you have ${near.match}, not ${name}.`
+      );
+    }
+    if (near) {
+      return `There is no box called ${name} yet. Did you mean ${near.match}?`;
+    }
+    return undeclaredBoxHint(name);
   }
 
   // Constant reassignment
