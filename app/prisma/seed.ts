@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import { examples } from '../src/data/examples';
+import { thinTopicQuestions } from './thinTopicQuestions';
 
 const prisma = new PrismaClient();
 
@@ -2141,7 +2142,7 @@ Output: 6
 \`\`\`
 *(Enter all 9 values one per line)*`,
     difficulty: 'HARD' as const,
-    topic: 'Arrays',
+    topic: '2D Arrays',
     starterCode: `DECLARE Grid : ARRAY[1:3, 1:3] OF INTEGER
 DECLARE Row : INTEGER
 DECLARE Col : INTEGER
@@ -9401,7 +9402,7 @@ Output: 6
         18
 \`\`\``,
     difficulty: 'MEDIUM' as const,
-    topic: 'Arrays',
+    topic: '2D Arrays',
     tags: ['AS & A Level', '9618', 'May/June 2023', 'Paper 21', 'Past Paper', 'Unseen', '2D Arrays'],
     year: 2023,
     session: 'May/June',
@@ -9797,7 +9798,7 @@ Input:  10
 Output: Average temperature: 16
 \`\`\``,
     difficulty: 'MEDIUM' as const,
-    topic: 'Arrays',
+    topic: '2D Arrays',
     tags: ['IGCSE', '0478', 'Oct/Nov 2024', 'Paper 23', 'Past Paper', 'Unseen', '2D Arrays'],
     year: 2024,
     session: 'Oct/Nov',
@@ -9951,6 +9952,8 @@ OUTPUT "Consonants: " & ConsonantCount`,
       { inputs: ['rhythm'], expectedOutput: 'Vowels: 0\nConsonants: 6', description: 'No vowels at all', sortOrder: 3, isHidden: true },
     ],
   },
+
+  ...thinTopicQuestions,
 ];
 
 // ─── Main seed function ────────────────────────────────────────────────────────

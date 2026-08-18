@@ -1335,19 +1335,26 @@ describe('bundled programs parse with the current grammar', () => {
   // required to parse. Placeholder starters get a friendly error instead — see
   // the `...` hint test below.
   it('every solution in prisma/seed.ts parses', () => {
-    const seedSrc = readFileSync(resolve(__dirname, '../../../prisma/seed.ts'), 'utf-8');
-    const codeBlocks = [...seedSrc.matchAll(/solution:\s*`([^`]*)`/g)];
-    expect(codeBlocks.length).toBeGreaterThan(0);
-
+    const seedFiles = ['../../../prisma/seed.ts', '../../../prisma/thinTopicQuestions.ts'];
     const failures: string[] = [];
-    for (const match of codeBlocks) {
-      const code = match[1];
-      if (code.trim() === '') continue;
-      const errors = parseErrors(code + '\n');
-      if (errors.length > 0) {
-        failures.push(`solution starting "${code.trimStart().slice(0, 40)}...": ${errors[0]}`);
+    let codeBlockCount = 0;
+
+    for (const relative of seedFiles) {
+      const seedSrc = readFileSync(resolve(__dirname, relative), 'utf-8');
+      const codeBlocks = [...seedSrc.matchAll(/solution:\s*`([^`]*)`/g)];
+      codeBlockCount += codeBlocks.length;
+
+      for (const match of codeBlocks) {
+        const code = match[1];
+        if (code.trim() === '') continue;
+        const errors = parseErrors(code + '\n');
+        if (errors.length > 0) {
+          failures.push(`solution starting "${code.trimStart().slice(0, 40)}...": ${errors[0]}`);
+        }
       }
     }
+
+    expect(codeBlockCount).toBeGreaterThan(0);
     expect(failures).toEqual([]);
   });
 

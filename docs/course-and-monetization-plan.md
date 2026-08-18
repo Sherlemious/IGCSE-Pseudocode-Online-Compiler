@@ -102,9 +102,9 @@ Status legend: ✅ have it · ⚠️ thin (needs more content/questions) · ❌ 
 ### Track 2 — Core exam skills  *(the heart of the paid course)*
 7. Strings & text processing — *15 Qs* ✅
 8. Arrays 1D — *17 Qs* ✅
-9. Arrays 2D — *docs `arrays-2d`, 1 Q* ⚠️
-10. Procedures & functions (params, scope, BYREF/BYVAL) — *4 Qs* ⚠️
-11. File handling — *4 Qs* ⚠️
+9. Arrays 2D — *docs `arrays-2d`, 9 Qs* ✅
+10. Procedures & functions (params, scope, BYREF/BYVAL) — *11 Qs* ✅
+11. File handling — *9 Qs* ✅
 12. Standard algorithms (search, sort, totalling, max/min) — *15 "Algorithms" Qs* ✅
 13. Validation & verification — *3 Qs* ⚠️
 14. **Trace tables & dry runs** — *TraceTable feature* ✅, *content* ❌
@@ -112,7 +112,7 @@ Status legend: ✅ have it · ⚠️ thin (needs more content/questions) · ❌ 
 
 ### Track 3 — A Level (9618)  *(separate paid track / upsell)*
 16. Records, user-defined types, pointers — *docs `alevel-types`* ✅, *Qs* ❌
-17. OOP (classes, inheritance, encapsulation) — *docs `alevel-oop`* ✅, *1 Q* ⚠️
+17. OOP (classes, inheritance, encapsulation) — *docs `alevel-oop`* ✅, *6 Qs* ✅
 18. Recursion + ADTs (stacks/queues/linked lists/trees) + random files — *docs `alevel-random-files`* ✅, *Queues 1 Q* ⚠️
 
 ### Capstones
