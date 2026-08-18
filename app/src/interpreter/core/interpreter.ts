@@ -175,11 +175,6 @@ export class Interpreter {
     registerFileBuiltins((filename) => this.fileSystem.eof(filename));
   }
 
-  /** Names currently in scope — used to suggest typos like Scroe → Score. */
-  getKnownNames(): string[] {
-    return [...this.env.getAllVariables().keys()];
-  }
-
   private checkCancelled(): void {
     if (this.signal.aborted) throw new ExecutionCancelledError();
   }

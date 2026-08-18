@@ -3,7 +3,7 @@ import posthog from 'posthog-js';
 import { Interpreter, parse, PseudocodeError } from './index';
 import type { OutputEntry, DebugVariable, TraceRow } from './core/types';
 import { MAX_TRACE_ROWS } from './core/types';
-import { formatPrimaryParseError, humanizeRuntimeError } from './errorMessages';
+import { humanizeParseError, humanizeRuntimeError } from './errorMessages';
 
 function captureError(
   errorType: 'parse' | 'runtime',
@@ -178,10 +178,16 @@ export function useInterpreter() {
         const sourceLines = sourceCode.split('\n');
         const codeLines = sourceLines.length;
         errors.forEach((e) => captureError('parse', e.message, e.line, codeLines));
-        const primary = formatPrimaryParseError(errors, sourceLines);
-        setEntries(primary ? [{ kind: 'error', text: primary.text }] : []);
-        entriesLenRef.current = primary ? 1 : 0;
-        if (primary?.line != null) setErrorLine(primary.line);
+        setEntries(
+          errors.map((e) => ({
+            kind: 'error' as const,
+            text: `Line ${e.line ?? '?'} — ${humanizeParseError(e.message, e.line != null ? sourceLines[e.line - 1] : undefined)}`,
+          }))
+        );
+        entriesLenRef.current = errors.length;
+        // Mark first error line
+        const firstLine = errors.find((e) => e.line != null)?.line;
+        if (firstLine != null) setErrorLine(firstLine);
         setIsRunning(false);
         setIsStepping(false);
         return;
@@ -237,8 +243,8 @@ export function useInterpreter() {
               {
                 kind: 'error',
                 text: error.line
-                  ? `Line ${error.line} — ${humanizeRuntimeError(error.message, interpreterRef.current?.getKnownNames() ?? [])}`
-                  : humanizeRuntimeError(error.message, interpreterRef.current?.getKnownNames() ?? []),
+                  ? `Line ${error.line} — ${humanizeRuntimeError(error.message)}`
+                  : humanizeRuntimeError(error.message),
               },
             ]);
           },
@@ -291,8 +297,8 @@ export function useInterpreter() {
             {
               kind: 'error',
               text: e.line
-                ? `Line ${e.line} — ${humanizeRuntimeError(e.message, interpreter.getKnownNames())}`
-                : humanizeRuntimeError(e.message, interpreter.getKnownNames()),
+                ? `Line ${e.line} — ${humanizeRuntimeError(e.message)}`
+                : humanizeRuntimeError(e.message),
             },
           ]);
         } else if (e instanceof Error && e.message !== 'Execution cancelled') {
