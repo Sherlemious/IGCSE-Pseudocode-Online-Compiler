@@ -1,6 +1,15 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Keep the OpenTelemetry logs SDK out of the server bundle — it relies on
+  // Node built-ins and misbehaves when webpack-bundled. Loaded via the
+  // instrumentation hook (see src/instrumentation.node.ts).
+  serverExternalPackages: [
+    '@opentelemetry/sdk-logs',
+    '@opentelemetry/exporter-logs-otlp-http',
+    '@opentelemetry/api-logs',
+    '@opentelemetry/resources',
+  ],
   async redirects() {
     return [
       {

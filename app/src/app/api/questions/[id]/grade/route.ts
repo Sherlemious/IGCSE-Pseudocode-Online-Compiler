@@ -4,6 +4,7 @@ import { gradeSubmission } from '../../../../../lib/autograder';
 import { auth } from '../../../../../lib/auth';
 import { PREMIUM_GATING_ENABLED } from '../../../../../lib/featureFlags';
 import { rateLimit, clientIp } from '../../../../../lib/rateLimit';
+import { logger } from '../../../../../lib/logger';
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -56,7 +57,8 @@ export async function POST(request: NextRequest, { params }: Props) {
         testCases: { orderBy: { sortOrder: 'asc' } },
       },
     });
-  } catch {
+  } catch (e) {
+    logger.error('Grade: question fetch failed', { question_id: id, error: String(e) });
     return NextResponse.json({ error: 'Database error' }, { status: 500 });
   }
 
@@ -80,6 +82,16 @@ export async function POST(request: NextRequest, { params }: Props) {
       gradeSubmission(code, tc.inputs, tc.expectedOutput, tc.initialFiles, timeout)
     )
   );
+
+  const gradeFailures = settled.filter((s) => s.status === 'rejected');
+  if (gradeFailures.length > 0) {
+    logger.error('Grade: test case execution failed', {
+      question_id: id,
+      failed: gradeFailures.length,
+      total: settled.length,
+      reason: String((gradeFailures[0] as PromiseRejectedResult).reason),
+    });
+  }
 
   const results = question.testCases.map((tc, i) => {
     const s = settled[i];
@@ -151,8 +163,9 @@ export async function POST(request: NextRequest, { params }: Props) {
           bestScore: passCount,
         },
       });
-    } catch {
+    } catch (e) {
       // Progress save failure shouldn't block grade response
+      logger.warn('Grade: progress save failed', { user_id: session.user.id, question_id: id, error: String(e) });
     }
   }
 
