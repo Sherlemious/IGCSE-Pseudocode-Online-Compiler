@@ -177,6 +177,11 @@ body {
   background-color: var(--color-background);
   color: var(--color-light-text);
   font-family: "Inter Variable", Inter, Roboto, Arial, sans-serif;
+  /* Disable programming ligatures site-wide so operators like >=, <=, <-, <>
+     render as separate characters — students must write them that way in exams.
+     Inherited, so it reaches every code surface (editor, font-mono blocks,
+     flowchart, export cards) without per-component styling. */
+  font-variant-ligatures: none;
 }
 
 ::selection {
