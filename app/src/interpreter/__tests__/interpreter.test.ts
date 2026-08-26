@@ -181,6 +181,46 @@ describe('execute — array assignment', () => {
     );
     expect(outputs).toEqual(['7']);
   });
+
+  // Nested array literals ([[…],[…]]) build a 1D array of 1D arrays. The
+  // canonical Cambridge subscript is the comma form Grid[r, c]; the chained
+  // form Grid[r][c] is a leniency we also accept. Both must reach the same
+  // element (student bug report, Aug 2026).
+  it('reads a nested array literal with the canonical comma form', async () => {
+    const { outputs } = await runCode(
+      'StudentMark <- [[50,90,40],[26,60,30]]\nOUTPUT StudentMark[1, 2]\n',
+    );
+    expect(outputs).toEqual(['90']);
+  });
+
+  it('still reads a nested array literal with the chained form', async () => {
+    const { outputs } = await runCode(
+      'StudentMark <- [[50,90,40],[26,60,30]]\nOUTPUT StudentMark[1][2]\n',
+    );
+    expect(outputs).toEqual(['90']);
+  });
+
+  it('comma-indexes a nested literal inside a loop', async () => {
+    const { outputs } = await runCode(
+      [
+        'StudentMark <- [[50,90,40],[26,60,30]]',
+        'total <- 0',
+        'FOR column <- 1 TO 3',
+        '  total <- total + StudentMark[1, column]',
+        'NEXT column',
+        'OUTPUT total',
+        '',
+      ].join('\n'),
+    );
+    expect(outputs).toEqual(['180']);
+  });
+
+  it('writes through the comma form into a nested literal', async () => {
+    const { outputs } = await runCode(
+      'grid <- [[1,2],[3,4]]\ngrid[2, 1] <- 99\nOUTPUT grid[2][1]\n',
+    );
+    expect(outputs).toEqual(['99']);
+  });
 });
 
 // ─── Error message tests ──────────────────────────────────────────────────────

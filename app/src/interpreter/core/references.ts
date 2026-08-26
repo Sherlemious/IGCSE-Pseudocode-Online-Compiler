@@ -35,23 +35,48 @@ export class VariableRef implements Reference {
 export class ArrayElementRef implements Reference {
   constructor(private parent: Reference, private indices: number[], private label: string) {}
 
-  private holder(): { val: RuntimeValue; arr: PseudocodeArray } {
-    const val = this.parent.get();
-    if (val.type !== 'ARRAY') {
+  /**
+   * Locate the array and index-tuple the final read/write acts on.
+   *
+   * A single comma-indexed subscript `a[r, c]` maps to a true rectangular
+   * array when `a` has that many dimensions. But nested array literals
+   * (`[[…],[…]]`) build a 1D array whose elements are themselves arrays, so
+   * `a[r, c]` there means "descend": take `r` on the outer array, then `c` on
+   * the inner one — identical to the chained form `a[r][c]`. We consume one
+   * array's worth of dimensions at a time until the remaining indices fit.
+   */
+  private resolveTarget(): { root: RuntimeValue; arr: PseudocodeArray; finalIndices: number[] } {
+    const root = this.parent.get();
+    if (root.type !== 'ARRAY') {
       throw new RuntimeError(`${this.parent.describe()} is not an array`);
     }
-    return { val, arr: val.value as PseudocodeArray };
+    let arr = root.value as PseudocodeArray;
+    let remaining = this.indices;
+    while (remaining.length > arr.getBounds().length) {
+      const dims = arr.getBounds().length;
+      const step = arr.get(remaining.slice(0, dims));
+      if (step.type !== 'ARRAY') {
+        // Extra indices with no nested array to descend into — this is a
+        // plain array indexed with too many subscripts.
+        throw new RuntimeError(`Array expects ${dims} index(es), got ${this.indices.length}`);
+      }
+      arr = step.value as PseudocodeArray;
+      remaining = remaining.slice(dims);
+    }
+    return { root, arr, finalIndices: remaining };
   }
 
   get(): RuntimeValue {
-    return this.holder().arr.get(this.indices);
+    const { arr, finalIndices } = this.resolveTarget();
+    return arr.get(finalIndices);
   }
 
   set(value: RuntimeValue): void {
-    const { val, arr } = this.holder();
-    arr.set(this.indices, value);
-    // Re-store through the parent so writes into composite defaults persist
-    this.parent.set(val);
+    const { root, arr, finalIndices } = this.resolveTarget();
+    arr.set(finalIndices, value);
+    // Re-store through the parent so writes into composite defaults — and into
+    // the nested arrays we descended through — persist.
+    this.parent.set(root);
   }
 
   describe(): string {
