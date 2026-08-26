@@ -1,27 +1,29 @@
 import { useState, useRef, useCallback } from 'react';
-import posthog from 'posthog-js';
 import { Interpreter, parse, PseudocodeError } from './index';
 import type { OutputEntry, DebugVariable, TraceRow } from './core/types';
 import { MAX_TRACE_ROWS } from './core/types';
-import { humanizeParseError, humanizeRuntimeError } from './errorMessages';
+import {
+  humanizeParseError,
+  humanizeRuntimeError,
+  categorizeParseError,
+  categorizeRuntimeError,
+} from './errorMessages';
+import {
+  getErrorHelpersVariant,
+  captureRun,
+  captureInterpreterError,
+  captureHintShown,
+  captureHintResolved,
+  type RunContext,
+  type ErrorHelpersVariant,
+  type RunOutcome,
+} from './analytics';
+import { normalizeSource } from './normalize';
 
-function captureError(
-  errorType: 'parse' | 'runtime',
-  message: string,
-  line: number | null | undefined,
-  codeLines: number,
-) {
-  try {
-    posthog.capture('interpreter_error', {
-      error_type: errorType,
-      error_message: message,
-      line: line ?? null,
-      code_lines: codeLines,
-    });
-  } catch { /* non-critical */ }
-}
-
-export function useInterpreter() {
+export function useInterpreter(runContext?: RunContext) {
+  // Latest run-context, read by capture callbacks without re-creating them.
+  const runContextRef = useRef(runContext);
+  runContextRef.current = runContext;
   const [entries, setEntries] = useState<OutputEntry[]>([]);
   const [isRunning, setIsRunning] = useState(false);
   const [waitingForInput, setWaitingForInput] = useState(false);
@@ -136,6 +138,86 @@ export function useInterpreter() {
     }
   }, [flushTrace]);
 
+  // ── Run-level analytics tracking ──────────────────────────────────────────
+  interface RunMeta {
+    startedAt: number;
+    usedInput: boolean;
+    reported: boolean;
+    runtimeErrorRecorded: boolean;
+    primaryHint: string | null;
+    variant: ErrorHelpersVariant;
+    mode: 'run' | 'debug';
+    codeLines: number;
+    charCount: number;
+    normalized: boolean;
+  }
+  const runMetaRef = useRef<RunMeta | null>(null);
+  // Category of the primary error shown on the previous errored run, so a later
+  // successful run can be attributed to that hint (hint_resolved).
+  const lastHintRef = useRef<string | null>(null);
+
+  // Fire code_run exactly once per execution, at whatever terminal state it
+  // reaches. The `reported` guard makes it safe to call from several paths
+  // (onComplete, onError, the catch block, stop()) — first outcome wins.
+  const reportRun = useCallback((outcome: RunOutcome) => {
+    const m = runMetaRef.current;
+    if (!m || m.reported) return;
+    m.reported = true;
+    captureRun(
+      outcome,
+      {
+        codeLines: m.codeLines,
+        charCount: m.charCount,
+        durationMs: performance.now() - m.startedAt,
+        usedInput: m.usedInput,
+        mode: m.mode,
+        normalized: m.normalized,
+      },
+      runContextRef.current,
+      m.variant,
+    );
+    if (outcome === 'success' && lastHintRef.current) {
+      captureHintResolved(lastHintRef.current, runContextRef.current, m.variant);
+      lastHintRef.current = null;
+    } else if (outcome === 'parse_error' || outcome === 'runtime_error') {
+      lastHintRef.current = m.primaryHint;
+    }
+  }, []);
+
+  // Capture one interpreter_error (enriched with category + offending line) and,
+  // for the first error of a run, the matching hint_shown.
+  const recordError = useCallback(
+    (
+      errorType: 'parse' | 'runtime',
+      message: string,
+      line: number | null | undefined,
+      sourceLines: string[],
+    ) => {
+      const m = runMetaRef.current;
+      const variant = m?.variant ?? 'v1';
+      if (errorType === 'runtime') {
+        if (m?.runtimeErrorRecorded) return; // dedupe onError + catch double-report
+        if (m) m.runtimeErrorRecorded = true;
+      }
+      const category =
+        errorType === 'parse'
+          ? categorizeParseError(message, line != null ? sourceLines[line - 1] : undefined)
+          : categorizeRuntimeError(message);
+      const offendingLine = line != null ? sourceLines[line - 1]?.trim() : undefined;
+      captureInterpreterError(
+        errorType,
+        { message, line, codeLines: sourceLines.length, category, offendingLine },
+        runContextRef.current,
+        variant,
+      );
+      if (m && m.primaryHint === null) {
+        m.primaryHint = category;
+        captureHintShown(category, runContextRef.current, variant);
+      }
+    },
+    [],
+  );
+
   const startExecution = useCallback(
     async (sourceCode: string, stepMode: boolean) => {
       // Clean up any previous run
@@ -171,23 +253,43 @@ export function useInterpreter() {
       const abortController = new AbortController();
       abortRef.current = abortController;
 
+      // Resolve the A/B variant and, for v2, clean paste artefacts (smart quotes,
+      // invisible chars) before the parser ever sees them. Replacements are
+      // line-length-preserving, so error line numbers stay aligned.
+      const variant = getErrorHelpersVariant();
+      const normalized =
+        variant === 'v2' ? normalizeSource(sourceCode) : { code: sourceCode, changed: false, fixes: [] };
+      const source = normalized.code;
+      runMetaRef.current = {
+        startedAt: performance.now(),
+        usedInput: false,
+        reported: false,
+        runtimeErrorRecorded: false,
+        primaryHint: null,
+        variant,
+        mode: stepMode ? 'debug' : 'run',
+        codeLines: source.split('\n').length,
+        charCount: source.length,
+        normalized: normalized.changed,
+      };
+
       // Parse
-      const { tree, errors } = parse(sourceCode);
+      const { tree, errors } = parse(source);
 
       if (errors.length > 0) {
-        const sourceLines = sourceCode.split('\n');
-        const codeLines = sourceLines.length;
-        errors.forEach((e) => captureError('parse', e.message, e.line, codeLines));
+        const sourceLines = source.split('\n');
+        errors.forEach((e) => recordError('parse', e.message, e.line, sourceLines));
         setEntries(
           errors.map((e) => ({
             kind: 'error' as const,
-            text: `Line ${e.line ?? '?'} — ${humanizeParseError(e.message, e.line != null ? sourceLines[e.line - 1] : undefined)}`,
+            text: `Line ${e.line ?? '?'} — ${humanizeParseError(e.message, e.line != null ? sourceLines[e.line - 1] : undefined, variant)}`,
           }))
         );
         entriesLenRef.current = errors.length;
         // Mark first error line
         const firstLine = errors.find((e) => e.line != null)?.line;
         if (firstLine != null) setErrorLine(firstLine);
+        reportRun('parse_error');
         setIsRunning(false);
         setIsStepping(false);
         return;
@@ -196,6 +298,7 @@ export function useInterpreter() {
       if (!tree) {
         setEntries([{ kind: 'error', text: 'Failed to parse pseudocode' }]);
         entriesLenRef.current = 1;
+        reportRun('parse_error');
         setIsRunning(false);
         setIsStepping(false);
         return;
@@ -216,6 +319,7 @@ export function useInterpreter() {
           onInputRequest(variableName: string, prompt?: string) {
             // Flush any pending output before requesting input
             flushOutputSync();
+            if (runMetaRef.current) runMetaRef.current.usedInput = true;
             entriesLenRef.current += 1;
             setWaitingForInput(true);
             setEntries((prev) => [...prev, { kind: 'input', variableName, prompt, value: '', submitted: false }]);
@@ -227,6 +331,7 @@ export function useInterpreter() {
             // Flush any remaining output / trace rows
             flushOutputSync();
             flushTraceSync();
+            reportRun('success');
             setIsRunning(false);
             setWaitingForInput(false);
             setIsStepping(false);
@@ -235,7 +340,7 @@ export function useInterpreter() {
           onError(error: PseudocodeError) {
             flushOutputSync();
             flushTraceSync();
-            captureError('runtime', error.message, error.line, sourceCode.split('\n').length);
+            recordError('runtime', error.message, error.line, source.split('\n'));
             if (error.line != null) setErrorLine(error.line);
             entriesLenRef.current += 1;
             setEntries((prev) => [
@@ -247,6 +352,7 @@ export function useInterpreter() {
                   : humanizeRuntimeError(error.message),
               },
             ]);
+            reportRun('runtime_error');
           },
           onBeforeStep(line: number, variables: DebugVariable[]) {
             // Materialize buffered output so the recorded boundary is accurate.
@@ -289,7 +395,7 @@ export function useInterpreter() {
         flushTraceSync();
 
         if (e instanceof PseudocodeError) {
-          captureError('runtime', e.message, e.line, sourceCode.split('\n').length);
+          recordError('runtime', e.message, e.line, source.split('\n'));
           if (e.line != null) setErrorLine(e.line);
           entriesLenRef.current += 1;
           setEntries((prev) => [
@@ -301,10 +407,14 @@ export function useInterpreter() {
                 : humanizeRuntimeError(e.message),
             },
           ]);
-        } else if (e instanceof Error && e.message !== 'Execution cancelled') {
-          captureError('runtime', e.message, null, sourceCode.split('\n').length);
+          reportRun('runtime_error');
+        } else if (e instanceof Error && e.message === 'Execution cancelled') {
+          reportRun('aborted');
+        } else if (e instanceof Error) {
+          recordError('runtime', e.message, null, source.split('\n'));
           entriesLenRef.current += 1;
           setEntries((prev) => [...prev, { kind: 'error', text: `Error: ${e.message}` }]);
+          reportRun('runtime_error');
         }
         setIsRunning(false);
         setWaitingForInput(false);
@@ -312,7 +422,7 @@ export function useInterpreter() {
         resetDebugHistory();
       }
     },
-    [breakpoints, resetDebugHistory, pushDebugSnapshot]
+    [breakpoints, resetDebugHistory, pushDebugSnapshot, reportRun, recordError]
   );
 
   const run = useCallback(
@@ -382,6 +492,9 @@ export function useInterpreter() {
   }, []);
 
   const stop = useCallback(() => {
+    // Attribute the run as user-aborted. Safe if a terminal state already fired
+    // (reportRun is guarded) or if the abort's rejection reaches the catch first.
+    reportRun('aborted');
     if (abortRef.current) {
       abortRef.current.abort();
       abortRef.current = null;
@@ -398,7 +511,7 @@ export function useInterpreter() {
     setWaitingForInput(false);
     setIsStepping(false);
     resetDebugHistory();
-  }, [flushTraceSync, resetDebugHistory]);
+  }, [flushTraceSync, resetDebugHistory, reportRun]);
 
   const clearEntries = useCallback(() => {
     if (flushTimeout.current !== null) {

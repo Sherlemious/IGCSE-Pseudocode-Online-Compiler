@@ -6,6 +6,7 @@ import TraceTable from '../compiler/TraceTable';
 import SplitDivider from '../common/SplitDivider';
 import PracticeStartGate from './PracticeStartGate';
 import { useInterpreter } from '../../interpreter/useInterpreter';
+import { captureEvent } from '../../interpreter/analytics';
 import { AUTOSAVE_DELAY, SPLIT_PRACTICE_KEY, loadSplitPercent } from '../../utils/constants';
 import { toast } from 'sonner';
 import {
@@ -125,6 +126,11 @@ export default function PracticeWorkspace({ questionId, starterCode, savedCode, 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [questionId]);
 
+  // Analytics: one practice_opened per question view (fires for anonymous users too).
+  useEffect(() => {
+    captureEvent('practice_opened', { question_id: questionId });
+  }, [questionId]);
+
   const chooseMode = useCallback((next: StartMode) => {
     const seed = next === 'template' ? starterCode : '';
     setMode(next);
@@ -154,7 +160,7 @@ export default function PracticeWorkspace({ questionId, starterCode, savedCode, 
     isStepping, debugLine, debugVariables, errorLine, breakpoints,
     traceRows, maxTraceRows,
     run, debugRun, step, continueExecution, provideInput, stop, clearEntries, toggleBreakpoint,
-  } = useInterpreter();
+  } = useInterpreter({ feature: 'practice', questionId });
 
   /* ── Output panel ───────────────────────────────────── */
   const [activeTab, setActiveTab] = useState<'output' | 'results' | 'trace'>('output');
@@ -262,6 +268,13 @@ export default function PracticeWorkspace({ questionId, starterCode, savedCode, 
       setGradeResponse(data);
       setMobileView('output');
       const allPassed = data.passCount === data.totalCount;
+      captureEvent('practice_graded', {
+        question_id: questionId,
+        pass_count: data.passCount,
+        total_count: data.totalCount,
+        solved: allPassed,
+      });
+      if (allPassed) captureEvent('practice_solved', { question_id: questionId });
       window.dispatchEvent(new CustomEvent('practice:graded', {
         detail: {
           isSolved: allPassed,

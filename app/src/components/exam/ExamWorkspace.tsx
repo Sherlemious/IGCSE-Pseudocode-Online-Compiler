@@ -6,6 +6,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import CodeMirrorEditor from '../compiler/CodeMirrorEditor';
 import { useInterpreter } from '../../interpreter/useInterpreter';
+import { captureEvent } from '../../interpreter/analytics';
 import type { OutputEntry } from '../../interpreter';
 import ExamTimer from './ExamTimer';
 import {
@@ -105,7 +106,13 @@ export default function ExamWorkspace({ examId, questions, timeLimitMin, started
     stop: interpreterStop,
     provideInput,
     clearEntries,
-  } = useInterpreter();
+  } = useInterpreter({ feature: 'exam', examId, questionId: question.questionId });
+
+  // Analytics: exam_started once per attempt view.
+  useEffect(() => {
+    captureEvent('exam_started', { exam_id: examId, question_count: questions.length });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [examId]);
 
   const saveCode = useCallback(
     async (qId: string, c: string) => {
@@ -181,12 +188,13 @@ export default function ExamWorkspace({ examId, questions, timeLimitMin, started
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ timedOut }),
         });
+        captureEvent('exam_completed', { exam_id: examId, timed_out: timedOut, question_count: questions.length });
         router.push(`/exam/${examId}/results`);
       } catch {
         setSubmitting(false);
       }
     },
-    [submitting, saveCode, question.questionId, code, examId, router]
+    [submitting, saveCode, question.questionId, code, examId, router, questions.length]
   );
 
   const handleTimeUp = useCallback(() => {

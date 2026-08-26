@@ -20,6 +20,7 @@ import Footer from '../layout/footer';
 import OnboardingTour from '../onboarding/OnboardingTour';
 import FeedbackSurvey, { shouldShowFeedbackSurvey } from '../feedback/FeedbackSurvey';
 import { useInterpreter } from '../../interpreter/useInterpreter';
+import { captureEvent } from '../../interpreter/analytics';
 import { toast } from 'sonner';
 import {
   AUTOSAVE_KEY,
@@ -114,7 +115,7 @@ const CompilerPage: React.FC = () => {
     stop,
     clearEntries,
     toggleBreakpoint,
-  } = useInterpreter();
+  } = useInterpreter({ feature: 'playground' });
 
   // Load initial code on mount (client-only)
   useEffect(() => {
@@ -391,10 +392,12 @@ const CompilerPage: React.FC = () => {
   );
 
   const handleFormat = useCallback(() => {
+    captureEvent('ui_action', { action: 'format', surface: 'playground' });
     handleCodeChange(formatPseudocode(activeTab.content));
   }, [handleCodeChange, activeTab.content]);
 
   const handleExampleSelect = useCallback((exampleCode: string) => {
+    captureEvent('ui_action', { action: 'example_select', surface: 'playground' });
     setTabs((prev) => prev.map((t) => (t.id === 'main' ? { ...t, content: exampleCode } : t)));
     setActiveTabId('main');
   }, []);

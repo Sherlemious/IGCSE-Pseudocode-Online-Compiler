@@ -279,11 +279,38 @@ function closerSuggestion(sourceLine: string | undefined): string | null {
   );
 }
 
-export function humanizeParseError(rawMessage: string, sourceLine?: string): string {
+export function humanizeParseError(
+  rawMessage: string,
+  sourceLine?: string,
+  variant: 'v1' | 'v2' = 'v1',
+): string {
   // Root-cause check: a botched closer (e.g. ENDCLA) is the real error even though
   // ANTLR reports the symptom (a stray newline) — surface it before anything else.
   const closer = closerSuggestion(sourceLine);
   if (closer) return closer;
+
+  // ── v2 error-helper experiment: extra targeted hints ─────────────────────
+  // Gated behind the `error-helpers-v2` flag so their effect can be A/B tested
+  // against the control. These cover the two biggest real-world error buckets
+  // that the control handles poorly: `=` used for assignment (the single most
+  // common parse error) and any curly quote that slips past normalization.
+  if (variant === 'v2') {
+    if (/(?:extraneous|mismatched) input '=' expecting \{NOT/.test(rawMessage)) {
+      return (
+        'Use `<-` to assign a value; `=` is only for comparing.\n' +
+        '  Assign:  Count <- 0\n' +
+        '  Compare: IF Count = 0 THEN'
+      );
+    }
+    const tr = rawMessage.match(/token recognition error at: '([^']+)'/);
+    if (tr && /[“”‘’„‟]/.test(tr[1])) {
+      return (
+        'Those look like curly quotes from a word processor — use straight quotes.\n' +
+        '  Text: OUTPUT "Hello"\n' +
+        "  Char: Letter <- 'A'"
+      );
+    }
+  }
 
   const lower = rawMessage.toLowerCase();
   const commonHint = commonParseHint(rawMessage);
@@ -599,4 +626,89 @@ export function humanizeRuntimeError(rawMessage: string): string {
   }
 
   return rawMessage;
+}
+
+// ── Error categorization (for analytics) ────────────────────────────────────
+// Maps a raw ANTLR/runtime message to a small, stable slug. Kept separate from
+// the display humanizers (and run for every user, both variants) so PostHog can
+// bucket errors without the raw-message noise and compare v1 vs v2.
+
+/** A foreign-language punctuation char the lexer rejects. */
+const FOREIGN_PUNCT = new Set([';', '{', '}', '#', '`']);
+const SMART_QUOTE_CODEPOINTS = new Set([0x201c, 0x201d, 0x2018, 0x2019, 0x201e, 0x201f]);
+
+export function categorizeParseError(rawMessage: string, sourceLine?: string): string {
+  // Root cause: a misspelled block closer masquerading as a stray-newline error.
+  if (closerSuggestion(sourceLine)) return 'misspelled_closer';
+
+  const tokenRecog = rawMessage.match(/token recognition error at: '([^']+)'/);
+  if (tokenRecog) {
+    const ch = tokenRecog[1];
+    if (ch.length >= 1 && SMART_QUOTE_CODEPOINTS.has(ch.codePointAt(0)!)) return 'smart_quotes';
+    if (FOREIGN_PUNCT.has(ch)) return 'foreign_punctuation';
+    if (ch === '==') return 'equality_operator_double';
+    if (ch === '!=' || ch === '!') return 'not_equal_bang';
+    if (ch === '&&' || ch === '||') return 'boolean_operator_symbol';
+    if (ch === "'") return 'single_quote_string';
+    // A lone space / non-printing char that survived (or v1, which never normalizes)
+    if (ch.trim() === '') return 'invisible_char';
+    return 'unknown_character';
+  }
+
+  // `=` used for assignment — the single most common parse error.
+  if (/(?:extraneous|mismatched) input '=' expecting \{NOT/.test(rawMessage)) return 'assign_with_equals';
+
+  // Unclosed blocks (EOF reached before a closer).
+  if (rawMessage.includes('<EOF>')) {
+    if (rawMessage.includes('ENDIF')) return 'missing_endif';
+    if (rawMessage.includes('NEXT')) return 'missing_next';
+    if (rawMessage.includes('ENDWHILE')) return 'missing_endwhile';
+    if (rawMessage.includes('ENDCASE')) return 'missing_endcase';
+    if (rawMessage.includes('ENDPROCEDURE')) return 'missing_endprocedure';
+    if (rawMessage.includes('ENDFUNCTION')) return 'missing_endfunction';
+    return 'unclosed_block';
+  }
+
+  // Stray closers with no matching opener.
+  if (/no viable alternative at input '(?:\\n|\n)?NEXT/.test(rawMessage)) return 'stray_next';
+  if (/no viable alternative at input '(?:\\n|\n)?ENDIF/.test(rawMessage)) return 'stray_endif';
+  if (/no viable alternative at input '(?:\\n|\n)?UNTIL/.test(rawMessage)) return 'stray_until';
+  if (/no viable alternative at input '(?:\\n|\n)?ELSE/.test(rawMessage)) return 'stray_else';
+
+  // IF missing THEN.
+  if (rawMessage.includes('ENDIF') && rawMessage.includes('THEN')) return 'missing_then';
+
+  // Wrong-language keyword (Portugol / JS-ish) via the offending token.
+  const rawToken = rawMessage.match(/input '([^']+)'/)?.[1];
+  if (rawToken) {
+    const token = rawToken.replace(/^(?:\\n|\r|\n|\s)+|(?:\\n|\r|\n|\s)+$/g, '');
+    const key = token.replace(/\($/, '').toLowerCase();
+    if (PORTUGOL_TOKENS[key]) return 'portugol_syntax';
+    if (WRONG_TOKENS[key] || WRONG_TOKENS[token]) return 'wrong_language_keyword';
+    // Incomplete line: newline where a value/expression was expected.
+    if ((token === '\\n' || token === '\n' || token === '') && /\{NOT|expecting TO\b/.test(rawMessage))
+      return 'incomplete_line';
+  }
+
+  if (rawMessage.includes('no viable alternative')) return 'no_viable_alternative';
+  if (rawMessage.includes('mismatched input') || rawMessage.includes('extraneous input')) return 'mismatched_input';
+  if (rawMessage.includes('missing')) return 'missing_token';
+  return 'other_parse';
+}
+
+export function categorizeRuntimeError(rawMessage: string): string {
+  if (/Variable 'console' is not defined/.test(rawMessage)) return 'console_log';
+  if (/Variable '[^']+' is not defined/.test(rawMessage)) return 'undeclared_variable';
+  if (/Cannot assign to constant/.test(rawMessage)) return 'const_reassignment';
+  if (/is not an array/.test(rawMessage)) return 'not_an_array';
+  if (/is an array; use indexing/.test(rawMessage)) return 'array_needs_index';
+  if (/Array index -?\d+ out of bounds/.test(rawMessage)) return 'array_out_of_bounds';
+  if (/Array expects \d+ index/.test(rawMessage)) return 'array_dim_mismatch';
+  if (/Division by zero/.test(rawMessage)) return 'division_by_zero';
+  if (/Procedure '[^']+' is not defined/.test(rawMessage)) return 'procedure_undefined';
+  if (/Function '[^']+' is not defined/.test(rawMessage)) return 'function_undefined';
+  if (/Cannot access private (?:method|property)/.test(rawMessage)) return 'private_access';
+  if (/has no field/.test(rawMessage)) return 'record_no_field';
+  if (/CASE cannot operate on array/.test(rawMessage)) return 'case_on_array';
+  return 'other_runtime';
 }

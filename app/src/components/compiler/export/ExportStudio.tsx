@@ -168,6 +168,11 @@ export default function ExportStudio({
     return captureExportCard(node);
   }, []);
 
+  // Open-intent: did the student actually open Export Studio (vs. just complete an export)?
+  useEffect(() => {
+    if (open) ph?.capture('export_studio_opened');
+  }, [open, ph]);
+
   const handleCopyImage = async () => {
     track('image_copy');
     setBusy('copy');
@@ -222,8 +227,10 @@ export default function ExportStudio({
   };
 
   const handleCopyLink = () => {
+    track('code_link');
     navigator.clipboard.writeText(editorCodeUrl(code)).then(() => {
       toast.success('Link to your code copied to clipboard');
+      track('code_link', true);
     }).catch(() => { /* clipboard unavailable */ });
   };
 
