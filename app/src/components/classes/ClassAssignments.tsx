@@ -120,7 +120,9 @@ export default function ClassAssignments({ classId, assignments, availableExams 
             return (
               <div key={a.id} className="flex items-center justify-between gap-3 bg-surface border border-border rounded-lg px-4 py-3">
                 <div className="min-w-0">
-                  <p className="text-sm font-medium text-light-text truncate">{a.examTitle}</p>
+                  <Link href={`/classes/${classId}/assignments/${a.id}`} className="text-sm font-medium text-light-text truncate hover:text-primary transition-colors block">
+                    {a.examTitle}
+                  </Link>
                   <div className="flex items-center gap-3 mt-1 text-[10px] text-dark-text font-mono">
                     <span className="flex items-center gap-1 text-primary/90">
                       <Users size={11} />{a.submittedCount}/{a.rosterSize} submitted

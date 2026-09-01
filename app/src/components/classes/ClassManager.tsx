@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { Copy, Check, Pencil, Archive, UserMinus, Loader2, Users } from 'lucide-react';
 
 interface Member {
@@ -155,7 +156,9 @@ export default function ClassManager({ classId, initialName, joinUrl, joinCode, 
                     {(m.name || m.email || '?').charAt(0).toUpperCase()}
                   </span>
                   <div className="min-w-0">
-                    <p className="text-sm text-light-text truncate">{m.name || m.email || 'Student'}</p>
+                    <Link href={`/classes/${classId}/students/${m.userId}`} className="text-sm text-light-text truncate hover:text-primary transition-colors block">
+                      {m.name || m.email || 'Student'}
+                    </Link>
                     {m.name && m.email && <p className="text-[11px] text-dark-text/60 truncate">{m.email}</p>}
                   </div>
                 </div>
