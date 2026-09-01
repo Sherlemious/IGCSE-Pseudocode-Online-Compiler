@@ -13,6 +13,8 @@ datasource db {
 enum Plan {
   FREE
   PREMIUM
+  PRO
+  SCHOOL
 }
 
 enum Role {
@@ -31,6 +33,7 @@ model User {
   plan          Plan      @default(FREE)
   role          Role      @default(STUDENT)
   nudgesShown   String[]  @default([])
+  trialEndsAt   DateTime? // teacher-tier trial; null unless a trial is active
 
   accounts     Account[]
   sessions     Session[]
@@ -40,6 +43,8 @@ model User {
   feedbackSubmissions FeedbackSubmission[]
   bugReports   BugReport[]
   customThemes CustomTheme[]
+  taughtClasses    Class[]           @relation("TaughtClasses")
+  classEnrollments ClassMembership[] @relation("ClassEnrollments")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -264,6 +269,38 @@ model ExamQuestion {
 
   @@unique([examId, questionId])
   @@index([examId])
+}
+
+// ── Classes (teacher tier) ──────────────────────────────────
+
+model Class {
+  id       String  @id @default(cuid())
+  ownerId  String
+  owner    User    @relation("TaughtClasses", fields: [ownerId], references: [id], onDelete: Cascade)
+  name     String
+  joinCode String  @unique
+  archived Boolean @default(false)
+
+  memberships ClassMembership[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([ownerId])
+}
+
+model ClassMembership {
+  id      String @id @default(cuid())
+  classId String
+  class   Class  @relation(fields: [classId], references: [id], onDelete: Cascade)
+  userId  String
+  user    User   @relation("ClassEnrollments", fields: [userId], references: [id], onDelete: Cascade)
+
+  joinedAt DateTime @default(now())
+
+  @@unique([classId, userId]) // idempotent joins
+  @@index([classId])
+  @@index([userId])
 }
 
 // ── Admin / Reporting ───────────────────────────────────────

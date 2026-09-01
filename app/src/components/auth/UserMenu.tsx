@@ -4,7 +4,7 @@ import { useSession, signIn, signOut } from 'next-auth/react';
 import { useState, useRef, useEffect } from 'react';
 import { usePostHog } from 'posthog-js/react';
 import Image from 'next/image';
-import { LogIn, LogOut, User, Crown, BarChart3, LayoutDashboard, ChevronRight } from 'lucide-react';
+import { LogIn, LogOut, User, Crown, BarChart3, LayoutDashboard, ChevronRight, GraduationCap } from 'lucide-react';
 import Link from 'next/link';
 import { PREMIUM_GATING_ENABLED } from '@/lib/featureFlags';
 
@@ -134,6 +134,14 @@ export default function UserMenu() {
                   Premium coming soon
                 </div>
               ))}
+            <Link
+              href="/classes"
+              onClick={() => setOpen(false)}
+              className="w-full flex items-center gap-2 px-3 py-2 text-xs text-dark-text hover:text-light-text hover:bg-background transition-colors"
+            >
+              <GraduationCap size={13} />
+              Classes
+            </Link>
             <Link
               href="/profile"
               onClick={() => setOpen(false)}
