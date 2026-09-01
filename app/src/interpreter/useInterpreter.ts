@@ -9,13 +9,11 @@ import {
   categorizeRuntimeError,
 } from './errorMessages';
 import {
-  getErrorHelpersVariant,
   captureRun,
   captureInterpreterError,
   captureHintShown,
   captureHintResolved,
   type RunContext,
-  type ErrorHelpersVariant,
   type RunOutcome,
 } from './analytics';
 import { normalizeSource } from './normalize';
@@ -145,7 +143,6 @@ export function useInterpreter(runContext?: RunContext) {
     reported: boolean;
     runtimeErrorRecorded: boolean;
     primaryHint: string | null;
-    variant: ErrorHelpersVariant;
     mode: 'run' | 'debug';
     codeLines: number;
     charCount: number;
@@ -174,10 +171,9 @@ export function useInterpreter(runContext?: RunContext) {
         normalized: m.normalized,
       },
       runContextRef.current,
-      m.variant,
     );
     if (outcome === 'success' && lastHintRef.current) {
-      captureHintResolved(lastHintRef.current, runContextRef.current, m.variant);
+      captureHintResolved(lastHintRef.current, runContextRef.current);
       lastHintRef.current = null;
     } else if (outcome === 'parse_error' || outcome === 'runtime_error') {
       lastHintRef.current = m.primaryHint;
@@ -194,7 +190,6 @@ export function useInterpreter(runContext?: RunContext) {
       sourceLines: string[],
     ) => {
       const m = runMetaRef.current;
-      const variant = m?.variant ?? 'v1';
       if (errorType === 'runtime') {
         if (m?.runtimeErrorRecorded) return; // dedupe onError + catch double-report
         if (m) m.runtimeErrorRecorded = true;
@@ -208,11 +203,10 @@ export function useInterpreter(runContext?: RunContext) {
         errorType,
         { message, line, codeLines: sourceLines.length, category, offendingLine },
         runContextRef.current,
-        variant,
       );
       if (m && m.primaryHint === null) {
         m.primaryHint = category;
-        captureHintShown(category, runContextRef.current, variant);
+        captureHintShown(category, runContextRef.current);
       }
     },
     [],
@@ -253,12 +247,10 @@ export function useInterpreter(runContext?: RunContext) {
       const abortController = new AbortController();
       abortRef.current = abortController;
 
-      // Resolve the A/B variant and, for v2, clean paste artefacts (smart quotes,
-      // invisible chars) before the parser ever sees them. Replacements are
-      // line-length-preserving, so error line numbers stay aligned.
-      const variant = getErrorHelpersVariant();
-      const normalized =
-        variant === 'v2' ? normalizeSource(sourceCode) : { code: sourceCode, changed: false, fixes: [] };
+      // Clean paste artefacts (smart quotes, invisible chars) before the parser
+      // ever sees them. Replacements are line-length-preserving, so error line
+      // numbers stay aligned.
+      const normalized = normalizeSource(sourceCode);
       const source = normalized.code;
       runMetaRef.current = {
         startedAt: performance.now(),
@@ -266,7 +258,6 @@ export function useInterpreter(runContext?: RunContext) {
         reported: false,
         runtimeErrorRecorded: false,
         primaryHint: null,
-        variant,
         mode: stepMode ? 'debug' : 'run',
         codeLines: source.split('\n').length,
         charCount: source.length,
@@ -282,7 +273,7 @@ export function useInterpreter(runContext?: RunContext) {
         setEntries(
           errors.map((e) => ({
             kind: 'error' as const,
-            text: `Line ${e.line ?? '?'} — ${humanizeParseError(e.message, e.line != null ? sourceLines[e.line - 1] : undefined, variant)}`,
+            text: `Line ${e.line ?? '?'} — ${humanizeParseError(e.message, e.line != null ? sourceLines[e.line - 1] : undefined)}`,
           }))
         );
         entriesLenRef.current = errors.length;

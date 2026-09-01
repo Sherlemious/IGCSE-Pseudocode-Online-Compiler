@@ -282,34 +282,29 @@ function closerSuggestion(sourceLine: string | undefined): string | null {
 export function humanizeParseError(
   rawMessage: string,
   sourceLine?: string,
-  variant: 'v1' | 'v2' = 'v1',
 ): string {
   // Root-cause check: a botched closer (e.g. ENDCLA) is the real error even though
   // ANTLR reports the symptom (a stray newline) — surface it before anything else.
   const closer = closerSuggestion(sourceLine);
   if (closer) return closer;
 
-  // ── v2 error-helper experiment: extra targeted hints ─────────────────────
-  // Gated behind the `error-helpers-v2` flag so their effect can be A/B tested
-  // against the control. These cover the two biggest real-world error buckets
-  // that the control handles poorly: `=` used for assignment (the single most
-  // common parse error) and any curly quote that slips past normalization.
-  if (variant === 'v2') {
-    if (/(?:extraneous|mismatched) input '=' expecting \{NOT/.test(rawMessage)) {
-      return (
-        'Use `<-` to assign a value; `=` is only for comparing.\n' +
-        '  Assign:  Count <- 0\n' +
-        '  Compare: IF Count = 0 THEN'
-      );
-    }
-    const tr = rawMessage.match(/token recognition error at: '([^']+)'/);
-    if (tr && /[“”‘’„‟]/.test(tr[1])) {
-      return (
-        'Those look like curly quotes from a word processor — use straight quotes.\n' +
-        '  Text: OUTPUT "Hello"\n' +
-        "  Char: Letter <- 'A'"
-      );
-    }
+  // ── targeted hints for the two biggest real-world error buckets ──────────
+  // `=` used for assignment (the single most common parse error) and any curly
+  // quote that slips past normalization.
+  if (/(?:extraneous|mismatched) input '=' expecting \{NOT/.test(rawMessage)) {
+    return (
+      'Use `<-` to assign a value; `=` is only for comparing.\n' +
+      '  Assign:  Count <- 0\n' +
+      '  Compare: IF Count = 0 THEN'
+    );
+  }
+  const curlyQuote = rawMessage.match(/token recognition error at: '([^']+)'/);
+  if (curlyQuote && /[“”‘’„‟]/.test(curlyQuote[1])) {
+    return (
+      'Those look like curly quotes from a word processor — use straight quotes.\n' +
+      '  Text: OUTPUT "Hello"\n' +
+      "  Char: Letter <- 'A'"
+    );
   }
 
   const lower = rawMessage.toLowerCase();
@@ -630,8 +625,8 @@ export function humanizeRuntimeError(rawMessage: string): string {
 
 // ── Error categorization (for analytics) ────────────────────────────────────
 // Maps a raw ANTLR/runtime message to a small, stable slug. Kept separate from
-// the display humanizers (and run for every user, both variants) so PostHog can
-// bucket errors without the raw-message noise and compare v1 vs v2.
+// the display humanizers so PostHog can bucket errors by cause without the
+// raw-message noise.
 
 /** A foreign-language punctuation char the lexer rejects. */
 const FOREIGN_PUNCT = new Set([';', '{', '}', '#', '`']);
@@ -650,7 +645,7 @@ export function categorizeParseError(rawMessage: string, sourceLine?: string): s
     if (ch === '!=' || ch === '!') return 'not_equal_bang';
     if (ch === '&&' || ch === '||') return 'boolean_operator_symbol';
     if (ch === "'") return 'single_quote_string';
-    // A lone space / non-printing char that survived (or v1, which never normalizes)
+    // A lone space / non-printing char that survived normalization.
     if (ch.trim() === '') return 'invisible_char';
     return 'unknown_character';
   }
