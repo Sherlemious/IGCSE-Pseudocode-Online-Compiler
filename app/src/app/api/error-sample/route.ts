@@ -7,6 +7,15 @@ import { sanitizeForSampling } from '@/interpreter/sanitizeSample';
 const CATEGORIES = new Set(['no_viable_alternative', 'mismatched_input', 'other_parse']);
 const FEATURES = new Set(['playground', 'practice', 'exam', 'docs']);
 
+// Cost guardrails (keep Neon usage negligible):
+//  - kill switch: set ERROR_SAMPLING_ENABLED=false to stop all writes instantly
+//    (no redeploy needed — just change the env var).
+//  - retention: samples older than this are pruned opportunistically, so the
+//    table stays bounded (~a few MB) forever instead of growing without limit.
+const SAMPLING_ENABLED = process.env.ERROR_SAMPLING_ENABLED !== 'false';
+const RETENTION_DAYS = 30;
+const PRUNE_PROBABILITY = 0.02; // ~1 in 50 requests triggers a cheap cleanup
+
 /** Trim a value to a string capped at `max` chars, or null if not usable. */
 function cappedString(value: unknown, max: number): string | null {
   if (typeof value !== 'string') return null;
@@ -26,6 +35,10 @@ function intOrNull(value: unknown): number | null {
  */
 export async function POST(req: Request) {
   try {
+    if (!SAMPLING_ENABLED) {
+      return NextResponse.json({ ok: true, skipped: true });
+    }
+
     const body = (await req.json()) as {
       category?: unknown;
       errorType?: unknown;
@@ -62,6 +75,14 @@ export async function POST(req: Request) {
         feature,
       },
     });
+
+    // Opportunistically prune old rows so the table stays bounded without a cron.
+    if (Math.random() < PRUNE_PROBABILITY) {
+      const cutoff = new Date(Date.now() - RETENTION_DAYS * 86_400_000);
+      prisma.errorSample
+        .deleteMany({ where: { createdAt: { lt: cutoff } } })
+        .catch((e) => logger.warn('Error-sample prune failed', { error: String(e) }));
+    }
 
     return NextResponse.json({ ok: true });
   } catch (e) {
