@@ -302,6 +302,26 @@ model BugReport {
   @@index([userId])
 }
 
+// Anonymized, sampled snapshots of code that produced a parse error we can't
+// yet explain (no_viable_alternative / mismatched_input / other_parse). Used to
+// find common mistake shapes and grammar gaps so error messages can improve.
+// String and char literal contents + comment text are stripped before storage
+// (see interpreter/sanitizeSample.ts) so no student-typed text is retained.
+model ErrorSample {
+  id         String   @id @default(cuid())
+  category   String // error category slug (e.g. no_viable_alternative)
+  errorType  String   @default("parse") // parse | runtime
+  code       String   @db.Text // sanitized source (literals/comments blanked)
+  rawMessage String?  @db.Text // raw ANTLR message (already free of student text)
+  line       Int? // 1-based line of the first error, if known
+  codeLines  Int? // total lines in the submission
+  feature    String? // playground | practice | exam | docs
+  createdAt  DateTime @default(now())
+
+  @@index([category])
+  @@index([createdAt])
+}
+
 model ExamAnswer {
   id            String      @id @default(cuid())
   examAttemptId String

@@ -17,6 +17,7 @@ import {
   type RunOutcome,
 } from './analytics';
 import { normalizeSource } from './normalize';
+import { maybeSampleErrorCode } from './errorSampling';
 
 export function useInterpreter(runContext?: RunContext) {
   // Latest run-context, read by capture callbacks without re-creating them.
@@ -207,6 +208,17 @@ export function useInterpreter(runContext?: RunContext) {
       if (m && m.primaryHint === null) {
         m.primaryHint = category;
         captureHintShown(category, runContextRef.current);
+        // For the vague parse buckets, keep a sanitized copy of the code so we
+        // can study what tripped it up (best-effort, sampled, no student text).
+        maybeSampleErrorCode({
+          category,
+          errorType,
+          code: sourceLines.join('\n'),
+          rawMessage: message,
+          line,
+          codeLines: sourceLines.length,
+          feature: runContextRef.current?.feature,
+        });
       }
     },
     [],

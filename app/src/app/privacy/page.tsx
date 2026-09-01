@@ -17,6 +17,7 @@ const sections = [
       'Account data such as your name, email address, and profile image when you sign in.',
       'Learning activity including saved exams, practice attempts, scores, and progress analytics.',
       'Technical and device data such as browser type, approximate location by IP, and error logs.',
+      'Anonymized snippets of submitted code that produced an error, with any text inside quotes or comments removed, used to improve our error messages.',
     ],
   },
   {
