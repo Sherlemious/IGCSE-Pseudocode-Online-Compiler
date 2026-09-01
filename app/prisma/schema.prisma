@@ -215,6 +215,10 @@ model ExamAttempt {
   examId        String?
   exam          Exam?       @relation(fields: [examId], references: [id], onDelete: SetNull)
 
+  // Set when this attempt is a run of a class Assignment (drives the teacher dashboard).
+  assignmentId  String?
+  assignment    Assignment? @relation(fields: [assignmentId], references: [id], onDelete: SetNull)
+
   topic         String?
   difficulty    Difficulty?
   questionCount Int
@@ -235,6 +239,7 @@ model ExamAttempt {
   @@index([userId])
   @@index([userId, status])
   @@index([examId])
+  @@index([assignmentId])
 }
 
 // ── Shareable Exams (instructor-authored, reusable) ─────────
@@ -250,8 +255,9 @@ model Exam {
   shareCode    String         @unique
   isPublished  Boolean        @default(true) // link active / disabled
 
-  questions ExamQuestion[]
-  attempts  ExamAttempt[]
+  questions   ExamQuestion[]
+  attempts    ExamAttempt[]
+  assignments Assignment[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -282,6 +288,7 @@ model Class {
   archived Boolean @default(false)
 
   memberships ClassMembership[]
+  assignments Assignment[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -301,6 +308,25 @@ model ClassMembership {
   @@unique([classId, userId]) // idempotent joins
   @@index([classId])
   @@index([userId])
+}
+
+// An Exam handed to a Class as work. Student attempts of it are ExamAttempts
+// tagged with this assignmentId, which is what the teacher dashboard reads.
+model Assignment {
+  id      String    @id @default(cuid())
+  classId String
+  class   Class     @relation(fields: [classId], references: [id], onDelete: Cascade)
+  examId  String
+  exam    Exam      @relation(fields: [examId], references: [id], onDelete: Cascade)
+  dueDate DateTime?
+
+  attempts ExamAttempt[]
+
+  createdAt DateTime @default(now())
+
+  @@unique([classId, examId]) // an exam is assigned to a class at most once
+  @@index([classId])
+  @@index([examId])
 }
 
 // ── Admin / Reporting ───────────────────────────────────────

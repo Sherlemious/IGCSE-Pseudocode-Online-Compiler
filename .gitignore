@@ -24,3 +24,7 @@ Thumbs.db
 
 # Claude
 .claude
+
+# Local research / strategy notes (not committed)
+/research/
+/_temp/

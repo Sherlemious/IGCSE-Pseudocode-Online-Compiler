@@ -95,15 +95,21 @@ export default async function ClassesPage() {
         {enrolled.length > 0 && (
           <div className="animate-fade-in-up" style={{ animationDelay: '240ms' }}>
             <h2 className="mono-label text-dark-text mb-3 px-1">Enrolled · {enrolled.length}</h2>
-            <div className="space-y-2">
+            <div className="space-y-2 stagger-children">
               {enrolled.map(({ class: c }) => (
-                <div key={c.id} className="flex items-center gap-3 bg-surface border border-border rounded-lg px-4 py-3.5">
+                <Link
+                  key={c.id}
+                  href={`/classes/${c.id}`}
+                  className="flex items-center gap-3 bg-surface border border-border rounded-lg px-4 py-3.5
+                    hover:border-primary/30 hover:bg-surface/80 transition-all duration-200 group"
+                >
                   <School size={15} className="text-primary shrink-0" />
-                  <div className="min-w-0">
+                  <div className="min-w-0 flex-1">
                     <span className="text-sm font-medium text-light-text truncate">{c.name}</span>
                     {c.owner?.name && <p className="text-[11px] text-dark-text/60 mt-0.5">Taught by {c.owner.name}</p>}
                   </div>
-                </div>
+                  <ArrowRight size={15} className="shrink-0 text-dark-text/40 group-hover:text-primary group-hover:translate-x-0.5 transition-all duration-200" />
+                </Link>
               ))}
             </div>
           </div>
