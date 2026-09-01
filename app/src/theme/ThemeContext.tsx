@@ -3,6 +3,7 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
 import { useSession } from 'next-auth/react';
 import { toast } from 'sonner';
+import posthog from 'posthog-js';
 import {
   themes,
   type PresetThemeId,
@@ -286,7 +287,14 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   const setTheme = useCallback(
     (id: ActiveThemeId) => {
-      if (isPreset(id) || customThemes.some((t) => t.id === id)) setThemeId(id);
+      if (isPreset(id) || customThemes.some((t) => t.id === id)) {
+        setThemeId(id);
+        // Track which theme is chosen. For custom themes we send 'custom' rather
+        // than the DB id (which theme, not which row).
+        try {
+          posthog.capture('theme_changed', { theme_id: isPreset(id) ? id : 'custom', is_custom: !isPreset(id) });
+        } catch { /* analytics is non-critical */ }
+      }
     },
     [customThemes],
   );
@@ -299,15 +307,20 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const setWordWrap = (v: boolean) => {
     setWordWrapState(v);
     localStorage.setItem(STORAGE_KEY_WORD_WRAP, String(v));
+    try { posthog.capture('word_wrap_toggled', { enabled: v }); } catch { /* non-critical */ }
   };
 
   const setFontFamily = (id: FontFamilyId) => {
-    if (id in FONT_FAMILIES) setFontFamilyId(id);
+    if (id in FONT_FAMILIES) {
+      setFontFamilyId(id);
+      try { posthog.capture('font_changed', { font: id }); } catch { /* non-critical */ }
+    }
   };
 
   const setDyslexicFont = (v: boolean) => {
     setDyslexicFontState(v);
     localStorage.setItem(STORAGE_KEY_DYSLEXIC, String(v));
+    try { posthog.capture('dyslexic_font_toggled', { enabled: v }); } catch { /* non-critical */ }
   };
 
   const createTheme = useCallback(async (name: string, colors: CustomColors) => {
@@ -317,6 +330,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       return null;
     }
     setCustomThemes((prev) => [...prev, created]);
+    try { posthog.capture('theme_custom_created'); } catch { /* non-critical */ }
     return created;
   }, []);
 

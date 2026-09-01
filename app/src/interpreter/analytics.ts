@@ -25,15 +25,25 @@ export type RunOutcome = 'success' | 'parse_error' | 'runtime_error' | 'aborted'
 export const ERROR_HELPERS_FLAG = 'error-helpers-v2';
 
 /**
- * Resolve the error-helper variant for this session. Defaults to the control
- * ('v1') whenever PostHog or the flag is unavailable (e.g. flags not loaded
- * yet, analytics disabled in dev), so behaviour degrades safely.
+ * Resolve the error-helper variant for this session.
+ *
+ * v2 was rolled out to 100% of students on 2026-09-01: the A/B test showed it
+ * eliminates smart-quote parse errors (52 → 0 per week) with no hit to the
+ * hint resolve rate, and student feedback flagged the old messages as
+ * confusing. So v2 is now the default for everyone — independent of whether
+ * PostHog has loaded (during flag load, or in dev with analytics off).
+ *
+ * The `error-helpers-v2` flag is retained only as an emergency kill switch:
+ * explicitly disabling it (0% rollout) reverts a session to the old v1 helpers.
+ * The variant is still tagged on every event so the dashboards keep working.
  */
 export function getErrorHelpersVariant(): ErrorHelpersVariant {
   try {
-    return posthog.isFeatureEnabled(ERROR_HELPERS_FLAG) ? 'v2' : 'v1';
+    // Only an explicit `false` (flag disabled / 0% rollout) reverts to v1;
+    // `undefined` (flags not loaded yet) falls through to the v2 default.
+    return posthog.isFeatureEnabled(ERROR_HELPERS_FLAG) === false ? 'v1' : 'v2';
   } catch {
-    return 'v1';
+    return 'v2';
   }
 }
 
