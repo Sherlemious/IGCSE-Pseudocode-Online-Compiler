@@ -347,22 +347,32 @@ model FeedbackSubmission {
   @@index([userId])
 }
 
+enum BugStatus {
+  OPEN
+  IN_PROGRESS
+  FIXED
+  WONT_FIX
+}
+
 model BugReport {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   userId      String?
   email       String?
-  category    String   @default("bug") // bug | suggestion | other
-  description String   @db.Text
-  code        String?  @db.Text // attached editor code (optional / user-editable)
-  output      String?  @db.Text // attached terminal output (optional / user-editable)
+  category    String    @default("bug") // bug | suggestion | other
+  description String    @db.Text
+  code        String?   @db.Text // attached editor code (optional / user-editable)
+  output      String?   @db.Text // attached terminal output (optional / user-editable)
   pageUrl     String?
-  userAgent   String?  @db.Text
-  createdAt   DateTime @default(now())
+  userAgent   String?   @db.Text
+  status      BugStatus @default(OPEN)
+  resolvedAt  DateTime? // set when moved to FIXED / WONT_FIX
+  createdAt   DateTime  @default(now())
 
   user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   @@index([createdAt])
   @@index([userId])
+  @@index([status])
 }
 
 // Anonymized, sampled snapshots of code that produced a parse error we can't

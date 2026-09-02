@@ -9,6 +9,7 @@ export default async function AdminBugsPage() {
     orderBy: { createdAt: 'desc' },
     take: 200,
   });
+  const openCount = reports.filter((r) => r.status === 'OPEN').length;
 
   return (
     <div className="space-y-6 max-w-6xl">
@@ -17,6 +18,7 @@ export default async function AdminBugsPage() {
           <h1 className="text-2xl font-bold text-light-text">Bug Reports</h1>
           <p className="text-sm text-dark-text mt-1">
             {reports.length} report{reports.length !== 1 ? 's' : ''}
+            {openCount > 0 && <span className="text-error"> · {openCount} open</span>}
           </p>
         </div>
       </div>
