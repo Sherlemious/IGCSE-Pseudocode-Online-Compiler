@@ -414,3 +414,32 @@ model ExamAnswer {
   @@unique([examAttemptId, questionId])
   @@index([examAttemptId])
 }
+
+// ── Billing (Paddle pricing page) ──────────────────────────
+// The tier → Paddle price-ID binding lives in the DB so catalog IDs stay out of
+// code and the sandbox↔live switch is a data concern: rows are tagged by
+// `paddleEnv` and the /pricing page selects the set matching NEXT_PUBLIC_PADDLE_ENV.
+// Amounts/currency are NOT stored here — Paddle is the source of truth for money
+// (the page shows Paddle's formattedTotals). This holds only display copy + the
+// price IDs to preview and check out.
+model PricingTier {
+  id           String   @id @default(cuid())
+  slug         String // 'starter' | 'pro' | 'advanced'
+  name         String // display name
+  description  String
+  features     String[]
+  monthPriceId String // Paddle pri_… (monthly)
+  yearPriceId  String // Paddle pri_… (yearly)
+  paddleEnv    String // 'sandbox' | 'production'
+  sortOrder    Int      @default(0)
+  active       Boolean  @default(true)
+  // Contact-sales tier: no self-serve checkout. The card shows a "Contact me"
+  // CTA instead of a price + Subscribe, and its price IDs may be empty.
+  contactOnly  Boolean  @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([slug, paddleEnv])
+  @@index([paddleEnv, active])
+}

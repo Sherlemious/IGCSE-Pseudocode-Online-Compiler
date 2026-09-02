@@ -16,6 +16,7 @@ import {
   ArrowLeft,
   Search,
   Bug,
+  Tag,
 } from 'lucide-react';
 import SettingsPanel from './settingsPanel';
 import UserMenu from '../auth/UserMenu';
@@ -52,6 +53,7 @@ const Header: React.FC = () => {
     pathname.startsWith('/exams/') ||
     pathname.startsWith('/e/');
   const isCompilerPage = pathname === '/';
+  const isPricing = pathname === '/pricing';
   const activeNavIndex = isDocs ? 0 : isPractice ? 1 : isExam ? 2 : -1;
 
   // Text-only nav links with a shared underline that glides between routes.
@@ -145,6 +147,14 @@ const Header: React.FC = () => {
                 <span className="mx-1.5 block h-0.5 rounded-full bg-primary shadow-[0_0_6px_var(--color-primary)]" />
               </span>
             </div>
+            <Link
+              href="/pricing"
+              onClick={() => trackNav('pricing')}
+              className={navLinkClass(isPricing)}
+              aria-current={isPricing ? 'page' : undefined}
+            >
+              Pricing
+            </Link>
             <div className="w-px h-4 bg-header-text/20 mx-1" />
             <button
               onClick={openPalette}
@@ -219,6 +229,16 @@ const Header: React.FC = () => {
             >
               <Clock size={14} />
               Exam
+            </Link>
+            <Link
+              href="/pricing"
+              className={`flex items-center gap-2 hover:text-header-text transition duration-200 py-1.5 px-1 rounded hover:bg-white/10 ${
+                isPricing ? 'text-primary' : 'text-header-text/70'
+              }`}
+              onClick={() => { setIsMenuOpen(false); trackNav('pricing'); }}
+            >
+              <Tag size={14} />
+              Pricing
             </Link>
             <a
               href={GITHUB_URL}

@@ -25,6 +25,9 @@ Thumbs.db
 # Claude
 .claude
 
+# MCP server config (contains the Paddle sandbox API key — keep out of git)
+.mcp.json
+
 # Local research / strategy notes (not committed)
 /research/
 /_temp/
