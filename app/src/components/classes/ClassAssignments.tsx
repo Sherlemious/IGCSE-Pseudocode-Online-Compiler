@@ -4,6 +4,13 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ClipboardList, Plus, Loader2, X, Users, CalendarClock } from 'lucide-react';
+import Combobox from '@/components/ui/Combobox';
+import DatePicker from '@/components/ui/DatePicker';
+
+function todayISO(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
 
 export interface AssignmentRow {
   id: string;
@@ -81,23 +88,18 @@ export default function ClassAssignments({ classId, assignments, availableExams 
           </p>
         ) : (
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-            <select
-              value={examId}
-              onChange={(e) => setExamId(e.target.value)}
-              className="flex-1 min-w-0 rounded-lg bg-background border border-border px-3 py-2.5 text-sm text-light-text focus:outline-none focus:border-primary/50"
-            >
-              <option value="">Choose an exam…</option>
-              {availableExams.map((e) => (
-                <option key={e.id} value={e.id}>{e.title}</option>
-              ))}
-            </select>
-            <input
-              type="date"
-              value={due}
-              onChange={(e) => setDue(e.target.value)}
-              title="Optional due date"
-              className="rounded-lg bg-background border border-border px-3 py-2.5 text-sm text-dark-text focus:outline-none focus:border-primary/50"
-            />
+            <div className="flex-1 min-w-0">
+              <Combobox
+                options={availableExams.map((e) => ({ value: e.id, label: e.title }))}
+                value={examId}
+                onChange={setExamId}
+                placeholder="Choose an exam…"
+                searchPlaceholder="Search your exams…"
+                emptyText="No exams match."
+                ariaLabel="Choose an exam to assign"
+              />
+            </div>
+            <DatePicker value={due || null} onChange={(v) => setDue(v ?? '')} min={todayISO()} ariaLabel="Optional due date" />
             <button
               onClick={assign}
               disabled={!examId || busy === 'assign'}

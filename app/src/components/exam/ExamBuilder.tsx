@@ -148,7 +148,8 @@ export default function ExamBuilder({
       }
       const data = await res.json();
       const targetId = mode === 'edit' ? examId : data.examId;
-      router.push(`/exams/${targetId}`);
+      // After creating, land on the exam page with the "assign to a class" step highlighted.
+      router.push(mode === 'edit' ? `/exams/${targetId}` : `/exams/${targetId}?created=1`);
       router.refresh();
     } catch {
       setError('Something went wrong.');

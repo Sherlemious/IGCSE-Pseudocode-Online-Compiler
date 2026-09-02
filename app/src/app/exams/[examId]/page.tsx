@@ -3,9 +3,10 @@ import { redirect, notFound } from 'next/navigation';
 import Link from 'next/link';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
-import { ArrowLeft, Clock, ListChecks, Users } from 'lucide-react';
+import { ArrowLeft, Clock, ListChecks, Users, Check } from 'lucide-react';
 import ExamShareCard from '@/components/exam/ExamShareCard';
 import ExamManageActions from '@/components/exam/ExamManageActions';
+import AssignExamToClass from '@/components/exam/AssignExamToClass';
 
 export const metadata: Metadata = {
   title: 'Manage Exam',
@@ -14,6 +15,7 @@ export const metadata: Metadata = {
 
 interface Props {
   params: Promise<{ examId: string }>;
+  searchParams: Promise<{ created?: string }>;
 }
 
 const DIFF_COLOR: Record<string, string> = {
@@ -22,11 +24,12 @@ const DIFF_COLOR: Record<string, string> = {
   HARD: 'text-error',
 };
 
-export default async function ManageExamPage({ params }: Props) {
+export default async function ManageExamPage({ params, searchParams }: Props) {
   const session = await auth();
   if (!session) redirect('/auth/signin');
 
   const { examId } = await params;
+  const { created } = await searchParams;
 
   const exam = await prisma.exam.findFirst({
     where: { id: examId, ownerId: session.user.id },
@@ -67,6 +70,18 @@ export default async function ManageExamPage({ params }: Props) {
             <span className="flex items-center gap-1.5"><Clock size={12} />{exam.timeLimitMin} min</span>
             <span className="flex items-center gap-1.5"><Users size={12} />{exam._count.attempts} taken</span>
           </div>
+        </div>
+
+        {created && (
+          <div className="mb-6 flex items-center gap-2 text-sm text-primary bg-primary/[0.06] border border-primary/25 rounded-lg px-4 py-2.5 animate-fade-in-up">
+            <Check size={15} />
+            Exam created. Share it by link, or assign it to a class below.
+          </div>
+        )}
+
+        {/* Assign to a class */}
+        <div className="mb-6">
+          <AssignExamToClass examId={exam.id} highlight={!!created} />
         </div>
 
         {/* Share */}
