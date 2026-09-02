@@ -6,6 +6,7 @@ const LINKS = [
   { href: '/docs', label: 'Docs' },
   { href: '/privacy', label: 'Privacy' },
   { href: '/terms', label: 'Terms' },
+  { href: '/refund', label: 'Refunds' },
 ] as const;
 
 export default function IndexLinks({ current }: { current?: string }) {

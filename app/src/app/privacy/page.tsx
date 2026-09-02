@@ -94,9 +94,12 @@ export default function PrivacyPolicyPage() {
           </div>
 
           <div className="mt-8 pt-5 border-t border-border text-sm text-dark-text flex flex-wrap items-center gap-3">
-            <span>Read the terms too:</span>
+            <span>Also see:</span>
             <Link href="/terms" className="text-primary hover:text-primary-hover transition-colors font-medium">
               Terms &amp; Conditions
+            </Link>
+            <Link href="/refund" className="text-primary hover:text-primary-hover transition-colors font-medium">
+              Refund Policy
             </Link>
           </div>
 

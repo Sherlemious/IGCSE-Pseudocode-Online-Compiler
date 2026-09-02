@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import { headers } from 'next/headers';
 import { prisma } from '@/lib/prisma';
 import { auth } from '@/lib/auth';
@@ -87,6 +88,14 @@ export default async function PricingPage() {
             />
           </PaddleProvider>
         )}
+
+        <p className="mt-8 text-center text-sm text-dark-text">
+          Payments are processed by Paddle. See the{' '}
+          <Link href="/refund" className="text-primary hover:text-primary-hover transition-colors font-medium">
+            Refund Policy
+          </Link>{' '}
+          for cancellations and refunds.
+        </p>
       </div>
     </div>
   );

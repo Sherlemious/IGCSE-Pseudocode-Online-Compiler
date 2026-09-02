@@ -25,6 +25,7 @@ export async function buildLlmsTxt() {
     line('/faq', 'FAQ', 'how the site works, DECLARE, teachers, grading'),
     line('/privacy', 'Privacy policy'),
     line('/terms', 'Terms'),
+    line('/refund', 'Refund policy'),
     '',
     '## Syntax documentation',
   ];

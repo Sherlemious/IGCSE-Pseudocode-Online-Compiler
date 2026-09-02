@@ -42,6 +42,18 @@ const sections = [
       'To the fullest extent allowed by law, the service is provided as is and we are not liable for indirect or consequential losses resulting from its use.',
   },
   {
+    title: 'Payments and Refunds',
+    content: (
+      <>
+        Paid plans are billed through Paddle, who is the Merchant of Record.{' '}
+        <Link href="/refund" className="text-primary hover:text-primary-hover transition-colors font-medium">
+          Refunds and cancellations
+        </Link>{' '}
+        are described in the Refund Policy. Free use of the compiler does not involve payment.
+      </>
+    ),
+  },
+  {
     title: 'Changes to Terms',
     content: 'We may revise these terms. Updated terms take effect when posted on this page with a new effective date.',
   },
@@ -79,9 +91,12 @@ export default function TermsPage() {
           </div>
 
           <div className="mt-8 pt-5 border-t border-border text-sm text-dark-text flex flex-wrap items-center gap-3">
-            <span>For data handling details, see:</span>
+            <span>Also see:</span>
             <Link href="/privacy" className="text-primary hover:text-primary-hover transition-colors font-medium">
               Privacy Policy
+            </Link>
+            <Link href="/refund" className="text-primary hover:text-primary-hover transition-colors font-medium">
+              Refund Policy
             </Link>
           </div>
 
