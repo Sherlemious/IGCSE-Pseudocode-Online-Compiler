@@ -2,9 +2,10 @@ export const SITE_URL = 'https://pseudocode-compiler.sherlemious.com';
 
 export const SITE_NAME = 'Cambridge IGCSE & A Level Pseudocode Compiler';
 
-// Single source of truth for the public support/contact address. Must forward to
-// an inbox that's actually monitored (Paddle may email it during verification).
-export const SUPPORT_EMAIL = 'hello@pseudocode-compiler.sherlemious.com';
+// Single source of truth for the public support/contact address. Uses the
+// sherlemious.com domain, which already has working email set up (Paddle may
+// email this during verification).
+export const SUPPORT_EMAIL = 'hello@sherlemious.com';
 
 export const DEFAULT_TITLE = 'Cambridge IGCSE & A Level Pseudocode Compiler | Online Editor';
 
