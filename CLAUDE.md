@@ -136,6 +136,26 @@ npm run antlr:generate  # regenerate parser from grammar
 | `feedback_submitted` | — |
 | `bug_reported` | `category`, `has_code`, `page` |
 
+### Pricing / subscription funnel (`/pricing` + Paddle checkout)
+
+Page-side events fire from `PricingClient`; the `checkout_*` events are bridged from Paddle.js's own `eventCallback` in `PaddleProvider`. Every event carries `paddle_env` (`sandbox`\|`production`) so test traffic is filterable. Checkout amounts (`total`, `recurring_total`) are Paddle's raw integers (lowest denomination) — analytics only.
+
+| Event | Properties |
+|-------|-----------|
+| `pricing_viewed` | `paddle_env`, `tier_count`, `country`, `signed_in` |
+| `pricing_prices_loaded` | `paddle_env`, `country`, `resolved_country`, `price_count`, `priced_count`, `currency` |
+| `pricing_prices_error` | `paddle_env`, `country`, `error` |
+| `pricing_interval_changed` | `interval`, `paddle_env` |
+| `subscribe_clicked` | `tier`, `interval`, `price_id`, `paddle_env` |
+| `contact_sales_clicked` | `tier`, `paddle_env` |
+| `checkout_loaded` | `paddle_env`, `checkout_id`, `price_id`, `product_name`, `interval`, `currency`, `total`, `recurring_total`, `status` |
+| `checkout_payment_initiated` | …base + `payment_method` |
+| `checkout_payment_failed` | …base + `payment_method` |
+| `checkout_completed` | …base + `transaction_id` (the conversion) |
+| `checkout_closed` | …base (abandonment) |
+| `checkout_error` | …base + `error_type`, `error_code`, `error_detail` |
+| `checkout_success_viewed` | `transaction` (`_ptxn`) — fired on `/welcome` |
+
 ## Environment Variables
 
 Copy `app/.env.example` → `app/.env`. Required:

@@ -85,6 +85,7 @@ export default async function PricingPage() {
               tiers={tierViews}
               countryCode={countryCode}
               customerEmail={customerEmail}
+              paddleEnv={paddleEnv}
             />
           </PaddleProvider>
         )}

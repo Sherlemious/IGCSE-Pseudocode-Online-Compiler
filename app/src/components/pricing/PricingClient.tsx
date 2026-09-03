@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { usePostHog } from 'posthog-js/react';
 import { usePaddle } from './PaddleProvider';
 
 // Contact-sales tiers link here instead of opening checkout.
@@ -41,18 +42,34 @@ export default function PricingClient({
   tiers,
   countryCode,
   customerEmail,
+  paddleEnv,
 }: {
   tiers: PricingTierView[];
   countryCode?: string;
   customerEmail?: string;
+  paddleEnv: string;
 }) {
   const paddle = usePaddle();
+  const ph = usePostHog();
   const [interval, setInterval] = useState<Interval>('month');
   // Paddle's already-formatted total string, keyed by price ID. We never format
   // or do math on prices ourselves — we display exactly what Paddle returns.
   const [totals, setTotals] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Funnel entry — fire once, as soon as PostHog is available.
+  const viewedRef = useRef(false);
+  useEffect(() => {
+    if (!ph || viewedRef.current) return;
+    viewedRef.current = true;
+    ph.capture('pricing_viewed', {
+      paddle_env: paddleEnv,
+      tier_count: tiers.length,
+      country: countryCode ?? null,
+      signed_in: Boolean(customerEmail),
+    });
+  }, [ph, paddleEnv, tiers.length, countryCode, customerEmail]);
 
   // Contact-only tiers have no self-serve price, so they're excluded from preview.
   const allPriceIds = useMemo(
@@ -89,20 +106,41 @@ export default function PricingClient({
         }
         setTotals(next);
         setLoading(false);
+        ph?.capture('pricing_prices_loaded', {
+          paddle_env: paddleEnv,
+          country: countryCode ?? null,
+          // What Paddle actually localized to — set even when we passed no
+          // country and it geo-located by IP.
+          resolved_country: preview.data.address?.countryCode ?? null,
+          price_count: allPriceIds.length,
+          priced_count: Object.keys(next).length,
+          currency: preview.data.currencyCode,
+        });
       })
       .catch((err) => {
         if (cancelled) return;
         console.error('[paddle] PricePreview failed', err);
         setError('Could not load prices right now. Please try again shortly.');
         setLoading(false);
+        ph?.capture('pricing_prices_error', {
+          paddle_env: paddleEnv,
+          country: countryCode ?? null,
+          error: err instanceof Error ? err.message : String(err),
+        });
       });
     return () => {
       cancelled = true;
     };
-  }, [paddle, allPriceIds, countryCode]);
+  }, [paddle, allPriceIds, countryCode, ph, paddleEnv]);
 
-  const openCheckout = (priceId: string) => {
+  const openCheckout = (tier: PricingTierView, priceId: string) => {
     if (!paddle) return;
+    ph?.capture('subscribe_clicked', {
+      tier: tier.slug,
+      interval,
+      price_id: priceId,
+      paddle_env: paddleEnv,
+    });
     paddle.Checkout.open({
       items: [{ priceId, quantity: 1 }],
       // Prefill the email for signed-in users so they don't retype it.
@@ -133,7 +171,10 @@ export default function PricingClient({
               type="button"
               role="radio"
               aria-checked={interval === value}
-              onClick={() => setInterval(value)}
+              onClick={() => {
+                setInterval(value);
+                ph?.capture('pricing_interval_changed', { interval: value, paddle_env: paddleEnv });
+              }}
               className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
                 interval === value
                   ? 'bg-primary text-white'
@@ -206,6 +247,9 @@ export default function PricingClient({
                   href={`mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(
                     `Pseudocode Compiler — ${tier.name} plan enquiry`,
                   )}`}
+                  onClick={() =>
+                    ph?.capture('contact_sales_clicked', { tier: tier.slug, paddle_env: paddleEnv })
+                  }
                   className={`mt-6 block w-full rounded-lg px-4 py-2.5 text-center text-sm font-semibold transition-colors ${
                     featured
                       ? 'bg-primary text-white hover:bg-primary-hover'
@@ -217,7 +261,7 @@ export default function PricingClient({
               ) : (
                 <button
                   type="button"
-                  onClick={() => openCheckout(priceId)}
+                  onClick={() => openCheckout(tier, priceId)}
                   disabled={!paddle}
                   className={`mt-6 w-full rounded-lg px-4 py-2.5 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
                     featured

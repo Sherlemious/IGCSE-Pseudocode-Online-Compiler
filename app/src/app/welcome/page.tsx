@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import WelcomeTracker from './WelcomeTracker';
 
 export const metadata: Metadata = {
   title: 'Welcome',
@@ -12,6 +13,7 @@ export const metadata: Metadata = {
 export default function WelcomePage() {
   return (
     <div className="flex-1 min-h-0 overflow-y-auto bg-background bg-dot-grid scrollbar-pretty">
+      <WelcomeTracker />
       <div
         className="pointer-events-none absolute inset-0"
         style={{
