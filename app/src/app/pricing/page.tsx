@@ -4,7 +4,7 @@ import { headers } from 'next/headers';
 import { prisma } from '@/lib/prisma';
 import { auth } from '@/lib/auth';
 import { getPaddleEnv } from '@/lib/paddle/env';
-import { SITE_URL } from '@/lib/seo';
+import { SITE_URL, SITE_NAME } from '@/lib/seo';
 import PaddleProvider from '@/components/pricing/PaddleProvider';
 import PricingClient, { type PricingTierView } from '@/components/pricing/PricingClient';
 
@@ -69,6 +69,11 @@ export default async function PricingPage() {
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-light-text">
             Choose your plan
           </h1>
+          <p className="mx-auto mt-3 max-w-2xl text-sm text-light-text/90 leading-relaxed">
+            The {SITE_NAME} lets students write, run, and practice Cambridge pseudocode
+            in the browser — with instant output, trace tables, and timed exam practice.
+            Paid plans add classes, assignments, and autograding for teachers.
+          </p>
           <p className="mx-auto mt-2 max-w-xl text-sm text-dark-text leading-relaxed">
             Prices are shown in your local currency. Switch between monthly and yearly billing —
             you&apos;ll see the exact amount before you pay.

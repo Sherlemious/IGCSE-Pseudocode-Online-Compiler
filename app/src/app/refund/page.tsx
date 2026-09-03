@@ -1,8 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import IndexLinks from '@/components/layout/IndexLinks';
-
-const SUPPORT_EMAIL = 'hello@pseudocode-compiler.sherlemious.com';
+import { SUPPORT_EMAIL } from '@/lib/seo';
 
 export const metadata: Metadata = {
   title: 'Refund Policy',

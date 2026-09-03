@@ -3,8 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Loader2, Plus, Lock } from 'lucide-react';
-
-const UPGRADE_EMAIL = 'abd.moh.yousef@gmail.com';
+import { SUPPORT_EMAIL } from '@/lib/seo';
 
 interface Props {
   canCreate: boolean;
@@ -25,7 +24,7 @@ export default function CreateClassForm({ canCreate, maxClasses }: Props) {
           You&apos;ve reached your {maxClasses}-class limit on the free plan.
         </span>
         <a
-          href={`mailto:${UPGRADE_EMAIL}?subject=${encodeURIComponent('Interested in Teacher Pro')}`}
+          href={`mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent('Interested in Teacher Pro')}`}
           className="shrink-0 text-xs font-medium text-primary hover:underline"
         >
           Upgrade →

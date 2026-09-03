@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import IndexLinks from '@/components/layout/IndexLinks';
+import { SUPPORT_EMAIL } from '@/lib/seo';
 
 export const metadata: Metadata = {
   title: 'Privacy Policy',
@@ -49,7 +50,7 @@ const sections = [
     points: [
       'You may request access, correction, or deletion of your personal data.',
       'You may request clarification about how your data is processed.',
-      'You may contact us about privacy concerns at any time.',
+      `You may contact us about privacy concerns at any time at ${SUPPORT_EMAIL}.`,
     ],
   },
   {

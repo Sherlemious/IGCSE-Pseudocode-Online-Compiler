@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import IndexLinks from '@/components/layout/IndexLinks';
+import { SUPPORT_EMAIL } from '@/lib/seo';
 
 export const metadata: Metadata = {
   title: 'Terms & Conditions',
@@ -59,8 +60,7 @@ const sections = [
   },
   {
     title: 'Contact',
-    content:
-      'If you have questions about these terms, please contact the project maintainer through the official project channels.',
+    content: `If you have questions about these terms, email us at ${SUPPORT_EMAIL}.`,
   },
 ];
 

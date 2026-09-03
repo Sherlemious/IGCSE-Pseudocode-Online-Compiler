@@ -22,6 +22,7 @@ import SettingsPanel from './settingsPanel';
 import UserMenu from '../auth/UserMenu';
 import { useCommands } from '../common/CommandPalette';
 import { OPEN_BUG_REPORT_EVENT } from '@/utils/constants';
+import { SUPPORT_EMAIL } from '@/lib/seo';
 
 const GITHUB_URL = 'https://github.com/Sherlemious/IGCSE-Pseudocode-Online-Compiler';
 const PORTFOLIO_URL = 'https://www.sherlemious.com';
@@ -103,6 +104,32 @@ const Header: React.FC = () => {
             >
               by Sherlemious
             </a>
+            {/* Legal + contact — reachable from every page, incl. the editor
+                homepage (required for Paddle checkout domain approval). */}
+            <span className="hidden lg:inline text-header-text/20 select-none" aria-hidden>
+              ·
+            </span>
+            <nav
+              aria-label="Legal and contact"
+              className="hidden lg:flex items-center gap-2 text-[11px] text-header-text/40 whitespace-nowrap"
+            >
+              <Link href="/terms" onClick={() => trackNav('terms')} className="hover:text-primary transition-colors">
+                Terms
+              </Link>
+              <Link href="/privacy" onClick={() => trackNav('privacy')} className="hover:text-primary transition-colors">
+                Privacy
+              </Link>
+              <Link href="/refund" onClick={() => trackNav('refund')} className="hover:text-primary transition-colors">
+                Refunds
+              </Link>
+              <a
+                href={`mailto:${SUPPORT_EMAIL}`}
+                onClick={() => trackNav('contact')}
+                className="hover:text-primary transition-colors"
+              >
+                Contact
+              </a>
+            </nav>
           </div>
 
           {/* Desktop Navigation */}
@@ -270,6 +297,37 @@ const Header: React.FC = () => {
               <Bug size={14} />
               Report a bug
             </button>
+            {/* Legal + contact — keeps terms/privacy/refund reachable on mobile. */}
+            <div className="mt-1 pt-2 border-t border-header-text/20 flex flex-wrap items-center gap-x-3 gap-y-1 px-1 text-[11px] text-header-text/50">
+              <Link
+                href="/terms"
+                onClick={() => { setIsMenuOpen(false); trackNav('terms'); }}
+                className="hover:text-primary transition-colors"
+              >
+                Terms
+              </Link>
+              <Link
+                href="/privacy"
+                onClick={() => { setIsMenuOpen(false); trackNav('privacy'); }}
+                className="hover:text-primary transition-colors"
+              >
+                Privacy
+              </Link>
+              <Link
+                href="/refund"
+                onClick={() => { setIsMenuOpen(false); trackNav('refund'); }}
+                className="hover:text-primary transition-colors"
+              >
+                Refunds
+              </Link>
+              <a
+                href={`mailto:${SUPPORT_EMAIL}`}
+                onClick={() => { setIsMenuOpen(false); trackNav('contact'); }}
+                className="hover:text-primary transition-colors"
+              >
+                Contact
+              </a>
+            </div>
           </nav>
         )}
       </div>

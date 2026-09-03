@@ -3,9 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { usePostHog } from 'posthog-js/react';
 import { usePaddle } from './PaddleProvider';
-
-// Contact-sales tiers link here instead of opening checkout.
-const CONTACT_EMAIL = 'abd.moh.yousef@gmail.com';
+import { SUPPORT_EMAIL } from '@/lib/seo';
 
 export interface PricingTierView {
   slug: string;
@@ -244,7 +242,7 @@ export default function PricingClient({
 
               {tier.contactOnly ? (
                 <a
-                  href={`mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(
+                  href={`mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(
                     `Pseudocode Compiler — ${tier.name} plan enquiry`,
                   )}`}
                   onClick={() =>
