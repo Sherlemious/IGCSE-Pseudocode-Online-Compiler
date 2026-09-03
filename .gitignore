@@ -25,9 +25,17 @@ Thumbs.db
 # Claude
 .claude
 
-# MCP server config (contains the Paddle sandbox API key — keep out of git)
+# MCP server config (contains Paddle sandbox + LIVE API keys — never commit)
 .mcp.json
+.mcp.local.json
+
+# Secrets / keys (belt-and-suspenders — never commit any key material)
+*.pem
+*.key
+secrets.json
+.secrets
 
 # Local research / strategy notes (not committed)
 /research/
 /_temp/
+/scratchpad/

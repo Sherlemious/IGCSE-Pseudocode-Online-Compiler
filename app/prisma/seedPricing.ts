@@ -84,12 +84,13 @@ const SANDBOX_TIERS: TierSeed[] = [
 ];
 
 // ─── Production price IDs (compiler live account) ──────────────────────────────
-// TODO: fill once the live catalog is created (blocked on granting the live MCP
-// connection product.write / price.write). Until then, run only `sandbox`.
+// Created 2026-09-03 via the paddle-live MCP, mirroring the sandbox catalog.
+// Advanced stays blank (contact-only) even though live Advanced prices exist —
+// the app gates that tier behind contact-sales, same as sandbox.
 const PRODUCTION_TIERS: TierSeed[] = [
-  tier('student', '', ''),
-  tier('starter', '', ''),
-  tier('pro', '', ''),
+  tier('student', 'pri_01m1mbfxkdvv0esey8wcaktkxr', 'pri_01m1mbfxqpt6018eessnr3mnhw'),
+  tier('starter', 'pri_01m1mbfxw6enq2faxm3wnkc3de', 'pri_01m1mbfy1hm2fndbp227dqvk02'),
+  tier('pro', 'pri_01m1mbfy5rmde0sb9eq8emg292', 'pri_01m1mbfy9x1vkj2h7gnecdrtym'),
   tier('advanced', '', ''), // contact-only
 ];
 // ──────────────────────────────────────────────────────────────────────────────
