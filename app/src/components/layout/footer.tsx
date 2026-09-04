@@ -1,9 +1,6 @@
 'use client';
 
-import React, { useCallback } from 'react';
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { usePostHog } from 'posthog-js/react';
+import React from 'react';
 import { Circle, Loader } from 'lucide-react';
 import type { CursorPosition } from '../compiler/codeInput';
 
@@ -17,16 +14,6 @@ interface FooterProps {
 }
 
 const Footer: React.FC<FooterProps> = ({ isRunning = false, cursor, lineCount }) => {
-  const pathname = usePathname();
-  const ph = usePostHog();
-
-  const trackNav = useCallback(
-    (destination: string) => {
-      ph?.capture('nav_clicked', { destination, from: pathname });
-    },
-    [ph, pathname],
-  );
-
   return (
     <footer className="h-8 bg-header-bg border-t border-border px-3 flex items-center justify-between text-[11px] font-mono shrink-0 select-none">
       {/* Left section */}
@@ -42,25 +29,6 @@ const Footer: React.FC<FooterProps> = ({ isRunning = false, cursor, lineCount })
           </span>
         </div>
       </div>
-
-      {/* Centre section — legal + contact, same links as the header */}
-      <nav
-        aria-label="Legal and contact"
-        className="hidden sm:flex items-center gap-2 text-header-text/30"
-      >
-        <Link href="/terms" onClick={() => trackNav('terms')} className="hover:text-primary transition-colors">
-          Terms
-        </Link>
-        <Link href="/privacy" onClick={() => trackNav('privacy')} className="hover:text-primary transition-colors">
-          Privacy
-        </Link>
-        <Link href="/refund" onClick={() => trackNav('refund')} className="hover:text-primary transition-colors">
-          Refunds
-        </Link>
-        <Link href="/contact" onClick={() => trackNav('contact')} className="hover:text-primary transition-colors">
-          Contact
-        </Link>
-      </nav>
 
       {/* Right section */}
       <div className="flex items-center gap-3 text-header-text/70">
