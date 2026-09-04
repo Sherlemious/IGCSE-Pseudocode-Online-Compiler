@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import CompilerPage from '../components/compiler/CompilerPage';
+import CompilerPage from '@/modules/compiler/CompilerPage';
 
 const FEATURE_LINKS = [
   { label: 'Practice Questions', href: '/practice' },

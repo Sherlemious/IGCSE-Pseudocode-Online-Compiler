@@ -2,13 +2,13 @@ import type { Metadata } from 'next';
 import { redirect, notFound } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, School, ClipboardList, ListChecks, CalendarClock } from 'lucide-react';
-import { auth } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
-import { SITE_URL } from '@/lib/seo';
-import { getEntitlements } from '@/lib/entitlements';
-import ClassManager from '@/components/classes/ClassManager';
-import ClassAssignments, { type AssignmentRow } from '@/components/classes/ClassAssignments';
-import StartAssignmentButton from '@/components/classes/StartAssignmentButton';
+import { auth } from '@/modules/auth/auth';
+import { prisma } from '@/shared/db';
+import { SITE_URL } from '@/shared/lib/seo';
+import { getEntitlements } from '@/modules/billing/entitlements';
+import ClassManager from '@/modules/classes/ClassManager';
+import ClassAssignments, { type AssignmentRow } from '@/modules/classes/ClassAssignments';
+import StartAssignmentButton from '@/modules/classes/StartAssignmentButton';
 
 export const metadata: Metadata = {
   title: 'Class',

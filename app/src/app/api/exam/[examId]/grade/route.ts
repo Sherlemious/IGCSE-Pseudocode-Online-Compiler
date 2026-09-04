@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
-import { auth } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
-import { gradeSubmission } from '@/lib/autograder';
+import { auth } from '@/modules/auth/auth';
+import { prisma } from '@/shared/db';
+import { gradeSubmission } from '@/modules/practice/autograder';
 
 interface Context {
   params: Promise<{ examId: string }>;

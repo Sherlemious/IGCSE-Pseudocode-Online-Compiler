@@ -1,26 +1,26 @@
 import type { Metadata } from 'next';
 import Script from 'next/script';
 import './globals.css';
-import { ThemeProvider } from '../theme/ThemeContext';
-import SessionWrapper from '../components/auth/SessionWrapper';
-import Header from '../components/layout/header';
-import SiteFooter from '../components/layout/siteFooter';
+import { ThemeProvider } from '@/theme/ThemeContext';
+import SessionWrapper from '@/modules/auth/SessionWrapper';
+import Header from '@/shared/layout/header';
+import SiteFooter from '@/shared/layout/siteFooter';
 import { Toaster } from 'sonner';
-import PostHogProvider from '../components/analytics/PostHogProvider';
-import SessionIdentifier from '../components/analytics/SessionIdentifier';
-import OnboardingNudges from '../components/onboarding/OnboardingNudges';
-import { CommandProvider } from '../components/common/CommandPalette';
-import GlobalCommands from '../components/common/GlobalCommands';
-import KeyboardShortcutsModal from '../components/common/KeyboardShortcutsModal';
-import ReportBugModal from '../components/feedback/ReportBugModal';
-import PageTransition from '../components/layout/PageTransition';
+import PostHogProvider from '@/modules/telemetry/PostHogProvider';
+import SessionIdentifier from '@/modules/telemetry/SessionIdentifier';
+import OnboardingNudges from '@/modules/onboarding/OnboardingNudges';
+import { CommandProvider } from '@/shared/ui/CommandPalette';
+import GlobalCommands from '@/shared/ui/GlobalCommands';
+import KeyboardShortcutsModal from '@/shared/ui/KeyboardShortcutsModal';
+import ReportBugModal from '@/modules/feedback/ReportBugModal';
+import PageTransition from '@/shared/layout/PageTransition';
 import {
   DEFAULT_DESCRIPTION,
   DEFAULT_TITLE,
   SEO_KEYWORDS,
   SITE_NAME,
   SITE_URL,
-} from '@/lib/seo';
+} from '@/shared/lib/seo';
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),

@@ -1,10 +1,10 @@
 import type { Metadata } from 'next';
 import { redirect, notFound } from 'next/navigation';
 import Link from 'next/link';
-import { auth } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
+import { auth } from '@/modules/auth/auth';
+import { prisma } from '@/shared/db';
 import { Clock, ArrowLeft, CheckCircle, XCircle, RotateCcw, Minus } from 'lucide-react';
-import ExamShareButton from '@/components/share/ExamShareButton';
+import ExamShareButton from '@/modules/share/ExamShareButton';
 
 export const metadata: Metadata = {
   title: 'Exam Results',

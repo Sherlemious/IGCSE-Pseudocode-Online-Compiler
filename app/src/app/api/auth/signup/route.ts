@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
-import { prisma } from '@/lib/prisma';
-import { getResend, FROM_ADDRESS } from '@/lib/resend';
-import { welcomeEmailHtml, welcomeEmailText } from '@/emails/welcome';
+import { prisma } from '@/shared/db';
+import { getResend, FROM_ADDRESS } from '@/modules/auth/resend';
+import { welcomeEmailHtml, welcomeEmailText } from '@/modules/auth/emails/welcome';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 

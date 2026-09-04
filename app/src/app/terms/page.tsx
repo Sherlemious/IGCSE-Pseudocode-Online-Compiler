@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import IndexLinks from '@/components/layout/IndexLinks';
-import { SUPPORT_EMAIL } from '@/lib/seo';
+import IndexLinks from '@/shared/layout/IndexLinks';
+import { SUPPORT_EMAIL } from '@/shared/lib/seo';
 
 export const metadata: Metadata = {
   title: 'Terms & Conditions',

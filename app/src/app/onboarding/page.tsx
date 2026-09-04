@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
-import { auth } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
+import { auth } from '@/modules/auth/auth';
+import { prisma } from '@/shared/db';
 import { Braces } from 'lucide-react';
 import RolePicker from './RolePicker';
 

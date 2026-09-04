@@ -55,78 +55,27 @@ IGCSE-Pseudocode-Online-Compiler/
 │   │   ├── seed.ts                       # Seed script
 │   │   └── migrations/
 │   ├── public/
-│   │   └── fonts/
 │   └── src/
-│       ├── app/                          # App Router pages & API routes
-│       │   ├── page.tsx                  # Home — compiler
-│       │   ├── layout.tsx                # Root layout
-│       │   ├── admin/                    # Admin dashboard
-│       │   ├── analytics/                # Progress dashboard
-│       │   ├── auth/signin & signup/     # Auth pages
-│       │   ├── docs/                     # Syntax reference page
-│       │   ├── exam/[examId]/            # Exam session & results
-│       │   ├── practice/[questionId]/    # Practice question workspace
-│       │   └── api/
-│       │       ├── auth/[...nextauth]/   # NextAuth handler
-│       │       ├── exam/                 # Exam CRUD + grading
-│       │       ├── grade/                # AI answer grading
-│       │       ├── nudges/               # Onboarding nudge state
-│       │       └── questions/            # Practice question CRUD
-│       ├── components/
-│       │   ├── analytics/                # PostHogProvider, progress charts
-│       │   ├── auth/                     # AuthForm, SessionWrapper, UserMenu
-│       │   ├── common/                   # CodeBlock, Kw, CommandPalette, GlobalCommands
-│       │   ├── compiler/                 # CompilerPage, CodeMirrorEditor, outputDisplay,
-│       │   │                             #   PythonView, FlowchartView, TraceTable
-│       │   ├── exam/                     # ExamWorkspace, ExamTimer, ExamConfigForm
-│       │   ├── feedback/                 # FeedbackSurvey
-│       │   ├── icons/                    # PythonLogo and other brand icons
-│       │   ├── layout/                   # Header, Footer, SettingsPanel (theme editor)
-│       │   ├── onboarding/               # NudgeCards, OnboardingTour
-│       │   ├── practice/                 # PracticeWorkspace, HintsPanel, SolutionPanel,
-│       │   │                             #   PracticeStartGate
-│       │   └── share/                    # ShareButton, ExamShareButton
-│       ├── data/
-│       │   ├── examples.ts               # Built-in code examples
-│       │   └── documentationToc.ts
-│       ├── emails/
-│       │   └── welcome.ts                # Welcome email template (Resend)
-│       ├── interpreter/                  # ANTLR4-based pseudocode engine
-│       │   ├── grammar/
-│       │   │   └── Pseudocode.g4         # ANTLR4 grammar (source of truth)
-│       │   ├── generated/                # Generated lexer/parser — do not edit
-│       │   ├── core/
-│       │   │   ├── interpreter.ts        # Tree-walking interpreter
-│       │   │   ├── environment.ts        # Variable scoping
-│       │   │   ├── values.ts             # Runtime value types
-│       │   │   ├── arrays.ts             # Array operations
-│       │   │   ├── builtins.ts           # Built-in functions
-│       │   │   ├── filesystem.ts         # Browser localStorage file I/O
-│       │   │   ├── serverFilesystem.ts   # Server-side file I/O (grading)
-│       │   │   └── types.ts              # Shared types
-│       │   ├── converters/               # Pseudocode → Python / Flowchart
-│       │   │   ├── pythonConverter.ts    # Pseudocode → Python source
-│       │   │   ├── pythonHelpers.ts      # Runtime shims for emitted Python
-│       │   │   └── flowchartConverter.ts # Pseudocode → flowchart nodes/edges
-│       │   ├── formatter.ts              # Pseudocode autoformatter (re-indent)
-│       │   ├── errorMessages.ts          # Human-friendly error messages
-│       │   ├── parser.ts                 # Parse entry point
-│       │   ├── pseudocode-lang.ts        # CodeMirror language extension
-│       │   ├── useInterpreter.ts         # React hook
-│       │   └── index.ts                  # Public API
-│       ├── lib/
-│       │   ├── auth.ts                   # NextAuth config
-│       │   ├── admin.ts                  # Admin-access helpers
-│       │   ├── autograder.ts             # AI-based test-case grading
-│       │   ├── featureFlags.ts           # PostHog feature flags
-│       │   ├── prisma.ts                 # Prisma client singleton
-│       │   ├── seo.ts                    # Metadata helpers
-│       │   ├── themeValidation.ts        # Custom theme validation
-│       │   └── resend.ts                 # Email client
-│       ├── theme/                        # Theme context & definitions
-│       ├── types/                        # TypeScript type augmentations
-│       └── utils/constants.ts
-├── pseudocode.md                         # Full IGCSE pseudocode language reference
+│       ├── app/                          # Thin App Router pages & API routes
+│       ├── modules/
+│       │   ├── interpreter/              # Language runtime (grammar, parser, VM)
+│       │   ├── compiler/                 # Playground UI + shared editor kit
+│       │   ├── billing/                  # Pricing, Paddle, entitlements
+│       │   ├── practice/                 # Practice UI + autograder
+│       │   ├── exams/                    # Exam take / author UI
+│       │   ├── classes/                  # Classes & assignments
+│       │   ├── auth/                     # NextAuth, session UI, email
+│       │   ├── admin/                    # Admin gate helper
+│       │   ├── progress/                 # Student progress widgets
+│       │   ├── telemetry/                # PostHog wiring
+│       │   ├── onboarding/               # Tours & nudges
+│       │   ├── feedback/                 # Bug report / survey
+│       │   ├── share/                    # Share buttons
+│       │   ├── docs/                     # llms.txt + docs TOC
+│       │   └── content/                  # Built-in examples + FAQ
+│       ├── shared/                       # Layout, UI primitives, Prisma, SEO
+│       ├── theme/                        # Theme context, presets, validation
+│       └── types/
 ├── README.md
 └── LICENSE
 ```
@@ -220,13 +169,13 @@ npm run build         # production build
 
 ### Regenerating the Parser
 
-If you modify `src/interpreter/grammar/Pseudocode.g4`, regenerate the TypeScript parser:
+If you modify `src/modules/interpreter/grammar/Pseudocode.g4`, regenerate the TypeScript parser:
 
 ```bash
 npm run antlr:generate
 ```
 
-The generated files in `src/interpreter/generated/` are committed to the repo — do not edit them by hand.
+The generated files in `src/modules/interpreter/generated/` are committed to the repo — do not edit them by hand.
 
 ## Contributing
 

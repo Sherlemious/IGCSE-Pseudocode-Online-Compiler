@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
-import { auth } from '@/lib/auth';
-import { isAdmin } from '@/lib/admin';
+import { auth } from '@/modules/auth/auth';
+import { isAdmin } from '@/modules/admin/isAdmin';
 import AdminSidebar from './_components/AdminSidebar';
 
 export const metadata: Metadata = {

@@ -1,12 +1,12 @@
 import type { Metadata } from 'next';
 import { redirect, notFound } from 'next/navigation';
 import Link from 'next/link';
-import { auth } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
+import { auth } from '@/modules/auth/auth';
+import { prisma } from '@/shared/db';
 import { ArrowLeft, Clock, ListChecks, Users, Check } from 'lucide-react';
-import ExamShareCard from '@/components/exam/ExamShareCard';
-import ExamManageActions from '@/components/exam/ExamManageActions';
-import AssignExamToClass from '@/components/exam/AssignExamToClass';
+import ExamShareCard from '@/modules/exams/ExamShareCard';
+import ExamManageActions from '@/modules/exams/ExamManageActions';
+import AssignExamToClass from '@/modules/exams/AssignExamToClass';
 
 export const metadata: Metadata = {
   title: 'Manage Exam',

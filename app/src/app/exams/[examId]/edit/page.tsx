@@ -1,8 +1,8 @@
 import type { Metadata } from 'next';
 import { redirect, notFound } from 'next/navigation';
-import { auth } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
-import ExamBuilder from '@/components/exam/ExamBuilder';
+import { auth } from '@/modules/auth/auth';
+import { prisma } from '@/shared/db';
+import ExamBuilder from '@/modules/exams/ExamBuilder';
 
 export const metadata: Metadata = {
   title: 'Edit Exam',

@@ -1,6 +1,6 @@
 import type { MetadataRoute } from 'next';
-import { prisma } from '@/lib/prisma';
-import { SITE_URL } from '@/lib/seo';
+import { prisma } from '@/shared/db';
+import { SITE_URL } from '@/shared/lib/seo';
 
 export const revalidate = 3600;
 

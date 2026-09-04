@@ -2,13 +2,13 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { headers } from 'next/headers';
 import { unstable_cache } from 'next/cache';
-import { prisma } from '@/lib/prisma';
-import { auth } from '@/lib/auth';
-import { getPaddleEnv } from '@/lib/paddle/env';
-import { planBadge } from '@/lib/planDisplay';
-import { SITE_URL, SITE_NAME } from '@/lib/seo';
-import PaddleProvider from '@/components/pricing/PaddleProvider';
-import PricingClient, { type PricingTierView } from '@/components/pricing/PricingClient';
+import { prisma } from '@/shared/db';
+import { auth } from '@/modules/auth/auth';
+import { getPaddleEnv } from '@/modules/billing/paddle/env';
+import { planBadge } from '@/modules/billing/planDisplay';
+import { SITE_URL, SITE_NAME } from '@/shared/lib/seo';
+import PaddleProvider from '@/modules/billing/PaddleProvider';
+import PricingClient, { type PricingTierView } from '@/modules/billing/PricingClient';
 
 // Tier rows are the same for everyone in a given Paddle env and only change on a
 // reseed, so cache them across requests instead of hitting Neon per page view.

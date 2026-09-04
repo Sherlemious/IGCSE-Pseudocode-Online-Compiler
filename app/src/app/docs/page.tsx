@@ -4,9 +4,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { ChevronRight, List, X, Search } from 'lucide-react';
 
-import CodeBlock from '../../components/common/CodeBlock';
-import Kw from '../../components/common/Kw';
-import toc from '../../data/documentationToc';
+import CodeBlock from '@/shared/ui/CodeBlock';
+import Kw from '@/shared/ui/Kw';
+import toc from '@/modules/docs/toc';
 
 /* ────────────────────────────────────────────────────────── */
 /*  Main Documentation component                              */

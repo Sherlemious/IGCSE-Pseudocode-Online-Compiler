@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
 import { Prisma } from '@prisma/client';
-import { auth } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
-import { normalizeShareCode } from '@/lib/shareCode';
-import { resolveTier, limitsFor } from '@/lib/entitlements';
+import { auth } from '@/modules/auth/auth';
+import { prisma } from '@/shared/db';
+import { normalizeShareCode } from '@/shared/lib/shareCode';
+import { resolveTier, limitsFor } from '@/modules/billing/entitlements';
 
 interface JoinBody {
   joinCode?: unknown;

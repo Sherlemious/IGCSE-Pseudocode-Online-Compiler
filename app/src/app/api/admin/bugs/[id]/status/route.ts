@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
-import { auth } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
-import { isAdmin } from '@/lib/admin';
+import { auth } from '@/modules/auth/auth';
+import { prisma } from '@/shared/db';
+import { isAdmin } from '@/modules/admin/isAdmin';
 import type { BugStatus } from '@prisma/client';
 
 const VALID: BugStatus[] = ['OPEN', 'IN_PROGRESS', 'FIXED', 'WONT_FIX'];

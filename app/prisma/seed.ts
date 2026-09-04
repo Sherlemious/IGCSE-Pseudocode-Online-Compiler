@@ -1,5 +1,5 @@
 import { PrismaClient } from '@prisma/client';
-import { examples } from '../src/data/examples';
+import { examples } from '../src/modules/content/examples';
 import { thinTopicQuestions } from './thinTopicQuestions';
 
 const prisma = new PrismaClient();

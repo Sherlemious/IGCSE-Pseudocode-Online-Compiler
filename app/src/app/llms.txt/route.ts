@@ -1,4 +1,4 @@
-import { buildLlmsTxt } from '@/lib/llmsTxt';
+import { buildLlmsTxt } from '@/modules/docs/llmsTxt';
 
 export const revalidate = 3600;
 

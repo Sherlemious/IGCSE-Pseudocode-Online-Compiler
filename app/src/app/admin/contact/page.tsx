@@ -1,4 +1,4 @@
-import { prisma } from '@/lib/prisma';
+import { prisma } from '@/shared/db';
 import ContactTable from './_components/ContactTable';
 
 export const dynamic = 'force-dynamic';

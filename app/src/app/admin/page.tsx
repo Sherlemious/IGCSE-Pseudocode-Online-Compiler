@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
-import { prisma } from '@/lib/prisma';
-import { auth } from '@/lib/auth';
+import { prisma } from '@/shared/db';
+import { auth } from '@/modules/auth/auth';
 import {
   Users, MessageSquare, BookOpen, BookOpenCheck,
   BarChart3, ArrowUpRight, ArrowRight, Mail,

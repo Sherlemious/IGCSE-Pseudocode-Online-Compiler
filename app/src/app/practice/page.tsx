@@ -2,12 +2,12 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Suspense } from 'react';
 import { Lock, CheckCircle, Crown, FileText, ArrowRight, Sparkles } from 'lucide-react';
-import { prisma } from '../../lib/prisma';
-import { auth } from '../../lib/auth';
-import { PREMIUM_GATING_ENABLED } from '../../lib/featureFlags';
-import { getPremiumAccess } from '@/lib/entitlements';
-import { PracticeFilters } from './PracticeFilters';
-import { PracticeToolbar } from './PracticeToolbar';
+import { prisma } from '@/shared/db';
+import { auth } from '@/modules/auth/auth';
+import { PREMIUM_GATING_ENABLED } from '@/modules/billing/featureFlags';
+import { getPremiumAccess } from '@/modules/billing/entitlements';
+import { PracticeFilters } from '@/modules/practice/PracticeFilters';
+import { PracticeToolbar } from '@/modules/practice/PracticeToolbar';
 import {
   DIFFICULTIES,
   DIFF_META,
@@ -20,7 +20,7 @@ import {
   type StatusFacet,
   type StatusKey,
   type YearFacet,
-} from './filterUtils';
+} from '@/modules/practice/filterUtils';
 
 export const metadata: Metadata = {
   title: 'Cambridge Pseudocode Practice Questions - Past Papers',

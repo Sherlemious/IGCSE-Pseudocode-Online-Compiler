@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { gradeSubmission } from '../../../lib/autograder';
+import { gradeSubmission } from '@/modules/practice/autograder';
 
 export async function POST(request: NextRequest) {
   let body: unknown;
