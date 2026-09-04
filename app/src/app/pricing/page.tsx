@@ -1,12 +1,36 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { headers } from 'next/headers';
+import { unstable_cache } from 'next/cache';
 import { prisma } from '@/lib/prisma';
 import { auth } from '@/lib/auth';
 import { getPaddleEnv } from '@/lib/paddle/env';
 import { SITE_URL, SITE_NAME } from '@/lib/seo';
 import PaddleProvider from '@/components/pricing/PaddleProvider';
 import PricingClient, { type PricingTierView } from '@/components/pricing/PricingClient';
+
+// Tier rows are the same for everyone in a given Paddle env and only change on a
+// reseed, so cache them across requests instead of hitting Neon per page view.
+// The page stays dynamic (country + auth are per-request); only this read is cached.
+// Revalidate hourly, or bust immediately with revalidateTag('pricing-tiers').
+const getPricingTiers = unstable_cache(
+  (env: string) =>
+    prisma.pricingTier.findMany({
+      where: { paddleEnv: env, active: true },
+      orderBy: { sortOrder: 'asc' },
+      select: {
+        slug: true,
+        name: true,
+        description: true,
+        features: true,
+        monthPriceId: true,
+        yearPriceId: true,
+        contactOnly: true,
+      },
+    }),
+  ['pricing-tiers'],
+  { revalidate: 3600, tags: ['pricing-tiers'] },
+);
 
 export const metadata: Metadata = {
   title: 'Pricing',
@@ -26,16 +50,24 @@ export const metadata: Metadata = {
 // checkout email is prefilled from the session — both are request-specific.
 export const dynamic = 'force-dynamic';
 
-export default async function PricingPage() {
+// The single student-facing tier; everything else is teacher/school.
+const STUDENT_SLUGS = new Set(['student']);
+const isStudentTier = (slug: string) => STUDENT_SLUGS.has(slug);
+
+type PricingView = 'all' | 'student' | 'teacher';
+
+export default async function PricingPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ view?: string }>;
+}) {
   const paddleEnv = getPaddleEnv();
 
-  const [hdrs, session, tiers] = await Promise.all([
+  const [{ view: viewParam }, hdrs, session, tiers] = await Promise.all([
+    searchParams,
     headers(),
     auth(),
-    prisma.pricingTier.findMany({
-      where: { paddleEnv, active: true },
-      orderBy: { sortOrder: 'asc' },
-    }),
+    getPricingTiers(paddleEnv),
   ]);
 
   // Vercel sets this to an ISO 3166-1 alpha-2 code. Absent off-Vercel (e.g. local
@@ -43,7 +75,37 @@ export default async function PricingPage() {
   const countryCode = hdrs.get('x-vercel-ip-country') ?? undefined;
   const customerEmail = session?.user?.email ?? undefined;
 
-  const tierViews: PricingTierView[] = tiers.map((t) => ({
+  // Show plans relevant to who's viewing: students see the student plan, teachers
+  // the teacher/school plans, signed-out visitors everything. An explicit ?view=
+  // (from the "switch plans" link) overrides the role-derived default.
+  const role = session?.user?.role;
+  const defaultView: PricingView = !session
+    ? 'all'
+    : role === 'STUDENT'
+      ? 'student'
+      : 'teacher';
+  const view: PricingView =
+    viewParam === 'student' || viewParam === 'teacher' || viewParam === 'all'
+      ? viewParam
+      : defaultView;
+
+  const visibleTiers =
+    view === 'all'
+      ? tiers
+      : view === 'student'
+        ? tiers.filter((t) => isStudentTier(t.slug))
+        : tiers.filter((t) => !isStudentTier(t.slug));
+
+  const hasStudentTier = tiers.some((t) => isStudentTier(t.slug));
+  const hasTeacherTier = tiers.some((t) => !isStudentTier(t.slug));
+  const switchTo =
+    view === 'student' && hasTeacherTier
+      ? { href: '/pricing?view=teacher', label: 'Teaching a class? See teacher plans →' }
+      : view === 'teacher' && hasStudentTier
+        ? { href: '/pricing?view=student', label: 'Just want the student plan? →' }
+        : null;
+
+  const tierViews: PricingTierView[] = visibleTiers.map((t) => ({
     slug: t.slug,
     name: t.name,
     description: t.description,
@@ -80,6 +142,17 @@ export default async function PricingPage() {
           </p>
         </div>
 
+        {switchTo && (
+          <div className="mb-8 -mt-2 text-center">
+            <Link
+              href={switchTo.href}
+              className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:text-primary-hover transition-colors"
+            >
+              {switchTo.label}
+            </Link>
+          </div>
+        )}
+
         {tierViews.length === 0 ? (
           <div className="rounded-2xl border border-border bg-surface/80 p-8 text-center text-sm text-dark-text">
             Pricing is being finalized — please check back soon.
@@ -90,6 +163,7 @@ export default async function PricingPage() {
               tiers={tierViews}
               countryCode={countryCode}
               customerEmail={customerEmail}
+              appUserId={session?.user?.id}
               paddleEnv={paddleEnv}
             />
           </PaddleProvider>

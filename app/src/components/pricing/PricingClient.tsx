@@ -40,11 +40,13 @@ export default function PricingClient({
   tiers,
   countryCode,
   customerEmail,
+  appUserId,
   paddleEnv,
 }: {
   tiers: PricingTierView[];
   countryCode?: string;
   customerEmail?: string;
+  appUserId?: string;
   paddleEnv: string;
 }) {
   const paddle = usePaddle();
@@ -143,6 +145,9 @@ export default function PricingClient({
       items: [{ priceId, quantity: 1 }],
       // Prefill the email for signed-in users so they don't retype it.
       ...(customerEmail ? { customer: { email: customerEmail } } : {}),
+      // Tag the checkout with our user id so the webhook can link the resulting
+      // subscription back to this account (falls back to email match when absent).
+      ...(appUserId ? { customData: { app_user_id: appUserId } } : {}),
       settings: {
         displayMode: 'overlay',
         variant: 'one-page',
@@ -153,6 +158,18 @@ export default function PricingClient({
   };
 
   const intervalLabel = interval === 'month' ? 'mo' : 'yr';
+
+  // Keep the grid tight to the number of visible tiers (role filtering can leave
+  // 1 or 3 cards) so they don't stretch awkwardly across four columns.
+  const count = tiers.length;
+  const gridClass =
+    count === 1
+      ? 'mx-auto grid max-w-sm grid-cols-1 gap-6'
+      : count === 2
+        ? 'mx-auto grid max-w-3xl gap-6 sm:grid-cols-2'
+        : count === 3
+          ? 'grid gap-6 sm:grid-cols-2 lg:grid-cols-3'
+          : 'grid gap-6 sm:grid-cols-2 lg:grid-cols-4';
 
   return (
     <div>
@@ -191,7 +208,7 @@ export default function PricingClient({
         </p>
       )}
 
-      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+      <div className={gridClass}>
         {tiers.map((tier) => {
           const priceId = interval === 'month' ? tier.monthPriceId : tier.yearPriceId;
           const total = totals[priceId];

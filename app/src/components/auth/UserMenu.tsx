@@ -6,7 +6,7 @@ import { usePostHog } from 'posthog-js/react';
 import Image from 'next/image';
 import { LogIn, LogOut, User, Crown, BarChart3, LayoutDashboard, ChevronRight, GraduationCap } from 'lucide-react';
 import Link from 'next/link';
-import { PREMIUM_GATING_ENABLED } from '@/lib/featureFlags';
+import { planBadge } from '@/lib/planDisplay';
 
 export default function UserMenu() {
   const { data: session, status } = useSession();
@@ -47,7 +47,7 @@ export default function UserMenu() {
     );
   }
 
-  const isPremium = session.user.plan === 'PREMIUM';
+  const badge = planBadge({ plan: session.user.plan, planTier: session.user.planTier });
   const isAdminUser = session.user.role === 'ADMIN';
   const hasValidImage = Boolean(session.user.image) && !avatarLoadFailed;
 
@@ -73,7 +73,7 @@ export default function UserMenu() {
             <User size={12} className="text-primary" />
           </div>
         )}
-        {isPremium && <Crown size={10} className="text-warning" />}
+        {badge.paid && <Crown size={10} className="text-warning" />}
       </button>
 
       {open && (
@@ -83,14 +83,14 @@ export default function UserMenu() {
             <div className="text-sm font-medium text-light-text truncate">{session.user.name ?? 'User'}</div>
             <div className="text-xs text-dark-text truncate">{session.user.email}</div>
             <div className="mt-1.5">
-              {isPremium ? (
+              {badge.paid ? (
                 <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded bg-warning/15 border border-warning/30 text-warning">
                   <Crown size={9} />
-                  PREMIUM
+                  {badge.label}
                 </span>
               ) : (
                 <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-surface border border-border text-dark-text">
-                  FREE
+                  {badge.label}
                 </span>
               )}
             </div>
@@ -117,23 +117,14 @@ export default function UserMenu() {
                 <div className="my-1 border-t border-border/40" />
               </>
             )}
-            {!isPremium &&
-              (PREMIUM_GATING_ENABLED ? (
-                <button
-                  onClick={() => {
-                    setOpen(false); /* TODO: upgrade flow */
-                  }}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-xs text-warning hover:bg-warning/10 transition-colors"
-                >
-                  <Crown size={13} />
-                  Upgrade to Premium
-                </button>
-              ) : (
-                <div className="w-full flex items-center gap-2 px-3 py-2 text-xs text-primary/80">
-                  <Crown size={13} />
-                  Premium coming soon
-                </div>
-              ))}
+            <Link
+              href="/pricing"
+              onClick={() => setOpen(false)}
+              className="w-full flex items-center gap-2 px-3 py-2 text-xs text-warning hover:bg-warning/10 transition-colors"
+            >
+              <Crown size={13} />
+              {badge.paid ? 'Manage plan' : 'Upgrade'}
+            </Link>
             <Link
               href="/classes"
               onClick={() => setOpen(false)}

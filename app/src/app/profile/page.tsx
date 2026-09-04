@@ -7,6 +7,8 @@ import { prisma } from '@/lib/prisma';
 import { User, Crown, Shield, GraduationCap, BarChart3, LayoutDashboard, LogOut, ChevronRight } from 'lucide-react';
 import ProfileNameEditor from './_components/ProfileNameEditor';
 import ThemeManager from './_components/ThemeManager';
+import RoleSwitcher from './_components/RoleSwitcher';
+import { planBadge } from '@/lib/planDisplay';
 
 export const metadata: Metadata = {
   title: 'Profile',
@@ -28,12 +30,12 @@ export default async function ProfilePage() {
 
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
-    select: { id: true, name: true, email: true, image: true, plan: true, role: true, createdAt: true },
+    select: { id: true, name: true, email: true, image: true, plan: true, planTier: true, role: true, createdAt: true },
   });
   if (!user) redirect('/auth/signin');
 
   const isAdminUser = user.role === 'ADMIN';
-  const isPremium = user.plan === 'PREMIUM';
+  const badge = planBadge({ plan: user.plan, planTier: user.planTier });
   const roleKey = user.role as keyof typeof ROLE_CONFIG;
   const roleConf = ROLE_CONFIG[roleKey] ?? ROLE_CONFIG.STUDENT;
   const RoleIcon = roleConf.Icon;
@@ -75,14 +77,14 @@ export default async function ProfilePage() {
               <RoleIcon size={9} />
               {roleConf.label}
             </span>
-            {isPremium ? (
+            {badge.paid ? (
               <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded border border-warning/40 bg-warning/10 text-warning">
                 <Crown size={9} />
-                PREMIUM
+                {badge.label}
               </span>
             ) : (
               <span className="text-[10px] font-semibold px-2 py-0.5 rounded border border-border bg-border/20 text-dark-text">
-                FREE
+                {badge.label}
               </span>
             )}
           </div>
@@ -111,12 +113,27 @@ export default async function ProfilePage() {
           <ProfileNameEditor currentName={user.name ?? ''} />
         </div>
 
+        {/* Account type (role) — admins keep their role and don't see this */}
+        {!isAdminUser && (
+          <div className="bg-surface border border-border rounded-xl p-5">
+            <h2 className="text-xs font-semibold text-light-text mb-3">Account type</h2>
+            <RoleSwitcher currentRole={user.role === 'TEACHER' ? 'TEACHER' : 'STUDENT'} />
+          </div>
+        )}
+
         {/* Custom themes */}
         <ThemeManager />
 
         {/* Quick actions */}
         <div className="bg-surface border border-border rounded-xl overflow-hidden">
           <div className="divide-y divide-border">
+            <Link
+              href="/pricing"
+              className="flex items-center gap-3 px-5 py-3.5 text-sm text-dark-text hover:text-light-text hover:bg-background transition-colors"
+            >
+              <Crown size={15} />
+              Plans &amp; billing
+            </Link>
             <Link
               href="/analytics"
               className="flex items-center gap-3 px-5 py-3.5 text-sm text-dark-text hover:text-light-text hover:bg-background transition-colors"
