@@ -4,7 +4,7 @@ import { prisma } from '@/lib/prisma';
 import { auth } from '@/lib/auth';
 import {
   Users, MessageSquare, BookOpen, BookOpenCheck,
-  BarChart3, ArrowUpRight, ArrowRight,
+  BarChart3, ArrowUpRight, ArrowRight, Mail,
 } from 'lucide-react';
 import { Panel, SectionHeading } from './analytics/_components/charts';
 
@@ -12,7 +12,10 @@ export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Admin — Overview' };
 
 export default async function AdminOverviewPage() {
-  const [session, userCount, feedbackCount, examCount, questionCount, feedbackAgg, recentFeedback, recentUsers] =
+  const [
+    session, userCount, feedbackCount, examCount, questionCount,
+    feedbackAgg, recentFeedback, recentUsers, newContactCount, recentContact,
+  ] =
     await Promise.all([
       auth(),
       prisma.user.count(),
@@ -30,6 +33,12 @@ export default async function AdminOverviewPage() {
         take: 5,
         select: { id: true, name: true, email: true, image: true, role: true, createdAt: true },
       }),
+      prisma.contactMessage.count({ where: { status: 'NEW' } }),
+      prisma.contactMessage.findMany({
+        orderBy: { createdAt: 'desc' },
+        take: 5,
+        select: { id: true, name: true, email: true, subject: true, message: true, status: true, createdAt: true },
+      }),
     ]);
 
   const firstName = session?.user?.name?.split(' ')[0] ?? 'Admin';
@@ -45,6 +54,7 @@ export default async function AdminOverviewPage() {
   const navCards = [
     { title: 'Users',     desc: 'Roles, plans & activity',       icon: Users,         href: '/admin/users' },
     { title: 'Feedback',  desc: 'Ratings & comments',            icon: MessageSquare, href: '/admin/feedback' },
+    { title: 'Contact',   desc: newContactCount > 0 ? `${newContactCount} new message${newContactCount !== 1 ? 's' : ''}` : 'No new messages', icon: Mail, href: '/admin/contact' },
     { title: 'Analytics', desc: 'Growth & learning insights',    icon: BarChart3,     href: '/admin/analytics' },
   ];
 
@@ -95,7 +105,7 @@ export default async function AdminOverviewPage() {
       </div>
 
       {/* ── Quick-access nav cards ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {navCards.map(({ title, desc, icon: Icon, href }) => (
           <Link
             key={title}
@@ -115,7 +125,7 @@ export default async function AdminOverviewPage() {
       </div>
 
       {/* ── Recent activity ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Recent feedback */}
         <Panel pad={false}>
           <div className="px-5 pt-5">
@@ -185,6 +195,46 @@ export default async function AdminOverviewPage() {
             </div>
           )}
         </Panel>
+
+        {/* Recent contact messages */}
+        <Panel pad={false}>
+          <div className="px-5 pt-5">
+            <SectionHeading
+              eyebrow="Inbox"
+              title="Recent contact"
+              meta={
+                <span className="flex items-center gap-3">
+                  {newContactCount > 0 && (
+                    <span className="text-[10px] font-medium px-1.5 py-0.5 rounded border text-error border-error/40 bg-error/10">
+                      {newContactCount} new
+                    </span>
+                  )}
+                  <Link href="/admin/contact" className="text-primary hover:underline">View all →</Link>
+                </span>
+              }
+            />
+          </div>
+          {recentContact.length === 0 ? (
+            <p className="px-5 pb-5 text-sm text-dark-text">No messages yet.</p>
+          ) : (
+            <div className="divide-y divide-border border-t border-border">
+              {recentContact.map((m) => (
+                <div key={m.id} className="px-5 py-3 flex items-start gap-3">
+                  <span className={`mt-0.5 text-[10px] font-medium px-1.5 py-0.5 rounded border shrink-0 ${contactStatusColor(m.status)}`}>
+                    {m.status.charAt(0) + m.status.slice(1).toLowerCase().replace('_', ' ')}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs text-dark-text truncate">{m.name ?? m.email ?? 'Anonymous'}</p>
+                    <p className="text-xs text-light-text/70 truncate mt-0.5">{m.subject ?? m.message}</p>
+                  </div>
+                  <span className="text-[10px] text-dark-text/60 shrink-0 whitespace-nowrap">
+                    {new Date(m.createdAt).toLocaleDateString()}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </Panel>
       </div>
     </div>
   );
@@ -227,4 +277,11 @@ function roleColor(role: string) {
   if (role === 'ADMIN') return 'text-error border-error/40 bg-error/10';
   if (role === 'TEACHER') return 'text-primary border-primary/40 bg-primary/10';
   return 'text-dark-text border-border bg-border/20';
+}
+
+function contactStatusColor(status: string) {
+  if (status === 'NEW') return 'text-error border-error/40 bg-error/10';
+  if (status === 'IN_PROGRESS') return 'text-warning border-warning/40 bg-warning/10';
+  if (status === 'RESOLVED') return 'text-success border-success/40 bg-success/10';
+  return 'text-dark-text border-border bg-border/20'; // ARCHIVED
 }
