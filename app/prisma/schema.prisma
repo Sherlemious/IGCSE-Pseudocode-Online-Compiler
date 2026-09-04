@@ -12,9 +12,10 @@ datasource db {
 
 enum Plan {
   FREE
-  PREMIUM
-  PRO
-  SCHOOL
+  STUDENT // paid student plan (display) — no teacher-class entitlement
+  STARTER // teacher tier: up to 3 classes / 30 students per class
+  PRO // teacher tier: unlimited classes + students
+  SCHOOL // department/school tier: unlimited
 }
 
 enum Role {
@@ -32,8 +33,17 @@ model User {
   password      String?   @db.Text
   plan          Plan      @default(FREE)
   role          Role      @default(STUDENT)
+  roleChosen    Boolean   @default(false) // has the user explicitly picked student/teacher yet
   nudgesShown   String[]  @default([])
   trialEndsAt   DateTime? // teacher-tier trial; null unless a trial is active
+
+  // Paddle billing linkage (set by the subscription webhook). Nullable until the
+  // user checks out. plan (above) is the entitlement source of truth; these tie a
+  // user to their Paddle records so webhook events can find them.
+  paddleCustomerId     String?   // ctm_…
+  paddleSubscriptionId String?   // sub_… (the current/last subscription)
+  planTier             String?   // marketing tier slug for display: student|starter|pro|advanced
+  planUpdatedAt        DateTime? // last time the billing webhook changed plan
 
   accounts     Account[]
   sessions     Session[]
@@ -42,12 +52,16 @@ model User {
   exams        Exam[]
   feedbackSubmissions FeedbackSubmission[]
   bugReports   BugReport[]
+  contactMessages ContactMessage[]
   customThemes CustomTheme[]
   taughtClasses    Class[]           @relation("TaughtClasses")
   classEnrollments ClassMembership[] @relation("ClassEnrollments")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([paddleCustomerId])
+  @@index([paddleSubscriptionId])
 }
 
 model CustomTheme {
@@ -367,6 +381,34 @@ model BugReport {
   status      BugStatus @default(OPEN)
   resolvedAt  DateTime? // set when moved to FIXED / WONT_FIX
   createdAt   DateTime  @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
+  @@index([userId])
+  @@index([status])
+}
+
+// General "Contact us" submissions. Stored here and triaged in the admin inbox
+// (/admin/messages) rather than emailed — mirrors the BugReport lifecycle.
+enum ContactStatus {
+  NEW
+  IN_PROGRESS
+  RESOLVED
+  ARCHIVED
+}
+
+model ContactMessage {
+  id         String        @id @default(cuid())
+  userId     String?
+  email      String?
+  name       String?
+  subject    String?
+  message    String        @db.Text
+  status     ContactStatus @default(NEW)
+  pageUrl    String?
+  resolvedAt DateTime? // set when moved to RESOLVED / ARCHIVED
+  createdAt  DateTime      @default(now())
 
   user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
 
