@@ -22,6 +22,10 @@ export default function SiteFooter() {
     [ph, pathname],
   );
 
+  // The compiler page renders its own status-bar Footer (which now carries these
+  // same legal links), so suppress this global bar there to avoid a doubled footer.
+  if (pathname === '/') return null;
+
   return (
     <footer className="shrink-0 h-6 bg-header-bg border-t border-border flex items-center justify-center select-none">
       <nav

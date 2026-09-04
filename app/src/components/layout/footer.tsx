@@ -1,6 +1,9 @@
 'use client';
 
-import React from 'react';
+import React, { useCallback } from 'react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { usePostHog } from 'posthog-js/react';
 import { Circle, Loader } from 'lucide-react';
 import type { CursorPosition } from '../compiler/codeInput';
 
@@ -14,10 +17,20 @@ interface FooterProps {
 }
 
 const Footer: React.FC<FooterProps> = ({ isRunning = false, cursor, lineCount }) => {
+  const pathname = usePathname();
+  const ph = usePostHog();
+
+  const trackNav = useCallback(
+    (destination: string) => {
+      ph?.capture('nav_clicked', { destination, from: pathname });
+    },
+    [ph, pathname],
+  );
+
   return (
-    <footer className="h-8 bg-header-bg border-t border-border px-3 flex items-center justify-between text-[11px] font-mono shrink-0 select-none">
-      {/* Left section */}
-      <div className="flex items-center gap-3">
+    <footer className="relative h-8 bg-header-bg border-t border-border px-3 flex items-center justify-between text-[11px] font-mono shrink-0 select-none">
+      {/* Left section — run status */}
+      <div className="flex items-center gap-3 shrink-0">
         <div className="flex items-center gap-1.5">
           {isRunning ? (
             <Loader size={12} className="text-header-text animate-spin" />
@@ -30,15 +43,34 @@ const Footer: React.FC<FooterProps> = ({ isRunning = false, cursor, lineCount })
         </div>
       </div>
 
-      {/* Right section */}
-      <div className="flex items-center gap-3 text-header-text/70">
+      {/* Center section — legal + contact, perfectly centered regardless of the flanks */}
+      <nav
+        aria-label="Legal and contact"
+        className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center gap-3 sm:gap-4 text-header-text/50"
+      >
+        <Link href="/terms" onClick={() => trackNav('terms')} className="hover:text-primary transition-colors">
+          Terms
+        </Link>
+        <Link href="/privacy" onClick={() => trackNav('privacy')} className="hover:text-primary transition-colors">
+          Privacy
+        </Link>
+        <Link href="/refund" onClick={() => trackNav('refund')} className="hover:text-primary transition-colors">
+          Refunds
+        </Link>
+        <Link href="/contact" onClick={() => trackNav('contact')} className="hover:text-primary transition-colors">
+          Contact
+        </Link>
+      </nav>
+
+      {/* Right section — editor position + credits (collapses on mobile so the center stays clear) */}
+      <div className="flex items-center gap-3 text-header-text/70 shrink-0">
         {cursor && (
-          <span>
+          <span className="hidden sm:inline">
             Ln {cursor.line}, Col {cursor.col}
           </span>
         )}
         {lineCount !== undefined && (
-          <span className="hidden sm:inline">{lineCount} lines</span>
+          <span className="hidden md:inline">{lineCount} lines</span>
         )}
         <a
           href={GITHUB_URL}
@@ -56,7 +88,7 @@ const Footer: React.FC<FooterProps> = ({ isRunning = false, cursor, lineCount })
         >
           Portfolio
         </a>
-        <span className="text-header-text/40">&copy; {new Date().getFullYear()} Sherlemious</span>
+        <span className="hidden sm:inline text-header-text/40">&copy; {new Date().getFullYear()} Sherlemious</span>
       </div>
     </footer>
   );
