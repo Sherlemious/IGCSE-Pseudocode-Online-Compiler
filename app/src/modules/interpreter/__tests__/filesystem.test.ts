@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { FILE_PREFIX, FILES_CHANGED_EVENT } from '../storage';
-import { VirtualFileSystem } from '../core/filesystem';
+import { ServerVirtualFileSystem, VirtualFileSystem } from '../core/filesystem';
+import { LocalStorageFileStore } from '../core/fileStore';
 
 class MemoryStorage implements Storage {
   private readonly values = new Map<string, string>();
@@ -93,5 +94,73 @@ describe('browser virtual filesystem persistence', () => {
 
     expect(storage.getItem(FILE_PREFIX + 'live.txt')).toBe('first line');
     expect(changed).toEqual([['live.txt']]);
+  });
+});
+
+describe.each([
+  ['memory (autograder)', () => new ServerVirtualFileSystem()],
+  [
+    'localStorage (playground)',
+    () => {
+      const storage = new MemoryStorage();
+      return new VirtualFileSystem({
+        store: new LocalStorageFileStore(storage),
+        livePersist: false,
+      });
+    },
+  ],
+])('VFS file semantics — %s', (_label, createFs) => {
+  it('round-trips WRITEFILE then READFILE after CLOSEFILE', () => {
+    const fs = createFs();
+    fs.openFile('notes.txt', 'WRITE');
+    fs.writeFile('notes.txt', 'hello');
+    fs.closeFile('notes.txt');
+
+    fs.openFile('notes.txt', 'READ');
+    expect(fs.readFile('notes.txt')).toBe('hello');
+    expect(fs.eof('notes.txt')).toBe(true);
+    fs.closeFile('notes.txt');
+  });
+
+  it('throws when READFILE targets a missing file', () => {
+    const fs = createFs();
+    expect(() => fs.openFile('missing.txt', 'READ')).toThrow("File 'missing.txt' does not exist");
+  });
+
+  it('rejects opening a text file FOR RANDOM and a random file FOR READ', () => {
+    const fs = createFs();
+    fs.openFile('text.txt', 'WRITE');
+    fs.writeFile('text.txt', 'plain');
+    fs.closeFile('text.txt');
+    expect(() => fs.openFile('text.txt', 'RANDOM')).toThrow(/text file/);
+
+    fs.openFile('rand.dat', 'RANDOM');
+    fs.putRecord('rand.dat', '{"n":1}');
+    fs.closeFile('rand.dat');
+    expect(() => fs.openFile('rand.dat', 'READ')).toThrow(/random-access file/);
+  });
+
+  it('SEEK / GETRECORD / PUTRECORD share the same record layout', () => {
+    const fs = createFs();
+    fs.openFile('recs.dat', 'RANDOM');
+    fs.seek('recs.dat', 3);
+    fs.putRecord('recs.dat', 'alpha');
+    fs.closeFile('recs.dat');
+
+    fs.openFile('recs.dat', 'RANDOM');
+    fs.seek('recs.dat', 3);
+    expect(fs.getRecord('recs.dat')).toBe('alpha');
+    fs.closeFile('recs.dat');
+  });
+
+  it('closeAll flushes a forgotten CLOSEFILE so the next open can read it', () => {
+    const fs = createFs();
+    fs.openFile('kept.txt', 'WRITE');
+    fs.writeFile('kept.txt', 'kept');
+    fs.closeAll();
+
+    fs.openFile('kept.txt', 'READ');
+    expect(fs.readFile('kept.txt')).toBe('kept');
+    fs.closeFile('kept.txt');
   });
 });

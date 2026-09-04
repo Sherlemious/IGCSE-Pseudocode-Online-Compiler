@@ -114,10 +114,7 @@ import {
 } from './values';
 import { getBuiltin, registerFileBuiltins } from './builtins';
 import { VirtualFileSystem } from './filesystem';
-import type { ServerVirtualFileSystem } from './serverFilesystem';
 import { InterpreterCallbacks, RuntimeError, ExecutionCancelledError, DebugVariable, MAX_TRACE_ROWS } from './types';
-
-type AnyFileSystem = VirtualFileSystem | ServerVirtualFileSystem;
 
 class ReturnSignal {
   constructor(public value: RuntimeValue) {}
@@ -160,14 +157,14 @@ export class Interpreter {
   private inputResolver: ((value: string) => void) | null = null;
   private iterationCount = 0;
   private lastYieldTime = performance.now();
-  private fileSystem: AnyFileSystem;
+  private fileSystem: VirtualFileSystem;
   private _stepMode = false;
   private stepResolver: (() => void) | null = null;
   private _breakpoints = new Set<number>();
   private _traceMode = false;
   private _traceCount = 0;
 
-  constructor(callbacks: InterpreterCallbacks, signal: AbortSignal, fileSystem?: AnyFileSystem) {
+  constructor(callbacks: InterpreterCallbacks, signal: AbortSignal, fileSystem?: VirtualFileSystem) {
     this.env = new Environment();
     this.callbacks = callbacks;
     this.signal = signal;
