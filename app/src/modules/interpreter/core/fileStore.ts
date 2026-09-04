@@ -27,15 +27,16 @@ export class MemoryFileStore implements FileStore {
 
 /** Browser localStorage store. Keys are prefixed so they don't collide with other app data. */
 export class LocalStorageFileStore implements FileStore {
-  constructor(private readonly storage: Storage = localStorage) {}
+  constructor(private readonly storage?: Storage) {}
 
   get(filename: string): string | undefined {
-    const value = this.storage.getItem(FILE_PREFIX + filename);
+    // Resolve browser storage only for file I/O; it may be blocked or absent.
+    const value = (this.storage ?? localStorage).getItem(FILE_PREFIX + filename);
     return value === null ? undefined : value;
   }
 
   set(filename: string, content: string): void {
-    this.storage.setItem(FILE_PREFIX + filename, content);
+    (this.storage ?? localStorage).setItem(FILE_PREFIX + filename, content);
   }
 }
 

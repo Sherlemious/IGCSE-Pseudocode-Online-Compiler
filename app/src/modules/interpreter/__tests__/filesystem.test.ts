@@ -1,7 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { FILE_PREFIX, FILES_CHANGED_EVENT } from '../storage';
 import { ServerVirtualFileSystem, VirtualFileSystem } from '../core/filesystem';
-import { LocalStorageFileStore } from '../core/fileStore';
+import { LocalStorageFileStore, MemoryFileStore } from '../core/fileStore';
+import { Interpreter, parse } from '../index';
 
 class MemoryStorage implements Storage {
   private readonly values = new Map<string, string>();
@@ -62,6 +63,44 @@ describe('browser virtual filesystem persistence', () => {
 
   afterEach(() => {
     vi.unstubAllGlobals();
+  });
+
+  it('runs code without file I/O when browser storage access is blocked', async () => {
+    vi.stubGlobal('localStorage', undefined);
+    Object.defineProperty(globalThis, 'localStorage', {
+      configurable: true,
+      get() { throw new DOMException('Storage is blocked', 'SecurityError'); },
+    });
+    const output: string[] = [];
+    const { tree, errors } = parse('OUTPUT "hello"\n');
+    expect(errors).toEqual([]);
+    expect(tree).not.toBeNull();
+    const interpreter = new Interpreter({
+      onOutput: (text) => { output.push(text); },
+      onInputRequest() {},
+      onInputComplete() {},
+      onComplete() {},
+      onError() {},
+    }, new AbortController().signal);
+
+    await interpreter.execute(tree!);
+    expect(output).toEqual(['hello']);
+    // Actual file access must still report that persistence is unavailable.
+    expect(() => new VirtualFileSystem().openFile('blocked.txt', 'WRITE')).toThrow('Storage is blocked');
+  });
+
+  it('keeps file notifications from masking the program outcome during cleanup', () => {
+    const store = new MemoryFileStore();
+    const onFilesChanged = vi.fn();
+    const fs = new VirtualFileSystem({ store, livePersist: false, onFilesChanged });
+    fs.openFile('kept.txt', 'WRITE');
+    fs.writeFile('kept.txt', 'kept');
+    onFilesChanged.mockImplementation(() => { throw new Error('Viewer failed'); });
+
+    expect(() => fs.closeAll()).not.toThrow();
+    expect(store.get('kept.txt')).toBe('kept');
+    fs.openFile('kept.txt', 'READ');
+    expect(fs.readFile('kept.txt')).toBe('kept');
   });
 
   it('creates and announces a file as soon as it is opened FOR WRITE', () => {

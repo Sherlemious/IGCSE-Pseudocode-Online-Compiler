@@ -279,7 +279,11 @@ export class VirtualFileSystem {
   }
 
   private emitChange(files: string[]): void {
-    this.onFilesChanged?.(files);
+    try {
+      this.onFilesChanged?.(files);
+    } catch {
+      // Viewer failures must not interrupt file I/O or mask errors during cleanup.
+    }
   }
 }
 
