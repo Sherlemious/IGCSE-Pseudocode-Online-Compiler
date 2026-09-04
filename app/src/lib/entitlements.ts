@@ -3,15 +3,17 @@
  * allows. API routes (and, in later phases, the dashboard and Paddle billing
  * webhook) all read tiers and limits from here so the rules never drift.
  *
- * Tiers:
- *   free   — 1 class, 5 students (the "taste").
- *   pro    — unlimited (Teacher Pro, or an active trial).
- *   school — unlimited (School Licence).
+ * Tiers (class-capacity axis):
+ *   free    — 1 class, 5 students (the "taste"); also where paid *student* plans land,
+ *             since the Student plan buys student features, not teaching capacity.
+ *   starter — up to 3 classes / 30 students (the entry teacher plan).
+ *   pro     — unlimited (Teacher Pro, or an active trial).
+ *   school  — unlimited (School Licence).
  */
 import { prisma } from '@/lib/prisma';
 import type { Plan } from '@prisma/client';
 
-export type Tier = 'free' | 'pro' | 'school';
+export type Tier = 'free' | 'starter' | 'pro' | 'school';
 
 export interface TierLimits {
   maxClasses: number;
@@ -20,6 +22,7 @@ export interface TierLimits {
 
 export const LIMITS: Record<Tier, TierLimits> = {
   free: { maxClasses: 1, maxStudentsPerClass: 5 },
+  starter: { maxClasses: 3, maxStudentsPerClass: 30 },
   pro: { maxClasses: Infinity, maxStudentsPerClass: Infinity },
   school: { maxClasses: Infinity, maxStudentsPerClass: Infinity },
 };
@@ -32,8 +35,11 @@ export function resolveTier(user: { plan: Plan; trialEndsAt: Date | null }): Tie
     case 'SCHOOL':
       return 'school';
     case 'PRO':
-    case 'PREMIUM': // legacy value — treat as Pro
       return 'pro';
+    case 'STARTER':
+      return 'starter';
+    // STUDENT (paid student plan) and FREE both get the free class-capacity tier —
+    // a student plan doesn't grant teaching capacity.
     default:
       return 'free';
   }
