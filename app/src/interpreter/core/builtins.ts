@@ -29,7 +29,7 @@ builtins.set('SUBSTRING', (args) => {
   return mkString(str.substring(start - 1, start - 1 + len));
 });
 
-builtins.set('RANDOM', (_args) => {
+builtins.set('RANDOM', () => {
   return mkReal(Math.random());
 });
 

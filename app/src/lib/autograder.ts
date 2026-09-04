@@ -77,7 +77,7 @@ export async function gradeSubmission(
       onOutput(text: string) {
         outputLines.push(text);
       },
-      onInputRequest(_varName: string) {
+      onInputRequest() {
         if (inputIndex >= inputs.length) {
           inputOverflow = true;
         }

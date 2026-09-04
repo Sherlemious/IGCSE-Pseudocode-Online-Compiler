@@ -22,7 +22,6 @@ import SettingsPanel from './settingsPanel';
 import UserMenu from '../auth/UserMenu';
 import { useCommands } from '../common/CommandPalette';
 import { OPEN_BUG_REPORT_EVENT } from '@/utils/constants';
-import { SUPPORT_EMAIL } from '@/lib/seo';
 
 const GITHUB_URL = 'https://github.com/Sherlemious/IGCSE-Pseudocode-Online-Compiler';
 const PORTFOLIO_URL = 'https://www.sherlemious.com';
@@ -122,13 +121,13 @@ const Header: React.FC = () => {
               <Link href="/refund" onClick={() => trackNav('refund')} className="hover:text-primary transition-colors">
                 Refunds
               </Link>
-              <a
-                href={`mailto:${SUPPORT_EMAIL}`}
+              <Link
+                href="/contact"
                 onClick={() => trackNav('contact')}
                 className="hover:text-primary transition-colors"
               >
                 Contact
-              </a>
+              </Link>
             </nav>
           </div>
 
@@ -320,13 +319,13 @@ const Header: React.FC = () => {
               >
                 Refunds
               </Link>
-              <a
-                href={`mailto:${SUPPORT_EMAIL}`}
+              <Link
+                href="/contact"
                 onClick={() => { setIsMenuOpen(false); trackNav('contact'); }}
                 className="hover:text-primary transition-colors"
               >
                 Contact
-              </a>
+              </Link>
             </div>
           </nav>
         )}

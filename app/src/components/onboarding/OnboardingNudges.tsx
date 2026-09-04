@@ -20,7 +20,7 @@ import { useEffect, useRef, useCallback, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { usePostHog } from 'posthog-js/react';
 import { useRouter } from 'next/navigation';
-import { UserPlus, GraduationCap, Share2, Clock } from 'lucide-react';
+import { UserPlus, GraduationCap, Share2 } from 'lucide-react';
 import NudgeCard from './NudgeCard';
 import ExamNudgeCard from './ExamNudgeCard';
 

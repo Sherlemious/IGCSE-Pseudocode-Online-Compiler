@@ -1,4 +1,4 @@
-import { CharStream, CommonTokenStream, BaseErrorListener, RecognitionException, Recognizer, Token, ATNSimulator } from 'antlr4ng';
+import { CharStream, CommonTokenStream, BaseErrorListener, Recognizer, Token, ATNSimulator } from 'antlr4ng';
 import { PseudocodeLexer } from './generated/PseudocodeLexer';
 import { PseudocodeParser, ProgramContext } from './generated/PseudocodeParser';
 import { PseudocodeError } from './core/types';
@@ -12,7 +12,6 @@ class CollectingErrorListener extends BaseErrorListener {
     line: number,
     charPositionInLine: number,
     msg: string,
-    _e: RecognitionException | null,
   ): void {
     this.errors.push(new PseudocodeError(msg, line, charPositionInLine));
   }

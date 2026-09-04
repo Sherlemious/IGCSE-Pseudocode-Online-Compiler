@@ -11,7 +11,7 @@
  */
 
 import { useState } from 'react';
-import { Share2, MessageCircle, Link2, Check, GraduationCap } from 'lucide-react';
+import { Share2, Link2, Check, GraduationCap } from 'lucide-react';
 import { usePostHog } from 'posthog-js/react';
 
 const SITE_URL = 'https://pseudocode-compiler.sherlemious.com';
