@@ -8,14 +8,16 @@ declare module 'next-auth' {
       name?: string | null;
       email?: string | null;
       image?: string | null;
-      plan: string; // 'FREE' | 'PREMIUM'
+      plan: string; // 'FREE' | 'STUDENT' | 'STARTER' | 'PRO' | 'SCHOOL'
       role: string; // 'STUDENT' | 'TEACHER' | 'ADMIN'
+      planTier?: string | null; // marketing tier slug for display, set by the billing webhook
     };
   }
 
   interface User {
     plan: string;
     role: string;
+    planTier?: string | null;
   }
 }
 
@@ -24,5 +26,6 @@ declare module 'next-auth/jwt' {
     id: string;
     plan: string;
     role: string;
+    planTier?: string | null;
   }
 }

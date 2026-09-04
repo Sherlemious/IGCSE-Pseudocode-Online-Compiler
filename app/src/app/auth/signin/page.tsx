@@ -2,9 +2,8 @@ import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { auth, signIn } from '@/lib/auth';
-import { Braces } from 'lucide-react';
-// import { Terminal } from 'lucide-react';
-// import AuthForm from '@/components/auth/AuthForm';
+import { Braces, Terminal } from 'lucide-react';
+import AuthForm from '@/components/auth/AuthForm';
 
 export const metadata: Metadata = {
   title: 'Sign In',
@@ -136,7 +135,6 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
               </form> */}
             </div>
 
-            {/*
             <div className="relative my-6">
               <div className="absolute inset-0 flex items-center">
                 <div className="w-full border-t border-border" />
@@ -150,7 +148,6 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
             </div>
 
             <AuthForm mode="signin" />
-            */}
           </div>
 
           <p className="text-xs text-dark-text/60 text-center mt-5">

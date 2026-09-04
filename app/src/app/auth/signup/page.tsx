@@ -2,9 +2,8 @@ import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { auth } from '@/lib/auth';
-import { Braces } from 'lucide-react';
-// import { Terminal } from 'lucide-react';
-// import AuthForm from '@/components/auth/AuthForm';
+import { Braces, Terminal } from 'lucide-react';
+import AuthForm from '@/components/auth/AuthForm';
 
 export const metadata: Metadata = {
   title: 'Sign Up',
@@ -47,7 +46,7 @@ export default async function SignUpPage() {
           >
             <div className="space-y-2.5 stagger-children">
               <Link
-                href="/api/auth/signin/google?callbackUrl=%2Fpractice"
+                href="/api/auth/signin/google?callbackUrl=%2Fonboarding"
                 className="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg
                     bg-background border border-border text-light-text text-sm font-medium
                     hover:border-primary/40 hover:bg-background/80 transition-all duration-200 group"
@@ -97,7 +96,6 @@ export default async function SignUpPage() {
               </form> */}
             </div>
 
-            {/*
             <div className="relative my-4 sm:my-6">
               <div className="absolute inset-0 flex items-center">
                 <div className="w-full border-t border-border" />
@@ -111,7 +109,6 @@ export default async function SignUpPage() {
             </div>
 
             <AuthForm mode="signup" />
-            */}
 
             <p className="text-[10px] sm:text-[11px] leading-relaxed text-dark-text/70 mt-3 sm:mt-4 text-center">
               By creating an account, you agree to our{' '}

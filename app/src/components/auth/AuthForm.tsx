@@ -3,17 +3,20 @@
 import { useState } from 'react';
 import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { Loader2, AlertCircle, ArrowRight } from 'lucide-react';
+import { Loader2, AlertCircle, ArrowRight, GraduationCap, User } from 'lucide-react';
 
 interface AuthFormProps {
   mode: 'signin' | 'signup';
 }
+
+type SignupRole = 'STUDENT' | 'TEACHER';
 
 export default function AuthForm({ mode }: AuthFormProps) {
   const router = useRouter();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [role, setRole] = useState<SignupRole>('STUDENT');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -27,7 +30,7 @@ export default function AuthForm({ mode }: AuthFormProps) {
         const res = await fetch('/api/auth/signup', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name, email, password }),
+          body: JSON.stringify({ name, email, password, role }),
         });
 
         if (!res.ok) {
@@ -52,7 +55,8 @@ export default function AuthForm({ mode }: AuthFormProps) {
         return;
       }
 
-      router.push('/practice');
+      // Send teachers straight to plans; students to practice.
+      router.push(mode === 'signup' && role === 'TEACHER' ? '/pricing' : '/practice');
       router.refresh();
     } catch {
       setError('Something went wrong');
@@ -66,6 +70,42 @@ export default function AuthForm({ mode }: AuthFormProps) {
         <div className="flex items-start gap-2.5 text-xs text-error bg-error/8 border border-error/15 rounded-lg px-3.5 py-2.5 animate-scale-in">
           <AlertCircle size={14} className="shrink-0 mt-0.5" />
           <span>{error}</span>
+        </div>
+      )}
+
+      {mode === 'signup' && (
+        <div>
+          <span className="mono-label text-dark-text mb-1.5 block">I&apos;m a…</span>
+          <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label="Account type">
+            {([
+              { value: 'STUDENT', label: 'Student', Icon: User },
+              { value: 'TEACHER', label: 'Teacher', Icon: GraduationCap },
+            ] as const).map(({ value, label, Icon }) => {
+              const active = role === value;
+              return (
+                <button
+                  key={value}
+                  type="button"
+                  role="radio"
+                  aria-checked={active}
+                  onClick={() => setRole(value)}
+                  className={`flex items-center justify-center gap-2 rounded-lg border px-3 py-2.5 text-sm font-medium transition-all duration-200 ${
+                    active
+                      ? 'border-primary/60 bg-primary/10 text-light-text'
+                      : 'border-border bg-background text-dark-text hover:border-primary/30 hover:text-light-text'
+                  }`}
+                >
+                  <Icon size={15} className={active ? 'text-primary' : ''} />
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+          <p className="mt-1.5 text-[11px] leading-relaxed text-dark-text/60">
+            {role === 'TEACHER'
+              ? 'Teachers can create classes, set assignments, and see class plans.'
+              : 'Students get the full compiler, practice library, and progress tracking.'}
+          </p>
         </div>
       )}
 
