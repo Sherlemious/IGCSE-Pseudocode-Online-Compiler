@@ -95,6 +95,12 @@ Additional patterns (based on PostHog top-error analysis, Apr 2026):
 - Extraneous `]` → bracket-matching hint
 - Newline token as expression → "line seems incomplete"
 
+Source-line pattern detectors (added Sep 2026 from the offending-line telemetry, the two biggest resolve-rate holes were `no_viable_alternative`/`mismatched_input`). These key off the offending **source line** itself (like `closerSuggestion`), so they beat ANTLR's opaque message; each keys off syntax that is never valid IGCSE, and only runs on an already-flagged line. `sourceLineHint()` is shared by `humanizeParseError` and `categorizeParseError` so message and slug never drift. New slugs:
+- `python_syntax` — `else:`/`elif …:`, `for … in range(…):`, `int(input(…))`/`input(…)`, `range(…)`, `if/while …:` colon headers → redirect to IGCSE (mirrors the Portugol detector)
+- `basic_block_closer` — `END IF`→ENDIF (one word), `ENDFOR`/`END FOR`→`NEXT <var>`, bare `END`/`BEGIN` wrappers
+- `for_loop_assignment` — `FOR count : 1 TO 3` / `FOR i = 1 TO 10` → counter is set with `<-`
+- `output_missing_comma` — `OUTPUT "text" value` → OUTPUT items need a comma between them
+
 ## Database Schema (Prisma)
 
 - `User` / `Account` / `Session` — NextAuth tables

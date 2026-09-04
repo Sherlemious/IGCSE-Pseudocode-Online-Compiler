@@ -4,7 +4,7 @@ import { resolve } from 'node:path';
 import { parse } from '../parser';
 import { Interpreter } from '../core/interpreter';
 import { ServerVirtualFileSystem } from '../core/serverFilesystem';
-import { humanizeParseError } from '../errorMessages';
+import { humanizeParseError, categorizeParseError } from '../errorMessages';
 import type { PseudocodeError } from '../core/types';
 import { examples } from '../../data/examples';
 
@@ -387,6 +387,101 @@ describe('humanizeParseError — misspelled block closers', () => {
     const msg = humanizeParseError("mismatched input '<-' expecting ':'", 'MyCat <- NEW Cat("Kitty")');
     expect(msg).not.toContain('did you mean');
     expect(msg).toContain('variable name before `<-`');
+  });
+});
+
+describe('humanizeParseError — source-line pattern detectors', () => {
+  // These fire off the offending source line rather than the ANTLR message; the
+  // raw message is a stand-in for whatever ANTLR emits for that line.
+  const RAW = "no viable alternative at input 'x'";
+
+  describe('Python redirect', () => {
+    it('flags elif', () => {
+      const msg = humanizeParseError(RAW, 'elif grade == 7:');
+      expect(msg).toContain('looks like Python');
+      expect(msg).toContain('ELSE IF');
+    });
+    it('flags else:', () => {
+      expect(humanizeParseError(RAW, 'else:')).toContain('ELSE on its own line');
+    });
+    it('flags for … in range()', () => {
+      const msg = humanizeParseError(RAW, 'for row in range(3):');
+      expect(msg).toContain('looks like Python');
+      expect(msg).toContain('FOR i <- 1 TO n');
+    });
+    it('flags int(input())', () => {
+      const msg = humanizeParseError(RAW, 'number = int(input("Enter a number: "))');
+      expect(msg).toContain('INPUT is a statement');
+    });
+    it('flags a Python if header ending in a colon', () => {
+      const msg = humanizeParseError(RAW, 'if grade == 7:');
+      expect(msg).toContain('looks like Python');
+      expect(msg).toContain('no trailing colon');
+    });
+    it('does not flag a valid IF … THEN line', () => {
+      expect(humanizeParseError(RAW, 'IF grade = 7 THEN')).not.toContain('looks like Python');
+    });
+  });
+
+  describe('BASIC/Pascal closers', () => {
+    it('END IF → ENDIF (one word)', () => {
+      const msg = humanizeParseError(RAW, 'END IF');
+      expect(msg).toContain('one word: ENDIF');
+    });
+    it('END WHILE → ENDWHILE', () => {
+      expect(humanizeParseError(RAW, 'END WHILE')).toContain('one word: ENDWHILE');
+    });
+    it('ENDFOR / END FOR → NEXT', () => {
+      expect(humanizeParseError(RAW, 'ENDFOR')).toContain('NEXT <variable>');
+      expect(humanizeParseError(RAW, 'END FOR')).toContain('NEXT <variable>');
+    });
+    it('bare END explains there is no general wrapper', () => {
+      expect(humanizeParseError(RAW, 'END')).toContain('no general END wrapper');
+    });
+    it('BEGIN is not needed', () => {
+      expect(humanizeParseError(RAW, 'BEGIN')).toContain('No BEGIN is needed');
+    });
+    it('does not fire for a correctly spelled ENDIF', () => {
+      expect(humanizeParseError(RAW, 'ENDIF')).not.toContain('one word');
+    });
+  });
+
+  describe('FOR loop counter assignment', () => {
+    it('FOR count : 1 TO 3 → use <-', () => {
+      const msg = humanizeParseError(RAW, 'For count : 1 to 3');
+      expect(msg).toContain('to set the FOR loop counter');
+      expect(msg).toContain('FOR count <- 1 TO 10');
+    });
+    it('FOR i = 1 TO 10 → use <-', () => {
+      expect(humanizeParseError(RAW, 'FOR i = 1 TO 10')).toContain('to set the FOR loop counter');
+    });
+    it('does not fire for a valid FOR line', () => {
+      expect(humanizeParseError(RAW, 'FOR i <- 1 TO 10')).not.toContain('FOR loop counter');
+    });
+  });
+
+  describe('OUTPUT missing comma', () => {
+    it('OUTPUT "text" value → suggest a comma', () => {
+      const msg = humanizeParseError(RAW, 'OUTPUT "Your initial cost is $" Cost');
+      expect(msg).toContain('Separate OUTPUT items with a comma');
+    });
+    it('does not fire when items are comma-separated', () => {
+      expect(humanizeParseError(RAW, 'OUTPUT "Total is ", Total')).not.toContain('Separate OUTPUT items');
+    });
+    it('does not fire on a single quoted string', () => {
+      expect(humanizeParseError(RAW, 'OUTPUT "Hello"')).not.toContain('Separate OUTPUT items');
+    });
+  });
+
+  describe('categorization slugs', () => {
+    it('assigns the matching category slug for each shape', () => {
+      expect(categorizeParseError(RAW, 'elif x == 7:')).toBe('python_syntax');
+      expect(categorizeParseError(RAW, 'for i in range(3):')).toBe('python_syntax');
+      expect(categorizeParseError(RAW, 'END IF')).toBe('basic_block_closer');
+      expect(categorizeParseError(RAW, 'ENDFOR')).toBe('basic_block_closer');
+      expect(categorizeParseError(RAW, 'FOR count : 1 to 3')).toBe('for_loop_assignment');
+      expect(categorizeParseError(RAW, 'OUTPUT "cost is" Cost')).toBe('output_missing_comma');
+    });
   });
 });
 

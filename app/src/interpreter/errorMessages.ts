@@ -279,6 +279,136 @@ function closerSuggestion(sourceLine: string | undefined): string | null {
   );
 }
 
+// ── Source-line pattern detectors ────────────────────────────────────────────
+// A handful of the most common real-world parse failures (see the PostHog
+// offending-line analysis) are recognised most reliably from the *source line
+// itself* rather than ANTLR's opaque "no viable alternative" / "mismatched
+// input" message — the same approach closerSuggestion() takes. Each detector is
+// deliberately high-precision: it keys off syntax that is never valid IGCSE
+// pseudocode, and only ever runs on a line ANTLR already flagged, so it cannot
+// "correct" working code. A single sourceLineHint() is shared by both
+// humanizeParseError (the message) and categorizeParseError (the slug) so the
+// two never drift apart.
+
+interface LineDiagnosis {
+  category: string;
+  message: string;
+}
+
+const SEE_DOCS = '\n  See the Docs tab for the full IGCSE syntax reference.';
+
+/** Python written where pseudocode was expected (else:/elif/for..in range/input()). */
+function pythonHint(line: string): LineDiagnosis | null {
+  const t = line.trim();
+  const py = (what: string, use: string): LineDiagnosis => ({
+    category: 'python_syntax',
+    message:
+      `"${what}" looks like Python — this compiler uses Cambridge IGCSE pseudocode.\n` +
+      `  Use ${use} instead.${SEE_DOCS}`,
+  });
+
+  if (/^elif\b/i.test(t)) return py('elif …:', 'ELSE IF <condition> THEN  (no colon)');
+  if (/^else\s*:/i.test(t)) return py('else:', 'ELSE on its own line  (no colon)');
+  if (/^for\b.*\bin\b.*\brange\s*\(/i.test(t)) return py('for … in range(…):', 'FOR i <- 1 TO n … NEXT i');
+  if (/\b(?:int|float|str)\s*\(\s*input\s*\(/i.test(t) || /\binput\s*\(/i.test(t))
+    return py('input(…)', 'INPUT on its own line: `INPUT Value`  (INPUT is a statement, no brackets)');
+  if (/\brange\s*\(/i.test(t)) return py('range(…)', 'a FOR loop: FOR i <- 1 TO n … NEXT i');
+  // Python-style block header ending in a colon (if / while), never valid IGCSE.
+  if (/^(?:if|while)\b.*:\s*(?:#.*)?$/i.test(t) && !/\bTHEN\b/i.test(t))
+    return py(t.length > 28 ? `${t.slice(0, 28)}…` : t, '`IF <condition> THEN` or `WHILE <condition> DO`  (no trailing colon)');
+  return null;
+}
+
+/** BASIC/Pascal block closers: `END IF`, `ENDFOR`, bare `END`, `BEGIN`. */
+const SPACED_CLOSER_TARGET: Record<string, string> = {
+  IF: 'ENDIF', WHILE: 'ENDWHILE', CASE: 'ENDCASE',
+  FUNCTION: 'ENDFUNCTION', PROCEDURE: 'ENDPROCEDURE',
+  PROC: 'ENDPROCEDURE', FUNC: 'ENDFUNCTION',
+  TYPE: 'ENDTYPE', CLASS: 'ENDCLASS',
+};
+
+function basicBlockHint(line: string): LineDiagnosis | null {
+  const upper = line.trim().toUpperCase();
+
+  // A FOR loop closes with NEXT <variable>, not ENDFOR / END FOR.
+  if (/^END[\s-]*FOR$/.test(upper))
+    return {
+      category: 'basic_block_closer',
+      message:
+        'A FOR loop is closed with NEXT <variable>, not ENDFOR / END FOR.\n' +
+        '  Example:\n    FOR i <- 1 TO 10\n      OUTPUT i\n    NEXT i',
+    };
+
+  // `END IF`, `END WHILE`, `END-FUNCTION`… → the one-word IGCSE closer.
+  const spaced = upper.match(/^END[\s-]+(IF|WHILE|CASE|FUNCTION|PROCEDURE|PROC|FUNC|TYPE|CLASS)$/);
+  if (spaced) {
+    const target = SPACED_CLOSER_TARGET[spaced[1]];
+    return {
+      category: 'basic_block_closer',
+      message:
+        `Write the closing keyword as one word: ${target} (no space).\n` +
+        `  You wrote "${line.trim()}".`,
+    };
+  }
+
+  // Bare BASIC/Pascal wrappers.
+  if (upper === 'END' || upper === 'ENDPROGRAM' || upper === 'END PROGRAM')
+    return {
+      category: 'basic_block_closer',
+      message:
+        'Cambridge IGCSE pseudocode has no general END wrapper.\n' +
+        '  Close each block with its own keyword: ENDIF, NEXT i, ENDWHILE, ENDFUNCTION, ENDPROCEDURE.',
+    };
+  if (upper === 'BEGIN')
+    return {
+      category: 'basic_block_closer',
+      message: 'No BEGIN is needed in IGCSE pseudocode — write your statements directly.',
+    };
+
+  return null;
+}
+
+/** `FOR count : 1 TO 3` / `FOR i = 1 TO 10` — the counter is set with `<-`. */
+function forLoopHint(line: string): LineDiagnosis | null {
+  const m = line.trim().match(/^FOR\s+([A-Za-z_]\w*)\s*(:=|:|=)\s*/i);
+  if (!m) return null;
+  const v = m[1];
+  return {
+    category: 'for_loop_assignment',
+    message:
+      `Use \`<-\` to set the FOR loop counter, not \`${m[2]}\`.\n` +
+      `  Example:\n    FOR ${v} <- 1 TO 10\n      OUTPUT ${v}\n    NEXT ${v}`,
+  };
+}
+
+/** `OUTPUT "text" value` — OUTPUT items need a comma between them. */
+function outputSeparatorHint(line: string): LineDiagnosis | null {
+  const t = line.trim();
+  if (!/^(?:OUTPUT|PRINT)\b/i.test(t)) return null;
+  // A closed string literal directly followed by another value, with no comma or
+  // operator in between (OUTPUT "Total is " Total → OUTPUT "Total is ", Total).
+  if (/"(?:[^"\\]|\\.)*"\s+(?![,&+\-*/=<>.)\]])[A-Za-z0-9_"']/.test(t))
+    return {
+      category: 'output_missing_comma',
+      message:
+        'Separate OUTPUT items with a comma.\n' +
+        '  Example:\n    OUTPUT "Total is ", Total\n' +
+        '  (a value right after a "quoted string" needs a comma before it)',
+    };
+  return null;
+}
+
+/** Shared source-line diagnosis used by both the humanizer and the categorizer. */
+function sourceLineHint(sourceLine: string | undefined): LineDiagnosis | null {
+  if (!sourceLine || !sourceLine.trim()) return null;
+  return (
+    pythonHint(sourceLine) ??
+    basicBlockHint(sourceLine) ??
+    forLoopHint(sourceLine) ??
+    outputSeparatorHint(sourceLine)
+  );
+}
+
 export function humanizeParseError(
   rawMessage: string,
   sourceLine?: string,
@@ -287,6 +417,12 @@ export function humanizeParseError(
   // ANTLR reports the symptom (a stray newline) — surface it before anything else.
   const closer = closerSuggestion(sourceLine);
   if (closer) return closer;
+
+  // Source-line pattern match (Python syntax, BASIC closers, FOR `:`/`=`, OUTPUT
+  // missing comma). Non-IGCSE shapes recognised straight from the line, so they
+  // beat ANTLR's generic message for the same mistake.
+  const lineHint = sourceLineHint(sourceLine);
+  if (lineHint) return lineHint.message;
 
   // ── targeted hints for the two biggest real-world error buckets ──────────
   // `=` used for assignment (the single most common parse error) and any curly
@@ -635,6 +771,11 @@ const SMART_QUOTE_CODEPOINTS = new Set([0x201c, 0x201d, 0x2018, 0x2019, 0x201e, 
 export function categorizeParseError(rawMessage: string, sourceLine?: string): string {
   // Root cause: a misspelled block closer masquerading as a stray-newline error.
   if (closerSuggestion(sourceLine)) return 'misspelled_closer';
+
+  // Non-IGCSE shapes recognised from the source line (python_syntax,
+  // basic_block_closer, for_loop_assignment, output_missing_comma).
+  const lineHint = sourceLineHint(sourceLine);
+  if (lineHint) return lineHint.category;
 
   const tokenRecog = rawMessage.match(/token recognition error at: '([^']+)'/);
   if (tokenRecog) {
