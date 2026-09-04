@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { PREMIUM_GATING_ENABLED } from '@/lib/featureFlags';
-import { isPaidPlan } from '@/lib/planDisplay';
+import { getPremiumAccess } from '@/lib/entitlements';
 import type { Difficulty } from '@prisma/client';
 
 export async function POST(req: Request) {
@@ -21,10 +21,10 @@ export async function POST(req: Request) {
   if (topic) where.topic = topic;
   if (difficulty) where.difficulty = difficulty as Difficulty;
 
-  // Restrict free users to EASY only when premium gating is enabled.
-  const isPremium = isPaidPlan(session.user.plan);
-  if (PREMIUM_GATING_ENABLED && !isPremium) {
-    where.difficulty = 'EASY';
+  // Keep premium-flagged questions out of a non-entitled student's exam pool when
+  // gating is enabled. Entitlement = own paid plan or a paid teacher's class.
+  if (PREMIUM_GATING_ENABLED && !(await getPremiumAccess(session.user.id))) {
+    where.isPremium = false;
   }
 
   // Get random questions

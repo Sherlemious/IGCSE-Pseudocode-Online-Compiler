@@ -5,7 +5,7 @@ import { Lock, CheckCircle, Crown, FileText, ArrowRight, Sparkles } from 'lucide
 import { prisma } from '../../lib/prisma';
 import { auth } from '../../lib/auth';
 import { PREMIUM_GATING_ENABLED } from '../../lib/featureFlags';
-import { isPaidPlan } from '@/lib/planDisplay';
+import { getPremiumAccess } from '@/lib/entitlements';
 import { PracticeFilters } from './PracticeFilters';
 import { PracticeToolbar } from './PracticeToolbar';
 import {
@@ -65,8 +65,11 @@ export default async function PracticePage({ searchParams }: PageProps) {
     params.sort === 'marks' || params.sort === 'az' ? params.sort : 'year';
 
   const session = await auth();
-  const isPremium = isPaidPlan(session?.user?.plan);
-  const hasFullAccess = isPremium || !PREMIUM_GATING_ENABLED;
+  // Premium access = own paid plan, or a class taught by a teacher on a paid plan.
+  // Only queried when gating is on and the visitor is signed in.
+  const premiumAccess =
+    PREMIUM_GATING_ENABLED && session?.user?.id ? await getPremiumAccess(session.user.id) : false;
+  const hasFullAccess = !PREMIUM_GATING_ENABLED || premiumAccess;
   const showStatus = !!session;
 
   let questions: Awaited<ReturnType<typeof fetchQuestions>> = [];
@@ -332,11 +335,11 @@ export default async function PracticePage({ searchParams }: PageProps) {
 
           {/* Notices */}
           <div className="space-y-2">
-            {PREMIUM_GATING_ENABLED && session && !isPremium && (
+            {PREMIUM_GATING_ENABLED && session && !premiumAccess && (
               <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-warning/20 bg-warning/5 text-xs text-warning">
                 <Crown size={13} className="shrink-0" />
                 <span>
-                  Free plan — easy questions are fully available. <strong>Upgrade to Premium</strong> to unlock medium and hard questions.
+                  Some questions are Premium. <strong>Upgrade</strong>, or join a class from a teacher with a paid plan, to unlock them.
                 </span>
               </div>
             )}
@@ -411,7 +414,6 @@ export default async function PracticePage({ searchParams }: PageProps) {
                       const qs = grouped[d];
                       if (qs.length === 0) return null;
                       const meta = DIFF_META[d];
-                      const isLocked = d !== 'EASY' && !hasFullAccess;
                       const groupSolved = qs.filter((q) => progressMap.get(q.id)?.status === 'SOLVED').length;
                       const groupPct = qs.length ? Math.round((groupSolved / qs.length) * 100) : 0;
 
@@ -424,17 +426,11 @@ export default async function PracticePage({ searchParams }: PageProps) {
                               {d}
                             </span>
                             <span className="text-xs text-dark-text font-mono tabular-nums">{qs.length}</span>
-                            {isLocked && (
-                              <span className="flex items-center gap-1 text-[10px] text-warning/80 px-1.5 py-0.5 rounded border border-warning/25 bg-warning/5">
-                                <Crown size={10} />
-                                Premium
-                              </span>
-                            )}
                             <div
                               className="flex-1 h-px"
                               style={{ background: `linear-gradient(90deg, color-mix(in srgb, ${meta.color} 22%, transparent), var(--color-border) 60%)` }}
                             />
-                            {session && !isLocked && groupSolved > 0 && (
+                            {session && groupSolved > 0 && (
                               <span className="flex items-center gap-2 shrink-0">
                                 <span className="hidden sm:block w-16 h-1 rounded-full bg-border overflow-hidden">
                                   <span
@@ -462,6 +458,7 @@ export default async function PracticePage({ searchParams }: PageProps) {
                                 : q.paper ?? null;
                               const progress = progressMap.get(q.id);
                               const solved = progress?.status === 'SOLVED';
+                              const isLocked = q.isPremium && !hasFullAccess;
                               const attemptPct =
                                 progress && progress.totalTests > 0
                                   ? Math.round((progress.bestScore / progress.totalTests) * 100)
@@ -532,6 +529,12 @@ export default async function PracticePage({ searchParams }: PageProps) {
                                   </div>
 
                                   <div className="relative flex items-center gap-3 ml-3 shrink-0">
+                                    {isLocked && (
+                                      <span className="flex items-center gap-1 text-[10px] text-warning/80 px-1.5 py-0.5 rounded border border-warning/25 bg-warning/5">
+                                        <Crown size={10} />
+                                        Premium
+                                      </span>
+                                    )}
                                     {q.marks != null && (
                                       <span className="hidden sm:inline text-[10px] text-warning/80 font-mono tabular-nums">
                                         {q.marks}m
@@ -604,7 +607,7 @@ async function fetchQuestions() {
     select: {
       id: true, title: true, difficulty: true, topic: true, tags: true,
       year: true, session: true, variant: true, paper: true,
-      questionNumber: true, part: true, marks: true,
+      questionNumber: true, part: true, marks: true, isPremium: true,
     },
     orderBy: [{ year: 'desc' }, { title: 'asc' }],
   });

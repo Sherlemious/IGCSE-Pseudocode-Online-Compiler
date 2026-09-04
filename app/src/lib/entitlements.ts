@@ -11,6 +11,7 @@
  *   school  — unlimited (School Licence).
  */
 import { prisma } from '@/lib/prisma';
+import { isPaidPlan } from '@/lib/planDisplay';
 import type { Plan } from '@prisma/client';
 
 export type Tier = 'free' | 'starter' | 'pro' | 'school';
@@ -57,4 +58,53 @@ export async function getEntitlements(userId: string): Promise<{ tier: Tier; lim
   });
   const tier = user ? resolveTier(user) : 'free';
   return { tier, limits: LIMITS[tier] };
+}
+
+// ── Premium question access ─────────────────────────────────
+// Distinct from the class-capacity tier above: this is the *student-facing* axis
+// that gates premium practice/exam questions.
+
+interface PlanHolder {
+  plan: Plan;
+  trialEndsAt: Date | null;
+}
+
+/**
+ * Whether a student is entitled to premium (gated) questions. Two independent
+ * paths grant access:
+ *   1. Their own plan is paid (Student/Starter/Pro/School) or they have an active
+ *      trial — a paid student.
+ *   2. They're enrolled in at least one class whose teacher (owner) is on a paid
+ *      teacher tier, i.e. resolveTier(owner) !== 'free'. A teacher on the plain
+ *      Student plan does NOT confer this (Student buys features, not a class),
+ *      which falls out of resolveTier mapping STUDENT → 'free'.
+ */
+export function hasPremiumAccess(input: PlanHolder & { classOwners: PlanHolder[] }): boolean {
+  // Path 1 — own paid plan or active trial.
+  if (isPaidPlan(input.plan)) return true;
+  if (input.trialEndsAt && input.trialEndsAt.getTime() > Date.now()) return true;
+  // Path 2 — a teacher who paid.
+  return input.classOwners.some((owner) => resolveTier(owner) !== 'free');
+}
+
+/** Fetch a user + the plans of every class they're enrolled in, then resolve access. */
+export async function getPremiumAccess(userId: string): Promise<boolean> {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      plan: true,
+      trialEndsAt: true,
+      classEnrollments: {
+        select: {
+          class: { select: { owner: { select: { plan: true, trialEndsAt: true } } } },
+        },
+      },
+    },
+  });
+  if (!user) return false;
+  return hasPremiumAccess({
+    plan: user.plan,
+    trialEndsAt: user.trialEndsAt,
+    classOwners: user.classEnrollments.map((m) => m.class.owner),
+  });
 }

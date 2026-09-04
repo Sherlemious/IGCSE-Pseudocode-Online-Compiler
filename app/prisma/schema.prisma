@@ -152,6 +152,10 @@ model Question {
   marks          Int?
   topic          String?
   tags           String[] @default([])
+  // Premium gating: when true (and gating is enabled), only entitled students can
+  // grade/open this question — a student on a paid plan, or one enrolled in a class
+  // whose teacher is on a paid teacher tier. See lib/entitlements hasPremiumAccess.
+  isPremium      Boolean  @default(false)
   starterCode String?    @db.Text
 
   hints               String[]

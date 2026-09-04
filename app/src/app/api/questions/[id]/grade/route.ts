@@ -3,7 +3,7 @@ import { prisma } from '../../../../../lib/prisma';
 import { gradeSubmission } from '../../../../../lib/autograder';
 import { auth } from '../../../../../lib/auth';
 import { PREMIUM_GATING_ENABLED } from '../../../../../lib/featureFlags';
-import { isPaidPlan } from '../../../../../lib/planDisplay';
+import { getPremiumAccess } from '../../../../../lib/entitlements';
 import { rateLimit, clientIp } from '../../../../../lib/rateLimit';
 import { logger } from '../../../../../lib/logger';
 
@@ -67,13 +67,18 @@ export async function POST(request: NextRequest, { params }: Props) {
     return NextResponse.json({ error: 'Question not found' }, { status: 404 });
   }
 
-  // Access control applies only when premium gating is enabled.
-  if (PREMIUM_GATING_ENABLED && question.difficulty !== 'EASY') {
-    if (!session?.user) {
-      return NextResponse.json({ error: 'Sign in to grade medium and hard questions.' }, { status: 401 });
+  // Access control applies only when premium gating is enabled, and only to
+  // questions flagged premium. Access comes from the student's own paid plan or
+  // from a class taught by a teacher on a paid plan (see getPremiumAccess).
+  if (PREMIUM_GATING_ENABLED && question.isPremium) {
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Sign in to grade this question.' }, { status: 401 });
     }
-    if (!isPaidPlan(session.user.plan)) {
-      return NextResponse.json({ error: 'Premium plan required for medium and hard questions.' }, { status: 403 });
+    if (!(await getPremiumAccess(session.user.id))) {
+      return NextResponse.json(
+        { error: 'This question needs a paid plan — upgrade, or join a class from a teacher who has one.' },
+        { status: 403 },
+      );
     }
   }
 

@@ -7,7 +7,7 @@ import remarkGfm from 'remark-gfm';
 import { prisma } from '../../../lib/prisma';
 import { auth } from '../../../lib/auth';
 import { PREMIUM_GATING_ENABLED } from '../../../lib/featureFlags';
-import { isPaidPlan } from '@/lib/planDisplay';
+import { getPremiumAccess } from '@/lib/entitlements';
 import PracticeWorkspace from '../../../components/practice/PracticeWorkspace';
 import HintsPanel from '../../../components/practice/HintsPanel';
 import SolutionPanel from '../../../components/practice/SolutionPanel';
@@ -104,8 +104,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function QuestionPage({ params }: Props) {
   const { questionId } = await params;
   const session = await auth();
-  const isPremium = isPaidPlan(session?.user?.plan);
-  const hasFullAccess = isPremium || !PREMIUM_GATING_ENABLED;
+  const hasFullAccess =
+    !PREMIUM_GATING_ENABLED || (session?.user?.id ? await getPremiumAccess(session.user.id) : false);
 
   let question;
   try {
@@ -125,8 +125,9 @@ export default async function QuestionPage({ params }: Props) {
 
   if (!question) notFound();
 
-  // Access control applies only when premium gating is enabled.
-  const isLocked = question.difficulty !== 'EASY' && !hasFullAccess;
+  // Access control applies only when premium gating is enabled, and only to
+  // questions flagged premium.
+  const isLocked = question.isPremium && !hasFullAccess;
   const ref = paperReference(question);
   const questionJsonLd = {
     '@context': 'https://schema.org',
@@ -359,8 +360,8 @@ export default async function QuestionPage({ params }: Props) {
             </div>
             <h2 className="text-lg font-bold text-light-text mb-2">Premium Question</h2>
             <p className="text-sm text-dark-text mb-6">
-              {question.difficulty} questions require a Premium plan. You can read the description and sample tests, but
-              grading is locked.
+              This question needs a paid plan — upgrade, or join a class from a teacher who has one. You can read the
+              description and sample tests, but grading is locked.
             </p>
             {!session ? (
               <Link

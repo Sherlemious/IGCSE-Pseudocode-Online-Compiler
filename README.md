@@ -195,7 +195,7 @@ See `.env.example` for the full list. Required variables:
 | `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET` | Google OAuth credentials                                               |
 | `AUTH_GITHUB_ID` / `AUTH_GITHUB_SECRET` | GitHub OAuth credentials                                               |
 | `NEXT_PUBLIC_POSTHOG_KEY`               | PostHog project key (leave blank to disable)                           |
-| `NEXT_PUBLIC_PREMIUM_GATING_ENABLED`    | Set to `true` to enforce premium restrictions (`false` by default)     |
+| `PREMIUM_GATING_ENABLED`                | Server-side. `true` gates `isPremium` questions to paid students / paid-teacher classes (`false` by default) |
 
 #### Google OAuth Redirect URI Setup
 
