@@ -3,6 +3,7 @@ import { prisma } from '../../../../../lib/prisma';
 import { gradeSubmission } from '../../../../../lib/autograder';
 import { auth } from '../../../../../lib/auth';
 import { PREMIUM_GATING_ENABLED } from '../../../../../lib/featureFlags';
+import { isPaidPlan } from '../../../../../lib/planDisplay';
 import { rateLimit, clientIp } from '../../../../../lib/rateLimit';
 import { logger } from '../../../../../lib/logger';
 
@@ -71,7 +72,7 @@ export async function POST(request: NextRequest, { params }: Props) {
     if (!session?.user) {
       return NextResponse.json({ error: 'Sign in to grade medium and hard questions.' }, { status: 401 });
     }
-    if (session.user.plan !== 'PREMIUM') {
+    if (!isPaidPlan(session.user.plan)) {
       return NextResponse.json({ error: 'Premium plan required for medium and hard questions.' }, { status: 403 });
     }
   }

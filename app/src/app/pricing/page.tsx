@@ -5,6 +5,7 @@ import { unstable_cache } from 'next/cache';
 import { prisma } from '@/lib/prisma';
 import { auth } from '@/lib/auth';
 import { getPaddleEnv } from '@/lib/paddle/env';
+import { planBadge } from '@/lib/planDisplay';
 import { SITE_URL, SITE_NAME } from '@/lib/seo';
 import PaddleProvider from '@/components/pricing/PaddleProvider';
 import PricingClient, { type PricingTierView } from '@/components/pricing/PricingClient';
@@ -74,6 +75,18 @@ export default async function PricingPage({
   // dev) — leave it undefined so Paddle geo-locates by IP instead.
   const countryCode = hdrs.get('x-vercel-ip-country') ?? undefined;
   const customerEmail = session?.user?.email ?? undefined;
+
+  // The viewer's current subscription, read fresh from the DB so it reflects the
+  // latest webhook state. Drives the "current plan" marker + the manage-billing link.
+  const dbUser = session?.user?.id
+    ? await prisma.user.findUnique({
+        where: { id: session.user.id },
+        select: { planTier: true, paddleCustomerId: true },
+      })
+    : null;
+  const currentTier = dbUser?.planTier ?? null;
+  const canManageBilling = Boolean(dbUser?.paddleCustomerId);
+  const currentPlanLabel = currentTier ? planBadge({ planTier: currentTier }).label : null;
 
   // Show plans relevant to who's viewing: students see the student plan, teachers
   // the teacher/school plans, signed-out visitors everything. An explicit ?view=
@@ -164,6 +177,9 @@ export default async function PricingPage({
               countryCode={countryCode}
               customerEmail={customerEmail}
               appUserId={session?.user?.id}
+              currentTier={currentTier}
+              currentPlanLabel={currentPlanLabel}
+              canManageBilling={canManageBilling}
               paddleEnv={paddleEnv}
             />
           </PaddleProvider>

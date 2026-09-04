@@ -121,8 +121,10 @@ export default async function AdminAnalyticsPage() {
   const statusMap = Object.fromEntries(examsByStatus.map((e) => [e.status, e._count._all])) as Record<string, number>;
 
   const roleTotal = (roleMap.STUDENT ?? 0) + (roleMap.TEACHER ?? 0) + (roleMap.ADMIN ?? 0);
-  const planTotal = (planMap.FREE ?? 0) + (planMap.PREMIUM ?? 0);
-  const premiumPct = planTotal > 0 ? Math.round(((planMap.PREMIUM ?? 0) / planTotal) * 100) : 0;
+  const paidCount =
+    (planMap.STUDENT ?? 0) + (planMap.STARTER ?? 0) + (planMap.PRO ?? 0) + (planMap.SCHOOL ?? 0);
+  const planTotal = (planMap.FREE ?? 0) + paidCount;
+  const paidPct = planTotal > 0 ? Math.round((paidCount / planTotal) * 100) : 0;
 
   // ── Question join ─────────────────────────────────────────
   const attemptMap = new Map(attemptsByQ.map((a) => [a.questionId, a._count._all]));
@@ -273,18 +275,18 @@ export default async function AdminAnalyticsPage() {
         </Panel>
 
         <Panel>
-          <SectionHeading eyebrow="Monetisation" title="Plan mix" meta={`${premiumPct}% premium`} />
+          <SectionHeading eyebrow="Monetisation" title="Plan mix" meta={`${paidPct}% paid`} />
           <div className="flex flex-col items-center justify-center py-2">
             <RingChart
-              pct={planTotal ? (planMap.PREMIUM ?? 0) / planTotal : 0}
-              centerValue={(planMap.PREMIUM ?? 0).toLocaleString()}
-              centerSub="premium"
+              pct={planTotal ? paidCount / planTotal : 0}
+              centerValue={paidCount.toLocaleString()}
+              centerSub="paid"
               color="var(--color-warning)"
               size={108}
             />
             <div className="flex gap-4 mt-3">
               <span className="flex items-center gap-1.5 text-[11px] text-dark-text">
-                <span className="w-2 h-2 rounded-full bg-warning" /> Premium {planMap.PREMIUM ?? 0}
+                <span className="w-2 h-2 rounded-full bg-warning" /> Paid {paidCount}
               </span>
               <span className="flex items-center gap-1.5 text-[11px] text-dark-text">
                 <span className="w-2 h-2 rounded-full bg-border" /> Free {planMap.FREE ?? 0}

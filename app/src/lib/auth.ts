@@ -84,10 +84,17 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         token.plan = (user as unknown as { plan: string }).plan;
         token.role = (user as unknown as { role: string }).role;
         token.planTier = (user as unknown as { planTier?: string | null }).planTier ?? null;
-      } else if (trigger === 'update' && token.id) {
-        // Client called session.update() (e.g. after onboarding picks a role, or
-        // a plan change). Re-read the authoritative values so the session reflects
-        // the DB without forcing a re-login. Kept off the hot path — only on update.
+        token.refreshedAt = Date.now();
+        return token;
+      }
+      // Re-read plan/role/planTier from the DB on an explicit update() OR when the
+      // cached copy is older than the refresh window, so a billing/admin/onboarding
+      // change surfaces on the next page load without forcing a re-login. Capped to
+      // at most once per window per session, so it's not a per-request DB hit.
+      const REFRESH_MS = 30_000;
+      const refreshedAt = typeof token.refreshedAt === 'number' ? token.refreshedAt : 0;
+      const stale = Date.now() - refreshedAt > REFRESH_MS;
+      if ((trigger === 'update' || stale) && token.id) {
         const fresh = await prisma.user.findUnique({
           where: { id: token.id as string },
           select: { plan: true, role: true, planTier: true },
@@ -97,6 +104,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           token.role = fresh.role;
           token.planTier = fresh.planTier;
         }
+        token.refreshedAt = Date.now();
       }
       return token;
     },

@@ -8,7 +8,7 @@ import { SITE_NAME, SITE_URL } from '@/lib/seo';
 export const metadata: Metadata = {
   title: 'Cambridge Pseudocode Examples',
   description:
-    'Runnable Cambridge IGCSE, O Level and AS & A Level (9618) pseudocode examples — INPUT/OUTPUT, loops, arrays, files, algorithms and OOP.',
+    'Runnable Cambridge IGCSE, O Level and AS & A Level (9618) pseudocode examples — INPUT/OUTPUT, loops, arrays, files, algorithms, OOP, stacks, queues, linked lists, binary trees and hash tables.',
   alternates: {
     canonical: '/examples',
   },
@@ -62,7 +62,7 @@ export default function ExamplesPage() {
           </h1>
           <p className="text-sm text-dark-text mt-2 leading-relaxed">
             Runnable Cambridge IGCSE (0478/0984), O Level (2210) and AS &amp; A Level (9618)
-            snippets. Open any example in the{' '}
+            snippets, including Paper 4 data structures. Open any example in the{' '}
             <Link href="/" className="text-primary hover:text-primary-hover">
               compiler
             </Link>

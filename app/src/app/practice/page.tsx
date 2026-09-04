@@ -5,6 +5,7 @@ import { Lock, CheckCircle, Crown, FileText, ArrowRight, Sparkles } from 'lucide
 import { prisma } from '../../lib/prisma';
 import { auth } from '../../lib/auth';
 import { PREMIUM_GATING_ENABLED } from '../../lib/featureFlags';
+import { isPaidPlan } from '@/lib/planDisplay';
 import { PracticeFilters } from './PracticeFilters';
 import { PracticeToolbar } from './PracticeToolbar';
 import {
@@ -64,7 +65,7 @@ export default async function PracticePage({ searchParams }: PageProps) {
     params.sort === 'marks' || params.sort === 'az' ? params.sort : 'year';
 
   const session = await auth();
-  const isPremium = session?.user?.plan === 'PREMIUM';
+  const isPremium = isPaidPlan(session?.user?.plan);
   const hasFullAccess = isPremium || !PREMIUM_GATING_ENABLED;
   const showStatus = !!session;
 
@@ -331,12 +332,6 @@ export default async function PracticePage({ searchParams }: PageProps) {
 
           {/* Notices */}
           <div className="space-y-2">
-            {!PREMIUM_GATING_ENABLED && (
-              <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-primary/20 bg-primary/5 text-xs text-primary">
-                <Crown size={13} className="shrink-0" />
-                <span>Premium is coming soon. For now, all question difficulties are available to everyone.</span>
-              </div>
-            )}
             {PREMIUM_GATING_ENABLED && session && !isPremium && (
               <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-warning/20 bg-warning/5 text-xs text-warning">
                 <Crown size={13} className="shrink-0" />

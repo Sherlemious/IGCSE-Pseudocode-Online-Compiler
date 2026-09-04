@@ -9,7 +9,6 @@ const SETTINGS_KEY = 'exam_last_settings';
 interface Props {
   topics: string[];
   hasFullAccess: boolean;
-  premiumGatingEnabled: boolean;
 }
 
 const DIFFICULTY_OPTIONS = [
@@ -22,7 +21,7 @@ const DIFFICULTY_OPTIONS = [
 const QUESTION_PRESETS = [3, 5, 10, 15, 20];
 const TIME_PRESETS     = [15, 30, 45, 60, 90, 120];
 
-export default function ExamConfigForm({ topics, hasFullAccess, premiumGatingEnabled }: Props) {
+export default function ExamConfigForm({ topics, hasFullAccess }: Props) {
   const router = useRouter();
   const [topic,         setTopic]         = useState('');
   const [difficulty,    setDifficulty]    = useState('');
@@ -82,12 +81,6 @@ export default function ExamConfigForm({ topics, hasFullAccess, premiumGatingEna
 
   return (
     <div className="space-y-6">
-      {/* Banners */}
-      {!premiumGatingEnabled && (
-        <div className="text-xs text-primary bg-primary/8 border border-primary/20 rounded-lg px-3.5 py-2.5 animate-scale-in">
-          Premium is coming soon — all exam difficulties are currently available.
-        </div>
-      )}
       {error && (
         <div className="text-xs text-error bg-error/8 border border-error/15 rounded-lg px-3.5 py-2.5 animate-scale-in">
           {error}

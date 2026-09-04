@@ -27,5 +27,6 @@ declare module 'next-auth/jwt' {
     plan: string;
     role: string;
     planTier?: string | null;
+    refreshedAt?: number; // epoch ms of the last DB re-read of plan/role/planTier
   }
 }

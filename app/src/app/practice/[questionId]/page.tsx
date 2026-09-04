@@ -7,6 +7,7 @@ import remarkGfm from 'remark-gfm';
 import { prisma } from '../../../lib/prisma';
 import { auth } from '../../../lib/auth';
 import { PREMIUM_GATING_ENABLED } from '../../../lib/featureFlags';
+import { isPaidPlan } from '@/lib/planDisplay';
 import PracticeWorkspace from '../../../components/practice/PracticeWorkspace';
 import HintsPanel from '../../../components/practice/HintsPanel';
 import SolutionPanel from '../../../components/practice/SolutionPanel';
@@ -103,7 +104,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function QuestionPage({ params }: Props) {
   const { questionId } = await params;
   const session = await auth();
-  const isPremium = session?.user?.plan === 'PREMIUM';
+  const isPremium = isPaidPlan(session?.user?.plan);
   const hasFullAccess = isPremium || !PREMIUM_GATING_ENABLED;
 
   let question;
@@ -298,13 +299,6 @@ export default async function QuestionPage({ params }: Props) {
             {question.description}
           </ReactMarkdown>
         </div>
-
-        {!PREMIUM_GATING_ENABLED && (
-          <div className="mt-4 flex items-center gap-2 px-3 py-2 rounded-lg border border-primary/20 bg-primary/5 text-xs text-primary">
-            <Crown size={13} className="shrink-0" />
-            <span>Premium is coming soon. All grading features are currently unlocked.</span>
-          </div>
-        )}
 
         {/* Sample test cases (always visible — they're a teaser for locked questions) */}
         {question.testCases.length > 0 && (

@@ -1,13 +1,20 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, Fragment } from 'react';
+import { ChevronDown } from 'lucide-react';
 import { toast } from 'sonner';
+import { planBadge } from '@/lib/planDisplay';
 
 interface UserRow {
   id: string;
   name: string | null;
   email: string | null;
   plan: string;
+  planTier: string | null;
+  trialEndsAt: Date | null;
+  planUpdatedAt: Date | null;
+  paddleCustomerId: string | null;
+  paddleSubscriptionId: string | null;
   role: string;
   createdAt: Date;
   _count: { progress: number; examAttempts: number };
@@ -23,6 +30,20 @@ const ROLE_COLOURS: Record<string, string> = {
   TEACHER: 'text-primary border-primary/40 bg-primary/10',
   STUDENT: 'text-dark-text border-border bg-border/20',
 };
+
+const PLAN_COLOURS: Record<string, string> = {
+  FREE:    'text-dark-text border-border bg-border/20',
+  STUDENT: 'text-dark-text border-primary/30 bg-primary/5',
+  STARTER: 'text-warning border-warning/40 bg-warning/10',
+  PRO:     'text-primary border-primary/40 bg-primary/10',
+  SCHOOL:  'text-success border-success/40 bg-success/10',
+};
+
+const PLANS = ['FREE', 'STUDENT', 'STARTER', 'PRO', 'SCHOOL'];
+
+function nice(value: string) {
+  return value.charAt(0) + value.slice(1).toLowerCase();
+}
 
 function RoleSelect({
   userId,
@@ -50,11 +71,42 @@ function RoleSelect({
     >
       {roles.map((r) => (
         <option key={r} value={r}>
-          {r.charAt(0) + r.slice(1).toLowerCase()}
+          {nice(r)}
         </option>
       ))}
     </select>
   );
+}
+
+function PlanSelect({
+  userId,
+  currentPlan,
+  isUpdating,
+  onChange,
+}: {
+  userId: string;
+  currentPlan: string;
+  isUpdating: boolean;
+  onChange: (userId: string, plan: string) => void;
+}) {
+  return (
+    <select
+      value={currentPlan}
+      disabled={isUpdating}
+      onChange={(e) => onChange(userId, e.target.value)}
+      className={`text-[10px] font-medium px-1.5 py-0.5 rounded border cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed transition-colors ${PLAN_COLOURS[currentPlan] ?? PLAN_COLOURS.FREE}`}
+    >
+      {PLANS.map((p) => (
+        <option key={p} value={p}>
+          {nice(p)}
+        </option>
+      ))}
+    </select>
+  );
+}
+
+function isTrialActive(trialEndsAt: Date | null) {
+  return trialEndsAt != null && new Date(trialEndsAt).getTime() > Date.now();
 }
 
 export default function UsersTable({ users, currentAdminRole }: Props) {
@@ -62,11 +114,15 @@ export default function UsersTable({ users, currentAdminRole }: Props) {
   const [planFilter, setPlanFilter] = useState<string>('all');
   const [roleFilter, setRoleFilter] = useState<string>('all');
   const [roleOverrides, setRoleOverrides] = useState<Record<string, string>>({});
+  const [planOverrides, setPlanOverrides] = useState<Record<string, string>>({});
   const [updatingRole, setUpdatingRole] = useState<string | null>(null);
+  const [updatingPlan, setUpdatingPlan] = useState<string | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const filtered = users.filter((u) => {
     const effectiveRole = roleOverrides[u.id] ?? u.role;
-    if (planFilter !== 'all' && u.plan !== planFilter) return false;
+    const effectivePlan = planOverrides[u.id] ?? u.plan;
+    if (planFilter !== 'all' && effectivePlan !== planFilter) return false;
     if (roleFilter !== 'all' && effectiveRole !== roleFilter) return false;
     if (search) {
       const q = search.toLowerCase();
@@ -95,6 +151,26 @@ export default function UsersTable({ users, currentAdminRole }: Props) {
     }
   }
 
+  async function handlePlanChange(userId: string, newPlan: string) {
+    setUpdatingPlan(userId);
+    try {
+      const res = await fetch(`/api/admin/users/${userId}/plan`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ plan: newPlan }),
+      });
+      if (!res.ok) {
+        const data = await res.json() as { error?: string };
+        toast.error(data.error ?? 'Failed to update plan');
+        return;
+      }
+      setPlanOverrides((prev) => ({ ...prev, [userId]: newPlan }));
+      toast.success('Plan updated — takes effect on the user\'s next sign-in');
+    } finally {
+      setUpdatingPlan(null);
+    }
+  }
+
   return (
     <div className="space-y-4">
       {/* Filters */}
@@ -108,7 +184,7 @@ export default function UsersTable({ users, currentAdminRole }: Props) {
         />
         <div className="flex items-center gap-1.5">
           <span className="text-xs text-dark-text">Plan:</span>
-          {['all', 'FREE', 'PREMIUM'].map((p) => (
+          {['all', ...PLANS].map((p) => (
             <button
               key={p}
               onClick={() => setPlanFilter(p)}
@@ -118,7 +194,7 @@ export default function UsersTable({ users, currentAdminRole }: Props) {
                   : 'bg-background border-border text-dark-text hover:text-light-text'
               }`}
             >
-              {p.charAt(0).toUpperCase() + p.slice(1).toLowerCase()}
+              {p === 'all' ? 'All' : nice(p)}
             </button>
           ))}
         </div>
@@ -134,7 +210,7 @@ export default function UsersTable({ users, currentAdminRole }: Props) {
                   : 'bg-background border-border text-dark-text hover:text-light-text'
               }`}
             >
-              {r.charAt(0).toUpperCase() + r.slice(1).toLowerCase()}
+              {r === 'all' ? 'All' : nice(r)}
             </button>
           ))}
         </div>
@@ -148,7 +224,7 @@ export default function UsersTable({ users, currentAdminRole }: Props) {
               <tr className="border-b border-border bg-surface">
                 <th className="text-left px-4 py-3 text-dark-text font-medium">Name</th>
                 <th className="text-left px-4 py-3 text-dark-text font-medium">Email</th>
-                <th className="text-left px-4 py-3 text-dark-text font-medium w-20">Plan</th>
+                <th className="text-left px-4 py-3 text-dark-text font-medium w-36">Plan</th>
                 <th className="text-left px-4 py-3 text-dark-text font-medium w-24">Role</th>
                 <th className="text-left px-4 py-3 text-dark-text font-medium w-20">Questions</th>
                 <th className="text-left px-4 py-3 text-dark-text font-medium w-16">Exams</th>
@@ -163,40 +239,89 @@ export default function UsersTable({ users, currentAdminRole }: Props) {
               )}
               {filtered.map((u) => {
                 const effectiveRole = roleOverrides[u.id] ?? u.role;
+                const effectivePlan = planOverrides[u.id] ?? u.plan;
+                const trial = isTrialActive(u.trialEndsAt);
+                const expanded = expandedId === u.id;
                 return (
-                  <tr key={u.id} className="hover:bg-border/10 transition-colors">
-                    <td className="px-4 py-3 text-light-text">{u.name ?? <span className="italic text-dark-text/50">—</span>}</td>
-                    <td className="px-4 py-3 text-dark-text">{u.email ?? <span className="italic text-dark-text/50">—</span>}</td>
-                    <td className="px-4 py-3">
-                      <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded border ${
-                        u.plan === 'PREMIUM'
-                          ? 'text-warning border-warning/40 bg-warning/10'
-                          : 'text-dark-text border-border bg-border/20'
-                      }`}>
-                        {u.plan}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <RoleSelect
-                        userId={u.id}
-                        currentRole={effectiveRole}
-                        currentAdminRole={currentAdminRole}
-                        isUpdating={updatingRole === u.id}
-                        onChange={(id, role) => void handleRoleChange(id, role)}
-                      />
-                    </td>
-                    <td className="px-4 py-3 text-dark-text">{u._count.progress}</td>
-                    <td className="px-4 py-3 text-dark-text">{u._count.examAttempts}</td>
-                    <td className="px-4 py-3 text-dark-text whitespace-nowrap">
-                      {new Date(u.createdAt).toLocaleDateString()}
-                    </td>
-                  </tr>
+                  <Fragment key={u.id}>
+                    <tr className="hover:bg-border/10 transition-colors">
+                      <td className="px-4 py-3 text-light-text">{u.name ?? <span className="italic text-dark-text/50">—</span>}</td>
+                      <td className="px-4 py-3 text-dark-text">{u.email ?? <span className="italic text-dark-text/50">—</span>}</td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-1.5">
+                          <PlanSelect
+                            userId={u.id}
+                            currentPlan={effectivePlan}
+                            isUpdating={updatingPlan === u.id}
+                            onChange={(id, plan) => void handlePlanChange(id, plan)}
+                          />
+                          {trial && (
+                            <span className="text-[10px] font-medium px-1.5 py-0.5 rounded border text-warning border-warning/40 bg-warning/10">
+                              Trial
+                            </span>
+                          )}
+                          <button
+                            onClick={() => setExpandedId(expanded ? null : u.id)}
+                            title="Billing details"
+                            className="text-dark-text/50 hover:text-primary transition-colors"
+                          >
+                            <ChevronDown size={13} className={expanded ? 'rotate-180 transition-transform' : 'transition-transform'} />
+                          </button>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <RoleSelect
+                          userId={u.id}
+                          currentRole={effectiveRole}
+                          currentAdminRole={currentAdminRole}
+                          isUpdating={updatingRole === u.id}
+                          onChange={(id, role) => void handleRoleChange(id, role)}
+                        />
+                      </td>
+                      <td className="px-4 py-3 text-dark-text">{u._count.progress}</td>
+                      <td className="px-4 py-3 text-dark-text">{u._count.examAttempts}</td>
+                      <td className="px-4 py-3 text-dark-text whitespace-nowrap">
+                        {new Date(u.createdAt).toLocaleDateString()}
+                      </td>
+                    </tr>
+                    {expanded && (
+                      <tr className="bg-background/40">
+                        <td colSpan={7} className="px-4 py-3">
+                          <dl className="grid gap-x-8 gap-y-2 sm:grid-cols-2 lg:grid-cols-3 text-[11px]">
+                            <BillingField label="Display label" value={planBadge({ plan: effectivePlan, planTier: u.planTier }).label} />
+                            <BillingField label="Marketing tier" value={u.planTier} mono />
+                            <BillingField
+                              label="Trial ends"
+                              value={u.trialEndsAt ? new Date(u.trialEndsAt).toLocaleString() : null}
+                            />
+                            <BillingField
+                              label="Plan updated"
+                              value={u.planUpdatedAt ? new Date(u.planUpdatedAt).toLocaleString() : null}
+                            />
+                            <BillingField label="Paddle customer" value={u.paddleCustomerId} mono />
+                            <BillingField label="Paddle subscription" value={u.paddleSubscriptionId} mono />
+                          </dl>
+                        </td>
+                      </tr>
+                    )}
+                  </Fragment>
                 );
               })}
             </tbody>
           </table>
         </div>
       </div>
+    </div>
+  );
+}
+
+function BillingField({ label, value, mono = false }: { label: string; value: string | null; mono?: boolean }) {
+  return (
+    <div className="min-w-0">
+      <dt className="text-[10px] uppercase tracking-wider text-dark-text/60">{label}</dt>
+      <dd className={`text-light-text truncate ${mono ? 'font-mono' : ''}`} title={value ?? undefined}>
+        {value ?? <span className="italic text-dark-text/40">—</span>}
+      </dd>
     </div>
   );
 }

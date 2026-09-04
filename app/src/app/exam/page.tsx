@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { PREMIUM_GATING_ENABLED } from '@/lib/featureFlags';
+import { isPaidPlan } from '@/lib/planDisplay';
 import { Clock, Trophy, ArrowRight, Hourglass, FileStack, KeyRound } from 'lucide-react';
 import ExamConfigForm from '@/components/exam/ExamConfigForm';
 import JoinExamForm from '@/components/exam/JoinExamForm';
@@ -22,7 +23,7 @@ export default async function ExamPage() {
   const session = await auth();
   if (!session) redirect('/auth/signin');
 
-  const isPremium = session.user.plan === 'PREMIUM';
+  const isPremium = isPaidPlan(session.user.plan);
   const hasFullAccess = isPremium || !PREMIUM_GATING_ENABLED;
 
   const topics = await prisma.question.findMany({
@@ -83,7 +84,6 @@ export default async function ExamPage() {
           <ExamConfigForm
             topics={topicList}
             hasFullAccess={hasFullAccess}
-            premiumGatingEnabled={PREMIUM_GATING_ENABLED}
           />
         </div>
 

@@ -1443,6 +1443,302 @@ ENDCLASS
 MyCat <- NEW Cat("Kitty", "Shorthaired")
 OUTPUT MyCat.Describe()`,
   },
+
+  // A Level data structures — array-backed ADTs as used in 9618 Paper 4
+  {
+    title: 'Stack (array + top pointer)',
+    category: 'A Level Data Structures',
+    code: `// LIFO stack: Top is the index of the last item pushed. Empty = -1.
+DECLARE StackData : ARRAY[0:4] OF INTEGER
+DECLARE Top : INTEGER
+
+FUNCTION Push(Value : INTEGER) RETURNS BOOLEAN
+    IF Top = 4 THEN
+        RETURN FALSE
+    ENDIF
+    Top <- Top + 1
+    StackData[Top] <- Value
+    RETURN TRUE
+ENDFUNCTION
+
+FUNCTION Pop() RETURNS INTEGER
+    DECLARE Value : INTEGER
+    IF Top = -1 THEN
+        RETURN -1
+    ENDIF
+    Value <- StackData[Top]
+    Top <- Top - 1
+    RETURN Value
+ENDFUNCTION
+
+Top <- -1
+OUTPUT "Push 10: ", Push(10)
+OUTPUT "Push 20: ", Push(20)
+OUTPUT "Push 30: ", Push(30)
+OUTPUT "Pop: ", Pop()
+OUTPUT "Pop: ", Pop()
+OUTPUT "Pop: ", Pop()
+OUTPUT "Pop empty: ", Pop()`,
+  },
+  {
+    title: 'Linear Queue (head and tail)',
+    category: 'A Level Data Structures',
+    code: `// FIFO linear queue. Head/Tail start at -1. Full when Tail reaches the last index.
+DECLARE QueueData : ARRAY[0:4] OF STRING
+DECLARE QueueHead, QueueTail : INTEGER
+
+FUNCTION Enqueue(Value : STRING) RETURNS BOOLEAN
+    IF QueueTail = 4 THEN
+        RETURN FALSE
+    ENDIF
+    IF QueueHead = -1 THEN
+        QueueHead <- 0
+    ENDIF
+    QueueTail <- QueueTail + 1
+    QueueData[QueueTail] <- Value
+    RETURN TRUE
+ENDFUNCTION
+
+FUNCTION Dequeue() RETURNS STRING
+    DECLARE Item : STRING
+    IF QueueHead = -1 OR QueueHead > QueueTail THEN
+        RETURN "false"
+    ENDIF
+    Item <- QueueData[QueueHead]
+    QueueHead <- QueueHead + 1
+    RETURN Item
+ENDFUNCTION
+
+QueueHead <- -1
+QueueTail <- -1
+OUTPUT "Enqueue A: ", Enqueue("A")
+OUTPUT "Enqueue B: ", Enqueue("B")
+OUTPUT "Enqueue C: ", Enqueue("C")
+OUTPUT "Dequeue: ", Dequeue()
+OUTPUT "Dequeue: ", Dequeue()
+OUTPUT "Dequeue: ", Dequeue()
+OUTPUT "Dequeue empty: ", Dequeue()`,
+  },
+  {
+    title: 'Circular Queue',
+    category: 'A Level Data Structures',
+    code: `// Circular queue of 4 slots. Count tells full from empty when Head = Tail.
+DECLARE QueueData : ARRAY[0:3] OF STRING
+DECLARE Head, Tail, Count : INTEGER
+
+FUNCTION Enqueue(Value : STRING) RETURNS BOOLEAN
+    IF Count = 4 THEN
+        RETURN FALSE
+    ENDIF
+    QueueData[Tail] <- Value
+    Tail <- MOD(Tail + 1, 4)
+    Count <- Count + 1
+    RETURN TRUE
+ENDFUNCTION
+
+FUNCTION Dequeue() RETURNS STRING
+    DECLARE Item : STRING
+    IF Count = 0 THEN
+        RETURN "false"
+    ENDIF
+    Item <- QueueData[Head]
+    Head <- MOD(Head + 1, 4)
+    Count <- Count - 1
+    RETURN Item
+ENDFUNCTION
+
+Head <- 0
+Tail <- 0
+Count <- 0
+
+OUTPUT Enqueue("A")
+OUTPUT Enqueue("B")
+OUTPUT Enqueue("C")
+OUTPUT Enqueue("D")
+OUTPUT "Full reject: ", Enqueue("X")
+OUTPUT "Out: ", Dequeue()
+OUTPUT "Out: ", Dequeue()
+OUTPUT Enqueue("E")
+OUTPUT Enqueue("F")
+OUTPUT "Out: ", Dequeue()
+OUTPUT "Out: ", Dequeue()
+OUTPUT "Out: ", Dequeue()
+OUTPUT "Out: ", Dequeue()`,
+  },
+  {
+    title: 'Linked List (2D array + free list)',
+    category: 'A Level Data Structures',
+    code: `// Paper 4 style: LinkedList[i, 0] = data, LinkedList[i, 1] = next index.
+// Unused nodes are chained from StartEmptyList. Null pointer = -1.
+DECLARE LinkedList : ARRAY[0:4, 0:1] OF INTEGER
+DECLARE StartLinkedList, StartEmptyList : INTEGER
+
+PROCEDURE PrintList()
+    DECLARE Current : INTEGER
+    Current <- StartLinkedList
+    WHILE Current <> -1 DO
+        OUTPUT LinkedList[Current, 0]
+        Current <- LinkedList[Current, 1]
+    ENDWHILE
+ENDPROCEDURE
+
+PROCEDURE AddItem(Value : INTEGER)
+    DECLARE NewNode, Current : INTEGER
+    IF StartEmptyList = -1 THEN
+        OUTPUT "List is full"
+    ELSE
+        NewNode <- StartEmptyList
+        StartEmptyList <- LinkedList[StartEmptyList, 1]
+        LinkedList[NewNode, 0] <- Value
+        LinkedList[NewNode, 1] <- -1
+        IF StartLinkedList = -1 THEN
+            StartLinkedList <- NewNode
+        ELSE
+            Current <- StartLinkedList
+            WHILE LinkedList[Current, 1] <> -1 DO
+                Current <- LinkedList[Current, 1]
+            ENDWHILE
+            LinkedList[Current, 1] <- NewNode
+        ENDIF
+    ENDIF
+ENDPROCEDURE
+
+// Initial list: 10 → 20 → 30 at indices 0, 1, 2. Free chain: 3 → 4.
+LinkedList[0, 0] <- 10
+LinkedList[0, 1] <- 1
+LinkedList[1, 0] <- 20
+LinkedList[1, 1] <- 2
+LinkedList[2, 0] <- 30
+LinkedList[2, 1] <- -1
+LinkedList[3, 0] <- -1
+LinkedList[3, 1] <- 4
+LinkedList[4, 0] <- -1
+LinkedList[4, 1] <- -1
+StartLinkedList <- 0
+StartEmptyList <- 3
+
+OUTPUT "Before:"
+CALL PrintList()
+CALL AddItem(40)
+OUTPUT "After adding 40:"
+CALL PrintList()`,
+  },
+  {
+    title: 'Binary Search Tree (insert + in-order)',
+    category: 'A Level Data Structures',
+    code: `// Paper 4 style: Tree[i, 0] = left, Tree[i, 1] = data, Tree[i, 2] = right.
+// Null pointer = -1. New nodes always come from FirstFree, then FirstFree + 1.
+DECLARE Tree : ARRAY[0:9, 0:2] OF INTEGER
+DECLARE RootPointer, FirstFree, Index : INTEGER
+
+PROCEDURE AddNode(Value : INTEGER)
+    DECLARE NewIndex, Current, Parent : INTEGER
+    IF FirstFree > 9 THEN
+        OUTPUT "The tree is full"
+    ELSE
+        NewIndex <- FirstFree
+        Tree[NewIndex, 0] <- -1
+        Tree[NewIndex, 1] <- Value
+        Tree[NewIndex, 2] <- -1
+        FirstFree <- FirstFree + 1
+        IF RootPointer = -1 THEN
+            RootPointer <- NewIndex
+        ELSE
+            Current <- RootPointer
+            WHILE Current <> -1 DO
+                Parent <- Current
+                IF Value < Tree[Current, 1] THEN
+                    Current <- Tree[Current, 0]
+                ELSE
+                    Current <- Tree[Current, 2]
+                ENDIF
+            ENDWHILE
+            IF Value < Tree[Parent, 1] THEN
+                Tree[Parent, 0] <- NewIndex
+            ELSE
+                Tree[Parent, 2] <- NewIndex
+            ENDIF
+        ENDIF
+    ENDIF
+ENDPROCEDURE
+
+PROCEDURE InOrder(NodeIndex : INTEGER)
+    IF NodeIndex <> -1 THEN
+        CALL InOrder(Tree[NodeIndex, 0])
+        OUTPUT Tree[NodeIndex, 1]
+        CALL InOrder(Tree[NodeIndex, 2])
+    ENDIF
+ENDPROCEDURE
+
+FOR Index <- 0 TO 9
+    Tree[Index, 0] <- -1
+    Tree[Index, 1] <- -1
+    Tree[Index, 2] <- -1
+NEXT Index
+RootPointer <- -1
+FirstFree <- 0
+
+CALL AddNode(20)
+CALL AddNode(10)
+CALL AddNode(26)
+CALL AddNode(22)
+CALL AddNode(8)
+
+OUTPUT "In-order (ascending):"
+CALL InOrder(RootPointer)`,
+  },
+  {
+    title: 'Hash Table (MOD + collisions)',
+    category: 'A Level Data Structures',
+    code: `// Hash = key MOD 10. Collisions sit in the next free slot of the same row.
+DECLARE Keys : ARRAY[0:9, 0:2] OF INTEGER
+DECLARE Values : ARRAY[0:9, 0:2] OF STRING
+DECLARE Row, Slot : INTEGER
+
+FUNCTION Hash(Key : INTEGER) RETURNS INTEGER
+    RETURN MOD(Key, 10)
+ENDFUNCTION
+
+PROCEDURE InsertData(Key : INTEGER, Data : STRING)
+    DECLARE Index, Col : INTEGER
+    Index <- Hash(Key)
+    Col <- 0
+    WHILE Col <= 2 AND Keys[Index, Col] <> -1 DO
+        Col <- Col + 1
+    ENDWHILE
+    IF Col <= 2 THEN
+        Keys[Index, Col] <- Key
+        Values[Index, Col] <- Data
+    ENDIF
+ENDPROCEDURE
+
+FUNCTION GetRecord(Key : INTEGER) RETURNS STRING
+    DECLARE Index, Col : INTEGER
+    Index <- Hash(Key)
+    FOR Col <- 0 TO 2
+        IF Keys[Index, Col] = Key THEN
+            RETURN Values[Index, Col]
+        ENDIF
+    NEXT Col
+    RETURN "Not found"
+ENDFUNCTION
+
+FOR Row <- 0 TO 9
+    FOR Slot <- 0 TO 2
+        Keys[Row, Slot] <- -1
+        Values[Row, Slot] <- ""
+    NEXT Slot
+NEXT Row
+
+CALL InsertData(15, "alpha")
+CALL InsertData(25, "bravo")
+CALL InsertData(12, "charlie")
+
+OUTPUT "15 → ", GetRecord(15)
+OUTPUT "25 → ", GetRecord(25)
+OUTPUT "12 → ", GetRecord(12)
+OUTPUT "99 → ", GetRecord(99)`,
+  },
 ];
 
 export function exampleSlug(title: string) {

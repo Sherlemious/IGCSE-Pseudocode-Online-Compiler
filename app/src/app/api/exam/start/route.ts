@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { PREMIUM_GATING_ENABLED } from '@/lib/featureFlags';
+import { isPaidPlan } from '@/lib/planDisplay';
 import type { Difficulty } from '@prisma/client';
 
 export async function POST(req: Request) {
@@ -21,7 +22,7 @@ export async function POST(req: Request) {
   if (difficulty) where.difficulty = difficulty as Difficulty;
 
   // Restrict free users to EASY only when premium gating is enabled.
-  const isPremium = session.user.plan === 'PREMIUM';
+  const isPremium = isPaidPlan(session.user.plan);
   if (PREMIUM_GATING_ENABLED && !isPremium) {
     where.difficulty = 'EASY';
   }

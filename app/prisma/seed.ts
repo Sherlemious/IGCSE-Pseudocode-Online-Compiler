@@ -9953,6 +9953,690 @@ OUTPUT "Consonants: " & ConsonantCount`,
     ],
   },
 
+  // ═══ A LEVEL DATA STRUCTURES — 9618 Paper 4 ADTs ═══════════════════════════
+  // Original practice in the style of Oct/Nov 2025 and May/June 2026 Paper 4:
+  // array-backed stacks, queues, linked lists, binary trees and hash tables.
+
+  {
+    title: 'Stack Find Largest and Smallest',
+    description: `A stack of up to 10 integers is stored in \`StackData\` with a \`Top\` pointer starting at \`-1\`.
+
+Write:
+
+- function \`Push(Value)\` — store the value and return \`TRUE\`, or return \`FALSE\` if the stack is full
+- procedure \`FindExtremes()\` — pop every remaining value until the stack is empty, then output the largest and smallest values that were popped, in the format \`Largest: <n>\` then \`Smallest: <n>\`
+
+The test harness reads a count, then that many integers, pushes each one, and calls \`FindExtremes()\`. You can assume there is at least one value.
+
+**Input:** A count, then that many integers.
+**Output:** Two lines — the largest then the smallest.
+
+**Example:**
+\`\`\`
+Input:  4
+        8
+        3
+        15
+        6
+Output: Largest: 15
+        Smallest: 3
+\`\`\``,
+    difficulty: 'MEDIUM' as const,
+    topic: 'Stacks',
+    tags: ['AS & A Level', '9618', 'Oct/Nov 2025', 'Paper 41', 'Past Paper', 'Unseen', 'Stacks', 'ADT'],
+    year: 2025,
+    session: 'Oct/Nov',
+    variant: 1,
+    paper: '9618/41',
+    questionNumber: 1,
+    marks: 10,
+    starterCode: `DECLARE StackData : ARRAY[0:9] OF INTEGER
+DECLARE Top : INTEGER
+
+FUNCTION Push(Value : INTEGER) RETURNS BOOLEAN
+    // Return FALSE if full; otherwise push Value and return TRUE
+ENDFUNCTION
+
+PROCEDURE FindExtremes()
+    // Pop until empty, then output Largest and Smallest
+ENDPROCEDURE
+
+DECLARE Count, Index, Value : INTEGER
+Top <- -1
+
+INPUT Count
+FOR Index <- 1 TO Count
+    INPUT Value
+    OUTPUT Push(Value)
+NEXT Index
+
+CALL FindExtremes()`,
+    hints: [
+      'Push increments Top before storing. The stack is full when Top = 9.',
+      'FindExtremes should pop the first value to initialise both Largest and Smallest, then pop the rest while updating those two trackers.',
+      'Pop by reading StackData[Top] then decreasing Top. Stop when Top = -1.',
+    ],
+    solution: `DECLARE StackData : ARRAY[0:9] OF INTEGER
+DECLARE Top : INTEGER
+
+FUNCTION Push(Value : INTEGER) RETURNS BOOLEAN
+    IF Top = 9 THEN
+        RETURN FALSE
+    ENDIF
+    Top <- Top + 1
+    StackData[Top] <- Value
+    RETURN TRUE
+ENDFUNCTION
+
+PROCEDURE FindExtremes()
+    DECLARE Value, Largest, Smallest : INTEGER
+    Value <- StackData[Top]
+    Top <- Top - 1
+    Largest <- Value
+    Smallest <- Value
+    WHILE Top <> -1 DO
+        Value <- StackData[Top]
+        Top <- Top - 1
+        IF Value > Largest THEN
+            Largest <- Value
+        ENDIF
+        IF Value < Smallest THEN
+            Smallest <- Value
+        ENDIF
+    ENDWHILE
+    OUTPUT "Largest: " & Largest
+    OUTPUT "Smallest: " & Smallest
+ENDPROCEDURE
+
+DECLARE Count, Index, Value : INTEGER
+Top <- -1
+
+INPUT Count
+FOR Index <- 1 TO Count
+    INPUT Value
+    OUTPUT Push(Value)
+NEXT Index
+
+CALL FindExtremes()`,
+    solutionExplanation: 'Each value is pushed so the last input sits at the top. FindExtremes then empties the stack, tracking a running largest and smallest as it pops, which is the classic Paper 4 pattern of combining ADT operations with a scan.',
+    testCases: [
+      { inputs: ['4', '8', '3', '15', '6'], expectedOutput: 'TRUE\nTRUE\nTRUE\nTRUE\nLargest: 15\nSmallest: 3', description: 'Mixed positives', sortOrder: 0 },
+      { inputs: ['1', '42'], expectedOutput: 'TRUE\nLargest: 42\nSmallest: 42', description: 'Single value', sortOrder: 1 },
+      { inputs: ['3', '-4', '-1', '-9'], expectedOutput: 'TRUE\nTRUE\nTRUE\nLargest: -1\nSmallest: -9', description: 'All negative', sortOrder: 2, isHidden: true },
+      { inputs: ['5', '7', '7', '7', '7', '7'], expectedOutput: 'TRUE\nTRUE\nTRUE\nTRUE\nTRUE\nLargest: 7\nSmallest: 7', description: 'All equal', sortOrder: 3, isHidden: true },
+    ],
+  },
+
+  {
+    title: 'Add a Node at the End of a Linked List',
+    description: `A linked list of integers is stored in a 2D array \`LinkedList\`. Column 0 is the data; column 1 is the next-node index. A pointer of \`-1\` marks the end of a chain. Unused slots form a separate empty list.
+
+\`StartLinkedList\` points at the first used node. \`StartEmptyList\` points at the first unused node.
+
+Write procedure \`AddItem(Value)\` that:
+
+- takes the next free node from the empty list
+- stores \`Value\` in it and links it at the **end** of the used list
+- outputs \`List is full\` without changing anything if \`StartEmptyList = -1\`
+
+The program already stores \`12 → 18 → 25\`. It then inserts the given values and prints the final list.
+
+**Input:** Number of values to insert, then each integer.
+**Output:** The final list, one value per line (plus \`List is full\` for any rejected insert).
+
+**Example:**
+\`\`\`
+Input:  1
+        40
+Output: 12
+        18
+        25
+        40
+\`\`\``,
+    difficulty: 'HARD' as const,
+    topic: 'Linked Lists',
+    tags: ['AS & A Level', '9618', 'May/June 2026', 'Paper 42', 'Past Paper', 'Unseen', 'Linked Lists', 'ADT'],
+    year: 2026,
+    session: 'May/June',
+    variant: 2,
+    paper: '9618/42',
+    questionNumber: 3,
+    marks: 12,
+    starterCode: `DECLARE LinkedList : ARRAY[0:5, 0:1] OF INTEGER
+DECLARE StartLinkedList, StartEmptyList : INTEGER
+
+PROCEDURE AddItem(Value : INTEGER)
+    // Take a node from the empty list and append it to the used list
+ENDPROCEDURE
+
+DECLARE InsertCount, Index, NewValue, Current : INTEGER
+
+// Used list: 12 → 18 → 25 at indices 1, 4, 0. Empty chain: 2 → 3 → 5.
+LinkedList[1, 0] <- 12
+LinkedList[1, 1] <- 4
+LinkedList[4, 0] <- 18
+LinkedList[4, 1] <- 0
+LinkedList[0, 0] <- 25
+LinkedList[0, 1] <- -1
+StartLinkedList <- 1
+
+LinkedList[2, 0] <- -1
+LinkedList[2, 1] <- 3
+LinkedList[3, 0] <- -1
+LinkedList[3, 1] <- 5
+LinkedList[5, 0] <- -1
+LinkedList[5, 1] <- -1
+StartEmptyList <- 2
+
+INPUT InsertCount
+FOR Index <- 1 TO InsertCount
+    INPUT NewValue
+    CALL AddItem(NewValue)
+NEXT Index
+
+Current <- StartLinkedList
+WHILE Current <> -1 DO
+    OUTPUT LinkedList[Current, 0]
+    Current <- LinkedList[Current, 1]
+ENDWHILE`,
+    hints: [
+      'The next free slot is StartEmptyList. Advance StartEmptyList to LinkedList[StartEmptyList, 1] before reusing that node.',
+      'Set the new node data, then set its pointer to -1 because it becomes the last node.',
+      'Walk from StartLinkedList until LinkedList[Current, 1] = -1, then point that last node at the new node. If StartEmptyList is already -1, output "List is full".',
+    ],
+    solution: `DECLARE LinkedList : ARRAY[0:5, 0:1] OF INTEGER
+DECLARE StartLinkedList, StartEmptyList : INTEGER
+
+PROCEDURE AddItem(Value : INTEGER)
+    DECLARE NewNode, Current : INTEGER
+    IF StartEmptyList = -1 THEN
+        OUTPUT "List is full"
+    ELSE
+        NewNode <- StartEmptyList
+        StartEmptyList <- LinkedList[StartEmptyList, 1]
+        LinkedList[NewNode, 0] <- Value
+        LinkedList[NewNode, 1] <- -1
+        IF StartLinkedList = -1 THEN
+            StartLinkedList <- NewNode
+        ELSE
+            Current <- StartLinkedList
+            WHILE LinkedList[Current, 1] <> -1 DO
+                Current <- LinkedList[Current, 1]
+            ENDWHILE
+            LinkedList[Current, 1] <- NewNode
+        ENDIF
+    ENDIF
+ENDPROCEDURE
+
+DECLARE InsertCount, Index, NewValue, Current : INTEGER
+
+LinkedList[1, 0] <- 12
+LinkedList[1, 1] <- 4
+LinkedList[4, 0] <- 18
+LinkedList[4, 1] <- 0
+LinkedList[0, 0] <- 25
+LinkedList[0, 1] <- -1
+StartLinkedList <- 1
+
+LinkedList[2, 0] <- -1
+LinkedList[2, 1] <- 3
+LinkedList[3, 0] <- -1
+LinkedList[3, 1] <- 5
+LinkedList[5, 0] <- -1
+LinkedList[5, 1] <- -1
+StartEmptyList <- 2
+
+INPUT InsertCount
+FOR Index <- 1 TO InsertCount
+    INPUT NewValue
+    CALL AddItem(NewValue)
+NEXT Index
+
+Current <- StartLinkedList
+WHILE Current <> -1 DO
+    OUTPUT LinkedList[Current, 0]
+    Current <- LinkedList[Current, 1]
+ENDWHILE`,
+    solutionExplanation: 'AddItem claims the head of the free chain, then walks the used list to the node whose next pointer is -1 and attaches the new node there. That is a tail insertion using the same 2D-array pointer technique as Paper 4 linked-list questions.',
+    testCases: [
+      { inputs: ['1', '40'], expectedOutput: '12\n18\n25\n40', description: 'Single append', sortOrder: 0 },
+      { inputs: ['2', '7', '9'], expectedOutput: '12\n18\n25\n7\n9', description: 'Two appends', sortOrder: 1 },
+      { inputs: ['0'], expectedOutput: '12\n18\n25', description: 'No inserts — list unchanged', sortOrder: 2, isHidden: true },
+      { inputs: ['4', '1', '2', '3', '4'], expectedOutput: 'List is full\n12\n18\n25\n1\n2\n3', description: 'Fourth insert has no free node', sortOrder: 3, isHidden: true },
+    ],
+  },
+
+  {
+    title: 'Binary Tree Insert and In-Order Traversal',
+    description: `An ordered binary tree of up to 10 positive integers is stored in a 2D array \`Tree\`. For each index: column 0 is the left pointer, column 1 is the data, column 2 is the right pointer. A null pointer is \`-1\`.
+
+\`RootPointer\` starts at \`-1\`. \`FirstFree\` starts at \`0\` and increases by 1 each time a node is added. Nodes are never deleted.
+
+Write:
+
+- procedure \`AddNode(Value)\` — store the value in the next free node and link it into the tree so left children are smaller and right children are greater or equal. Output \`The tree is full\` if there is no space.
+- procedure \`InOrder(NodeIndex)\` — recursively visit left, output the data, then visit right, so the values print in ascending order.
+
+The harness reads a count, then that many integers, inserts each one, and prints the in-order traversal.
+
+**Input:** A count, then that many integers.
+**Output:** The values in ascending order, one per line.
+
+**Example:**
+\`\`\`
+Input:  5
+        20
+        10
+        26
+        22
+        8
+Output: 8
+        10
+        20
+        22
+        26
+\`\`\``,
+    difficulty: 'HARD' as const,
+    topic: 'Trees',
+    tags: ['AS & A Level', '9618', 'May/June 2026', 'Paper 43', 'Past Paper', 'Unseen', 'Binary Trees', 'Recursion', 'ADT'],
+    year: 2026,
+    session: 'May/June',
+    variant: 3,
+    paper: '9618/43',
+    questionNumber: 3,
+    marks: 15,
+    starterCode: `DECLARE Tree : ARRAY[0:9, 0:2] OF INTEGER
+DECLARE RootPointer, FirstFree, Index : INTEGER
+
+PROCEDURE AddNode(Value : INTEGER)
+    // Insert Value into the binary tree
+ENDPROCEDURE
+
+PROCEDURE InOrder(NodeIndex : INTEGER)
+    // Left, output data, right
+ENDPROCEDURE
+
+DECLARE Count, Value : INTEGER
+
+FOR Index <- 0 TO 9
+    Tree[Index, 0] <- -1
+    Tree[Index, 1] <- -1
+    Tree[Index, 2] <- -1
+NEXT Index
+RootPointer <- -1
+FirstFree <- 0
+
+INPUT Count
+FOR Index <- 1 TO Count
+    INPUT Value
+    CALL AddNode(Value)
+NEXT Index
+
+CALL InOrder(RootPointer)`,
+    hints: [
+      'Store the new value at FirstFree with both child pointers set to -1, then increment FirstFree. If the tree was empty, that index becomes RootPointer.',
+      'Otherwise walk from the root: go left when Value is smaller than the current node, otherwise go right, until you would follow a -1 pointer. Then update that parent pointer to the new index.',
+      'InOrder is recursive: if NodeIndex is not -1, call InOrder on the left pointer, OUTPUT the data, then call InOrder on the right pointer.',
+    ],
+    solution: `DECLARE Tree : ARRAY[0:9, 0:2] OF INTEGER
+DECLARE RootPointer, FirstFree, Index : INTEGER
+
+PROCEDURE AddNode(Value : INTEGER)
+    DECLARE NewIndex, Current, Parent : INTEGER
+    IF FirstFree > 9 THEN
+        OUTPUT "The tree is full"
+    ELSE
+        NewIndex <- FirstFree
+        Tree[NewIndex, 0] <- -1
+        Tree[NewIndex, 1] <- Value
+        Tree[NewIndex, 2] <- -1
+        FirstFree <- FirstFree + 1
+        IF RootPointer = -1 THEN
+            RootPointer <- NewIndex
+        ELSE
+            Current <- RootPointer
+            WHILE Current <> -1 DO
+                Parent <- Current
+                IF Value < Tree[Current, 1] THEN
+                    Current <- Tree[Current, 0]
+                ELSE
+                    Current <- Tree[Current, 2]
+                ENDIF
+            ENDWHILE
+            IF Value < Tree[Parent, 1] THEN
+                Tree[Parent, 0] <- NewIndex
+            ELSE
+                Tree[Parent, 2] <- NewIndex
+            ENDIF
+        ENDIF
+    ENDIF
+ENDPROCEDURE
+
+PROCEDURE InOrder(NodeIndex : INTEGER)
+    IF NodeIndex <> -1 THEN
+        CALL InOrder(Tree[NodeIndex, 0])
+        OUTPUT Tree[NodeIndex, 1]
+        CALL InOrder(Tree[NodeIndex, 2])
+    ENDIF
+ENDPROCEDURE
+
+DECLARE Count, Value : INTEGER
+
+FOR Index <- 0 TO 9
+    Tree[Index, 0] <- -1
+    Tree[Index, 1] <- -1
+    Tree[Index, 2] <- -1
+NEXT Index
+RootPointer <- -1
+FirstFree <- 0
+
+INPUT Count
+FOR Index <- 1 TO Count
+    INPUT Value
+    CALL AddNode(Value)
+NEXT Index
+
+CALL InOrder(RootPointer)`,
+    solutionExplanation: 'New nodes always occupy the next unused array index. The search for an insertion point follows left pointers for smaller values and right pointers otherwise, then the parent is updated. In-order traversal visits left, node, right, which prints a binary search tree in ascending order.',
+    testCases: [
+      { inputs: ['5', '20', '10', '26', '22', '8'], expectedOutput: '8\n10\n20\n22\n26', description: 'Classic 5-node tree', sortOrder: 0 },
+      { inputs: ['1', '50'], expectedOutput: '50', description: 'Single root', sortOrder: 1 },
+      { inputs: ['4', '10', '20', '30', '40'], expectedOutput: '10\n20\n30\n40', description: 'Right-leaning inserts', sortOrder: 2, isHidden: true },
+      { inputs: ['6', '50', '26', '120', '2', '16', '67'], expectedOutput: '2\n16\n26\n50\n67\n120', description: 'Unbalanced mixed inserts', sortOrder: 3, isHidden: true },
+    ],
+  },
+
+  {
+    title: 'Hash Table Insert and Lookup',
+    description: `Records are stored in a 2D hash table of 10 rows by 3 columns. The hash of a key is \`MOD(Key, 10)\` — that result is the row. If two keys hash to the same row, the later record uses the next free column in that row.
+
+Empty slots store the key \`-1\`.
+
+Write:
+
+- function \`Hash(Key)\` — return \`MOD(Key, 10)\`
+- procedure \`InsertData(Key, Data)\` — store the pair in the first empty column of the hashed row
+- function \`GetRecord(Key)\` — return the matching data, or \`"Not found"\`
+
+The harness reads how many records to insert, then each key and its string, then how many lookups, then each lookup key.
+
+**Input:** Insert count, key/data pairs, lookup count, then keys.
+**Output:** One lookup result per line.
+
+**Example:**
+\`\`\`
+Input:  3
+        15
+        alpha
+        25
+        bravo
+        12
+        charlie
+        3
+        25
+        12
+        99
+Output: bravo
+        charlie
+        Not found
+\`\`\``,
+    difficulty: 'HARD' as const,
+    topic: 'Hashing',
+    tags: ['AS & A Level', '9618', 'Oct/Nov 2025', 'Paper 41', 'Past Paper', 'Unseen', 'Hash Tables', 'ADT'],
+    year: 2025,
+    session: 'Oct/Nov',
+    variant: 1,
+    paper: '9618/41',
+    questionNumber: 3,
+    marks: 14,
+    starterCode: `DECLARE Keys : ARRAY[0:9, 0:2] OF INTEGER
+DECLARE Values : ARRAY[0:9, 0:2] OF STRING
+DECLARE Row, Slot : INTEGER
+
+FUNCTION Hash(Key : INTEGER) RETURNS INTEGER
+    // Return the row index for Key
+ENDFUNCTION
+
+PROCEDURE InsertData(Key : INTEGER, Data : STRING)
+    // Store Key and Data in the first empty column of the hashed row
+ENDPROCEDURE
+
+FUNCTION GetRecord(Key : INTEGER) RETURNS STRING
+    // Return the matching data, or "Not found"
+ENDFUNCTION
+
+DECLARE InsertCount, LookupCount, Index, Key : INTEGER
+DECLARE Data : STRING
+
+FOR Row <- 0 TO 9
+    FOR Slot <- 0 TO 2
+        Keys[Row, Slot] <- -1
+        Values[Row, Slot] <- ""
+    NEXT Slot
+NEXT Row
+
+INPUT InsertCount
+FOR Index <- 1 TO InsertCount
+    INPUT Key
+    INPUT Data
+    CALL InsertData(Key, Data)
+NEXT Index
+
+INPUT LookupCount
+FOR Index <- 1 TO LookupCount
+    INPUT Key
+    OUTPUT GetRecord(Key)
+NEXT Index`,
+    hints: [
+      'Hash is just MOD(Key, 10). That value is the row in Keys and Values.',
+      'InsertData should scan columns 0, 1, 2 of that row and stop at the first Keys[row, col] still equal to -1.',
+      'GetRecord scans the same three columns for an exact key match. If none of them match, return "Not found".',
+    ],
+    solution: `DECLARE Keys : ARRAY[0:9, 0:2] OF INTEGER
+DECLARE Values : ARRAY[0:9, 0:2] OF STRING
+DECLARE Row, Slot : INTEGER
+
+FUNCTION Hash(Key : INTEGER) RETURNS INTEGER
+    RETURN MOD(Key, 10)
+ENDFUNCTION
+
+PROCEDURE InsertData(Key : INTEGER, Data : STRING)
+    DECLARE Index, Col : INTEGER
+    Index <- Hash(Key)
+    Col <- 0
+    WHILE Col <= 2 AND Keys[Index, Col] <> -1 DO
+        Col <- Col + 1
+    ENDWHILE
+    IF Col <= 2 THEN
+        Keys[Index, Col] <- Key
+        Values[Index, Col] <- Data
+    ENDIF
+ENDPROCEDURE
+
+FUNCTION GetRecord(Key : INTEGER) RETURNS STRING
+    DECLARE Index, Col : INTEGER
+    Index <- Hash(Key)
+    FOR Col <- 0 TO 2
+        IF Keys[Index, Col] = Key THEN
+            RETURN Values[Index, Col]
+        ENDIF
+    NEXT Col
+    RETURN "Not found"
+ENDFUNCTION
+
+DECLARE InsertCount, LookupCount, Index, Key : INTEGER
+DECLARE Data : STRING
+
+FOR Row <- 0 TO 9
+    FOR Slot <- 0 TO 2
+        Keys[Row, Slot] <- -1
+        Values[Row, Slot] <- ""
+    NEXT Slot
+NEXT Row
+
+INPUT InsertCount
+FOR Index <- 1 TO InsertCount
+    INPUT Key
+    INPUT Data
+    CALL InsertData(Key, Data)
+NEXT Index
+
+INPUT LookupCount
+FOR Index <- 1 TO LookupCount
+    INPUT Key
+    OUTPUT GetRecord(Key)
+NEXT Index`,
+    solutionExplanation: 'The hash function maps a key onto one of ten rows. Collisions stay in that row by occupying the next free column, which is the Paper 4 chaining-in-the-same-index pattern. Lookup only searches the hashed row, so it stays O(1) as long as a row does not overflow its three slots.',
+    testCases: [
+      { inputs: ['3', '15', 'alpha', '25', 'bravo', '12', 'charlie', '3', '25', '12', '99'], expectedOutput: 'bravo\ncharlie\nNot found', description: 'Collision then miss', sortOrder: 0 },
+      { inputs: ['1', '7', 'solo', '2', '7', '8'], expectedOutput: 'solo\nNot found', description: 'Single record', sortOrder: 1 },
+      { inputs: ['4', '10', 'ten', '20', 'twenty', '30', 'thirty', '11', 'eleven', '4', '10', '20', '30', '11'], expectedOutput: 'ten\ntwenty\nthirty\neleven', description: 'Three collisions in row 0 plus another row', sortOrder: 2, isHidden: true },
+      { inputs: ['2', '0', 'zero', '100', 'hundred', '3', '0', '100', '1'], expectedOutput: 'zero\nhundred\nNot found', description: 'Keys that hash to row 0', sortOrder: 3, isHidden: true },
+    ],
+  },
+
+  {
+    title: 'Queue Run-Length Compression',
+    description: `Binary digits \`"0"\` and \`"1"\` are stored in a linear queue of strings. \`QueueHead\` and \`QueueTail\` start at \`-1\`. \`NumberItems\` starts at \`0\`. The queue can hold up to 20 digits.
+
+Write:
+
+- function \`Enqueue(Value)\` — insert if there is space and return \`TRUE\`; return \`FALSE\` if full
+- function \`Dequeue()\` — return the next digit, or \`"False"\` if empty
+- procedure \`Compress()\` — dequeue every digit and build a compressed string that stores each run as the digit followed by how many times it appeared consecutively. Store the result in global \`NewString\` and output it.
+
+You can assume no run is longer than 9, and the queue is never empty when \`Compress()\` runs.
+
+**Input:** A count, then that many digits (each \`0\` or \`1\`).
+**Output:** One compressed string.
+
+**Example:**
+\`\`\`
+Input:  7
+        1
+        1
+        0
+        0
+        0
+        1
+        1
+Output: 120312
+\`\`\`
+(two 1s, three 0s, two 1s)`,
+    difficulty: 'HARD' as const,
+    topic: 'Queues',
+    tags: ['AS & A Level', '9618', 'Oct/Nov 2025', 'Paper 43', 'Past Paper', 'Unseen', 'Queues', 'String Processing', 'ADT'],
+    year: 2025,
+    session: 'Oct/Nov',
+    variant: 3,
+    paper: '9618/43',
+    questionNumber: 2,
+    marks: 14,
+    starterCode: `DECLARE Queue : ARRAY[0:19] OF STRING
+DECLARE QueueHead, QueueTail, NumberItems : INTEGER
+DECLARE NewString : STRING
+
+FUNCTION Enqueue(Value : STRING) RETURNS BOOLEAN
+    // Insert Value if the queue is not full
+ENDFUNCTION
+
+FUNCTION Dequeue() RETURNS STRING
+    // Return the next item, or "False" if empty
+ENDFUNCTION
+
+PROCEDURE Compress()
+    // Dequeue every digit and build NewString, then OUTPUT it
+ENDPROCEDURE
+
+DECLARE Count, Index : INTEGER
+DECLARE Digit : STRING
+QueueHead <- -1
+QueueTail <- -1
+NumberItems <- 0
+NewString <- ""
+
+INPUT Count
+FOR Index <- 1 TO Count
+    INPUT Digit
+    OUTPUT Enqueue(Digit)
+NEXT Index
+
+CALL Compress()`,
+    hints: [
+      'Enqueue uses the usual linear-queue pointer update: set Head to 0 on the first insert, then increment Tail.',
+      'Compress should dequeue the first digit as the current run, then keep dequeuing. Each time the digit changes, append the old digit and its count to NewString and start a new run.',
+      'After the queue is empty, append the final run. Use & to join the digit with its count (the integer will convert to a string).',
+    ],
+    solution: `DECLARE Queue : ARRAY[0:19] OF STRING
+DECLARE QueueHead, QueueTail, NumberItems : INTEGER
+DECLARE NewString : STRING
+
+FUNCTION Enqueue(Value : STRING) RETURNS BOOLEAN
+    IF NumberItems = 20 THEN
+        RETURN FALSE
+    ENDIF
+    IF QueueHead = -1 THEN
+        QueueHead <- 0
+    ENDIF
+    QueueTail <- QueueTail + 1
+    Queue[QueueTail] <- Value
+    NumberItems <- NumberItems + 1
+    RETURN TRUE
+ENDFUNCTION
+
+FUNCTION Dequeue() RETURNS STRING
+    DECLARE Item : STRING
+    IF NumberItems = 0 THEN
+        RETURN "False"
+    ENDIF
+    Item <- Queue[QueueHead]
+    QueueHead <- QueueHead + 1
+    NumberItems <- NumberItems - 1
+    RETURN Item
+ENDFUNCTION
+
+PROCEDURE Compress()
+    DECLARE Current, NextDigit : STRING
+    DECLARE RunCount : INTEGER
+    Current <- Dequeue()
+    RunCount <- 1
+    WHILE NumberItems > 0 DO
+        NextDigit <- Dequeue()
+        IF NextDigit = Current THEN
+            RunCount <- RunCount + 1
+        ELSE
+            NewString <- NewString & Current & RunCount
+            Current <- NextDigit
+            RunCount <- 1
+        ENDIF
+    ENDWHILE
+    NewString <- NewString & Current & RunCount
+    OUTPUT NewString
+ENDPROCEDURE
+
+DECLARE Count, Index : INTEGER
+DECLARE Digit : STRING
+QueueHead <- -1
+QueueTail <- -1
+NumberItems <- 0
+NewString <- ""
+
+INPUT Count
+FOR Index <- 1 TO Count
+    INPUT Digit
+    OUTPUT Enqueue(Digit)
+NEXT Index
+
+CALL Compress()`,
+    solutionExplanation: 'Digits enter a linear queue so Compress can remove them in the original order. Each run is counted until the digit changes; the digit and its length are then concatenated onto NewString. The last run is appended after the queue is empty.',
+    testCases: [
+      { inputs: ['7', '1', '1', '0', '0', '0', '1', '1'], expectedOutput: 'TRUE\nTRUE\nTRUE\nTRUE\nTRUE\nTRUE\nTRUE\n120312', description: 'Two-three-two runs', sortOrder: 0 },
+      { inputs: ['4', '1', '1', '1', '1'], expectedOutput: 'TRUE\nTRUE\nTRUE\nTRUE\n14', description: 'Single run of ones', sortOrder: 1 },
+      { inputs: ['3', '0', '1', '0'], expectedOutput: 'TRUE\nTRUE\nTRUE\n011101', description: 'Alternating digits', sortOrder: 2, isHidden: true },
+      { inputs: ['8', '0', '0', '0', '1', '1', '1', '1', '0'], expectedOutput: 'TRUE\nTRUE\nTRUE\nTRUE\nTRUE\nTRUE\nTRUE\nTRUE\n031401', description: 'Three runs ending with a single 0', sortOrder: 3, isHidden: true },
+    ],
+  },
+
   ...thinTopicQuestions,
 ];
 

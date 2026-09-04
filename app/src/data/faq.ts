@@ -55,7 +55,7 @@ export const faqItems: FaqItem[] = [
     group: 'about',
     question: 'Is it really free?',
     paragraphs: [
-      'Yes. The compiler and current practice/exam features are free. A “Premium coming soon” badge may appear in the UI, but nothing is gated behind payment today.',
+      'The compiler is free — you can write, run, and debug pseudocode in the browser without paying. Paid plans add extras such as classes, assignments, and extra saved solutions. See Pricing for current plans.',
     ],
   },
   {

@@ -41,12 +41,18 @@ export default function PricingClient({
   countryCode,
   customerEmail,
   appUserId,
+  currentTier,
+  currentPlanLabel,
+  canManageBilling,
   paddleEnv,
 }: {
   tiers: PricingTierView[];
   countryCode?: string;
   customerEmail?: string;
   appUserId?: string;
+  currentTier?: string | null;
+  currentPlanLabel?: string | null;
+  canManageBilling?: boolean;
   paddleEnv: string;
 }) {
   const paddle = usePaddle();
@@ -173,6 +179,23 @@ export default function PricingClient({
 
   return (
     <div>
+      {/* Current-plan banner — shows the active subscription + a way to manage it */}
+      {currentPlanLabel && (
+        <div className="mb-6 flex flex-col items-center justify-center gap-1.5 rounded-xl border border-primary/40 bg-primary/5 px-4 py-3 text-center sm:flex-row sm:gap-3">
+          <span className="text-sm text-light-text">
+            You&apos;re on the <span className="font-semibold text-primary">{currentPlanLabel}</span> plan.
+          </span>
+          {canManageBilling && (
+            <a
+              href="/api/paddle/portal"
+              className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:text-primary-hover transition-colors"
+            >
+              Manage subscription →
+            </a>
+          )}
+        </div>
+      )}
+
       {/* Billing interval toggle */}
       <div className="mb-8 flex justify-center">
         <div
@@ -213,19 +236,28 @@ export default function PricingClient({
           const priceId = interval === 'month' ? tier.monthPriceId : tier.yearPriceId;
           const total = totals[priceId];
           const featured = tier.slug === 'pro'; // "Most popular"
+          const isCurrent = Boolean(currentTier) && tier.slug === currentTier;
           return (
             <div
               key={tier.slug}
               className={`relative flex flex-col rounded-2xl border p-6 backdrop-blur-sm ${
-                featured
-                  ? 'border-primary/60 bg-surface shadow-intense'
-                  : 'border-border bg-surface/80'
+                isCurrent
+                  ? 'border-primary bg-surface shadow-intense ring-1 ring-primary/50'
+                  : featured
+                    ? 'border-primary/60 bg-surface shadow-intense'
+                    : 'border-border bg-surface/80'
               }`}
             >
-              {featured && (
-                <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-primary px-3 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-white">
-                  Most popular
+              {isCurrent ? (
+                <span className="absolute -top-3 right-4 rounded-full bg-primary px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">
+                  Current plan
                 </span>
+              ) : (
+                featured && (
+                  <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-primary px-3 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-white">
+                    Most popular
+                  </span>
+                )
               )}
 
               <h2 className="text-lg font-semibold text-light-text">{tier.name}</h2>
@@ -272,6 +304,23 @@ export default function PricingClient({
                   }`}
                 >
                   Contact me
+                </a>
+              ) : isCurrent ? (
+                <button
+                  type="button"
+                  disabled
+                  className="mt-6 w-full cursor-default rounded-lg border border-primary/40 px-4 py-2.5 text-sm font-semibold text-primary opacity-70"
+                >
+                  Current plan
+                </button>
+              ) : canManageBilling ? (
+                // Already subscribed — send them to the portal to change plans.
+                // Opening a fresh checkout here would create a SECOND subscription.
+                <a
+                  href="/api/paddle/portal"
+                  className="mt-6 block w-full rounded-lg border border-primary/40 px-4 py-2.5 text-center text-sm font-semibold text-primary transition-colors hover:bg-primary/10"
+                >
+                  Change plan
                 </a>
               ) : (
                 <button
