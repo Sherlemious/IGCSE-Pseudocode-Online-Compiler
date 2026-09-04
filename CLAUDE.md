@@ -14,24 +14,48 @@
 
 ## Architecture
 
-The app has two distinct halves:
+Modular monolith. `src/app/` is a thin routing layer (pages + API route handlers). Product code lives in `src/modules/<domain>/`. Cross-cutting UI and infra live in `src/shared/`. The interpreter is a language runtime, not a Next.js feature — it must not import PostHog, Prisma, auth, or billing.
 
-**Client-side interpreter** — pseudocode is parsed and executed entirely in the browser. No server round-trip for running code. The ANTLR4 lexer/parser runs in a Web Worker context and the tree-walking interpreter is fully async to support `INPUT` pausing.
+**Client-side interpreter** — pseudocode is parsed and executed entirely in the browser. No server round-trip for running code. The ANTLR4 lexer/parser runs in a Web Worker context and the tree-walking interpreter is fully async to support `INPUT` pausing. Product telemetry is injected via `setInterpreterCapture`.
 
-**Next.js backend** — API routes handle auth, practice/exam CRUD, AI grading, and nudge state. Database access goes through Prisma.
+**Next.js backend** — API routes handle auth, practice/exam CRUD, AI grading, and nudge state. Database access goes through Prisma (`src/shared/db.ts`).
+
+### Module map
+
+| Module | Owns |
+|--------|------|
+| `modules/interpreter` | Grammar, generated parser, runtime, `useInterpreter` |
+| `modules/compiler` | Playground UI + shared editor kit (`editor.ts`) |
+| `modules/billing` | Paddle, plans, entitlements, pricing page |
+| `modules/practice` | Practice UI + autograder |
+| `modules/exams` | Exam take/author UI |
+| `modules/classes` | Class/assignment UI |
+| `modules/auth` | NextAuth config, session UI, transactional email |
+| `modules/admin` | Admin gate (`isAdmin`) — pages stay under `app/admin` |
+| `modules/progress` | Student progress dashboard widgets |
+| `modules/telemetry` | PostHog provider / session identify |
+| `shared/` | Layout chrome, UI primitives, Prisma, SEO, rate limit, logger |
+| `theme/` | Editor/UI themes + validation |
+
+Dependency rules (enforced by ESLint):
+- `interpreter` ↛ product modules, Prisma, PostHog, Next.js
+- `billing` ↛ interpreter / compiler / practice
+- `shared/ui` + `shared/lib` ↛ product modules (interpreter tokens are allowed). `shared/layout` may compose feature UI (Header → UserMenu).
+- `practice` / `exams` may import `compiler/editor` (CodeMirror + trace table), not `CompilerPage`
 
 ## Key Paths
 
 | Path | Purpose |
 |------|---------|
-| `app/src/interpreter/grammar/Pseudocode.g4` | ANTLR4 grammar — source of truth |
-| `app/src/interpreter/generated/` | Generated lexer/parser — **do not edit** |
-| `app/src/interpreter/core/interpreter.ts` | Tree-walking interpreter |
-| `app/src/interpreter/core/environment.ts` | Variable scoping / closures |
-| `app/src/interpreter/errorMessages.ts` | Human-friendly parse + runtime error messages |
-| `app/src/interpreter/useInterpreter.ts` | React hook wrapping the interpreter |
-| `app/src/lib/autograder.ts` | AI-based test-case grading |
-| `app/src/lib/auth.ts` | NextAuth config |
+| `app/src/modules/interpreter/grammar/Pseudocode.g4` | ANTLR4 grammar — source of truth |
+| `app/src/modules/interpreter/generated/` | Generated lexer/parser — **do not edit** |
+| `app/src/modules/interpreter/core/interpreter.ts` | Tree-walking interpreter |
+| `app/src/modules/interpreter/core/environment.ts` | Variable scoping / closures |
+| `app/src/modules/interpreter/errorMessages.ts` | Human-friendly parse + runtime error messages |
+| `app/src/modules/interpreter/useInterpreter.ts` | React hook wrapping the interpreter |
+| `app/src/modules/practice/autograder.ts` | Test-case grading |
+| `app/src/modules/auth/auth.ts` | NextAuth config |
+| `app/src/modules/billing/` | Pricing, Paddle, entitlements |
 | `app/prisma/schema.prisma` | Database schema |
 
 ## ANTLR4 Quirks
@@ -40,7 +64,7 @@ The app has two distinct halves:
 - Grammar `op=TOKEN` labels generate `_op` (underscore prefix) on the parse tree node
 - `NEWLINE` is a **significant token** — not skipped; the grammar uses it for statement separation
 - Case-insensitive keywords are implemented via letter fragments (e.g. `D E C L A R E`)
-- Generated files live in `src/interpreter/generated/` — regenerate with `npm run antlr:generate` after editing the grammar
+- Generated files live in `src/modules/interpreter/generated/` — regenerate with `npm run antlr:generate` after editing the grammar
 
 ## Language Coverage
 
@@ -61,7 +85,7 @@ Deliberate parse edges (documented in /docs — do not "fix"):
 - **Designators** — lvalues (`x`, `arr[i,j]`, `rec.Field`, `ptr^`, chains thereof) resolve to `Reference` objects (`core/references.ts`); the same mechanism backs assignment, INPUT/READFILE/GETRECORD targets, BYREF parameters and pointers
 - **Value semantics** — arrays and records deep-copy on assignment (`core/copy.ts`); objects stay references
 - Record/class member names are **case-insensitive** (the Cambridge guide itself mixes `FirstName`/`Firstname`); variable names remain case-sensitive
-- `filesystem.ts` = browser localStorage file I/O; `serverFilesystem.ts` = server-side (used during AI grading and vitest) — both implement the same API including random-access records, and must change together
+- `core/filesystem.ts` = browser localStorage file I/O; `core/serverFilesystem.ts` = server-side (used during AI grading and vitest) — both implement the same API including random-access records, and must change together
 - New core modules: `records.ts`, `references.ts`, `classes.ts`, `copy.ts`, `serialize.ts` (record ↔ JSON for random files)
 
 ### INPUT syntax

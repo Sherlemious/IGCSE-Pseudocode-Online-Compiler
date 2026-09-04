@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
-import { auth } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
-import { getPaddleServer } from '@/lib/paddle/server';
+import { auth } from '@/modules/auth/auth';
+import { prisma } from '@/shared/db';
+import { getPaddleServer } from '@/modules/billing/paddle/server';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';

@@ -1,8 +1,8 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import IndexLinks from '@/components/layout/IndexLinks';
-import { faqByGroup, faqItems } from '@/data/faq';
-import { SITE_NAME, SITE_URL } from '@/lib/seo';
+import IndexLinks from '@/shared/layout/IndexLinks';
+import { faqByGroup, faqItems } from '@/modules/content/faq';
+import { SITE_NAME, SITE_URL } from '@/shared/lib/seo';
 
 export const metadata: Metadata = {
   title: 'IGCSE Pseudocode Compiler FAQ',

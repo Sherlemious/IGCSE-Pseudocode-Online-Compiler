@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
 import { Prisma } from '@prisma/client';
-import { auth } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
-import { generateShareCode } from '@/lib/shareCode';
-import { getEntitlements } from '@/lib/entitlements';
+import { auth } from '@/modules/auth/auth';
+import { prisma } from '@/shared/db';
+import { generateShareCode } from '@/shared/lib/shareCode';
+import { getEntitlements } from '@/modules/billing/entitlements';
 
 interface CreateBody {
   name?: unknown;

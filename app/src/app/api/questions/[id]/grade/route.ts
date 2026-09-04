@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '../../../../../lib/prisma';
-import { gradeSubmission } from '../../../../../lib/autograder';
-import { auth } from '../../../../../lib/auth';
-import { PREMIUM_GATING_ENABLED } from '../../../../../lib/featureFlags';
-import { getPremiumAccess } from '../../../../../lib/entitlements';
-import { rateLimit, clientIp } from '../../../../../lib/rateLimit';
-import { logger } from '../../../../../lib/logger';
+import { prisma } from '@/shared/db';
+import { gradeSubmission } from '@/modules/practice/autograder';
+import { auth } from '@/modules/auth/auth';
+import { PREMIUM_GATING_ENABLED } from '@/modules/billing/featureFlags';
+import { getPremiumAccess } from '@/modules/billing/entitlements';
+import { rateLimit, clientIp } from '@/shared/lib/rateLimit';
+import { logger } from '@/shared/lib/logger';
 
 interface Props {
   params: Promise<{ id: string }>;

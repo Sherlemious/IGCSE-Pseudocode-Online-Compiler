@@ -2,9 +2,9 @@ import type { Metadata } from 'next';
 import { redirect, notFound } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, CheckCircle2, Circle, Clock } from 'lucide-react';
-import { auth } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
-import CodeDetails from '@/components/classes/CodeDetails';
+import { auth } from '@/modules/auth/auth';
+import { prisma } from '@/shared/db';
+import CodeDetails from '@/modules/classes/CodeDetails';
 
 export const metadata: Metadata = {
   title: 'Assignment results',

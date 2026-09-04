@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
-import { auth } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
-import { isAdmin } from '@/lib/admin';
+import { auth } from '@/modules/auth/auth';
+import { prisma } from '@/shared/db';
+import { isAdmin } from '@/modules/admin/isAdmin';
 import type { ContactStatus } from '@prisma/client';
 
 const VALID: ContactStatus[] = ['NEW', 'IN_PROGRESS', 'RESOLVED', 'ARCHIVED'];

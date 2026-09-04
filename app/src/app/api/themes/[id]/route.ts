@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server';
-import { auth } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
+import { auth } from '@/modules/auth/auth';
+import { prisma } from '@/shared/db';
 import {
   parseCustomColors,
   parseThemeName,
   MAX_NAME_LEN,
-} from '@/lib/themeValidation';
+} from '@/theme/validation';
 
 interface Context {
   params: Promise<{ id: string }>;

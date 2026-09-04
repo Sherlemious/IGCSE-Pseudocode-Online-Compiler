@@ -3,7 +3,7 @@
 import { useState, Fragment } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { toast } from 'sonner';
-import { planBadge } from '@/lib/planDisplay';
+import { planBadge } from '@/modules/billing/planDisplay';
 
 interface UserRow {
   id: string;

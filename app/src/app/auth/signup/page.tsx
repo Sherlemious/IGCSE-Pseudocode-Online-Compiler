@@ -1,9 +1,9 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import { auth } from '@/lib/auth';
+import { auth } from '@/modules/auth/auth';
 import { Braces, Terminal } from 'lucide-react';
-import AuthForm from '@/components/auth/AuthForm';
+import AuthForm from '@/modules/auth/AuthForm';
 
 export const metadata: Metadata = {
   title: 'Sign Up',

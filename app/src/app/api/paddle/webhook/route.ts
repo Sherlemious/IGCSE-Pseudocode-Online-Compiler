@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
 import { EventName, type Paddle } from '@paddle/paddle-node-sdk';
 import type { Plan } from '@prisma/client';
-import { prisma } from '@/lib/prisma';
-import { getPaddleEnv } from '@/lib/paddle/env';
-import { getPaddleServer } from '@/lib/paddle/server';
-import { TIER_TO_PLAN, tierSlugForPriceId } from '@/lib/paddle/plan';
+import { prisma } from '@/shared/db';
+import { getPaddleEnv } from '@/modules/billing/paddle/env';
+import { getPaddleServer } from '@/modules/billing/paddle/server';
+import { TIER_TO_PLAN, tierSlugForPriceId } from '@/modules/billing/paddle/plan';
 
 // The Paddle SDK verifies signatures with Node crypto, so this can't run on edge.
 export const runtime = 'nodejs';

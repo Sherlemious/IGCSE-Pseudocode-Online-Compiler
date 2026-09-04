@@ -6,7 +6,7 @@ import {
   useThemeEditor,
   type CustomColors,
 } from '@/theme';
-import ThemeEditorModal from '@/components/layout/ThemeEditorModal';
+import ThemeEditorModal from '@/theme/ThemeEditorModal';
 
 // The handful of colours shown in each theme's preview strip.
 const PREVIEW_KEYS: (keyof CustomColors)[] = [

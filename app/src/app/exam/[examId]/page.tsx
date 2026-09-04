@@ -1,8 +1,8 @@
 import type { Metadata } from 'next';
 import { redirect, notFound } from 'next/navigation';
-import { auth } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
-import ExamWorkspace from '@/components/exam/ExamWorkspace';
+import { auth } from '@/modules/auth/auth';
+import { prisma } from '@/shared/db';
+import ExamWorkspace from '@/modules/exams/ExamWorkspace';
 
 export const metadata: Metadata = {
   title: 'Exam in Progress',

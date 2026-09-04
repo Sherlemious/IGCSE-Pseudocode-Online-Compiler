@@ -1,12 +1,12 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import { auth } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
-import { normalizeShareCode } from '@/lib/shareCode';
-import { resolveTier, limitsFor } from '@/lib/entitlements';
+import { auth } from '@/modules/auth/auth';
+import { prisma } from '@/shared/db';
+import { normalizeShareCode } from '@/shared/lib/shareCode';
+import { resolveTier, limitsFor } from '@/modules/billing/entitlements';
 import { GraduationCap, User, AlertCircle, Check } from 'lucide-react';
-import JoinClassButton from '@/components/classes/JoinClassButton';
+import JoinClassButton from '@/modules/classes/JoinClassButton';
 
 export const metadata: Metadata = {
   title: 'Join Class',

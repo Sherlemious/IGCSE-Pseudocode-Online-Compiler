@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
-import { auth } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
-import { PREMIUM_GATING_ENABLED } from '@/lib/featureFlags';
-import { getPremiumAccess } from '@/lib/entitlements';
+import { auth } from '@/modules/auth/auth';
+import { prisma } from '@/shared/db';
+import { PREMIUM_GATING_ENABLED } from '@/modules/billing/featureFlags';
+import { getPremiumAccess } from '@/modules/billing/entitlements';
 import type { Difficulty } from '@prisma/client';
 
 export async function POST(req: Request) {

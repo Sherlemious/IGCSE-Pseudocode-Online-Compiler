@@ -1,5 +1,5 @@
-import { prisma } from '@/lib/prisma';
-import { auth } from '@/lib/auth';
+import { prisma } from '@/shared/db';
+import { auth } from '@/modules/auth/auth';
 import UsersTable from './_components/UsersTable';
 
 export const dynamic = 'force-dynamic';

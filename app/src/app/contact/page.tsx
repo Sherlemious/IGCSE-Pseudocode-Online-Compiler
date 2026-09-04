@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
-import { auth } from '@/lib/auth';
-import IndexLinks from '@/components/layout/IndexLinks';
+import { auth } from '@/modules/auth/auth';
+import IndexLinks from '@/shared/layout/IndexLinks';
 import ContactForm from './_components/ContactForm';
 
 export const metadata: Metadata = {

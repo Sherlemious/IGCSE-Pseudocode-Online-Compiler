@@ -12,7 +12,7 @@
     "db:seed": "tsx prisma/seed.ts",
     "db:seed:pricing": "tsx prisma/seedPricing.ts",
     "db:studio": "prisma studio",
-    "antlr:generate": "antlr4ng -Dlanguage=TypeScript -o src/interpreter/generated -visitor src/interpreter/grammar/Pseudocode.g4",
+    "antlr:generate": "antlr4ng -Dlanguage=TypeScript -o src/modules/interpreter/generated -visitor src/modules/interpreter/grammar/Pseudocode.g4",
     "test": "vitest run",
     "test:watch": "vitest"
   },

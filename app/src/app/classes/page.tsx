@@ -1,11 +1,11 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import { auth } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
-import { getEntitlements } from '@/lib/entitlements';
+import { auth } from '@/modules/auth/auth';
+import { prisma } from '@/shared/db';
+import { getEntitlements } from '@/modules/billing/entitlements';
 import { GraduationCap, Users, ArrowRight, School } from 'lucide-react';
-import CreateClassForm from '@/components/classes/CreateClassForm';
+import CreateClassForm from '@/modules/classes/CreateClassForm';
 
 export const metadata: Metadata = {
   title: 'My Classes',

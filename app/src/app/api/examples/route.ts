@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '../../../lib/prisma';
+import { prisma } from '@/shared/db';
 
 export const revalidate = 3600; // Re-fetch from DB every hour
 

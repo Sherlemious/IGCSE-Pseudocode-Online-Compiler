@@ -1,9 +1,9 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import IndexLinks from '@/components/layout/IndexLinks';
-import { examples, exampleSlug, examplesByCategory } from '@/data/examples';
-import { editorCodeHref } from '@/lib/editorShare';
-import { SITE_NAME, SITE_URL } from '@/lib/seo';
+import IndexLinks from '@/shared/layout/IndexLinks';
+import { examples, exampleSlug, examplesByCategory } from '@/modules/content/examples';
+import { editorCodeHref } from '@/modules/compiler/editorShare';
+import { SITE_NAME, SITE_URL } from '@/shared/lib/seo';
 
 export const metadata: Metadata = {
   title: 'Cambridge Pseudocode Examples',

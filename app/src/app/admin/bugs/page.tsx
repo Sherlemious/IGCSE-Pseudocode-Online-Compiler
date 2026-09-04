@@ -1,4 +1,4 @@
-import { prisma } from '@/lib/prisma';
+import { prisma } from '@/shared/db';
 import BugReportTable from './_components/BugReportTable';
 
 export const dynamic = 'force-dynamic';

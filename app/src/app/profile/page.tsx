@@ -2,13 +2,13 @@ import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
-import { auth, signOut } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
+import { auth, signOut } from '@/modules/auth/auth';
+import { prisma } from '@/shared/db';
 import { User, Crown, Shield, GraduationCap, BarChart3, LayoutDashboard, LogOut, ChevronRight } from 'lucide-react';
 import ProfileNameEditor from './_components/ProfileNameEditor';
 import ThemeManager from './_components/ThemeManager';
 import RoleSwitcher from './_components/RoleSwitcher';
-import { planBadge } from '@/lib/planDisplay';
+import { planBadge } from '@/modules/billing/planDisplay';
 
 export const metadata: Metadata = {
   title: 'Profile',

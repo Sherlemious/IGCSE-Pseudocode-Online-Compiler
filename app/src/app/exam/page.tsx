@@ -1,13 +1,13 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import { auth } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
-import { PREMIUM_GATING_ENABLED } from '@/lib/featureFlags';
-import { getPremiumAccess } from '@/lib/entitlements';
+import { auth } from '@/modules/auth/auth';
+import { prisma } from '@/shared/db';
+import { PREMIUM_GATING_ENABLED } from '@/modules/billing/featureFlags';
+import { getPremiumAccess } from '@/modules/billing/entitlements';
 import { Clock, Trophy, ArrowRight, Hourglass, FileStack, KeyRound } from 'lucide-react';
-import ExamConfigForm from '@/components/exam/ExamConfigForm';
-import JoinExamForm from '@/components/exam/JoinExamForm';
+import ExamConfigForm from '@/modules/exams/ExamConfigForm';
+import JoinExamForm from '@/modules/exams/JoinExamForm';
 
 export const metadata: Metadata = {
   title: 'Pseudocode Practice Exam Simulator - Timed Cambridge CS',

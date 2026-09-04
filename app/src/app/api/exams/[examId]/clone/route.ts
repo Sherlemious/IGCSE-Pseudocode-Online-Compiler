@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 import { Prisma } from '@prisma/client';
-import { auth } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
-import { generateShareCode } from '@/lib/shareCode';
+import { auth } from '@/modules/auth/auth';
+import { prisma } from '@/shared/db';
+import { generateShareCode } from '@/shared/lib/shareCode';
 
 interface Context {
   params: Promise<{ examId: string }>;

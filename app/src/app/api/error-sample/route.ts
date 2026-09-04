@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
-import { logger } from '@/lib/logger';
-import { sanitizeForSampling } from '@/interpreter/sanitizeSample';
+import { prisma } from '@/shared/db';
+import { logger } from '@/shared/lib/logger';
+import { sanitizeForSampling } from '@/modules/interpreter/sanitizeSample';
 
 // Only the vague parse buckets are worth collecting — see interpreter/errorSampling.ts.
 const CATEGORIES = new Set(['no_viable_alternative', 'mismatched_input', 'other_parse']);

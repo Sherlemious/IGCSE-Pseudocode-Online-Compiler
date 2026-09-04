@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import { auth } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
+import { auth } from '@/modules/auth/auth';
+import { prisma } from '@/shared/db';
 
 /** Trim a value to a string capped at `max` chars, or null if not a usable string. */
 function cappedString(value: unknown, max: number): string | null {

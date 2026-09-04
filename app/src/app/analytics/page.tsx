@@ -1,15 +1,15 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import { auth } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
+import { auth } from '@/modules/auth/auth';
+import { prisma } from '@/shared/db';
 import { BarChart3, BookOpen, ArrowRight } from 'lucide-react';
-import SummaryCards from '@/components/analytics/SummaryCards';
-import DifficultyBreakdown from '@/components/analytics/DifficultyBreakdown';
-import TopicBreakdown from '@/components/analytics/TopicBreakdown';
-import RecentActivity from '@/components/analytics/RecentActivity';
-import ExamHistory from '@/components/analytics/ExamHistory';
-import ActivityHeatmap from '@/components/analytics/ActivityHeatmap';
+import SummaryCards from '@/modules/progress/SummaryCards';
+import DifficultyBreakdown from '@/modules/progress/DifficultyBreakdown';
+import TopicBreakdown from '@/modules/progress/TopicBreakdown';
+import RecentActivity from '@/modules/progress/RecentActivity';
+import ExamHistory from '@/modules/progress/ExamHistory';
+import ActivityHeatmap from '@/modules/progress/ActivityHeatmap';
 
 export const metadata: Metadata = {
   title: 'Analytics',

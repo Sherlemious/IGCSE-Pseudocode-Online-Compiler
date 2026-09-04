@@ -4,20 +4,20 @@ import Link from 'next/link';
 import { ChevronLeft, Crown, Lock, FileText } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { prisma } from '../../../lib/prisma';
-import { auth } from '../../../lib/auth';
-import { PREMIUM_GATING_ENABLED } from '../../../lib/featureFlags';
-import { getPremiumAccess } from '@/lib/entitlements';
-import PracticeWorkspace from '../../../components/practice/PracticeWorkspace';
-import HintsPanel from '../../../components/practice/HintsPanel';
-import SolutionPanel from '../../../components/practice/SolutionPanel';
+import { prisma } from '@/shared/db';
+import { auth } from '@/modules/auth/auth';
+import { PREMIUM_GATING_ENABLED } from '@/modules/billing/featureFlags';
+import { getPremiumAccess } from '@/modules/billing/entitlements';
+import PracticeWorkspace from '@/modules/practice/PracticeWorkspace';
+import HintsPanel from '@/modules/practice/HintsPanel';
+import SolutionPanel from '@/modules/practice/SolutionPanel';
 import {
   absoluteUrl,
   paperReference,
   SITE_NAME,
   stripMarkdown,
   truncateDescription,
-} from '@/lib/seo';
+} from '@/shared/lib/seo';
 
 interface Props {
   params: Promise<{ questionId: string }>;

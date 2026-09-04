@@ -1,11 +1,11 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import { auth } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
-import { normalizeShareCode } from '@/lib/shareCode';
+import { auth } from '@/modules/auth/auth';
+import { prisma } from '@/shared/db';
+import { normalizeShareCode } from '@/shared/lib/shareCode';
 import { Hourglass, Clock, ListChecks, User, AlertCircle } from 'lucide-react';
-import StartSharedExam from '@/components/exam/StartSharedExam';
+import StartSharedExam from '@/modules/exams/StartSharedExam';
 
 export const metadata: Metadata = {
   title: 'Join Exam',
