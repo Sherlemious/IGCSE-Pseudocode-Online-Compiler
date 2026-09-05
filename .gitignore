@@ -39,3 +39,6 @@ secrets.json
 /research/
 /_temp/
 /scratchpad/
+
+# Local documentation / audit reports (not committed)
+/local-docs/
