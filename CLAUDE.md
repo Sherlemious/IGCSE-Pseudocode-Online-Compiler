@@ -85,7 +85,7 @@ Deliberate parse edges (documented in /docs — do not "fix"):
 - **Designators** — lvalues (`x`, `arr[i,j]`, `rec.Field`, `ptr^`, chains thereof) resolve to `Reference` objects (`core/references.ts`); the same mechanism backs assignment, INPUT/READFILE/GETRECORD targets, BYREF parameters and pointers
 - **Value semantics** — arrays and records deep-copy on assignment (`core/copy.ts`); objects stay references
 - Record/class member names are **case-insensitive** (the Cambridge guide itself mixes `FirstName`/`Firstname`); variable names remain case-sensitive
-- `core/filesystem.ts` = browser localStorage file I/O; `core/serverFilesystem.ts` = server-side (used during AI grading and vitest) — both implement the same API including random-access records, and must change together
+- `core/filesystem.ts` = one VFS (OPENFILE / READFILE / WRITEFILE / RANDOM). Persistence is injected: `LocalStorageFileStore` in the playground, `MemoryFileStore` (`ServerVirtualFileSystem`) for grading and vitest. Random-access record encoding lives in `core/fileStore.ts`.
 - New core modules: `records.ts`, `references.ts`, `classes.ts`, `copy.ts`, `serialize.ts` (record ↔ JSON for random files)
 
 ### INPUT syntax

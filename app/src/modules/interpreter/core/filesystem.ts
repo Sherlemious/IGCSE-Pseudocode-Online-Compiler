@@ -1,5 +1,12 @@
 import { RuntimeError } from './types';
-import { FILE_PREFIX, FILES_CHANGED_EVENT } from '../storage';
+import { FILES_CHANGED_EVENT } from '../storage';
+import {
+  type FileStore,
+  LocalStorageFileStore,
+  MemoryFileStore,
+  parseRandomFile,
+  stringifyRandomFile,
+} from './fileStore';
 
 type FileMode = 'READ' | 'WRITE' | 'APPEND' | 'RANDOM';
 
@@ -11,32 +18,42 @@ interface OpenFile {
   records: Map<number, string> | null;
 }
 
-const RANDOM_FILE_MARKER = '__pseudoRandomFile';
-
-function parseRandomFile(content: string): Map<number, string> | null {
-  try {
-    const parsed = JSON.parse(content) as { [RANDOM_FILE_MARKER]?: number; records?: Record<string, string> };
-    if (parsed && parsed[RANDOM_FILE_MARKER] === 1) {
-      return new Map(Object.entries(parsed.records ?? {}).map(([k, v]) => [Number(k), v]));
-    }
-  } catch {
-    // not JSON → not a random-access file
-  }
-  return null;
+export interface VfsOptions {
+  store?: FileStore;
+  /**
+   * When true (browser playground), WRITEFILE/PUTRECORD flush to the store on
+   * the next animation frame so an open Files panel can refresh live.
+   * When false (autograder / vitest), writes stay buffered until CLOSEFILE or end-of-run.
+   */
+  livePersist?: boolean;
+  onFilesChanged?: (files: string[]) => void;
 }
 
-function stringifyRandomFile(records: Map<number, string>): string {
-  const obj: Record<string, string> = {};
-  for (const [k, v] of records) obj[String(k)] = v;
-  return JSON.stringify({ [RANDOM_FILE_MARKER]: 1, records: obj });
+function emitBrowserChange(files: string[]): void {
+  if (typeof window === 'undefined') return;
+  window.dispatchEvent(new CustomEvent(FILES_CHANGED_EVENT, { detail: { files } }));
 }
 
+/**
+ * Pseudocode virtual filesystem. Persistence is injected via {@link FileStore};
+ * the OPENFILE / READFILE / WRITEFILE / RANDOM semantics live here once.
+ */
 export class VirtualFileSystem {
+  private readonly store: FileStore;
+  private readonly livePersist: boolean;
+  private readonly onFilesChanged?: (files: string[]) => void;
   private openFiles = new Map<string, OpenFile>();
   /** Writable files touched since the last flush — coalesced into one storage write per frame. */
   private dirty = new Set<string>();
   /** Pending requestAnimationFrame handle for the batched flush, or null when none is scheduled. */
   private flushHandle: number | null = null;
+
+  constructor(options: VfsOptions = {}) {
+    this.store = options.store ?? new LocalStorageFileStore();
+    this.livePersist = options.livePersist ?? true;
+    this.onFilesChanged =
+      options.onFilesChanged ?? (this.livePersist ? emitBrowserChange : undefined);
+  }
 
   openFile(filename: string, mode: FileMode): void {
     if (this.openFiles.has(filename)) {
@@ -44,9 +61,9 @@ export class VirtualFileSystem {
     }
 
     if (mode === 'RANDOM') {
-      const content = localStorage.getItem(FILE_PREFIX + filename);
+      const content = this.store.get(filename);
       let records = new Map<number, string>();
-      if (content !== null && content !== '') {
+      if (content !== undefined && content !== '') {
         const parsed = parseRandomFile(content);
         if (!parsed) {
           throw new RuntimeError(`File '${filename}' is a text file — open it FOR READ, WRITE or APPEND instead`);
@@ -55,7 +72,7 @@ export class VirtualFileSystem {
       }
       const file = { mode, lines: [], pointer: 1, records } satisfies OpenFile;
       this.openFiles.set(filename, file);
-      if (content === null) {
+      if (content === undefined) {
         this.persist(filename, file);
         this.emitChange([filename]);
       }
@@ -63,8 +80,8 @@ export class VirtualFileSystem {
     }
 
     if (mode === 'READ') {
-      const content = localStorage.getItem(FILE_PREFIX + filename);
-      if (content === null) {
+      const content = this.store.get(filename);
+      if (content === undefined) {
         throw new RuntimeError(`File '${filename}' does not exist`);
       }
       if (parseRandomFile(content)) {
@@ -80,12 +97,12 @@ export class VirtualFileSystem {
       this.emitChange([filename]);
     } else {
       // APPEND
-      const stored = localStorage.getItem(FILE_PREFIX + filename);
+      const stored = this.store.get(filename);
       const content = stored ?? '';
       const lines = content === '' ? [] : content.split('\n');
       const file = { mode, lines, pointer: lines.length, records: null } satisfies OpenFile;
       this.openFiles.set(filename, file);
-      if (stored === null) {
+      if (stored === undefined) {
         this.persist(filename, file);
         this.emitChange([filename]);
       }
@@ -115,18 +132,21 @@ export class VirtualFileSystem {
       throw new RuntimeError(`File '${filename}' is not open for writing`);
     }
     file.lines.push(data);
-    // Persist eagerly so an open Files panel updates live — coalesced to one write per frame.
-    this.scheduleFlush(filename);
+    if (this.livePersist) this.scheduleFlush(filename);
   }
 
   /**
    * Pre-populate a file's stored content before the program runs, without
-   * going through OPENFILE. Mirrors ServerVirtualFileSystem.seedFile — used
-   * to seed TestCase.initialFiles for questions that read from a file the
-   * student didn't create (e.g. "names.txt").
+   * going through OPENFILE. Used to seed TestCase.initialFiles for questions
+   * that read from a file the student didn't create (e.g. "names.txt").
    */
   seedFile(filename: string, content: string): void {
-    localStorage.setItem(FILE_PREFIX + filename, content);
+    this.store.set(filename, content);
+  }
+
+  /** @deprecated Use {@link seedFile}. Kept for older call sites. */
+  preloadFile(filename: string, content: string): void {
+    this.seedFile(filename, content);
   }
 
   closeFile(filename: string): void {
@@ -183,7 +203,7 @@ export class VirtualFileSystem {
   putRecord(filename: string, data: string): void {
     const file = this.randomFile(filename, 'PUTRECORD');
     file.records!.set(file.pointer, data);
-    this.scheduleFlush(filename);
+    if (this.livePersist) this.scheduleFlush(filename);
   }
 
   /**
@@ -219,24 +239,20 @@ export class VirtualFileSystem {
     }
     this.openFiles.clear();
     this.dirty.clear();
+    this.store.clear?.();
   }
 
-  // ─── persistence helpers ────────────────────────────────────────
-
-  /** Write one open file's current buffer to localStorage. READ files are never persisted. */
   private persist(filename: string, file: OpenFile): void {
     if (file.mode === 'WRITE' || file.mode === 'APPEND') {
-      localStorage.setItem(FILE_PREFIX + filename, file.lines.join('\n'));
+      this.store.set(filename, file.lines.join('\n'));
     } else if (file.mode === 'RANDOM') {
-      localStorage.setItem(FILE_PREFIX + filename, stringifyRandomFile(file.records!));
+      this.store.set(filename, stringifyRandomFile(file.records!));
     }
   }
 
-  /** Mark a file dirty and coalesce a storage flush into the next animation frame. */
   private scheduleFlush(filename: string): void {
     this.dirty.add(filename);
     if (typeof requestAnimationFrame === 'undefined') {
-      // No rAF (SSR / non-browser) — persist immediately.
       this.flushDirty();
       return;
     }
@@ -245,7 +261,6 @@ export class VirtualFileSystem {
     }
   }
 
-  /** Persist every dirty file in one batch, then notify listeners (live Files panel). */
   private flushDirty(): void {
     this.flushHandle = null;
     const changed: string[] = [];
@@ -263,9 +278,18 @@ export class VirtualFileSystem {
     if (changed.length) this.emitChange(changed);
   }
 
-  /** Tell any open Files panel which files just changed on disk. */
   private emitChange(files: string[]): void {
-    if (typeof window === 'undefined') return;
-    window.dispatchEvent(new CustomEvent(FILES_CHANGED_EVENT, { detail: { files } }));
+    try {
+      this.onFilesChanged?.(files);
+    } catch {
+      // Viewer failures must not interrupt file I/O or mask errors during cleanup.
+    }
+  }
+}
+
+/** In-memory VFS used by the autograder and vitest. Same API, no localStorage. */
+export class ServerVirtualFileSystem extends VirtualFileSystem {
+  constructor() {
+    super({ store: new MemoryFileStore(), livePersist: false });
   }
 }
