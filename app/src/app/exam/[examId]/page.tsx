@@ -61,7 +61,7 @@ export default async function ExamActivePage({ params }: Props) {
     description: a.question.description,
     difficulty: a.question.difficulty,
     starterCode: a.question.starterCode ?? '',
-    savedCode: a.code ?? '',
+    savedCode: a.code,
     graded: a.graded,
     passCount: a.passCount,
     totalTests: a.totalTests,

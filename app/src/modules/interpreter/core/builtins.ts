@@ -106,13 +106,12 @@ builtins.set('IS_NUM', (args) => {
   return mkBoolean(!isNaN(Number(s)) && s.trim() !== '');
 });
 
-export function getBuiltin(name: string): BuiltinFn | undefined {
-  return builtins.get(name.toUpperCase());
-}
-
-export function registerFileBuiltins(eof: (filename: string) => boolean): void {
-  builtins.set('EOF', (args) => {
+/** Pure builtins are shared; runtime-dependent callbacks belong to one execution. */
+export function createBuiltinLookup(eof: (filename: string) => boolean) {
+  const fileEof: BuiltinFn = (args) => {
     if (args.length !== 1) throw new RuntimeError('EOF expects 1 argument (filename)');
     return mkBoolean(eof(toString(args[0])));
-  });
+  };
+  return (name: string): BuiltinFn | undefined =>
+    name.toUpperCase() === 'EOF' ? fileEof : builtins.get(name.toUpperCase());
 }

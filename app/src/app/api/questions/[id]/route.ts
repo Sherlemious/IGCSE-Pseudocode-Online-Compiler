@@ -10,7 +10,26 @@ export async function GET(
   try {
     const question = await prisma.question.findUnique({
       where: { id },
-      include: {
+      // Allowlist public fields: solutions belong to the authenticated solution endpoint.
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        difficulty: true,
+        year: true,
+        session: true,
+        variant: true,
+        paper: true,
+        questionNumber: true,
+        part: true,
+        marks: true,
+        topic: true,
+        tags: true,
+        isPremium: true,
+        starterCode: true,
+        hints: true,
+        createdAt: true,
+        updatedAt: true,
         testCases: {
           where: { isHidden: false },
           orderBy: { sortOrder: 'asc' },

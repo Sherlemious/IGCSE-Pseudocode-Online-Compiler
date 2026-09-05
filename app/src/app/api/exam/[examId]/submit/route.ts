@@ -1,46 +1,23 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/modules/auth/auth';
-import { prisma } from '@/shared/db';
+import { submitExamAttempt } from '@/modules/exams/attempts';
+import { examErrorResponse } from '@/modules/exams/requests';
 
 interface Context {
   params: Promise<{ examId: string }>;
 }
 
-export async function POST(req: Request, { params }: Context) {
+export async function POST(_req: Request, { params }: Context) {
   const session = await auth();
   if (!session?.user?.id) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const { examId } = await params;
-  const { timedOut } = await req.json().catch(() => ({ timedOut: false }));
-
-  // Verify ownership
-  const exam = await prisma.examAttempt.findFirst({
-    where: { id: examId, userId: session.user.id, status: 'IN_PROGRESS' },
-    include: {
-      answers: { select: { passCount: true, totalTests: true } },
-    },
-  });
-
-  if (!exam) {
-    return NextResponse.json({ error: 'Exam not found or already completed' }, { status: 404 });
+  try {
+    const { examId } = await params;
+    // Expiry is determined from the stored start time, never a client flag.
+    return NextResponse.json(await submitExamAttempt(examId, session.user.id));
+  } catch (error) {
+    return examErrorResponse(error);
   }
-
-  // Score = questions where every test case passed; totalTests = total questions
-  const score = exam.answers.filter((a) => a.totalTests > 0 && a.passCount === a.totalTests).length;
-  const totalTests = exam.answers.length;
-
-  // Mark completed
-  await prisma.examAttempt.update({
-    where: { id: examId },
-    data: {
-      status: timedOut ? 'TIMED_OUT' : 'COMPLETED',
-      score,
-      totalTests,
-      completedAt: new Date(),
-    },
-  });
-
-  return NextResponse.json({ score, totalTests });
 }

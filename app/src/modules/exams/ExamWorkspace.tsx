@@ -41,7 +41,7 @@ interface ExamQuestion {
   description: string;
   difficulty: string;
   starterCode: string;
-  savedCode: string;
+  savedCode: string | null;
   graded: boolean;
   passCount: number;
   totalTests: number;
@@ -63,7 +63,7 @@ export default function ExamWorkspace({ examId, questions, timeLimitMin, started
   const [codes, setCodes] = useState<Record<string, string>>(() => {
     const map: Record<string, string> = {};
     questions.forEach((q) => {
-      map[q.questionId] = q.savedCode || q.starterCode;
+      map[q.questionId] = q.savedCode ?? q.starterCode;
     });
     return map;
   });
@@ -80,6 +80,13 @@ export default function ExamWorkspace({ examId, questions, timeLimitMin, started
   const [grading, setGrading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [timeUp, setTimeUp] = useState(false);
+  const [requestError, setRequestError] = useState<string | null>(null);
+  const codesRef = useRef(codes);
+  const editVersionsRef = useRef<Record<string, number>>({});
+  const pendingSavesRef = useRef(new Map<string, string>());
+  const saveQueueRef = useRef<Promise<void>>(Promise.resolve());
+  const submittingRef = useRef(false);
+  const gradingRef = useRef(false);
   const [flagged, setFlagged] = useState<Set<string>>(() => {
     try {
       const stored = localStorage.getItem(`exam_flagged:${examId}`);
@@ -115,31 +122,62 @@ export default function ExamWorkspace({ examId, questions, timeLimitMin, started
   }, [examId]);
 
   const saveCode = useCallback(
-    async (qId: string, c: string) => {
-      try {
-        await fetch(`/api/exam/${examId}/save`, {
+    (qId: string, c: string) => {
+      const queued = saveQueueRef.current.catch(() => {}).then(async () => {
+        const response = await fetch(`/api/exam/${examId}/save`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ questionId: qId, code: c }),
         });
-      } catch {
-        /* silent */
-      }
+        if (!response.ok) {
+          const data = await response.json();
+          throw new Error(data.error ?? 'Could not save your answer.', { cause: data.code });
+        }
+      });
+      saveQueueRef.current = queued;
+      return queued;
     },
     [examId]
   );
 
+  const flushSaves = useCallback(async () => {
+    clearTimeout(saveTimerRef.current);
+    const pending = [...pendingSavesRef.current];
+    pendingSavesRef.current.clear();
+    const results = await Promise.allSettled(pending.map(async ([qId, draft]) => {
+      try {
+        await saveCode(qId, draft);
+      } catch (error) {
+        if (!pendingSavesRef.current.has(qId)) pendingSavesRef.current.set(qId, codesRef.current[qId]);
+        throw error;
+      }
+    }));
+    const failed = results.find((result) => result.status === 'rejected');
+    if (failed?.status === 'rejected') throw failed.reason;
+    await saveQueueRef.current;
+  }, [saveCode]);
+
+  useEffect(() => () => { clearTimeout(saveTimerRef.current); }, []);
+
   const handleCodeChange = useCallback(
     (newCode: string) => {
       const qId = question.questionId;
+      if (submittingRef.current || timeUp || newCode === codesRef.current[qId]) return;
+      codesRef.current = { ...codesRef.current, [qId]: newCode };
+      editVersionsRef.current[qId] = (editVersionsRef.current[qId] ?? 0) + 1;
       setCodes((prev) => ({ ...prev, [qId]: newCode }));
+      setGradeResults((prev) => ({ ...prev, [qId]: { graded: false, passCount: 0, totalTests: 0 } }));
+      pendingSavesRef.current.set(qId, newCode);
       clearTimeout(saveTimerRef.current);
-      saveTimerRef.current = setTimeout(() => saveCode(qId, newCode), 2000);
+      saveTimerRef.current = setTimeout(() => {
+        void flushSaves().catch((error) => setRequestError(error instanceof Error ? error.message : 'Could not save your answer.'));
+      }, 2000);
     },
-    [question.questionId, saveCode]
+    [question.questionId, flushSaves, timeUp]
   );
 
   const handleRun = useCallback(() => {
+    if (submittingRef.current || timeUp) return;
     if (isRunning) {
       interpreterStop();
       return;
@@ -147,60 +185,85 @@ export default function ExamWorkspace({ examId, questions, timeLimitMin, started
     clearEntries();
     setActiveTab('terminal');
     interpreterRun(code);
-  }, [isRunning, code, interpreterRun, interpreterStop, clearEntries]);
+  }, [timeUp, isRunning, code, interpreterRun, interpreterStop, clearEntries]);
 
   const handleGrade = useCallback(async () => {
-    if (grading) return;
+    if (gradingRef.current || submittingRef.current || timeUp) return;
+    gradingRef.current = true;
     setGrading(true);
+    setRequestError(null);
     if (isRunning) interpreterStop();
-    await saveCode(question.questionId, code);
 
     try {
+      const qId = question.questionId;
+      pendingSavesRef.current.set(qId, codesRef.current[qId]);
+      await flushSaves();
+      const checkedCode = codesRef.current[qId];
+      const checkedVersion = editVersionsRef.current[qId] ?? 0;
       const res = await fetch(`/api/exam/${examId}/grade`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ questionId: question.questionId, code }),
+        body: JSON.stringify({ questionId: qId, code: checkedCode }),
       });
 
-      if (res.ok) {
-        const data = await res.json();
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? 'Could not check your answer.');
+      if ((editVersionsRef.current[qId] ?? 0) === checkedVersion) {
         setGradeResults((prev) => ({
           ...prev,
-          [question.questionId]: { passCount: data.passCount, totalTests: data.totalTests, graded: true },
+          [qId]: { passCount: data.passCount, totalTests: data.totalTests, graded: true },
         }));
         setActiveTab('results');
       }
-    } catch {
-      /* silent */
+    } catch (error) {
+      setRequestError(error instanceof Error ? error.message : 'Could not check your answer.');
+    } finally {
+      gradingRef.current = false;
+      setGrading(false);
     }
-    setGrading(false);
-  }, [grading, isRunning, interpreterStop, saveCode, question.questionId, code, examId]);
+  }, [timeUp, isRunning, interpreterStop, flushSaves, question.questionId, examId]);
 
   const handleSubmit = useCallback(
     async (timedOut = false) => {
-      if (submitting) return;
+      if (submittingRef.current || (!timedOut && gradingRef.current)) return;
+      submittingRef.current = true;
       setSubmitting(true);
-      await saveCode(question.questionId, code);
+      setRequestError(null);
+      clearTimeout(saveTimerRef.current);
 
       try {
-        await fetch(`/api/exam/${examId}/submit`, {
+        if (!timedOut) {
+          pendingSavesRef.current.set(question.questionId, codesRef.current[question.questionId]);
+          try {
+            await flushSaves();
+          } catch (error) {
+            // Expiry prevents further writes but must not prevent submission.
+            if (!(error instanceof Error) || error.cause !== 'EXAM_EXPIRED') throw error;
+          }
+        }
+        const response = await fetch(`/api/exam/${examId}/submit`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ timedOut }),
         });
-        captureEvent('exam_completed', { exam_id: examId, timed_out: timedOut, question_count: questions.length });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error ?? 'Could not submit your exam.');
+        captureEvent('exam_completed', { exam_id: examId, timed_out: data.timedOut, question_count: questions.length });
         router.push(`/exam/${examId}/results`);
-      } catch {
+      } catch (error) {
+        setRequestError(error instanceof Error ? error.message : 'Could not submit your exam.');
+        submittingRef.current = false;
         setSubmitting(false);
       }
     },
-    [submitting, saveCode, question.questionId, code, examId, router, questions.length]
+    [flushSaves, question.questionId, examId, router, questions.length]
   );
 
   const handleTimeUp = useCallback(() => {
     setTimeUp(true);
-    setTimeout(() => handleSubmit(true), 3000);
-  }, [handleSubmit]);
+    interpreterStop();
+    void handleSubmit(true);
+  }, [handleSubmit, interpreterStop]);
 
   const goPrev = useCallback(() => {
     setCurrentIndex((prev) => Math.max(0, prev - 1));
@@ -240,7 +303,7 @@ export default function ExamWorkspace({ examId, questions, timeLimitMin, started
   return (
     <div className="flex-1 min-h-0 overflow-hidden bg-background flex flex-col">
       {/* Time's Up overlay */}
-      {timeUp && (
+      {timeUp && submitting && (
         <div className="fixed inset-0 bg-black/75 z-50 flex items-center justify-center">
           <div className="bg-surface border border-border rounded-2xl p-10 text-center max-w-xs w-full mx-4 animate-scale-in shadow-intense">
             <div className="w-14 h-14 rounded-full bg-error/15 border border-error/30 flex items-center justify-center mx-auto mb-4">
@@ -251,6 +314,7 @@ export default function ExamWorkspace({ examId, questions, timeLimitMin, started
           </div>
         </div>
       )}
+      {requestError && <p role="alert" className="px-3 py-2 text-xs text-error">{requestError}</p>}
       {/* Top bar */}
       <div className="h-11 border-b border-border bg-surface flex items-center justify-between px-3 shrink-0">
         <div className="flex items-center gap-3">
@@ -327,7 +391,7 @@ export default function ExamWorkspace({ examId, questions, timeLimitMin, started
 
         <button
           onClick={() => handleSubmit(false)}
-          disabled={submitting}
+          disabled={submitting || grading}
           className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg
             bg-primary text-on-primary text-xs font-semibold
             hover:opacity-90 active:scale-[0.97] transition-all duration-200 disabled:opacity-50
@@ -448,7 +512,7 @@ export default function ExamWorkspace({ examId, questions, timeLimitMin, started
               <>
                 <button
                   onClick={() => { clearEntries(); setActiveTab('terminal'); debugRun(code); }}
-                  disabled={grading}
+                  disabled={grading || submitting || timeUp}
                   className="flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium text-warning hover:bg-warning/10 transition-all duration-200 disabled:opacity-40"
                   title="Debug by stepping through the code"
                   aria-label="Debug by stepping through the code"
@@ -473,7 +537,7 @@ export default function ExamWorkspace({ examId, questions, timeLimitMin, started
             )}
             <button
               onClick={handleGrade}
-              disabled={grading || isRunning}
+              disabled={grading || isRunning || submitting || timeUp}
               className="flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium
                 bg-primary/15 text-primary hover:bg-primary/25 transition-all duration-200 disabled:opacity-40"
               title="Check this answer against the exam test cases (Ctrl+Shift+Enter)"
@@ -534,7 +598,7 @@ export default function ExamWorkspace({ examId, questions, timeLimitMin, started
               value={code}
               onChange={handleCodeChange}
               isRunning={isRunning}
-              readOnly={isStepping}
+              readOnly={isStepping || timeUp || submitting}
               debugLine={debugLine}
               errorLine={errorLine}
             />

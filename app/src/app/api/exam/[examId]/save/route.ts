@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/modules/auth/auth';
-import { prisma } from '@/shared/db';
+import { saveExamAnswer } from '@/modules/exams/attempts';
+import { readAnswerSubmission, examErrorResponse } from '@/modules/exams/requests';
 
 interface Context {
   params: Promise<{ examId: string }>;
@@ -12,23 +13,11 @@ export async function POST(req: Request, { params }: Context) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const { examId } = await params;
-  const { questionId, code } = await req.json();
-
-  // Verify ownership
-  const exam = await prisma.examAttempt.findFirst({
-    where: { id: examId, userId: session.user.id, status: 'IN_PROGRESS' },
-    select: { id: true },
-  });
-
-  if (!exam) {
-    return NextResponse.json({ error: 'Exam not found or already completed' }, { status: 404 });
+  try {
+    const { examId } = await params;
+    const submission = await readAnswerSubmission(req);
+    return NextResponse.json(await saveExamAnswer(examId, session.user.id, submission));
+  } catch (error) {
+    return examErrorResponse(error);
   }
-
-  await prisma.examAnswer.update({
-    where: { examAttemptId_questionId: { examAttemptId: examId, questionId } },
-    data: { code },
-  });
-
-  return NextResponse.json({ ok: true });
 }

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/modules/auth/auth';
-import { prisma } from '@/shared/db';
-import { gradeSubmission } from '@/modules/practice/autograder';
+import { gradeExamAnswer } from '@/modules/exams/attempts';
+import { readAnswerSubmission, examErrorResponse } from '@/modules/exams/requests';
 
 interface Context {
   params: Promise<{ examId: string }>;
@@ -13,49 +13,11 @@ export async function POST(req: Request, { params }: Context) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const { examId } = await params;
-  const { questionId, code } = await req.json();
-
-  // Verify ownership
-  const exam = await prisma.examAttempt.findFirst({
-    where: { id: examId, userId: session.user.id, status: 'IN_PROGRESS' },
-    select: { id: true },
-  });
-
-  if (!exam) {
-    return NextResponse.json({ error: 'Exam not found or already completed' }, { status: 404 });
+  try {
+    const { examId } = await params;
+    const submission = await readAnswerSubmission(req);
+    return NextResponse.json(await gradeExamAnswer(examId, session.user.id, submission));
+  } catch (error) {
+    return examErrorResponse(error);
   }
-
-  // Get test cases
-  const testCases = await prisma.testCase.findMany({
-    where: { questionId },
-    orderBy: { sortOrder: 'asc' },
-  });
-
-  // Grade all test cases in parallel
-  const results = await Promise.allSettled(
-    testCases.map((tc) => gradeSubmission(code, tc.inputs, tc.expectedOutput, tc.initialFiles))
-  );
-
-  let passCount = 0;
-  results.forEach((r) => {
-    if (r.status === 'fulfilled' && r.value.passed) passCount++;
-  });
-
-  // Save the grade
-  await prisma.examAnswer.update({
-    where: { examAttemptId_questionId: { examAttemptId: examId, questionId } },
-    data: { code, passCount, totalTests: testCases.length, graded: true },
-  });
-
-  return NextResponse.json({
-    passCount,
-    totalTests: testCases.length,
-    results: results.map((r, i) => ({
-      passed: r.status === 'fulfilled' && r.value.passed,
-      isHidden: testCases[i].isHidden,
-      description: testCases[i].isHidden ? undefined : testCases[i].description,
-      error: r.status === 'fulfilled' ? r.value.error : undefined,
-    })),
-  });
 }

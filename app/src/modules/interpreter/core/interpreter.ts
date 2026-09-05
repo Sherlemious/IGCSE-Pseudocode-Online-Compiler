@@ -112,7 +112,7 @@ import {
   smartParse,
   parseInputForTarget,
 } from './values';
-import { getBuiltin, registerFileBuiltins } from './builtins';
+import { createBuiltinLookup } from './builtins';
 import { VirtualFileSystem } from './filesystem';
 import { InterpreterCallbacks, RuntimeError, ExecutionCancelledError, DebugVariable, MAX_TRACE_ROWS } from './types';
 
@@ -158,6 +158,7 @@ export class Interpreter {
   private iterationCount = 0;
   private lastYieldTime = performance.now();
   private fileSystem: VirtualFileSystem;
+  private readonly getBuiltin: ReturnType<typeof createBuiltinLookup>;
   private _stepMode = false;
   private stepResolver: (() => void) | null = null;
   private _breakpoints = new Set<number>();
@@ -169,7 +170,7 @@ export class Interpreter {
     this.callbacks = callbacks;
     this.signal = signal;
     this.fileSystem = fileSystem ?? new VirtualFileSystem();
-    registerFileBuiltins((filename) => this.fileSystem.eof(filename));
+    this.getBuiltin = createBuiltinLookup((filename) => this.fileSystem.eof(filename));
   }
 
   private checkCancelled(): void {
@@ -1423,7 +1424,7 @@ export class Interpreter {
       const name = ctx.identifier().getText();
 
       // Check builtins first
-      const builtin = getBuiltin(name);
+      const builtin = this.getBuiltin(name);
       if (builtin) {
         const args = ctx.argList() ? await this.evalArgList(ctx.argList()!) : [];
         return builtin(args);
