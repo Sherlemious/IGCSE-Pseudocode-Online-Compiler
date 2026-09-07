@@ -107,6 +107,7 @@ const jsonLd = {
     'Multi-step hints and model solutions per question',
     'Instant autograder with visible and hidden test cases — LeetCode-style Paper 2 practice',
     'Timed practice exams with configurable duration and question count',
+    'Teacher classes with join links, homework assignments, due dates and submission counts',
     'Progress tracking: solved status, best score, attempt history',
     'Analytics dashboard with activity heatmap and topic/difficulty breakdown',
     'Comprehensive language reference documentation with searchable TOC',

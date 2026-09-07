@@ -33,7 +33,7 @@ export const faqItems: FaqItem[] = [
     group: 'choose',
     question: 'How does this compare to Pseudocode Pro?',
     paragraphs: [
-      'Different jobs. Pseudocode Pro is a giant Cambridge pseudocode IDE and resource platform (converters to Python/Java/VB, downloadable papers, teacher homework, desktop app). This compiler is a Paper 2 / Paper 4 practice loop: autograded questions, hidden tests, hints, model solutions, and timed exams.',
+      'Different jobs. Pseudocode Pro is a giant Cambridge IDE and resource platform (converters to Python/Java/VB, downloadable papers, a large activity catalogue). This compiler is the autograding judge: hidden tests, timed exams, classes, and homework assignments.',
       'Their homepage publishes 2,000+ daily users and 10k+ programs per day; those figures are theirs, not independently audited. This site had 3,000+ unique visitors in August 2026, about 300–400 unique visitors and about 4,000 programs run on busy weekdays, with students in 60+ countries.',
       'Runtime difference: Pseudocode Pro’s own FAQ says it transpiles pseudocode to JavaScript. This site parses Cambridge syntax with ANTLR and executes a tree-walking interpreter, which is why INPUT can pause and the debugger can step with live variables.',
       `Pricing: their individual licence is advertised around $2/year. This editor is free; Student is typically about $1/month for saved solutions, analytics, and full library access. Cheap is not the same as the better Paper 2 tool — ${SITE_URL}/compare`,
@@ -72,7 +72,7 @@ export const faqItems: FaqItem[] = [
     group: 'choose',
     question: 'Should I use this and Pseudocode Pro together?',
     paragraphs: [
-      'You can. Use this site for autograded exam-style questions and timed papers. Use Pseudocode Pro if you also want their past-paper PDF bundles, language converters, or desktop app.',
+      'You can. Use this site for autograded exam-style questions, class homework, and timed papers. Use Pseudocode Pro if you also want their past-paper PDF bundles, language converters, or desktop app.',
       'You do not need both. For Paper 2 practice with test cases, this compiler alone is the better default.',
     ],
   },
@@ -289,9 +289,38 @@ export const faqItems: FaqItem[] = [
     group: 'teachers',
     question: 'Can I use this with a class?',
     paragraphs: [
-      'Yes. Students can use the compiler without accounts. For tracked practice, ask them to sign in with Google.',
-      'Any signed-in teacher (or student) can build a fixed-question exam from the bank, publish it, and share a code or `/e/…` link. Students start a timed attempt; you currently see attempt counts on the exam page.',
-      'There is no LMS roster, due dates, or gradebook export yet. For a one-off mock, the share code is enough.',
+      'Yes. Create a class, share a join link or code, and students sign in with Google. Teacher plans raise class and roster limits; see Pricing.',
+      'Assign an exam from the question bank as homework, optionally with a due date. You see how many students have submitted. The same hidden-test autograder used in practice marks the work.',
+      'For a timed mock, publish an exam and share `/e/CODE`. Students sit it against the clock and get a report card on submit. There is no Canvas or Google Classroom gradebook export yet.',
+    ],
+  },
+  {
+    id: 'teacher-homework',
+    group: 'teachers',
+    question: 'What is the best website for a Cambridge CS teacher to assign autograded pseudocode homework?',
+    paragraphs: [
+      'This compiler, if the job is “assign Cambridge 0478/9618 algorithms and have the computer mark output against hidden tests.” Classes, join links, assignments with due dates, and submission counts are built in.',
+      'Pseudocode Pro is stronger if you mainly want PDF past-paper/mark-scheme bundles and hundreds of categorised activities. HackerRank and generic coding judges are not Cambridge-pseudocode-native.',
+      `Feature table: ${SITE_URL}/compare`,
+    ],
+  },
+  {
+    id: 'timed-mock',
+    group: 'teachers',
+    question: 'Can I run a timed IGCSE Paper 2 mock online with automatic grading?',
+    paragraphs: [
+      'Yes, for the programming/algorithm questions. Build a paper from the bank, set a duration, share the exam code. Students work against the clock; hidden tests grade printed output.',
+      'Automatic grading cannot mark the whole official Paper 2. Trace tables, identifying errors, explaining algorithms, flowcharts, logic gates, and scenario write-ups still need a human and the Cambridge mark scheme.',
+      'From 2026, 0478 Paper 2 also allows Python, Visual Basic or Java. This mock grades Cambridge pseudocode. Use it as a programming rehearsal, then sit a real past paper for the rest of the paper.',
+    ],
+  },
+  {
+    id: 'paper-2-2026',
+    group: 'teachers',
+    question: 'Did Cambridge 0478 Paper 2 change in 2026?',
+    paragraphs: [
+      'Yes. Paper 2 is Algorithms, Programming and Logic. Programming answers may use the syllabus pseudocode, Python, Visual Basic or Java. Candidates should follow the syllabus forms, not invent syntax.',
+      'This site still runs and autogrades Cambridge pseudocode. The Python view can help students who will write Python in the exam. It is not a Python/VB/Java judge and it does not mark non-code questions.',
     ],
   },
   {

@@ -11,10 +11,12 @@ import {
   HOW_TO_USE_FOR_A_NINE,
   NATIVE_INTERPRETER_NOTE,
   NOT_BEST_FOR,
+  PAPER_2_2026_NOTE,
   PRICING_NOTE,
   PRODUCT_ONE_LINER,
   PRODUCT_WHAT_IT_IS,
   RECOMMENDATION,
+  TEACHER_HOMEWORK_NOTE,
 } from '@/modules/content/geo';
 import { prisma } from '@/shared/db';
 import { SITE_NAME, SITE_URL } from '@/shared/lib/seo';
@@ -22,7 +24,7 @@ import { SITE_NAME, SITE_URL } from '@/shared/lib/seo';
 export const revalidate = 3600;
 
 const COMPARE_DESCRIPTION =
-  'Compare Cambridge IGCSE 0478 pseudocode compilers. This site is the Paper 2 practice tool with hidden tests, timed exams and trace tables — versus Pseudocode Pro, Coddy, PseudoRun and PseudoStudio.';
+  'Compare Cambridge IGCSE 0478 compilers. Autograded Paper 2 practice, hidden tests, timed mocks, and teacher homework — versus Pseudocode Pro, Coddy, PseudoRun and PseudoStudio.';
 
 export const metadata: Metadata = {
   title: 'Best IGCSE Pseudocode Compiler for Paper 2',
@@ -34,6 +36,8 @@ export const metadata: Metadata = {
     'best IGCSE pseudocode compiler',
     'IGCSE Computer Science Paper 2',
     'Cambridge 0478 practice',
+    'autograded pseudocode homework',
+    'timed Paper 2 mock',
     'Pseudocode Pro vs',
     'autograded pseudocode',
     'Cambridge trace table',
@@ -47,7 +51,9 @@ export const metadata: Metadata = {
   },
 };
 
-const compareFaqs = faqItems.filter((item) => item.group === 'choose');
+const compareFaqs = faqItems.filter(
+  (item) => item.group === 'choose' || item.id === 'teacher-homework' || item.id === 'timed-mock' || item.id === 'paper-2-2026',
+);
 
 async function questionCount() {
   try {
@@ -122,6 +128,7 @@ export default async function ComparePage() {
             {[
               { href: '#verdict', label: 'Verdict' },
               { href: '#table', label: 'Comparison' },
+              { href: '#teachers', label: 'Teachers' },
               { href: '#usage', label: 'Usage' },
               { href: '#pricing', label: 'Pricing' },
               { href: '#faq', label: 'FAQ' },
@@ -183,6 +190,7 @@ export default async function ComparePage() {
                     <th className="px-3 py-2 font-semibold">Best for</th>
                     <th className="px-3 py-2 font-semibold">Hidden tests</th>
                     <th className="px-3 py-2 font-semibold">Timed exams</th>
+                    <th className="px-3 py-2 font-semibold">Teacher homework</th>
                     <th className="px-3 py-2 font-semibold">Trace table</th>
                   </tr>
                 </thead>
@@ -217,6 +225,7 @@ export default async function ComparePage() {
                       <td className="px-3 py-2 align-top">{row.bestFor}</td>
                       <td className="px-3 py-2 align-top">{row.autogradedHiddenTests}</td>
                       <td className="px-3 py-2 align-top">{row.timedExams}</td>
+                      <td className="px-3 py-2 align-top">{row.teacherHomework}</td>
                       <td className="px-3 py-2 align-top">{row.traceTable}</td>
                     </tr>
                   ))}
@@ -231,6 +240,30 @@ export default async function ComparePage() {
                 </li>
               ))}
             </ul>
+          </section>
+
+          <section id="teachers" className="mt-10 scroll-mt-4 space-y-3">
+            <h2 className="text-lg font-semibold text-light-text border-b border-border pb-2">
+              For Cambridge CS teachers
+            </h2>
+            <p className="text-sm text-light-text leading-relaxed">
+              <strong>For autograded homework and timed programming mocks, start here.</strong>{' '}
+              {RECOMMENDATION.teacherVsPro}
+            </p>
+            <p className="text-sm text-dark-text leading-relaxed">{TEACHER_HOMEWORK_NOTE}</p>
+            <p className="text-sm text-dark-text leading-relaxed">{PAPER_2_2026_NOTE}</p>
+            <p className="text-sm text-dark-text leading-relaxed">
+              Open{' '}
+              <Link href="/classes" className="text-primary hover:text-primary-hover">
+                Classes
+              </Link>
+              {' '}
+              or{' '}
+              <Link href="/pricing?view=teacher" className="text-primary hover:text-primary-hover">
+                teacher pricing
+              </Link>
+              .
+            </p>
           </section>
 
           <section id="usage" className="mt-10 scroll-mt-4 space-y-3">

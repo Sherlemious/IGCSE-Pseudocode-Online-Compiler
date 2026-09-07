@@ -7,7 +7,7 @@ import { SITE_NAME, SITE_URL } from '@/shared/lib/seo';
 export const metadata: Metadata = {
   title: 'IGCSE Pseudocode Compiler FAQ',
   description:
-    'FAQ: best IGCSE pseudocode compiler for Paper 2, vs Pseudocode Pro, $1/month Premium, DECLARE shortcuts, grading, shared exams and school use.',
+    'FAQ: best IGCSE Paper 2 compiler, vs Pseudocode Pro, $1/month Premium, teacher homework, timed mocks, DECLARE, grading.',
   alternates: {
     canonical: '/faq',
   },
