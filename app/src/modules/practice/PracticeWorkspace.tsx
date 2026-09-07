@@ -1,11 +1,15 @@
 'use client';
 
 import React, { useState, useCallback, useEffect, useRef } from 'react';
+import Link from 'next/link';
+import { useSession } from 'next-auth/react';
 import { CodeMirrorEditor, TraceTable } from '@/modules/compiler/editor';
 import SplitDivider from '@/shared/ui/SplitDivider';
 import PracticeStartGate from './PracticeStartGate';
+import GradeAuthSheet, { PENDING_GRADE_KEY } from './GradeAuthSheet';
 import { useInterpreter } from '@/modules/interpreter/useInterpreter';
 import { captureEvent } from '@/modules/interpreter/analytics';
+import { authHref } from '@/modules/auth/callback';
 import { AUTOSAVE_DELAY, loadSplitPercent } from '@/shared/lib/persist';
 import { SPLIT_PRACTICE_KEY } from './constants';
 import { toast } from 'sonner';
@@ -59,6 +63,8 @@ interface Props {
   starterCode: string;
   savedCode?: string | null;
   preloadedFileNames?: string[];
+  /** EASY grades anonymously; MEDIUM/HARD open the in-page auth sheet. */
+  difficulty: 'EASY' | 'MEDIUM' | 'HARD';
 }
 
 /** How the editor was seeded for a fresh question. */
@@ -86,7 +92,10 @@ function errorHint(error: NonNullable<GradeResultItem['error']>): string {
 
 /* ── Component ──────────────────────────────────────────── */
 
-export default function PracticeWorkspace({ questionId, starterCode, savedCode, preloadedFileNames }: Props) {
+export default function PracticeWorkspace({ questionId, starterCode, savedCode, preloadedFileNames, difficulty }: Props) {
+  /* ── Auth (for the LeetCode-style grade gate) ───────── */
+  const { status: authStatus, update: updateSession } = useSession();
+
   /* ── Code + start-mode state ────────────────────────── */
   const [code, setCode] = useState(savedCode ?? '');
   // `mode === null` means the "choose your start" gate is showing (only once `ready`).
@@ -157,10 +166,11 @@ export default function PracticeWorkspace({ questionId, starterCode, savedCode, 
   /* ── Interpreter ────────────────────────────────────── */
   const {
     entries, isRunning, waitingForInput,
-    isStepping, debugLine, debugVariables, errorLine, breakpoints,
+    isStepping, debugLine, debugVariables, errorLine, errorFocusKey, breakpoints,
     traceRows, maxTraceRows,
     run, debugRun, step, continueExecution, provideInput, stop, clearEntries, toggleBreakpoint,
   } = useInterpreter({ feature: 'practice', questionId });
+  const cursorLineRef = useRef<number | undefined>(undefined);
 
   /* ── Output panel ───────────────────────────────────── */
   const [activeTab, setActiveTab] = useState<'output' | 'results' | 'trace'>('output');
@@ -177,6 +187,8 @@ export default function PracticeWorkspace({ questionId, starterCode, savedCode, 
   const [gradeResponse, setGradeResponse] = useState<GradeResponse | null>(null);
   const [gradingError, setGradingError] = useState<string | null>(null);
   const [showFailuresOnly, setShowFailuresOnly] = useState(false);
+  // In-page auth prompt for Medium/Hard grading by an anonymous student.
+  const [sheetOpen, setSheetOpen] = useState(false);
 
   /* ── Confirm dialogs + mobile view + jump to line ───── */
   const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
@@ -230,13 +242,13 @@ export default function PracticeWorkspace({ questionId, starterCode, savedCode, 
   const handleRun = useCallback(async () => {
     if (!code.trim() || isRunning) return;
     setActiveTab('output');
-    await run(code);
+    await run(code, { cursorLine: cursorLineRef.current });
   }, [code, isRunning, run]);
 
   const handleDebug = useCallback(async () => {
     if (!code.trim() || isRunning) return;
     setActiveTab('output');
-    await debugRun(code);
+    await debugRun(code, { cursorLine: cursorLineRef.current });
   }, [code, isRunning, debugRun]);
 
   const handleGrade = useCallback(async () => {
@@ -257,7 +269,11 @@ export default function PracticeWorkspace({ questionId, starterCode, savedCode, 
         // fall back to raw text for unexpected failures.
         const body = await res.json().catch(() => null);
         const message = body && typeof body.error === 'string' ? body.error : null;
-        if (res.status === 429) {
+        if (res.status === 401 && body?.code === 'AUTH_REQUIRED') {
+          // Medium/Hard needs an account — open the in-page sheet, not a red
+          // error. (Also covers the brief `authStatus === 'loading'` race.)
+          setSheetOpen(true);
+        } else if (res.status === 429) {
           setGradingError(message ?? 'You are grading too fast. Please wait a moment and try again.');
         } else {
           setGradingError(message ?? `Server error (${res.status}). Please try again.`);
@@ -290,6 +306,38 @@ export default function PracticeWorkspace({ questionId, starterCode, savedCode, 
     }
   }, [code, isGrading, isRunning, questionId]);
 
+  // "Check My Answer" entry point. Easy grades anonymously; Medium/Hard open the
+  // in-page auth sheet when signed out rather than bouncing to /auth/signin. The
+  // server still enforces this (401 AUTH_REQUIRED) for the loading-state race.
+  const attemptGrade = useCallback(() => {
+    if (difficulty !== 'EASY' && authStatus === 'unauthenticated') {
+      setSheetOpen(true);
+      return;
+    }
+    handleGrade();
+  }, [difficulty, authStatus, handleGrade]);
+
+  // After returning from Google OAuth (?check=1) or an in-page sign-in, run the
+  // grade the student asked for before authenticating. Fires once.
+  const autoGradeFired = useRef(false);
+  useEffect(() => {
+    if (!ready || authStatus !== 'authenticated' || autoGradeFired.current) return;
+    let pending = false;
+    try {
+      pending =
+        new URLSearchParams(window.location.search).get('check') === '1' ||
+        sessionStorage.getItem(PENDING_GRADE_KEY(questionId)) === '1';
+    } catch { pending = false; }
+    if (!pending) return;
+
+    autoGradeFired.current = true;
+    try { sessionStorage.removeItem(PENDING_GRADE_KEY(questionId)); } catch { /* ignore */ }
+    // Strip ?check=1 without a router navigation (avoids remounting the workspace
+    // mid-grade); replaceState just updates the URL bar.
+    try { window.history.replaceState(null, '', `/practice/${questionId}`); } catch { /* ignore */ }
+    if (code.trim()) handleGrade();
+  }, [ready, authStatus, questionId, code, handleGrade]);
+
   // In template mode "reset" restores the scaffold; in scratch mode it clears the editor.
   const resetTarget = mode === 'scratch' ? '' : starterCode;
   const handleReset = useCallback(() => {
@@ -310,7 +358,7 @@ export default function PracticeWorkspace({ questionId, starterCode, savedCode, 
     const onKey = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'Enter') {
         e.preventDefault();
-        handleGrade();
+        attemptGrade();
       } else if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
         e.preventDefault();
         handleRun();
@@ -318,7 +366,7 @@ export default function PracticeWorkspace({ questionId, starterCode, savedCode, 
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [handleRun, handleGrade]);
+  }, [handleRun, attemptGrade]);
 
   /* ── Vertical resize drag ──────────────────────────── */
   const handleDragStart = useCallback((e: React.MouseEvent | React.TouchEvent) => {
@@ -489,7 +537,7 @@ export default function PracticeWorkspace({ questionId, starterCode, savedCode, 
 
           {/* Grade */}
           <button
-            onClick={handleGrade}
+            onClick={attemptGrade}
             disabled={busy || !code.trim()}
             className="flex items-center gap-1.5 px-3 py-1 text-xs font-medium rounded
               bg-primary/15 text-primary hover:bg-primary/25 transition-colors
@@ -543,12 +591,14 @@ export default function PracticeWorkspace({ questionId, starterCode, savedCode, 
           <CodeMirrorEditor
             value={code}
             onChange={setCode}
+            onCursorChange={(line) => { cursorLineRef.current = line; }}
             onRun={handleRun}
             onStop={stop}
             isRunning={busy}
             readOnly={isStepping}
             debugLine={debugLine}
             errorLine={errorLine}
+            errorFocusKey={errorFocusKey}
             breakpoints={breakpoints}
             onBreakpointToggle={toggleBreakpoint}
             ariaLabel="Practice Code Editor"
@@ -704,6 +754,22 @@ export default function PracticeWorkspace({ questionId, starterCode, savedCode, 
             </div>
           </div>
         </div>
+      )}
+
+      {/* Grade auth sheet — Medium/Hard, signed out */}
+      {sheetOpen && (
+        <GradeAuthSheet
+          questionId={questionId}
+          onClose={() => setSheetOpen(false)}
+          onFlushBeforeOAuth={() => {
+            try { localStorage.setItem(STORAGE_KEY(questionId), code); } catch { /* full */ }
+          }}
+          onAuthenticated={async () => {
+            await updateSession();
+            setSheetOpen(false);
+            handleGrade();
+          }}
+        />
       )}
     </div>
   );
@@ -931,6 +997,19 @@ export default function PracticeWorkspace({ questionId, starterCode, savedCode, 
             </div>
           )}
         </div>
+
+        {/* Save-score nudge for anonymous students (Easy grades without sign-in) */}
+        {authStatus !== 'authenticated' && (
+          <div className="text-center text-[11px] text-dark-text">
+            <Link
+              href={authHref('signup', `/practice/${questionId}`)}
+              className="text-primary hover:text-primary-hover transition-colors underline underline-offset-2"
+            >
+              Save this score
+            </Link>{' '}
+            to a free account to track your progress.
+          </div>
+        )}
 
         {/* Filter toggle */}
         {!allPassed && results.some((r) => r.passed) && (

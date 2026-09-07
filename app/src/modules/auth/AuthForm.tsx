@@ -4,14 +4,22 @@ import { useState } from 'react';
 import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { Loader2, AlertCircle, ArrowRight, GraduationCap, User } from 'lucide-react';
+import { safeCallback } from './callback';
 
 interface AuthFormProps {
   mode: 'signin' | 'signup';
+  callbackUrl?: string;
+  /**
+   * When provided, a successful credentials sign-in calls this instead of
+   * navigating away. Used by the in-page grade auth sheet so the student stays
+   * on the question and grades in place. `callbackUrl` is ignored in this case.
+   */
+  onAuthenticated?: () => void | Promise<void>;
 }
 
 type SignupRole = 'STUDENT' | 'TEACHER';
 
-export default function AuthForm({ mode }: AuthFormProps) {
+export default function AuthForm({ mode, callbackUrl, onAuthenticated }: AuthFormProps) {
   const router = useRouter();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -55,8 +63,15 @@ export default function AuthForm({ mode }: AuthFormProps) {
         return;
       }
 
-      // Send teachers straight to plans; students to practice.
-      router.push(mode === 'signup' && role === 'TEACHER' ? '/pricing' : '/practice');
+      // Stay on the page when the caller wants to handle the authenticated
+      // state in place (e.g. the practice grade sheet).
+      if (onAuthenticated) {
+        await onAuthenticated();
+        return;
+      }
+
+      const fallback = mode === 'signup' && role === 'TEACHER' ? '/pricing' : '/practice';
+      router.push(safeCallback(callbackUrl, fallback));
       router.refresh();
     } catch {
       setError('Something went wrong');

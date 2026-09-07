@@ -21,6 +21,7 @@ import { useSession } from 'next-auth/react';
 import { usePostHog } from 'posthog-js/react';
 import { useRouter } from 'next/navigation';
 import { UserPlus, GraduationCap, Share2 } from 'lucide-react';
+import { authHref } from '@/modules/auth/callback';
 import NudgeCard from './NudgeCard';
 import ExamNudgeCard from './ExamNudgeCard';
 
@@ -166,7 +167,7 @@ export default function OnboardingNudges() {
         title="Save your code anywhere"
         description="Create a free account to save your code across devices, track your progress, and unlock practice questions."
         ctaLabel="Sign up free"
-        onCta={() => handleCta('signup', () => router.push('/auth/signup'))}
+        onCta={() => handleCta('signup', () => router.push(authHref('signup', window.location.pathname + window.location.search)))}
         onDismiss={dismissNudge}
       />
     );

@@ -36,7 +36,9 @@ export async function POST(request: NextRequest, { params }: Props) {
 
   const timeout = typeof timeoutMs === 'number' ? Math.min(timeoutMs, 30_000) : 10_000;
 
-  // Get session (optional — anonymous users can grade EASY questions)
+  // Session is optional here. Policy (enforced below, once the question is
+  // loaded): EASY questions grade anonymously; MEDIUM/HARD require an account;
+  // premium-flagged questions require paid access when gating is enabled.
   const session = await auth();
 
   // Throttle before the expensive question fetch + grading. Key by user when
@@ -65,6 +67,16 @@ export async function POST(request: NextRequest, { params }: Props) {
 
   if (!question) {
     return NextResponse.json({ error: 'Question not found' }, { status: 404 });
+  }
+
+  // Easy questions grade anonymously (LeetCode-style). Medium/Hard need an
+  // account; the client opens an in-page auth sheet on this AUTH_REQUIRED code
+  // rather than bouncing to the full sign-in page.
+  if (!session?.user?.id && question.difficulty !== 'EASY') {
+    return NextResponse.json(
+      { error: 'Create a free account to check this answer.', code: 'AUTH_REQUIRED' },
+      { status: 401 },
+    );
   }
 
   // Access control applies only when premium gating is enabled, and only to

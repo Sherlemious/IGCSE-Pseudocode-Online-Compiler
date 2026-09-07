@@ -108,7 +108,8 @@ export const faqItems: FaqItem[] = [
     question: 'Do I need to install anything or create an account?',
     paragraphs: [
       'No install. The compiler, debugger, trace table, flowchart and Python view all run in a modern browser.',
-      'You can use the editor anonymously. Sign in with Google if you want saved practice progress, analytics, and the ability to create or sit a shared exam. There is no email/password signup.',
+      'You can use the editor anonymously, and Easy practice questions can be checked against their test cases without signing in — your code stays in the tab.',
+      'Create a free account (Google or email) to save your progress and analytics, unlock the answer check on Medium and Hard questions, and create or sit a shared exam.',
     ],
   },
   {

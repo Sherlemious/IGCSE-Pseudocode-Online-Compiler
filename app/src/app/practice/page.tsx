@@ -4,6 +4,7 @@ import { Suspense } from 'react';
 import { Lock, CheckCircle, Crown, FileText, ArrowRight, Sparkles } from 'lucide-react';
 import { prisma } from '@/shared/db';
 import { auth } from '@/modules/auth/auth';
+import { authHref } from '@/modules/auth/callback';
 import { PREMIUM_GATING_ENABLED } from '@/modules/billing/featureFlags';
 import { getPremiumAccess } from '@/modules/billing/entitlements';
 import { PracticeFilters } from '@/modules/practice/PracticeFilters';
@@ -345,7 +346,7 @@ export default async function PracticePage({ searchParams }: PageProps) {
             )}
             {!session && (
               <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-primary/20 bg-primary/5 text-xs text-primary">
-                <Link href="/auth/signin" className="underline font-medium hover:text-light-text transition-colors">Sign in</Link>
+                <Link href={authHref('signin', '/practice')} className="underline font-medium hover:text-light-text transition-colors">Sign in</Link>
                 <span className="text-dark-text">to track your progress.</span>
               </div>
             )}

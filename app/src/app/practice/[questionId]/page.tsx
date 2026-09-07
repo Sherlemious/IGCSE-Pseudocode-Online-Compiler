@@ -6,6 +6,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { prisma } from '@/shared/db';
 import { auth } from '@/modules/auth/auth';
+import { authHref } from '@/modules/auth/callback';
 import { PREMIUM_GATING_ENABLED } from '@/modules/billing/featureFlags';
 import { getPremiumAccess } from '@/modules/billing/entitlements';
 import PracticeWorkspace from '@/modules/practice/PracticeWorkspace';
@@ -365,7 +366,7 @@ export default async function QuestionPage({ params }: Props) {
             </p>
             {!session ? (
               <Link
-                href="/auth/signin"
+                href={authHref('signin', `/practice/${question.id}`)}
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary/15 text-primary
                   font-medium text-sm hover:bg-primary/25 transition-colors"
               >
@@ -388,6 +389,7 @@ export default async function QuestionPage({ params }: Props) {
           starterCode={question.starterCode ?? ''}
           savedCode={savedCode}
           preloadedFileNames={preloadedFileNames.length > 0 ? preloadedFileNames : undefined}
+          difficulty={question.difficulty}
         />
       )}
     </div>
