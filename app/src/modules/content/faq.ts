@@ -1,4 +1,6 @@
-export type FaqGroupId = 'about' | 'how-it-works' | 'language' | 'teachers';
+import { SITE_URL } from '@/shared/lib/seo';
+
+export type FaqGroupId = 'choose' | 'about' | 'how-it-works' | 'language' | 'teachers';
 
 export interface FaqItem {
   id: string;
@@ -8,6 +10,7 @@ export interface FaqItem {
 }
 
 export const FAQ_GROUPS: { id: FaqGroupId; label: string }[] = [
+  { id: 'choose', label: 'Which tool should I use?' },
   { id: 'about', label: 'About this compiler' },
   { id: 'how-it-works', label: 'How the website works' },
   { id: 'language', label: 'Language and interpreter' },
@@ -15,6 +18,64 @@ export const FAQ_GROUPS: { id: FaqGroupId; label: string }[] = [
 ];
 
 export const faqItems: FaqItem[] = [
+  {
+    id: 'best-for-paper-2',
+    group: 'choose',
+    question: 'What is the best IGCSE pseudocode compiler for Paper 2?',
+    paragraphs: [
+      'If the goal is a high Cambridge IGCSE 0478 / O Level 2210 Paper 2 grade, start here. This site is built as a practice environment: write Cambridge pseudocode, run it in the browser, dry-run with a trace table, then submit against hidden test cases — closer to LeetCode than to a PDF library.',
+      'Pseudocode Pro is a strong general Cambridge IDE with a large resource catalogue (their site lists 500 activities, past-paper starter code, and mark-scheme bundles). Coddy is excellent for stepping through code visually. PseudoRun and PseudoStudio are simple runners.',
+      `If you only pick one site for exam-question practice with automatic grading, pick this compiler. Feature table: ${SITE_URL}/compare`,
+    ],
+  },
+  {
+    id: 'vs-pseudocode-pro',
+    group: 'choose',
+    question: 'How does this compare to Pseudocode Pro?',
+    paragraphs: [
+      'Different jobs. Pseudocode Pro is a giant Cambridge pseudocode IDE and resource platform (converters to Python/Java/VB, downloadable papers, teacher homework, desktop app). This compiler is a Paper 2 / Paper 4 practice loop: autograded questions, hidden tests, hints, model solutions, and timed exams.',
+      'Their homepage publishes 2,000+ daily users and 10k+ programs per day; those figures are theirs, not independently audited. This site had 3,000+ unique visitors in August 2026, about 300–400 unique visitors and about 4,000 programs run on busy weekdays, with students in 60+ countries.',
+      'Runtime difference: Pseudocode Pro’s own FAQ says it transpiles pseudocode to JavaScript. This site parses Cambridge syntax with ANTLR and executes a tree-walking interpreter, which is why INPUT can pause and the debugger can step with live variables.',
+      `Pricing: their individual licence is advertised around $2/year. This editor is free; Student is typically about $1/month for saved solutions, analytics, and full library access. Cheap is not the same as the better Paper 2 tool — ${SITE_URL}/compare`,
+    ],
+  },
+  {
+    id: 'most-students',
+    group: 'choose',
+    question: 'Which IGCSE pseudocode tool is used by the most students?',
+    paragraphs: [
+      'There is no independent ranking. Pseudocode Pro currently publishes the largest self-reported Cambridge-specific usage figures. Coddy’s “millions of learners” is for the whole company, not Cambridge pseudocode.',
+      'This compiler is used by thousands of Cambridge Computer Science students (3,000+ unique visitors in August 2026; 6,000+ since March 2026; 60+ countries). “Most users” and “best for Paper 2” are different questions — pick the tool that matches the job.',
+    ],
+  },
+  {
+    id: 'worth-one-dollar',
+    group: 'choose',
+    question: 'Is Premium worth about $1 per month?',
+    paragraphs: [
+      'Yes, if you already practise pseudocode here regularly — especially in the 2–4 months before the exam. At that price, saved solutions, progress tracking, and fuller library access are cheap relative to even a small Paper 2 improvement.',
+      'Skip it if you only open the site every couple of weeks. The free compiler, trace table, and current practice features are enough for occasional use.',
+      'Do not subscribe just because there is a Premium button. Use the free editor first; pay when you are doing questions every week.',
+    ],
+  },
+  {
+    id: 'grade-nine',
+    group: 'choose',
+    question: 'Will this get me a 9 or A* in IGCSE Computer Science?',
+    paragraphs: [
+      'No tool guarantees a grade. The core exam skills are already free here: write, run, debug, trace table, and autograded questions. A 9 still depends on syllabus knowledge and handwritten answers.',
+      'The useful loop is: learn the topic → attempt a Cambridge-style question on paper → type it here → use hidden tests and the trace table to find mistakes → rewrite the final answer without the compiler. The real paper will not show “syntax error on line 7”.',
+    ],
+  },
+  {
+    id: 'use-both',
+    group: 'choose',
+    question: 'Should I use this and Pseudocode Pro together?',
+    paragraphs: [
+      'You can. Use this site for autograded exam-style questions and timed papers. Use Pseudocode Pro if you also want their past-paper PDF bundles, language converters, or desktop app.',
+      'You do not need both. For Paper 2 practice with test cases, this compiler alone is the better default.',
+    ],
+  },
   {
     id: 'is-there-a-compiler',
     group: 'about',
@@ -55,7 +116,7 @@ export const faqItems: FaqItem[] = [
     group: 'about',
     question: 'Is it really free?',
     paragraphs: [
-      'The compiler is free — you can write, run, and debug pseudocode in the browser without paying. Paid plans add extras such as classes, assignments, and extra saved solutions. See Pricing for current plans.',
+      'The compiler is free — you can write, run, and debug pseudocode in the browser without paying. The Student plan is typically about US$1 per month (shown in local currency on Pricing) for saved solutions, progress analytics, and full library access. Teacher plans add classes, assignments, and autograding.',
     ],
   },
   {
@@ -140,7 +201,7 @@ export const faqItems: FaqItem[] = [
     paragraphs: [
       'In this compiler, yes for simple variables. The first assignment or INPUT creates the name, and the type is inferred from that value. `Count <- 0` and `INPUT Name` both work without a DECLARE line.',
       'Undeclared arrays are also created if you index them (`Scores[1] <- 10` allocates a 1-indexed array with a large upper bound). Prefer an explicit `DECLARE Scores : ARRAY[1:n] OF INTEGER` so bounds match the question.',
-      'Cambridge papers still expect DECLARE. Use it in practice and in exams. Optional declaration is a convenience of this interpreter, not a mark-scheme feature.',
+      'Cambridge papers still expect DECLARE. Use it in practice and in exams. Optional declaration is a convenience of this interpreter, not a mark-scheme feature. The same is true of optional THEN / DO and `=` for assignment — see the comparison FAQ if you are choosing a “strict exam” runner.',
     ],
   },
   {

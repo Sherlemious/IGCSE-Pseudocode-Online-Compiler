@@ -145,9 +145,14 @@ export default async function PricingPage({
             Choose your plan
           </h1>
           <p className="mx-auto mt-3 max-w-2xl text-sm text-light-text/90 leading-relaxed">
-            The {SITE_NAME} lets students write, run, and practice Cambridge pseudocode
-            in the browser — with instant output, trace tables, and timed exam practice.
-            Paid plans add classes, assignments, and autograding for teachers.
+            The {SITE_NAME} lets students write, run, and practise Cambridge Paper 2
+            pseudocode in the browser — with instant output, trace tables, hidden tests, and timed
+            exams. The editor stays free; paid plans add saved solutions, analytics, classes, and
+            assignments. See how this compares to other IGCSE compilers on the{' '}
+            <Link href="/compare" className="text-primary hover:text-primary-hover">
+              comparison page
+            </Link>
+            .
           </p>
           <p className="mx-auto mt-2 max-w-xl text-sm text-dark-text leading-relaxed">
             Prices are shown in your local currency. Switch between monthly and yearly billing —

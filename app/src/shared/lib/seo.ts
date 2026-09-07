@@ -9,7 +9,7 @@ export const SUPPORT_EMAIL = 'sherlemious@sherlemious.com';
 export const DEFAULT_TITLE = 'Cambridge IGCSE & A Level Pseudocode Compiler | Online Editor';
 
 export const DEFAULT_DESCRIPTION =
-  'Write and run Cambridge IGCSE, O Level and AS & A Level pseudocode in your browser. Instant output, trace tables and timed past-paper practice — free.';
+  'Free Cambridge IGCSE 0478 and A Level 9618 pseudocode compiler. Run code in the browser, dry-run with trace tables, and practise past-paper questions with hidden tests and autograding.';
 
 export const SEO_KEYWORDS = [
   '0478',
@@ -118,6 +118,11 @@ export const SEO_KEYWORDS = [
   'pseudocode tutorial',
   'pseudocode for beginners',
   'free pseudocode compiler',
+  'best IGCSE pseudocode compiler',
+  'IGCSE Computer Science Paper 2',
+  'Cambridge Paper 2 practice',
+  'autograded pseudocode',
+  'hidden test cases',
   'online pseudocode IDE',
   'browser pseudocode',
   'no install pseudocode',

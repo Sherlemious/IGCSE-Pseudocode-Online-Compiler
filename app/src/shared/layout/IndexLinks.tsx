@@ -1,9 +1,11 @@
 import Link from 'next/link';
 
 const LINKS = [
+  { href: '/compare', label: 'Compare' },
   { href: '/faq', label: 'FAQ' },
   { href: '/examples', label: 'Examples' },
   { href: '/docs', label: 'Docs' },
+  { href: '/pricing', label: 'Pricing' },
   { href: '/privacy', label: 'Privacy' },
   { href: '/terms', label: 'Terms' },
   { href: '/refund', label: 'Refunds' },

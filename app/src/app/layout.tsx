@@ -105,7 +105,7 @@ const jsonLd = {
     'Syntax highlighting editor with error markers',
     'Practice questions sourced from Cambridge past papers with difficulty, topic, year and session filters',
     'Multi-step hints and model solutions per question',
-    'Instant autograder with visible and hidden test cases',
+    'Instant autograder with visible and hidden test cases — LeetCode-style Paper 2 practice',
     'Timed practice exams with configurable duration and question count',
     'Progress tracking: solved status, best score, attempt history',
     'Analytics dashboard with activity heatmap and topic/difficulty breakdown',
@@ -121,11 +121,35 @@ const jsonLd = {
     'pseudocode runner',
     'pseudocode interpreter',
     'IGCSE pseudocode compiler',
+    'best IGCSE pseudocode compiler',
+    'Cambridge Paper 2 practice',
     'A Level pseudocode compiler',
     'psuedocode compiler',
     'pseudocode complier',
   ],
-  offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+  sameAs: ['https://github.com/Sherlemious/IGCSE-Pseudocode-Online-Compiler'],
+  softwareHelp: {
+    '@type': 'WebPage',
+    url: `${SITE_URL}/faq`,
+    name: 'FAQ',
+  },
+  offers: [
+    {
+      '@type': 'Offer',
+      name: 'Free compiler',
+      price: '0',
+      priceCurrency: 'USD',
+      description:
+        'Write, run and debug Cambridge pseudocode, use the trace table, and access current practice/exam features without paying.',
+    },
+    {
+      '@type': 'Offer',
+      name: 'Student',
+      url: `${SITE_URL}/pricing`,
+      description:
+        'Typically about US$1 per month for saved solutions, progress analytics, and full practice library access. See /pricing for local currency.',
+    },
+  ],
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

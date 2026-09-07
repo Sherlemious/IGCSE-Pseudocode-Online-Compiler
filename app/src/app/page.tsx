@@ -5,6 +5,7 @@ const FEATURE_LINKS = [
   { label: 'Practice Questions', href: '/practice' },
   { label: 'Language Docs', href: '/docs' },
   { label: 'Timed Exams', href: '/exam' },
+  { label: 'Compare compilers', href: '/compare' },
   { label: 'Progress Analytics', href: '/analytics' },
   { label: 'FAQ', href: '/faq' },
   { label: 'Cambridge Pseudocode Examples', href: '/examples' },
@@ -15,7 +16,7 @@ const FEATURE_TAGS = [
   'Trace Tables',
   'Classes & OOP',
   'Dyslexia Friendly',
-  'Autograded',
+  'Autograded Paper 2 practice',
   'No install',
 ] as const;
 
@@ -23,23 +24,22 @@ export default function Home() {
   return (
     <>
       {/*
-       * Server-rendered tagline bar — gives Google crawlable body text and
-       * an H1. Kept visually compact so it doesn't eat into the editor area.
+       * Crawlable H1 + body copy, visually hidden so the editor stays full-height.
        */}
-      <section
-        aria-label="About this compiler"
-        className="sr-only"
-      >
+      <section aria-label="About this compiler" className="sr-only">
         <div className="flex items-center gap-2 min-w-0">
           <h1 className="text-xs font-semibold text-light-text whitespace-nowrap">
             IGCSE and AS &amp; A Level Pseudocode Compiler
           </h1>
-          <span className="sr-only">
-            - Free online editor and runner for Cambridge IGCSE Computer Science, Cambridge O Level
+          <span>
+            Free online editor and runner for Cambridge IGCSE Computer Science, Cambridge O Level
             Computer Science, and Cambridge International AS &amp; A Level Computer Science (9618).
-            Supports 0478, 0984, 2210 and 9618 pseudocode, including trace tables, records,
-            pointers, classes, object-oriented programming, dyslexia-friendly editor settings,
-            analytics, timed practice exams, and Cambridge past-paper questions.
+            Supports 0478, 0984, 2210 and 9618 pseudocode, including a native ANTLR interpreter,
+            interactive INPUT, trace tables, records, pointers, classes, object-oriented programming,
+            dyslexia-friendly editor settings, analytics, timed practice exams, and Cambridge
+            past-paper questions with hidden test cases. Compared with Pseudocode Pro, Coddy,
+            PseudoRun and PseudoStudio, this site is the Paper 2 practice tool with automatic
+            grading.
           </span>
         </div>
 
@@ -64,6 +64,7 @@ export default function Home() {
           <a href="/llms.txt" className="sr-only">
             LLM index of docs, examples and practice questions
           </a>
+          <a href="/compare">Best IGCSE pseudocode compiler for Paper 2 — comparison</a>
         </nav>
       </section>
 

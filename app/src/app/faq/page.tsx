@@ -7,14 +7,14 @@ import { SITE_NAME, SITE_URL } from '@/shared/lib/seo';
 export const metadata: Metadata = {
   title: 'IGCSE Pseudocode Compiler FAQ',
   description:
-    'FAQ for the free Cambridge IGCSE, O Level and AS & A Level (9618) pseudocode compiler. How Run, INPUT, DECLARE, grading, shared exams and school use work.',
+    'FAQ: best IGCSE pseudocode compiler for Paper 2, vs Pseudocode Pro, $1/month Premium, DECLARE shortcuts, grading, shared exams and school use.',
   alternates: {
     canonical: '/faq',
   },
   openGraph: {
     title: 'IGCSE Pseudocode Compiler FAQ',
     description:
-      'Answers about the free Cambridge IGCSE and A Level pseudocode compiler — how it works, DECLARE, exams, and using it in school.',
+      'Which tool to use for 0478 Paper 2, how the free Cambridge compiler works, DECLARE, exams, and school use.',
     url: `${SITE_URL}/faq`,
     type: 'website',
   },
@@ -77,7 +77,11 @@ export default function FaqPage() {
           </h1>
           <p className="text-sm text-dark-text mt-2 leading-relaxed">
             Free Cambridge IGCSE (0478/0984), O Level (2210) and AS &amp; A Level (9618) pseudocode
-            compiler. Open the{' '}
+            compiler. Compared with other runners, this is the Paper 2 practice tool — see the{' '}
+            <Link href="/compare" className="text-primary hover:text-primary-hover">
+              comparison
+            </Link>
+            . Open the{' '}
             <Link href="/" className="text-primary hover:text-primary-hover">
               editor
             </Link>

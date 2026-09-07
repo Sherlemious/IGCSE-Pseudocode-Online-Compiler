@@ -43,6 +43,7 @@ export default function GlobalCommands() {
     { id: 'go-docs', label: 'Go to Docs', group: 'Go to', keywords: 'reference help', run: () => router.push('/docs') },
     { id: 'go-practice', label: 'Go to Practice', group: 'Go to', keywords: 'questions', run: () => router.push('/practice') },
     { id: 'go-exam', label: 'Go to Exam', group: 'Go to', keywords: 'timed test', run: () => router.push('/exam') },
+    { id: 'go-compare', label: 'Go to Compare', group: 'Go to', keywords: 'pseudocode pro alternative best compiler paper 2', run: () => router.push('/compare') },
     { id: 'go-faq', label: 'Go to FAQ', group: 'Go to', keywords: 'questions help about', run: () => router.push('/faq') },
     { id: 'go-examples', label: 'Go to Examples', group: 'Go to', keywords: 'samples snippets', run: () => router.push('/examples') },
 
