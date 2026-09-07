@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import * as Popover from '@radix-ui/react-popover';
-import { Settings, Minus, Plus, Check, WrapText, Pencil, Trash2, LogIn, Accessibility } from 'lucide-react';
+import { Settings, Minus, Plus, Check, WrapText, Pencil, Trash2, LogIn, Accessibility, Sparkles } from 'lucide-react';
 import {
   themes,
   type PresetThemeId,
@@ -23,6 +23,7 @@ export default function SettingsPanel() {
     wordWrap, setWordWrap,
     fontFamilyId, setFontFamily,
     dyslexicFont, setDyslexicFont,
+    autocomplete, setAutocomplete,
     customThemes, isSignedIn,
   } = useTheme();
 
@@ -257,6 +258,20 @@ export default function SettingsPanel() {
               </span>
               <div className={`w-8 h-4 rounded-full transition-colors relative ${wordWrap ? 'bg-primary' : 'bg-border'}`}>
                 <div className={`absolute top-0.5 w-3 h-3 rounded-full bg-white transition-transform ${wordWrap ? 'translate-x-4' : 'translate-x-0.5'}`} />
+              </div>
+            </button>
+            <button
+              onClick={() => setAutocomplete(!autocomplete)}
+              className="w-full flex items-center justify-between px-3 py-2 rounded-lg bg-background border border-border hover:border-border/80 transition"
+              aria-label="Toggle code autocomplete"
+              aria-pressed={autocomplete}
+            >
+              <span className="flex items-center gap-2 text-xs text-dark-text">
+                <Sparkles className="h-3.5 w-3.5" />
+                Autocomplete
+              </span>
+              <div className={`w-8 h-4 rounded-full transition-colors relative ${autocomplete ? 'bg-primary' : 'bg-border'}`}>
+                <div className={`absolute top-0.5 w-3 h-3 rounded-full bg-white transition-transform ${autocomplete ? 'translate-x-4' : 'translate-x-0.5'}`} />
               </div>
             </button>
             <button

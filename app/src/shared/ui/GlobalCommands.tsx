@@ -48,6 +48,7 @@ export default function GlobalCommands() {
     { id: 'go-examples', label: 'Go to Examples', group: 'Go to', keywords: 'samples snippets', run: () => router.push('/examples') },
 
     { id: 'view-wrap', label: 'Toggle word wrap', group: 'View', run: () => theme.setWordWrap(!theme.wordWrap) },
+    { id: 'view-autocomplete', label: 'Toggle autocomplete', group: 'View', keywords: 'intellisense complete suggestions snippets', run: () => theme.setAutocomplete(!theme.autocomplete) },
     { id: 'view-dyslexic', label: 'Toggle dyslexia-friendly font', group: 'View', keywords: 'opendyslexic accessibility', run: () => theme.setDyslexicFont(!theme.dyslexicFont) },
     { id: 'view-font-inc', label: 'Increase font size', group: 'View', keywords: 'bigger zoom', run: () => theme.setFontSize(theme.fontSize + 1) },
     { id: 'view-font-dec', label: 'Decrease font size', group: 'View', keywords: 'smaller zoom', run: () => theme.setFontSize(theme.fontSize - 1) },

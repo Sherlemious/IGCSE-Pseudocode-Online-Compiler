@@ -2,6 +2,7 @@ import { StreamLanguage, LanguageSupport } from '@codemirror/language';
 import { StreamParser } from '@codemirror/language';
 import { tags } from '@lezer/highlight';
 import { KEYWORDS as keywords, TYPES as types, BOOLEANS as booleans } from './tokens';
+import { pseudocodeCompletionSource } from './pseudocode-completions';
 
 // Create a simple parser for pseudocode
 // This is a fallback approach using StreamLanguage API
@@ -117,5 +118,7 @@ const pseudocodeParser: StreamParser<PseudocodeState> = {
 export const pseudocode = StreamLanguage.define(pseudocodeParser);
 
 export function pseudocodeLanguage() {
-  return new LanguageSupport(pseudocode);
+  return new LanguageSupport(pseudocode, [
+    pseudocode.language.data.of({ autocomplete: pseudocodeCompletionSource }),
+  ]);
 }

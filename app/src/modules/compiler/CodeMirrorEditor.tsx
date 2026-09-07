@@ -30,6 +30,11 @@ const gutterCompartment = new Compartment();
 const ariaLabelCompartment = new Compartment();
 const wrapCompartment = new Compartment();
 const fontSizeCompartment = new Compartment();
+const autocompleteCompartment = new Compartment();
+
+function autocompleteExtensions(enabled: boolean) {
+  return enabled ? [autocompletion(), keymap.of(completionKeymap)] : [];
+}
 
 // Define StateEffect for line highlighting
 const setLineHighlight = StateEffect.define<{ debugLine: number | null; errorLine: number | null }>();
@@ -95,6 +100,8 @@ interface CodeMirrorEditorProps {
   wordWrap?: boolean;
   jumpToLine?: number | null;
   onJumpToLineConsumed?: () => void;
+  /** Increments on every parse/runtime error so re-running the same line still scrolls. */
+  errorFocusKey?: number;
 }
 
 const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
@@ -113,8 +120,9 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
   wordWrap = true,
   jumpToLine = null,
   onJumpToLineConsumed,
+  errorFocusKey = 0,
 }) => {
-  const { fontSize, dyslexicFont } = useTheme();
+  const { fontSize, dyslexicFont, autocomplete } = useTheme();
   const editorRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
   const onChangeRef = useRef(onChange);
@@ -217,16 +225,28 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
   const onJumpToLineConsumedRef = useRef(onJumpToLineConsumed);
   useEffect(() => { onJumpToLineConsumedRef.current = onJumpToLineConsumed; }, [onJumpToLineConsumed]);
 
-  useEffect(() => {
-    if (!jumpToLine || !viewRef.current) return;
+  const focusLine = useCallback((lineNo: number) => {
     const view = viewRef.current;
-    const lineCount = view.state.doc.lines;
-    if (jumpToLine < 1 || jumpToLine > lineCount) return;
-    const pos = view.state.doc.line(jumpToLine).from;
-    view.dispatch({ effects: EditorView.scrollIntoView(pos, { y: 'center' }) });
+    if (!view) return;
+    if (lineNo < 1 || lineNo > view.state.doc.lines) return;
+    const pos = view.state.doc.line(lineNo).from;
+    view.dispatch({
+      selection: { anchor: pos },
+      effects: EditorView.scrollIntoView(pos, { y: 'center' }),
+    });
     view.focus();
+  }, []);
+
+  useEffect(() => {
+    if (!jumpToLine) return;
+    focusLine(jumpToLine);
     onJumpToLineConsumedRef.current?.();
-  }, [jumpToLine]);
+  }, [jumpToLine, focusLine]);
+
+  useEffect(() => {
+    if (!errorFocusKey || !errorLine) return;
+    focusLine(errorLine);
+  }, [errorFocusKey, errorLine, focusLine]);
 
   useEffect(() => {
     if (!editorRef.current) return;
@@ -313,6 +333,47 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
         backgroundColor: 'rgba(var(--color-error-rgb), 0.1)',
         borderLeft: '2px solid var(--color-error)',
       },
+      '.cm-tooltip': {
+        backgroundColor: 'var(--color-surface)',
+        border: '1px solid var(--color-border)',
+        borderRadius: '8px',
+        color: 'var(--color-light-text)',
+        boxShadow: '0 8px 24px rgba(0, 0, 0, 0.35)',
+      },
+      '.cm-tooltip.cm-tooltip-autocomplete': {
+        overflow: 'hidden',
+      },
+      '.cm-tooltip-autocomplete ul': {
+        fontFamily: 'var(--editor-font-family)',
+        fontSize: '0.85em',
+      },
+      '.cm-tooltip-autocomplete ul li': {
+        padding: '4px 10px',
+      },
+      '.cm-tooltip-autocomplete ul li[aria-selected]': {
+        backgroundColor: 'rgba(var(--color-primary-rgb), 0.18)',
+        color: 'var(--color-light-text)',
+      },
+      '.cm-completionLabel': {
+        color: 'var(--color-light-text)',
+      },
+      '.cm-completionDetail': {
+        color: 'var(--color-dark-text)',
+        fontStyle: 'italic',
+        marginLeft: '0.6em',
+      },
+      '.cm-completionMatchedText': {
+        color: 'var(--color-primary)',
+        textDecoration: 'none',
+        fontWeight: 600,
+      },
+      '.cm-completionInfo': {
+        backgroundColor: 'var(--color-surface)',
+        border: '1px solid var(--color-border)',
+        color: 'var(--color-dark-text)',
+        padding: '6px 10px',
+        maxWidth: '22rem',
+      },
     });
 
     // Custom syntax highlighting using CSS variables
@@ -397,7 +458,6 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
       ...defaultKeymap,
       ...historyKeymap,
       ...searchKeymap,
-      ...completionKeymap,
     ]);
 
     // Create editor state
@@ -413,7 +473,7 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
         EditorState.allowMultipleSelections.of(true),
         indentOnInput(),
         bracketMatching(),
-        autocompletion(),
+        autocompleteCompartment.of(autocompleteExtensions(autocomplete)),
         rectangularSelection(),
         crosshairCursor(),
         highlightActiveLine(),
@@ -493,6 +553,13 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
       effects: wrapCompartment.reconfigure(wordWrap ? EditorView.lineWrapping : []),
     });
   }, [wordWrap]);
+
+  useEffect(() => {
+    if (!viewRef.current) return;
+    viewRef.current.dispatch({
+      effects: autocompleteCompartment.reconfigure(autocompleteExtensions(autocomplete)),
+    });
+  }, [autocomplete]);
 
   // Reconfigure typography so CodeMirror remeasures (font size + dyslexia spacing)
   useEffect(() => {

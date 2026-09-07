@@ -36,6 +36,9 @@ interface ThemeContextValue {
   /** When on, the editor + terminal use OpenDyslexic with extra spacing (overrides the font picker). */
   dyslexicFont: boolean;
   setDyslexicFont: (v: boolean) => void;
+  /** Keyword / snippet / builtin completions in the editor. */
+  autocomplete: boolean;
+  setAutocomplete: (v: boolean) => void;
   /** The signed-in user's saved custom themes (empty when signed out). */
   customThemes: SavedTheme[];
   /** True while the initial DB fetch of custom themes is in flight. */
@@ -54,6 +57,7 @@ const STORAGE_KEY_FONT_SIZE = 'pseudocode-font-size';
 const STORAGE_KEY_WORD_WRAP = 'pseudocode-word-wrap';
 const STORAGE_KEY_FONT_FAMILY = 'pseudocode-font-family';
 const STORAGE_KEY_DYSLEXIC = 'pseudocode-dyslexic-font';
+const STORAGE_KEY_AUTOCOMPLETE = 'pseudocode-autocomplete';
 const STORAGE_KEY_ACTIVE_COLORS = 'pseudocode-active-colors'; // first-paint cache for active custom theme
 const STORAGE_KEY_LEGACY_CUSTOM = 'pseudocode-custom-theme';  // pre-multi-theme single custom theme
 const DEFAULT_THEME: PresetThemeId = 'one-dark-pro';
@@ -61,6 +65,8 @@ const DEFAULT_FONT_SIZE = 14;
 const MIN_FONT_SIZE = 12;
 const MAX_FONT_SIZE = 24;
 const DEFAULT_FONT_FAMILY: FontFamilyId = 'fira-code';
+/** PostHog experiment flag: `control` = off by default, `test` = on by default. */
+export const EDITOR_AUTOCOMPLETE_FLAG = 'editor-autocomplete';
 
 function hexToRgb(hex: string): string {
   const shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
@@ -133,6 +139,25 @@ function loadDyslexicFont(): boolean {
   return localStorage.getItem(STORAGE_KEY_DYSLEXIC) === 'true';
 }
 
+/** Explicit user choice from settings, or null if they have never toggled. */
+function loadStoredAutocomplete(): boolean | null {
+  const stored = localStorage.getItem(STORAGE_KEY_AUTOCOMPLETE);
+  if (stored === null) return null;
+  return stored === 'true';
+}
+
+/** Experiment default: test = on, control = off. Fallback on when the flag is missing. */
+function autocompleteFromFlag(): boolean {
+  try {
+    const variant = posthog.getFeatureFlag(EDITOR_AUTOCOMPLETE_FLAG);
+    if (variant === 'test') return true;
+    if (variant === 'control') return false;
+  } catch {
+    /* PostHog may be uninitialized */
+  }
+  return true;
+}
+
 function parseStoredColors(raw: string | null): CustomColors | null {
   if (!raw) return null;
   try {
@@ -191,16 +216,38 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const [wordWrap, setWordWrapState] = useState<boolean>(true);
   const [fontFamilyId, setFontFamilyId] = useState<FontFamilyId>(DEFAULT_FONT_FAMILY);
   const [dyslexicFont, setDyslexicFontState] = useState<boolean>(false);
+  const [autocomplete, setAutocompleteState] = useState<boolean>(false);
   const [customThemes, setCustomThemes] = useState<SavedTheme[]>([]);
   const [themesLoading, setThemesLoading] = useState<boolean>(true);
 
-  // Load locally-persisted preferences on mount.
+  // Load locally-persisted preferences on mount. Autocomplete default comes from
+  // the PostHog experiment until the user explicitly toggles it in settings.
   useEffect(() => {
     setThemeId(loadTheme());
     setFontSizeState(loadFontSize());
     setWordWrapState(loadWordWrap());
     setFontFamilyId(loadFontFamily());
     setDyslexicFontState(loadDyslexicFont());
+
+    const storedAutocomplete = loadStoredAutocomplete();
+    if (storedAutocomplete !== null) {
+      setAutocompleteState(storedAutocomplete);
+      return;
+    }
+
+    let cancelled = false;
+    const applyFlagDefault = () => {
+      if (!cancelled) setAutocompleteState(autocompleteFromFlag());
+    };
+    try {
+      const unsubscribe = posthog.onFeatureFlags(applyFlagDefault);
+      return () => {
+        cancelled = true;
+        unsubscribe?.();
+      };
+    } catch {
+      applyFlagDefault();
+    }
   }, []);
 
   // Fetch the user's saved themes when auth state resolves; migrate any legacy theme.
@@ -323,6 +370,12 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     try { posthog.capture('dyslexic_font_toggled', { enabled: v }); } catch { /* non-critical */ }
   };
 
+  const setAutocomplete = (v: boolean) => {
+    setAutocompleteState(v);
+    localStorage.setItem(STORAGE_KEY_AUTOCOMPLETE, String(v));
+    try { posthog.capture('autocomplete_toggled', { enabled: v }); } catch { /* non-critical */ }
+  };
+
   const createTheme = useCallback(async (name: string, colors: CustomColors) => {
     const created = await apiCreateTheme(name, colors);
     if (!created) {
@@ -366,6 +419,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         wordWrap, setWordWrap,
         fontFamilyId, setFontFamily,
         dyslexicFont, setDyslexicFont,
+        autocomplete, setAutocomplete,
         customThemes, themesLoading, isSignedIn,
         createTheme, updateTheme, deleteTheme,
       }}

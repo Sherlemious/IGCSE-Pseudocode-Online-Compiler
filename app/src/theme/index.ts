@@ -12,5 +12,5 @@ export {
   deriveThemeColors,
   presetToCustomColors,
 } from './themes';
-export { ThemeProvider, useTheme, FONT_FAMILIES, type FontFamilyId } from './ThemeContext';
+export { ThemeProvider, useTheme, FONT_FAMILIES, EDITOR_AUTOCOMPLETE_FLAG, type FontFamilyId } from './ThemeContext';
 export { useThemeEditor, type EditorState } from './useThemeEditor';
