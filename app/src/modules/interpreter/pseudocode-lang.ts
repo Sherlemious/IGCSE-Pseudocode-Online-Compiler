@@ -119,6 +119,6 @@ export const pseudocode = StreamLanguage.define(pseudocodeParser);
 
 export function pseudocodeLanguage() {
   return new LanguageSupport(pseudocode, [
-    pseudocode.language.data.of({ autocomplete: pseudocodeCompletionSource }),
+    pseudocode.data.of({ autocomplete: pseudocodeCompletionSource }),
   ]);
 }
