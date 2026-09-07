@@ -15,6 +15,7 @@ if (typeof window !== 'undefined' && key) {
     api_host: host,
     person_profiles: 'identified_only',
     capture_pageview: false, // handled manually below
+    capture_pageleave: true, // still needed when pageviews are manual (bounce rate / session duration)
     debug: isDev,
     opt_out_capturing_by_default: isDev, // no data collected in dev unless opted in
   });
