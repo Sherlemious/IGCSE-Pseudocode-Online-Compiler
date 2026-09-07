@@ -1,6 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import { examples } from '../src/modules/content/examples';
 import { thinTopicQuestions } from './thinTopicQuestions';
+import { igcseRecentPaperQuestions } from './igcseRecentPaperQuestions';
 
 const prisma = new PrismaClient();
 
@@ -10638,6 +10639,7 @@ CALL Compress()`,
   },
 
   ...thinTopicQuestions,
+  ...igcseRecentPaperQuestions,
 ];
 
 // ─── Main seed function ────────────────────────────────────────────────────────
