@@ -7,6 +7,7 @@ import {
   humanizeRuntimeError,
   categorizeParseError,
   categorizeRuntimeError,
+  resolveOffendingLine,
 } from './errorMessages';
 import {
   captureRun,
@@ -18,6 +19,11 @@ import {
 } from './analytics';
 import { normalizeSource } from './normalize';
 import { maybeSampleErrorCode } from './errorSampling';
+
+export type RunOptions = {
+  /** Editor cursor line (1-based). Used when ANTLR flags a blank newline. */
+  cursorLine?: number | null;
+};
 
 export function useInterpreter(runContext?: RunContext) {
   // Latest run-context, read by capture callbacks without re-creating them.
@@ -42,8 +48,10 @@ export function useInterpreter(runContext?: RunContext) {
   // Breakpoints
   const [breakpoints, setBreakpoints] = useState<Set<number>>(new Set());
 
-  // Error line marker
+  // Error line marker + a nonce so re-running the same parse error still
+  // refocuses the editor (React would otherwise skip a no-op setErrorLine).
   const [errorLine, setErrorLine] = useState<number | null>(null);
+  const [errorFocusKey, setErrorFocusKey] = useState(0);
 
   // Trace ("dry run") table state
   const [traceRows, setTraceRows] = useState<TraceRow[]>([]);
@@ -189,17 +197,20 @@ export function useInterpreter(runContext?: RunContext) {
       message: string,
       line: number | null | undefined,
       sourceLines: string[],
+      offendingText?: string,
     ) => {
       const m = runMetaRef.current;
       if (errorType === 'runtime') {
         if (m?.runtimeErrorRecorded) return; // dedupe onError + catch double-report
         if (m) m.runtimeErrorRecorded = true;
       }
+      const rawOffending = offendingText ?? (line != null ? sourceLines[line - 1] : undefined);
+      const sourceLine = rawOffending?.trim() ? rawOffending : undefined;
       const category =
         errorType === 'parse'
-          ? categorizeParseError(message, line != null ? sourceLines[line - 1] : undefined)
+          ? categorizeParseError(message, sourceLine)
           : categorizeRuntimeError(message);
-      const offendingLine = line != null ? sourceLines[line - 1]?.trim() : undefined;
+      const offendingLine = sourceLine?.trim();
       captureInterpreterError(
         errorType,
         { message, line, codeLines: sourceLines.length, category, offendingLine },
@@ -225,7 +236,7 @@ export function useInterpreter(runContext?: RunContext) {
   );
 
   const startExecution = useCallback(
-    async (sourceCode: string, stepMode: boolean) => {
+    async (sourceCode: string, stepMode: boolean, options?: RunOptions) => {
       // Clean up any previous run
       if (abortRef.current) {
         abortRef.current.abort();
@@ -281,17 +292,27 @@ export function useInterpreter(runContext?: RunContext) {
 
       if (errors.length > 0) {
         const sourceLines = source.split('\n');
-        errors.forEach((e) => recordError('parse', e.message, e.line, sourceLines));
+        const cursorLine = options?.cursorLine;
+        const resolved = errors.map((e) => resolveOffendingLine(sourceLines, e.line, cursorLine));
+        errors.forEach((e, i) => {
+          const r = resolved[i];
+          recordError('parse', e.message, r.line, sourceLines, r.text);
+        });
         setEntries(
-          errors.map((e) => ({
-            kind: 'error' as const,
-            text: `Line ${e.line ?? '?'} — ${humanizeParseError(e.message, e.line != null ? sourceLines[e.line - 1] : undefined)}`,
-          }))
+          errors.map((e, i) => {
+            const r = resolved[i];
+            return {
+              kind: 'error' as const,
+              text: `Line ${r.line ?? e.line ?? '?'} — ${humanizeParseError(e.message, r.text)}`,
+            };
+          })
         );
         entriesLenRef.current = errors.length;
-        // Mark first error line
-        const firstLine = errors.find((e) => e.line != null)?.line;
-        if (firstLine != null) setErrorLine(firstLine);
+        const firstLine = resolved.find((r) => r.line != null)?.line;
+        if (firstLine != null) {
+          setErrorLine(firstLine);
+          setErrorFocusKey((k) => k + 1);
+        }
         reportRun('parse_error');
         setIsRunning(false);
         setIsStepping(false);
@@ -344,7 +365,10 @@ export function useInterpreter(runContext?: RunContext) {
             flushOutputSync();
             flushTraceSync();
             recordError('runtime', error.message, error.line, source.split('\n'));
-            if (error.line != null) setErrorLine(error.line);
+            if (error.line != null) {
+              setErrorLine(error.line);
+              setErrorFocusKey((k) => k + 1);
+            }
             entriesLenRef.current += 1;
             setEntries((prev) => [
               ...prev,
@@ -399,7 +423,10 @@ export function useInterpreter(runContext?: RunContext) {
 
         if (e instanceof PseudocodeError) {
           recordError('runtime', e.message, e.line, source.split('\n'));
-          if (e.line != null) setErrorLine(e.line);
+          if (e.line != null) {
+            setErrorLine(e.line);
+            setErrorFocusKey((k) => k + 1);
+          }
           entriesLenRef.current += 1;
           setEntries((prev) => [
             ...prev,
@@ -429,15 +456,15 @@ export function useInterpreter(runContext?: RunContext) {
   );
 
   const run = useCallback(
-    async (sourceCode: string) => {
-      await startExecution(sourceCode, false);
+    async (sourceCode: string, options?: RunOptions) => {
+      await startExecution(sourceCode, false, options);
     },
     [startExecution]
   );
 
   const debugRun = useCallback(
-    async (sourceCode: string) => {
-      await startExecution(sourceCode, true);
+    async (sourceCode: string, options?: RunOptions) => {
+      await startExecution(sourceCode, true, options);
     },
     [startExecution]
   );
@@ -566,6 +593,7 @@ export function useInterpreter(runContext?: RunContext) {
     debugCursor,
     debugStepCount,
     errorLine,
+    errorFocusKey,
     // Breakpoints
     breakpoints,
     // Trace

@@ -1,9 +1,10 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import { auth } from '@/modules/auth/auth';
+import { auth, signIn } from '@/modules/auth/auth';
 import { Braces, Terminal } from 'lucide-react';
 import AuthForm from '@/modules/auth/AuthForm';
+import { authHref, safeCallback } from '@/modules/auth/callback';
 
 export const metadata: Metadata = {
   title: 'Sign Up',
@@ -13,9 +14,14 @@ export const metadata: Metadata = {
   },
 };
 
-export default async function SignUpPage() {
+export default async function SignUpPage({ searchParams }: {
+  searchParams: Promise<{ callbackUrl?: string }>;
+}) {
+  const { callbackUrl } = await searchParams;
+  const callback = safeCallback(callbackUrl, '');
+  const redirectTo = callback || '/onboarding';
   const session = await auth();
-  if (session) redirect('/');
+  if (session?.user?.id) redirect(callback || '/');
 
   return (
     <div
@@ -45,8 +51,12 @@ export default async function SignUpPage() {
             style={{ animationDelay: '100ms' }}
           >
             <div className="space-y-2.5 stagger-children">
-              <Link
-                href="/api/auth/signin/google?callbackUrl=%2Fonboarding"
+              <form action={async () => {
+                'use server';
+                await signIn('google', { redirectTo });
+              }}>
+              <button
+                type="submit"
                 className="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg
                     bg-background border border-border text-light-text text-sm font-medium
                     hover:border-primary/40 hover:bg-background/80 transition-all duration-200 group"
@@ -72,7 +82,8 @@ export default async function SignUpPage() {
                 <span className="group-hover:translate-x-0.5 transition-transform duration-200">
                   Continue with Google
                 </span>
-              </Link>
+              </button>
+              </form>
 
               {/* <form
                 action={async () => {
@@ -108,7 +119,7 @@ export default async function SignUpPage() {
               </div>
             </div>
 
-            <AuthForm mode="signup" />
+            <AuthForm mode="signup" callbackUrl={callback} />
 
             <p className="text-[10px] sm:text-[11px] leading-relaxed text-dark-text/70 mt-3 sm:mt-4 text-center">
               By creating an account, you agree to our{' '}
@@ -135,7 +146,7 @@ export default async function SignUpPage() {
 
           <p className="text-xs text-dark-text/60 text-center mt-4 sm:mt-5">
             Already have an account?{' '}
-            <Link href="/auth/signin" className="text-primary hover:text-primary-hover transition-colors">
+            <Link href={authHref('signin', callback)} className="text-primary hover:text-primary-hover transition-colors">
               Sign in
             </Link>
           </p>

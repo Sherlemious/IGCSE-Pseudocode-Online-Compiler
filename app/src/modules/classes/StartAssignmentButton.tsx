@@ -2,21 +2,28 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { Loader2, Play, RotateCcw, CheckCircle2 } from 'lucide-react';
+import { captureAssignmentStart } from './assignmentTelemetry';
 
 interface Props {
   assignmentId: string;
+  classId: string;
+  attemptId?: string;
   status: 'none' | 'in_progress' | 'completed';
   score?: number | null;
   totalTests?: number | null;
 }
 
-export default function StartAssignmentButton({ assignmentId, status, score, totalTests }: Props) {
+export default function StartAssignmentButton({ assignmentId, classId, attemptId, status, score, totalTests }: Props) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   if (status === 'completed') {
+    if (attemptId) {
+      return <Link href={`/exam/${attemptId}/results`} className="inline-flex items-center gap-1.5 rounded-lg border border-primary/40 px-3.5 py-2 text-xs text-primary hover:bg-primary/10"><CheckCircle2 size={14} />View results</Link>;
+    }
     return (
       <span className="shrink-0 inline-flex items-center gap-1.5 text-xs text-primary font-medium">
         <CheckCircle2 size={14} />
@@ -39,6 +46,7 @@ export default function StartAssignmentButton({ assignmentId, status, score, tot
         setLoading(false);
         return;
       }
+      captureAssignmentStart({ assignmentId, classId }, data.attemptId, data.resumed !== false);
       router.push(`/exam/${data.attemptId}`);
     } catch {
       setError('Something went wrong.');

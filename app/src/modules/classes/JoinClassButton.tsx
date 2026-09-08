@@ -3,12 +3,17 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Loader2, LogIn } from 'lucide-react';
+import { safeCallback } from '@/modules/auth/callback';
+import { captureEvent } from '@/modules/interpreter/analytics';
+import { assignmentProperties, type AssignmentContext } from './assignmentTelemetry';
 
 interface Props {
   joinCode: string;
+  returnTo?: string;
+  assignment?: AssignmentContext;
 }
 
-export default function JoinClassButton({ joinCode }: Props) {
+export default function JoinClassButton({ joinCode, returnTo, assignment }: Props) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -20,7 +25,7 @@ export default function JoinClassButton({ joinCode }: Props) {
       const res = await fetch('/api/classes/join', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ joinCode }),
+        body: JSON.stringify({ joinCode, assignmentId: assignment?.assignmentId }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -28,7 +33,11 @@ export default function JoinClassButton({ joinCode }: Props) {
         setLoading(false);
         return;
       }
-      router.push('/classes');
+      if (!data.alreadyMember) {
+        captureEvent('class_joined', assignment ? assignmentProperties(assignment) : { class_id: data.classId, source: 'direct' });
+      }
+      router.push(safeCallback(returnTo, '/classes'));
+      router.refresh();
     } catch {
       setError('Something went wrong.');
       setLoading(false);

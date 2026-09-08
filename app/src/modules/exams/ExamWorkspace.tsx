@@ -106,6 +106,7 @@ export default function ExamWorkspace({ examId, questions, timeLimitMin, started
     debugLine,
     debugVariables,
     errorLine,
+    errorFocusKey,
     run: interpreterRun,
     debugRun,
     step,
@@ -114,6 +115,7 @@ export default function ExamWorkspace({ examId, questions, timeLimitMin, started
     provideInput,
     clearEntries,
   } = useInterpreter({ feature: 'exam', examId, questionId: question.questionId });
+  const cursorLineRef = useRef<number | undefined>(undefined);
 
   // Analytics: exam_started once per attempt view.
   useEffect(() => {
@@ -184,7 +186,7 @@ export default function ExamWorkspace({ examId, questions, timeLimitMin, started
     }
     clearEntries();
     setActiveTab('terminal');
-    interpreterRun(code);
+    interpreterRun(code, { cursorLine: cursorLineRef.current });
   }, [timeUp, isRunning, code, interpreterRun, interpreterStop, clearEntries]);
 
   const handleGrade = useCallback(async () => {
@@ -597,10 +599,12 @@ export default function ExamWorkspace({ examId, questions, timeLimitMin, started
             <CodeMirrorEditor
               value={code}
               onChange={handleCodeChange}
+              onCursorChange={(line) => { cursorLineRef.current = line; }}
               isRunning={isRunning}
               readOnly={isStepping || timeUp || submitting}
               debugLine={debugLine}
               errorLine={errorLine}
+              errorFocusKey={errorFocusKey}
             />
           </div>
 

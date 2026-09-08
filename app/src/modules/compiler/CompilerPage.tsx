@@ -101,6 +101,7 @@ const CompilerPage: React.FC = () => {
     debugCursor,
     debugStepCount,
     errorLine,
+    errorFocusKey,
     breakpoints,
     traceRows,
     maxTraceRows,
@@ -490,7 +491,7 @@ const CompilerPage: React.FC = () => {
   const handleRunCode = async () => {
     if (!activeTab.content.trim()) return;
     setOutputTab('terminal');
-    await run(activeTab.content);
+    await run(activeTab.content, { cursorLine: cursor?.line });
 
     // Track run count and trigger feedback survey after threshold
     try {
@@ -505,7 +506,7 @@ const CompilerPage: React.FC = () => {
   const handleDebugCode = async () => {
     if (!activeTab.content.trim()) return;
     setOutputTab('terminal');
-    await debugRun(activeTab.content);
+    await debugRun(activeTab.content, { cursorLine: cursor?.line });
   };
 
   // Register run/convert/format actions in the command palette.
@@ -560,6 +561,7 @@ const CompilerPage: React.FC = () => {
             isStepping={isStepping}
             debugLine={debugLine}
             errorLine={errorLine}
+            errorFocusKey={errorFocusKey}
             onStep={step}
             onStepBack={stepBack}
             debugCursor={debugCursor}

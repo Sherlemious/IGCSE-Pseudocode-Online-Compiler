@@ -1470,7 +1470,11 @@ describe('bundled programs parse with the current grammar', () => {
   // required to parse. Placeholder starters get a friendly error instead — see
   // the `...` hint test below.
   it('every solution in prisma/seed.ts parses', () => {
-    const seedFiles = ['../../../../prisma/seed.ts', '../../../../prisma/thinTopicQuestions.ts'];
+    const seedFiles = [
+      '../../../../prisma/seed.ts',
+      '../../../../prisma/thinTopicQuestions.ts',
+      '../../../../prisma/igcseRecentPaperQuestions.ts',
+    ];
     const failures: string[] = [];
     let codeBlockCount = 0;
 

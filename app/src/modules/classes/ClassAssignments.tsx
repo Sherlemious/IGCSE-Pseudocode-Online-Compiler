@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { ClipboardList, Plus, Loader2, X, Users, CalendarClock } from 'lucide-react';
 import Combobox from '@/shared/ui/Combobox';
 import DatePicker from '@/shared/ui/DatePicker';
+import AssignmentShareActions from './AssignmentShareActions';
 
 function todayISO(): string {
   const d = new Date();
@@ -19,10 +20,12 @@ export interface AssignmentRow {
   questionCount: number;
   submittedCount: number;
   rosterSize: number;
+  isPublished: boolean;
 }
 
 interface Props {
   classId: string;
+  joinCode: string;
   assignments: AssignmentRow[];
   availableExams: { id: string; title: string }[];
 }
@@ -33,7 +36,7 @@ function formatDue(iso: string | null): string | null {
   return d.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
-export default function ClassAssignments({ classId, assignments, availableExams }: Props) {
+export default function ClassAssignments({ classId, joinCode, assignments, availableExams }: Props) {
   const router = useRouter();
   const [examId, setExamId] = useState('');
   const [due, setDue] = useState('');
@@ -120,7 +123,7 @@ export default function ClassAssignments({ classId, assignments, availableExams 
           {assignments.map((a) => {
             const dueLabel = formatDue(a.dueDate);
             return (
-              <div key={a.id} className="flex items-center justify-between gap-3 bg-surface border border-border rounded-lg px-4 py-3">
+              <div key={a.id} className="flex flex-wrap items-center justify-between gap-3 bg-surface border border-border rounded-lg px-4 py-3">
                 <div className="min-w-0">
                   <Link href={`/classes/${classId}/assignments/${a.id}`} className="text-sm font-medium text-light-text truncate hover:text-primary transition-colors block">
                     {a.examTitle}
@@ -141,6 +144,9 @@ export default function ClassAssignments({ classId, assignments, availableExams 
                   {busy === a.id ? <Loader2 size={12} className="animate-spin" /> : <X size={12} />}
                   Remove
                 </button>
+                <div className="w-full border-t border-border/50 pt-3">
+                  <AssignmentShareActions classId={classId} assignmentId={a.id} joinCode={joinCode} disabled={!a.isPublished || a.questionCount === 0} />
+                </div>
               </div>
             );
           })}

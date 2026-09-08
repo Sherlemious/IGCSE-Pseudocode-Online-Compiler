@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { auth, signIn } from '@/modules/auth/auth';
 import { Braces, Terminal } from 'lucide-react';
 import AuthForm from '@/modules/auth/AuthForm';
+import { authHref, safeCallback } from '@/modules/auth/callback';
 
 export const metadata: Metadata = {
   title: 'Sign In',
@@ -26,19 +27,12 @@ interface SignInPageProps {
   searchParams: Promise<{ error?: string; callbackUrl?: string }>;
 }
 
-// Only allow same-origin relative paths as post-login destinations (no open redirects).
-function safeCallback(url: string | undefined, fallback: string): string {
-  if (!url) return fallback;
-  if (!url.startsWith('/') || url.startsWith('//') || url.startsWith('/\\')) return fallback;
-  return url;
-}
-
 export default async function SignInPage({ searchParams }: SignInPageProps) {
   const { error, callbackUrl } = await searchParams;
   const redirectTo = safeCallback(callbackUrl, '/practice');
 
   const session = await auth();
-  if (session) redirect(redirectTo);
+  if (session?.user?.id) redirect(redirectTo);
 
   const errorMessage = error ? (ERROR_MESSAGES[error] ?? ERROR_MESSAGES.default) : null;
 
@@ -147,12 +141,12 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
               </div>
             </div>
 
-            <AuthForm mode="signin" />
+            <AuthForm mode="signin" callbackUrl={redirectTo} />
           </div>
 
           <p className="text-xs text-dark-text/60 text-center mt-5">
             Don&apos;t have an account?{' '}
-            <Link href="/auth/signup" className="text-primary hover:text-primary-hover transition-colors">
+            <Link href={authHref('signup', safeCallback(callbackUrl, ''))} className="text-primary hover:text-primary-hover transition-colors">
               Create one
             </Link>
           </p>

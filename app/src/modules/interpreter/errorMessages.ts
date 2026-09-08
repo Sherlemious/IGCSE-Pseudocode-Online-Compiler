@@ -128,6 +128,8 @@ function levenshtein(a: string, b: string): number {
   return dp[m][n];
 }
 
+const SEE_DOCS = '\n  See the Docs tab for the full IGCSE syntax reference.';
+
 const KEYWORDS = [
   'DECLARE', 'CONSTANT', 'IF', 'THEN', 'ELSE', 'ENDIF', 'CASE', 'OF',
   'OTHERWISE', 'ENDCASE', 'WHILE', 'DO', 'ENDWHILE', 'FOR', 'TO', 'STEP',
@@ -144,8 +146,9 @@ const KEYWORDS = [
 /** If `token` looks like a misspelled keyword, return the closest match. */
 function nearestKeyword(token: string): string | null {
   const upper = token.toUpperCase();
-  // Exact match (different case) → definitely a casing issue
-  if (KEYWORDS.includes(upper)) return upper;
+  // Wrong case of a real keyword (`endfunction` → ENDFUNCTION). An *exact*
+  // match is not a typo — the keyword is just in the wrong place (stray closer).
+  if (KEYWORDS.includes(upper)) return token === upper ? null : upper;
   // Near match (distance ≤ 2 for words > 3 chars)
   if (token.length > 3) {
     let best: string | null = null;
@@ -157,6 +160,59 @@ function nearestKeyword(token: string): string | null {
     return best;
   }
   return null;
+}
+
+/** True when a message still contains ANTLR jargon students should never see. */
+function isAntlrJargon(msg: string): boolean {
+  return /no viable alternative|mismatched input|extraneous input|token recognition error|expecting \{/i.test(msg);
+}
+
+function genericParseFallback(sourceLine?: string): string {
+  const snippet = sourceLine?.trim();
+  const shown = snippet && snippet.length > 60 ? `${snippet.slice(0, 57)}…` : snippet;
+  if (shown) {
+    return (
+      `This line isn't valid IGCSE pseudocode:\n  ${shown}\n` +
+      `  Check spelling, put each statement on its own line, and close blocks with ENDIF, NEXT i, ENDWHILE, or ENDFUNCTION.` +
+      SEE_DOCS
+    );
+  }
+  return (
+    `This line isn't valid IGCSE pseudocode.\n` +
+    `  Check spelling, put each statement on its own line, and close blocks with ENDIF, NEXT i, ENDWHILE, or ENDFUNCTION.` +
+    SEE_DOCS
+  );
+}
+
+/**
+ * Pick a source line with actual code for hint detectors and telemetry.
+ * ANTLR often flags the blank newline *after* the mistake (`offending_line`
+ * empty → detectors never run). Prefer that ANTLR line when it has text,
+ * otherwise the editor cursor, otherwise walk backward.
+ */
+export function resolveOffendingLine(
+  sourceLines: string[],
+  antlrLine?: number | null,
+  cursorLine?: number | null,
+): { line: number | null; text: string | undefined } {
+  const at = (n: number | null | undefined): string | undefined =>
+    n != null && n >= 1 && n <= sourceLines.length ? sourceLines[n - 1] : undefined;
+
+  const antlrText = at(antlrLine);
+  if (antlrText?.trim()) return { line: antlrLine ?? null, text: antlrText };
+
+  const cursorText = at(cursorLine);
+  if (cursorText?.trim()) return { line: cursorLine ?? null, text: cursorText };
+
+  const start = antlrLine ?? cursorLine;
+  if (start != null) {
+    const from = Math.min(Math.max(start, 1), sourceLines.length);
+    for (let i = from; i >= 1; i--) {
+      const t = sourceLines[i - 1];
+      if (t?.trim()) return { line: i, text: t };
+    }
+  }
+  return { line: antlrLine ?? cursorLine ?? null, text: antlrText ?? cursorText };
 }
 
 // ── Parse error humanization ────────────────────────────────────────────────
@@ -297,8 +353,6 @@ interface LineDiagnosis {
   message: string;
 }
 
-const SEE_DOCS = '\n  See the Docs tab for the full IGCSE syntax reference.';
-
 /** Python written where pseudocode was expected (else:/elif/for..in range/input()). */
 function pythonHint(line: string): LineDiagnosis | null {
   const t = line.trim();
@@ -366,8 +420,48 @@ function basicBlockHint(line: string): LineDiagnosis | null {
       category: 'basic_block_closer',
       message: 'No BEGIN is needed in IGCSE pseudocode — write your statements directly.',
     };
+  if (upper === 'START' || upper === 'STOP')
+    return {
+      category: 'basic_block_closer',
+      message:
+        'Cambridge IGCSE pseudocode does not need START, STOP, BEGIN, or a general END wrapper.\n' +
+        '  Write statements directly, and use specific closers such as ENDIF, NEXT i, ENDWHILE, and ENDFUNCTION.',
+    };
 
   return null;
+}
+
+/** Extra ENDFUNCTION / ENDIF / … on a line ANTLR already rejected — not a typo. */
+const STRAY_CLOSER_OPENER: Record<string, { category: string; opener: string }> = {
+  ENDIF: { category: 'stray_endif', opener: 'IF ... THEN' },
+  ENDWHILE: { category: 'stray_endwhile', opener: 'WHILE ... DO' },
+  ENDCASE: { category: 'stray_endcase', opener: 'CASE OF' },
+  ENDFUNCTION: { category: 'stray_endfunction', opener: 'FUNCTION name() RETURNS <type>' },
+  ENDPROCEDURE: { category: 'stray_endprocedure', opener: 'PROCEDURE name()' },
+  ENDTYPE: { category: 'stray_endtype', opener: 'TYPE Name' },
+  ENDCLASS: { category: 'stray_endclass', opener: 'CLASS Name' },
+};
+
+function strayCloserHint(line: string): LineDiagnosis | null {
+  const t = line.trim();
+  if (/^NEXT(?:\s+[A-Za-z_]\w*)?$/i.test(t)) {
+    return {
+      category: 'stray_next',
+      message:
+        'NEXT must close a FOR loop. There is no open FOR above this line.\n' +
+        '  Remove this extra NEXT, or add `FOR i <- 1 TO n` above it.\n' +
+        '  Example:\n    FOR i <- 1 TO 10\n      OUTPUT i\n    NEXT i',
+    };
+  }
+  const meta = STRAY_CLOSER_OPENER[t.toUpperCase()];
+  if (!meta) return null;
+  const kw = t.toUpperCase();
+  return {
+    category: meta.category,
+    message:
+      `${kw} doesn't belong here — there is no open ${meta.opener} to close.\n` +
+      `  Remove this extra ${kw}, or add the matching ${meta.opener} above it.`,
+  };
 }
 
 /** `FOR count : 1 TO 3` / `FOR i = 1 TO 10` — the counter is set with `<-`. */
@@ -406,12 +500,21 @@ function sourceLineHint(sourceLine: string | undefined): LineDiagnosis | null {
   return (
     pythonHint(sourceLine) ??
     basicBlockHint(sourceLine) ??
+    strayCloserHint(sourceLine) ??
     forLoopHint(sourceLine) ??
     outputSeparatorHint(sourceLine)
   );
 }
 
 export function humanizeParseError(
+  rawMessage: string,
+  sourceLine?: string,
+): string {
+  const msg = explainParseError(rawMessage, sourceLine);
+  return isAntlrJargon(msg) ? genericParseFallback(sourceLine) : msg;
+}
+
+function explainParseError(
   rawMessage: string,
   sourceLine?: string,
 ): string {
@@ -551,6 +654,10 @@ export function humanizeParseError(
       if (rawMessage.includes('NEWLINE') && KEYWORDS.includes(token.toUpperCase()))
         return `${token.toUpperCase()} must be on its own line — put each statement on a separate line`;
 
+      // Extra closer (ENDFUNCTION with no FUNCTION) — never "did you mean ENDFUNCTION?"
+      const stray = strayCloserHint(token);
+      if (stray) return stray.message;
+
       // Casing issue or near-misspelling
       const nearest = nearestKeyword(token);
       if (nearest) {
@@ -561,6 +668,7 @@ export function humanizeParseError(
       if (rawMessage.includes("'DO'")) return `Missing DO after the WHILE condition\n  Example: WHILE ${token} DO`;
       if (rawMessage.includes("'OF'")) return `Missing OF in CASE statement\n  Example: CASE OF variable`;
     }
+    return genericParseFallback(sourceLine);
   }
 
   // ── no viable alternative ──────────────────────────────────────────────
@@ -588,6 +696,10 @@ export function humanizeParseError(
 
       const phint = portugolHint(token);
       if (phint) return phint;
+
+      const stray = strayCloserHint(token);
+      if (stray) return stray.message;
+
       const nearest = nearestKeyword(token);
       if (nearest) return `"${token}" is not recognised — did you mean ${nearest}?`;
 
@@ -599,17 +711,10 @@ export function humanizeParseError(
           `  To display text:   OUTPUT "${token}"`
         );
     }
-    return 'Unexpected input — check the syntax on this line';
+    return genericParseFallback(sourceLine);
   }
 
-  // ── fallback: strip ANTLR token-set noise ─────────────────────────────
-  // ANTLR dumps full expected-set like "expecting {T__0, T__1, 'THEN', ...}"
-  // Trim it to just the human-readable part
-  const cleaned = rawMessage
-    .replace(/expecting \{[^}]+\}/g, '')
-    .replace(/expecting '[^']+'/g, '')
-    .trim();
-  return cleaned || rawMessage;
+  return genericParseFallback(sourceLine);
 }
 
 // ── Built-in function registry (for typo suggestions) ──────────────────────
@@ -790,6 +895,11 @@ export function categorizeParseError(rawMessage: string, sourceLine?: string): s
   if (/no viable alternative at input '(?:\\n|\n)?ENDIF/.test(rawMessage)) return 'stray_endif';
   if (/no viable alternative at input '(?:\\n|\n)?UNTIL/.test(rawMessage)) return 'stray_until';
   if (/no viable alternative at input '(?:\\n|\n)?ELSE/.test(rawMessage)) return 'stray_else';
+  const strayFromToken = rawMessage.match(/input '([^']+)'/)?.[1];
+  if (strayFromToken) {
+    const stray = strayCloserHint(cleanToken(strayFromToken) || strayFromToken);
+    if (stray) return stray.category;
+  }
 
   // IF missing THEN.
   if (rawMessage.includes('ENDIF') && rawMessage.includes('THEN')) return 'missing_then';

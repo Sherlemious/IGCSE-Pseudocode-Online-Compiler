@@ -5,6 +5,7 @@ import { ArrowLeft, CheckCircle2, Circle, Clock } from 'lucide-react';
 import { auth } from '@/modules/auth/auth';
 import { prisma } from '@/shared/db';
 import CodeDetails from '@/modules/classes/CodeDetails';
+import AssignmentShareActions from '@/modules/classes/AssignmentShareActions';
 
 export const metadata: Metadata = {
   title: 'Assignment results',
@@ -24,10 +25,12 @@ export default async function AssignmentResultsPage({ params }: Props) {
     where: { id: assignmentId },
     select: {
       classId: true,
-      exam: { select: { title: true } },
+      exam: { select: { title: true, isPublished: true, _count: { select: { questions: true } } } },
       class: {
         select: {
           ownerId: true,
+          joinCode: true,
+          archived: true,
           name: true,
           memberships: {
             orderBy: { joinedAt: 'asc' },
@@ -76,6 +79,9 @@ export default async function AssignmentResultsPage({ params }: Props) {
         <div className="mb-8">
           <h1 className="display-serif text-2xl font-semibold text-light-text">{assignment.exam.title}</h1>
           <p className="text-[11px] text-dark-text/60 mt-1 font-mono">{submitted}/{members.length} submitted</p>
+          {!assignment.class.archived && <div className="mt-4">
+            <AssignmentShareActions classId={classId} assignmentId={assignmentId} joinCode={assignment.class.joinCode} disabled={!assignment.exam.isPublished || assignment.exam._count.questions === 0} />
+          </div>}
         </div>
 
         {members.length === 0 ? (

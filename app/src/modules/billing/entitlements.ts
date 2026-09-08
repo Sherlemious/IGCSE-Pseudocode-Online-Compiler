@@ -12,7 +12,7 @@
  */
 import { prisma } from '@/shared/db';
 import { isPaidPlan } from '@/modules/billing/planDisplay';
-import type { Plan } from '@prisma/client';
+import type { Plan, Prisma } from '@prisma/client';
 
 export type Tier = 'free' | 'starter' | 'pro' | 'school';
 
@@ -88,8 +88,11 @@ export function hasPremiumAccess(input: PlanHolder & { classOwners: PlanHolder[]
 }
 
 /** Fetch a user + the plans of every class they're enrolled in, then resolve access. */
-export async function getPremiumAccess(userId: string): Promise<boolean> {
-  const user = await prisma.user.findUnique({
+export async function getPremiumAccess(
+  userId: string,
+  db: Pick<Prisma.TransactionClient, 'user'> = prisma,
+): Promise<boolean> {
+  const user = await db.user.findUnique({
     where: { id: userId },
     select: {
       plan: true,

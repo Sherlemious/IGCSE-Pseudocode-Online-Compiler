@@ -70,6 +70,7 @@ interface CodeInputProps {
   onBreakpointToggle?: (line: number) => void;
   jumpToLine?: number | null;
   onJumpToLineConsumed?: () => void;
+  errorFocusKey?: number;
   entries?: OutputEntry[];
   traceRows?: TraceRow[];
   outputTab?: 'terminal' | 'trace' | 'python' | 'flowchart';
@@ -119,6 +120,7 @@ const CodeInput: React.FC<CodeInputProps> = ({
   onBreakpointToggle,
   jumpToLine,
   onJumpToLineConsumed,
+  errorFocusKey = 0,
   entries = [],
   traceRows = [],
   outputTab,
@@ -135,23 +137,30 @@ const CodeInput: React.FC<CodeInputProps> = ({
 
   // Flash the Run button once when a run settles — success-tinted on a clean
   // finish, error-tinted when the run produced an error. Watches the falling
-  // edge of isRunning and the rising edge of errorLine so it fires for normal
-  // runs, runtime errors and instant parse errors alike.
+  // edge of isRunning, a new errorFocusKey (re-run of the same parse error
+  // does not change errorLine), and the rising edge of errorLine.
   const [runPulse, setRunPulse] = useState<'idle' | 'success' | 'error'>('idle');
   const prevRunning = useRef(false);
   const prevErrorLine = useRef<number | null>(null);
+  const prevFocusKey = useRef(0);
   const pulseTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   useEffect(() => {
     const justFinished = prevRunning.current && !isRunning;
     const justErrored = errorLine != null && prevErrorLine.current == null;
-    if (justErrored || justFinished) {
-      setRunPulse(justErrored ? 'error' : 'success');
+    const sameLineRetry = errorFocusKey > prevFocusKey.current;
+    if (justErrored || sameLineRetry) {
+      setRunPulse('error');
+      clearTimeout(pulseTimer.current);
+      pulseTimer.current = setTimeout(() => setRunPulse('idle'), 700);
+    } else if (justFinished) {
+      setRunPulse('success');
       clearTimeout(pulseTimer.current);
       pulseTimer.current = setTimeout(() => setRunPulse('idle'), 700);
     }
     prevRunning.current = isRunning;
     prevErrorLine.current = errorLine ?? null;
-  }, [isRunning, errorLine]);
+    prevFocusKey.current = errorFocusKey;
+  }, [isRunning, errorLine, errorFocusKey]);
   useEffect(() => () => clearTimeout(pulseTimer.current), []);
 
   useEffect(() => {
@@ -452,6 +461,7 @@ const CodeInput: React.FC<CodeInputProps> = ({
           wordWrap={wordWrap}
           jumpToLine={jumpToLine}
           onJumpToLineConsumed={onJumpToLineConsumed}
+          errorFocusKey={errorFocusKey}
         />
 
         {code.length === 0 && !isRunning && (

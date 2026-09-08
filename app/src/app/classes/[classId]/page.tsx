@@ -64,7 +64,7 @@ export default async function ClassDetailPage({ params }: Props) {
         select: {
           id: true,
           dueDate: true,
-          exam: { select: { id: true, title: true, _count: { select: { questions: true } } } },
+          exam: { select: { id: true, title: true, isPublished: true, _count: { select: { questions: true } } } },
         },
       },
     },
@@ -112,6 +112,7 @@ export default async function ClassDetailPage({ params }: Props) {
       questionCount: a.exam._count.questions,
       submittedCount: submittedByAssignment.get(a.id) ?? 0,
       rosterSize,
+      isPublished: a.exam.isPublished,
     }));
 
     const members = cls.memberships.map((m) => ({
@@ -132,7 +133,7 @@ export default async function ClassDetailPage({ params }: Props) {
           members={members}
         />
         <div className="mt-8">
-          <ClassAssignments classId={classId} assignments={assignmentRows} availableExams={availableExams} />
+          <ClassAssignments classId={classId} joinCode={cls.joinCode} assignments={assignmentRows} availableExams={availableExams} />
         </div>
       </Shell>
     );
@@ -143,7 +144,7 @@ export default async function ClassDetailPage({ params }: Props) {
     ? await prisma.examAttempt.findMany({
         where: { userId, assignmentId: { in: assignmentIds } },
         orderBy: { createdAt: 'desc' },
-        select: { assignmentId: true, status: true, score: true, totalTests: true },
+        select: { id: true, assignmentId: true, status: true, score: true, totalTests: true },
       })
     : [];
   const latestByAssignment = new Map<string, (typeof myAttempts)[number]>();
@@ -187,7 +188,7 @@ export default async function ClassDetailPage({ params }: Props) {
                     {dueLabel && <span className="flex items-center gap-1"><CalendarClock size={11} />due {dueLabel}</span>}
                   </div>
                 </div>
-                <StartAssignmentButton assignmentId={a.id} status={status} score={at?.score} totalTests={at?.totalTests} />
+                <StartAssignmentButton classId={classId} assignmentId={a.id} attemptId={at?.id} status={status} score={at?.score} totalTests={at?.totalTests} />
               </div>
             );
           })}
