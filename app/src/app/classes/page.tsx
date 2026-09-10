@@ -58,7 +58,7 @@ export default async function ClassesPage() {
         {/* Create a class */}
         <div className="bg-surface/80 backdrop-blur-sm rounded-xl border border-border p-5 mb-8 card-glow animate-fade-in-up" style={{ animationDelay: '80ms' }}>
           <h2 className="mono-label text-light-text mb-3">Create a class</h2>
-          <CreateClassForm canCreate={canCreate} maxClasses={entitlements.limits.maxClasses} />
+          <CreateClassForm canCreate={canCreate} maxClasses={entitlements.limits.maxClasses} tier={entitlements.tier} />
         </div>
 
         {/* Teaching */}

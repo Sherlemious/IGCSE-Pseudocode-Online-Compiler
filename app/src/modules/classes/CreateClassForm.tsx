@@ -1,34 +1,57 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { usePostHog } from 'posthog-js/react';
 import { Loader2, Plus, Lock } from 'lucide-react';
-import { SUPPORT_EMAIL } from '@/shared/lib/seo';
+import type { Tier } from '@/modules/billing/entitlements';
 
 interface Props {
   canCreate: boolean;
   maxClasses: number;
+  /** The caller's current class-capacity tier — drives the accurate "on the … plan" copy. */
+  tier: Tier;
 }
 
-export default function CreateClassForm({ canCreate, maxClasses }: Props) {
+const PLAN_LABELS: Record<Tier, string> = {
+  free: 'Free',
+  starter: 'Starter',
+  pro: 'Pro',
+  school: 'School',
+};
+
+export default function CreateClassForm({ canCreate, maxClasses, tier }: Props) {
   const router = useRouter();
+  const ph = usePostHog();
   const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const shownRef = useRef(false);
+
+  // Fire the class-limit nudge once when the locked state is shown, so we can
+  // measure how often teachers hit the ceiling and how many click Upgrade.
+  useEffect(() => {
+    if (!canCreate && !shownRef.current) {
+      shownRef.current = true;
+      ph?.capture('nudge_shown', { nudge: 'class_limit' });
+    }
+  }, [canCreate, ph]);
 
   if (!canCreate) {
     return (
       <div className="flex items-center justify-between gap-3 rounded-lg border border-border bg-background/50 px-4 py-3">
         <span className="flex items-center gap-2 text-xs text-dark-text">
           <Lock size={13} />
-          You&apos;ve reached your {maxClasses}-class limit on the free plan.
+          You&apos;ve reached your {maxClasses}-class limit on the {PLAN_LABELS[tier]} plan.
         </span>
-        <a
-          href={`mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent('Interested in Teacher Pro')}`}
+        <Link
+          href="/pricing?view=teacher"
+          onClick={() => ph?.capture('nudge_clicked', { nudge: 'class_limit' })}
           className="shrink-0 text-xs font-medium text-primary hover:underline"
         >
           Upgrade →
-        </a>
+        </Link>
       </div>
     );
   }
