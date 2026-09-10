@@ -5,6 +5,7 @@ import { parse } from '../parser';
 import { Interpreter } from '../core/interpreter';
 import { ServerVirtualFileSystem } from '../core/serverFilesystem';
 import { humanizeParseError, categorizeParseError } from '../errorMessages';
+import { normalizeSource } from '../normalize';
 import type { PseudocodeError } from '../core/types';
 import { examples } from '@/modules/content/examples';
 
@@ -481,6 +482,25 @@ describe('humanizeParseError — source-line pattern detectors', () => {
       expect(categorizeParseError(RAW, 'ENDFOR')).toBe('basic_block_closer');
       expect(categorizeParseError(RAW, 'FOR count : 1 to 3')).toBe('for_loop_assignment');
       expect(categorizeParseError(RAW, 'OUTPUT "cost is" Cost')).toBe('output_missing_comma');
+      expect(categorizeParseError("extraneous input 'ELSE' expecting {ENDIF, NEWLINE}", 'ELSE')).toBe('stray_else');
+      expect(categorizeParseError(RAW, 'Else')).toBe('stray_else');
+      expect(categorizeParseError(RAW, 'elseif age > 12 then')).toBe('stray_else');
+      expect(categorizeParseError(RAW, 'DECLARE Count INTEGER')).toBe('declare_syntax');
+      expect(categorizeParseError(RAW, 'DECLARE nilai = 90')).toBe('declare_syntax');
+      expect(categorizeParseError(RAW, 'a, b, c, temp : INTEGER')).toBe('declare_syntax');
+    });
+    it('does not flag a valid DECLARE with a colon', () => {
+      expect(categorizeParseError(RAW, 'DECLARE Date : STRING')).not.toBe('declare_syntax');
+      expect(categorizeParseError(RAW, 'DECLARE Marks : ARRAY[1:10] OF INTEGER')).not.toBe('declare_syntax');
+    });
+  });
+
+  describe('markdown fence stripping', () => {
+    it('blanks ``` fence lines so the code inside runs, keeping line count', () => {
+      const r = normalizeSource('```pseudocode\nDECLARE X : INTEGER\n```');
+      expect(r.fixes).toContain('markdown_fence');
+      expect(r.code).toBe('\nDECLARE X : INTEGER\n');
+      expect(r.code.split('\n').length).toBe(3);
     });
   });
 });

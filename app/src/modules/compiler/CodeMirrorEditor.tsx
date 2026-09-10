@@ -22,6 +22,7 @@ import { searchKeymap, highlightSelectionMatches } from '@codemirror/search';
 import { autocompletion, completionKeymap } from '@codemirror/autocomplete';
 import { pseudocodeLanguage } from '@/modules/interpreter/pseudocode-lang';
 import { formatPseudocode } from '@/modules/interpreter/formatter';
+import { cleanPaste, type PasteCleanup } from './pasteCleanup';
 import { HighlightStyle, syntaxHighlighting } from '@codemirror/language';
 import { tags as t } from '@lezer/highlight';
 
@@ -102,6 +103,8 @@ interface CodeMirrorEditorProps {
   onJumpToLineConsumed?: () => void;
   /** Increments on every parse/runtime error so re-running the same line still scrolls. */
   errorFocusKey?: number;
+  /** Fires when a pasted AI/Markdown answer was stripped down to just its code. */
+  onPasteCleaned?: (info: PasteCleanup) => void;
 }
 
 const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
@@ -121,6 +124,7 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
   jumpToLine = null,
   onJumpToLineConsumed,
   errorFocusKey = 0,
+  onPasteCleaned,
 }) => {
   const { fontSize, dyslexicFont, autocomplete } = useTheme();
   const editorRef = useRef<HTMLDivElement>(null);
@@ -134,6 +138,7 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
   const errorLineRef = useRef(errorLine);
   const breakpointsRef = useRef(breakpoints);
   const onBreakpointToggleRef = useRef(onBreakpointToggle);
+  const onPasteCleanedRef = useRef(onPasteCleaned);
 
   // Update refs when props change
   useEffect(() => {
@@ -159,6 +164,10 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
   useEffect(() => {
     onBreakpointToggleRef.current = onBreakpointToggle;
   }, [onBreakpointToggle]);
+
+  useEffect(() => {
+    onPasteCleanedRef.current = onPasteCleaned;
+  }, [onPasteCleaned]);
 
   // Helper function to create aria-label attributes
   const createAriaLabelAttributes = useCallback(
@@ -460,6 +469,21 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
       ...searchKeymap,
     ]);
 
+    // When a student pastes a whole AI/Markdown answer (```fences``` + prose),
+    // keep just the code inside the fences and drop the chatter.
+    const pasteHandler = EditorView.domEventHandlers({
+      paste(event, view) {
+        const clip = event.clipboardData?.getData('text/plain');
+        if (!clip || !clip.includes('```')) return false;
+        const cleaned = cleanPaste(clip);
+        if (!cleaned.changed) return false;
+        event.preventDefault();
+        view.dispatch(view.state.replaceSelection(cleaned.text));
+        onPasteCleanedRef.current?.(cleaned);
+        return true;
+      },
+    });
+
     // Create editor state
     const startState = EditorState.create({
       doc: value,
@@ -479,6 +503,7 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
         highlightActiveLine(),
         highlightSelectionMatches(),
         customKeymap,
+        pasteHandler,
         pseudocodeLanguage(),
         highlightTheme,
         customTheme,

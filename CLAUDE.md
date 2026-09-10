@@ -165,6 +165,7 @@ npm run antlr:generate  # regenerate parser from grammar
 | `nav_clicked` | `destination`, `from` |
 | `feedback_submitted` | — |
 | `bug_reported` | `category`, `has_code`, `page` |
+| `paste_cleaned` | `looks_ai`, `stripped_prose`, `blocks` — fired when a pasted AI/Markdown answer is stripped to just its fenced code |
 
 ### Pricing / subscription funnel (`/pricing` + Paddle checkout)
 

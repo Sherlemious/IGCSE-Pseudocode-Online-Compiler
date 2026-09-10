@@ -22,6 +22,8 @@ import {
 } from 'lucide-react';
 import * as Popover from '@radix-ui/react-popover';
 import { toast } from 'sonner';
+import { usePostHog } from 'posthog-js/react';
+import type { PasteCleanup } from './pasteCleanup';
 import ExamplePicker from './examplePicker';
 import FileViewer from './fileViewer';
 import CodeMirrorEditor from './CodeMirrorEditor';
@@ -128,6 +130,30 @@ const CodeInput: React.FC<CodeInputProps> = ({
   const tabsContainerRef = useRef<HTMLDivElement>(null);
   const [showShortcutHint, setShowShortcutHint] = useState(false);
   const { wordWrap } = useTheme();
+  const ph = usePostHog();
+  const aiEggShownRef = useRef(false);
+
+  // A pasted AI/Markdown answer was trimmed down to just its code. Track it, and
+  // reward the common "pasted a whole ChatGPT reply" case with a one-time nudge.
+  const handlePasteCleaned = useCallback(
+    (info: PasteCleanup) => {
+      ph?.capture('paste_cleaned', {
+        looks_ai: info.looksAi,
+        stripped_prose: info.strippedProse,
+        blocks: info.blockCount,
+      });
+      if (info.looksAi && !aiEggShownRef.current) {
+        aiEggShownRef.current = true;
+        toast('🤖 Spotted some AI homework help', {
+          description:
+            "I kept just the code and tossed the explanation. Make sure you understand it — pasting won't be an option in the real exam 😉",
+        });
+      } else if (info.strippedProse) {
+        toast('✂️ Trimmed that paste down to just the code');
+      }
+    },
+    [ph],
+  );
 
   // Controlled modals — the triggers live in the Open menu (and the palette).
   const [examplesOpen, setExamplesOpen] = useState(false);
@@ -462,6 +488,7 @@ const CodeInput: React.FC<CodeInputProps> = ({
           jumpToLine={jumpToLine}
           onJumpToLineConsumed={onJumpToLineConsumed}
           errorFocusKey={errorFocusKey}
+          onPasteCleaned={handlePasteCleaned}
         />
 
         {code.length === 0 && !isRunning && (

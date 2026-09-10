@@ -444,6 +444,26 @@ const STRAY_CLOSER_OPENER: Record<string, { category: string; opener: string }> 
 
 function strayCloserHint(line: string): LineDiagnosis | null {
   const t = line.trim();
+  // A lone ELSE that ANTLR rejected — there is no open (or no well-formed) IF
+  // above it. (ELSE is not a block *closer*, so it is not in the map below.)
+  if (/^ELSE$/i.test(t)) {
+    return {
+      category: 'stray_else',
+      message:
+        'ELSE must sit inside an IF … THEN … ELSE … ENDIF block.\n' +
+        '  Check the IF above it has THEN, and that this block ends with ENDIF.\n' +
+        '  Example:\n    IF Score >= 50 THEN\n      OUTPUT "Pass"\n    ELSE\n      OUTPUT "Fail"\n    ENDIF',
+    };
+  }
+  // `ELSEIF …` / `ELSE IF …` — Cambridge pseudocode has no else-if; nest instead.
+  if (/^ELSE\s*IF\b/i.test(t) || /^ELSEIF\b/i.test(t)) {
+    return {
+      category: 'stray_else',
+      message:
+        'Cambridge pseudocode has no ELSEIF / ELSE IF — nest another IF inside the ELSE.\n' +
+        '  Example:\n    IF Mark >= 65 THEN\n      OUTPUT "A"\n    ELSE\n      IF Mark >= 12 THEN\n        OUTPUT "B"\n      ENDIF\n    ENDIF',
+    };
+  }
   if (/^NEXT(?:\s+[A-Za-z_]\w*)?$/i.test(t)) {
     return {
       category: 'stray_next',
@@ -494,6 +514,49 @@ function outputSeparatorHint(line: string): LineDiagnosis | null {
   return null;
 }
 
+/** DECLARE written without a colon, with `=`, or as a comma-separated list. */
+const DECLARE_TYPE = '(?:INTEGER|REAL|STRING|CHAR|BOOLEAN|DATE|ARRAY)';
+function declareHint(line: string): LineDiagnosis | null {
+  const t = line.trim();
+  if (!/^(?:DECLARE\b|[A-Za-z_]\w*\s*,)/i.test(t)) return null;
+
+  // `DECLARE Count = 0` — DECLARE states the type; it never assigns a value.
+  const eq = t.match(/^DECLARE\s+([A-Za-z_]\w*)\s*=/i);
+  if (eq)
+    return {
+      category: 'declare_syntax',
+      message:
+        'DECLARE only states the type — it does not assign a value.\n' +
+        `  Give the type with \`:\`, then assign on the next line with \`<-\`:\n` +
+        `    DECLARE ${eq[1]} : INTEGER\n    ${eq[1]} <- 0`,
+    };
+
+  // `DECLARE a, b, c : INTEGER` / `a, b, c : INTEGER` — one variable per line.
+  const commaList = t.match(
+    new RegExp(`^(?:DECLARE\\s+)?([A-Za-z_]\\w*)(?:\\s*,\\s*[A-Za-z_]\\w*)+\\s*:\\s*${DECLARE_TYPE}\\b`, 'i'),
+  );
+  if (commaList)
+    return {
+      category: 'declare_syntax',
+      message:
+        'Declare one variable per line — DECLARE does not take a comma-separated list.\n' +
+        `  Example:\n    DECLARE ${commaList[1]} : INTEGER\n    DECLARE Count : INTEGER`,
+    };
+
+  // `DECLARE Count INTEGER` — missing the colon between name and type.
+  const noColon = t.match(new RegExp(`^DECLARE\\s+([A-Za-z_]\\w*)\\s+${DECLARE_TYPE}\\b`, 'i'));
+  if (noColon)
+    return {
+      category: 'declare_syntax',
+      message:
+        'Put a colon between the variable name and its type.\n' +
+        `  You wrote "${t}".\n` +
+        `  Example:\n    DECLARE ${noColon[1]} : INTEGER`,
+    };
+
+  return null;
+}
+
 /** Shared source-line diagnosis used by both the humanizer and the categorizer. */
 function sourceLineHint(sourceLine: string | undefined): LineDiagnosis | null {
   if (!sourceLine || !sourceLine.trim()) return null;
@@ -501,6 +564,7 @@ function sourceLineHint(sourceLine: string | undefined): LineDiagnosis | null {
     pythonHint(sourceLine) ??
     basicBlockHint(sourceLine) ??
     strayCloserHint(sourceLine) ??
+    declareHint(sourceLine) ??
     forLoopHint(sourceLine) ??
     outputSeparatorHint(sourceLine)
   );
@@ -559,6 +623,11 @@ function explainParseError(
     if (ch === '{' || ch === '}') return 'Unexpected "{" or "}" — use IF/WHILE/FOR blocks, not curly braces';
     if (ch === ';') return 'Unexpected ";" — pseudocode does not use semicolons';
     if (ch === '#') return 'Use // for comments, not #\n  Example: // this is a comment';
+    if (ch === '`')
+      return (
+        'That looks like a Markdown code block (```) pasted from a chat or webpage.\n' +
+        '  Paste only the pseudocode itself — remove the ``` fence lines and any explanation text around it.'
+      );
     if (ch === '!' || ch === '!=') return 'Use <> for "not equal to", not "!="\n  Example: IF x <> 0 THEN';
     if (ch === '==') return 'Use = for comparison in pseudocode, not ==\n  Example: IF x = 5 THEN';
     if (ch === '&&') return 'Use AND instead of &&\n  Example: IF a > 0 AND b > 0 THEN';

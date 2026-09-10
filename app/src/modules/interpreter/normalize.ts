@@ -60,5 +60,13 @@ export function normalizeSource(src: string): NormalizeResult {
   const afterInvisible = afterQuotes.replace(ZERO_WIDTH, '').replace(WEIRD_SPACE, ' ');
   if (afterInvisible !== afterQuotes) fixes.push('invisible_chars');
 
-  return { code: afterInvisible, changed: afterInvisible !== src, fixes };
+  // Markdown code fences (``` or ```pseudocode on their own line) that students
+  // paste straight out of ChatGPT / docs. PostHog shows these backtick lines as a
+  // top "foreign punctuation" parse error. Blank the fence line in place — keep the
+  // newline so ANTLR line numbers stay aligned with the editor — which lets the code
+  // inside the fence parse and run instead of dying on the backticks.
+  const afterFences = afterInvisible.replace(/^[ \t]*```[^\n]*$/gm, '');
+  if (afterFences !== afterInvisible) fixes.push('markdown_fence');
+
+  return { code: afterFences, changed: afterFences !== src, fixes };
 }
