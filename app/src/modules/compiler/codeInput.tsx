@@ -19,9 +19,7 @@ import {
   Link2,
   Copy,
   Image as ImageIcon,
-  BookMarked,
 } from 'lucide-react';
-import { OPEN_CHEATSHEET_EVENT } from '@/shared/lib/events';
 import * as Popover from '@radix-ui/react-popover';
 import { toast } from 'sonner';
 import { usePostHog } from 'posthog-js/react';
@@ -346,16 +344,6 @@ const CodeInput: React.FC<CodeInputProps> = ({
                 </Popover.Content>
               </Popover.Portal>
             </Popover.Root>
-
-            <button
-              onClick={() => window.dispatchEvent(new CustomEvent(OPEN_CHEATSHEET_EVENT))}
-              className="flex items-center gap-1 px-2 h-7 text-xs text-dark-text hover:text-light-text
-                hover:bg-background rounded transition-colors"
-              title="Pseudocode syntax cheat sheet"
-            >
-              <BookMarked size={14} />
-              <span className="hidden @md:inline">Cheat sheet</span>
-            </button>
 
             <Popover.Root>
               <Popover.Trigger asChild>

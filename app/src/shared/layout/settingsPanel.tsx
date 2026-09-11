@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import * as Popover from '@radix-ui/react-popover';
-import { Settings, Minus, Plus, Check, WrapText, Pencil, Trash2, LogIn, Accessibility, Sparkles } from 'lucide-react';
+import { Settings, Minus, Plus, Check, WrapText, Pencil, Trash2, LogIn, Accessibility, Sparkles, BookMarked } from 'lucide-react';
 import {
   themes,
   type PresetThemeId,
@@ -12,6 +12,7 @@ import {
   type FontFamilyId,
 } from '@/theme';
 import ThemeEditorModal from '@/theme/ThemeEditorModal';
+import { OPEN_CHEATSHEET_EVENT } from '@/shared/lib/events';
 
 const themeOrder: PresetThemeId[] = ['one-dark-pro', 'dracula', 'nord', 'monokai', 'github-light'];
 const fontOrder: FontFamilyId[] = ['fira-code', 'jetbrains-mono', 'source-code-pro', 'inconsolata'];
@@ -288,6 +289,22 @@ export default function SettingsPanel() {
                 <div className={`absolute top-0.5 w-3 h-3 rounded-full bg-white transition-transform ${dyslexicFont ? 'translate-x-4' : 'translate-x-0.5'}`} />
               </div>
             </button>
+          </div>
+
+          <div className="border-t border-border/50" />
+
+          {/* Help */}
+          <div>
+            <h3 className="text-xs font-semibold text-dark-text uppercase tracking-wider mb-3">Help</h3>
+            <Popover.Close asChild>
+              <button
+                onClick={() => window.dispatchEvent(new CustomEvent(OPEN_CHEATSHEET_EVENT))}
+                className="w-full flex items-center gap-2 px-3 py-2 rounded-lg bg-background border border-border hover:border-border/80 transition text-xs text-dark-text hover:text-light-text"
+              >
+                <BookMarked className="h-3.5 w-3.5" />
+                Pseudocode cheat sheet
+              </button>
+            </Popover.Close>
           </div>
 
           <Popover.Arrow className="fill-surface" />
