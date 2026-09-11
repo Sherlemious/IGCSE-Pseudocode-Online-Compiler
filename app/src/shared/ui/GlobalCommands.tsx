@@ -5,7 +5,7 @@ import { toast } from 'sonner';
 import { useTheme, themes, type PresetThemeId } from '@/theme';
 import { useRegisterCommands, type Command } from './CommandPalette';
 import { SITE_URL } from '@/shared/lib/seo';
-import { OPEN_BUG_REPORT_EVENT } from '@/shared/lib/events';
+import { OPEN_BUG_REPORT_EVENT, OPEN_CHEATSHEET_EVENT } from '@/shared/lib/events';
 
 const GITHUB_URL = 'https://github.com/Sherlemious/IGCSE-Pseudocode-Online-Compiler';
 const PORTFOLIO_URL = 'https://www.sherlemious.com';
@@ -53,6 +53,7 @@ export default function GlobalCommands() {
     { id: 'view-font-inc', label: 'Increase font size', group: 'View', keywords: 'bigger zoom', run: () => theme.setFontSize(theme.fontSize + 1) },
     { id: 'view-font-dec', label: 'Decrease font size', group: 'View', keywords: 'smaller zoom', run: () => theme.setFontSize(theme.fontSize - 1) },
     { id: 'view-shortcuts', label: 'Keyboard shortcuts', group: 'View', keywords: 'keys help', run: () => window.dispatchEvent(new CustomEvent(SHORTCUTS_EVENT)) },
+    { id: 'help-cheatsheet', label: 'Pseudocode cheat sheet', group: 'View', keywords: 'syntax reference help keywords how to write examples guide', run: () => window.dispatchEvent(new CustomEvent(OPEN_CHEATSHEET_EVENT)) },
     ...themeOrder.map<Command>((id) => ({
       id: `view-theme-${id}`,
       label: `Theme: ${themes[id].label}`,

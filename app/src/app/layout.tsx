@@ -12,6 +12,7 @@ import OnboardingNudges from '@/modules/onboarding/OnboardingNudges';
 import { CommandProvider } from '@/shared/ui/CommandPalette';
 import GlobalCommands from '@/shared/ui/GlobalCommands';
 import KeyboardShortcutsModal from '@/shared/ui/KeyboardShortcutsModal';
+import CheatSheetModal from '@/shared/ui/CheatSheetModal';
 import ReportBugModal from '@/modules/feedback/ReportBugModal';
 import PageTransition from '@/shared/layout/PageTransition';
 import {
@@ -209,6 +210,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <SiteFooter />
                 <GlobalCommands />
                 <KeyboardShortcutsModal />
+                <CheatSheetModal />
                 <ReportBugModal />
                 <Toaster position="top-center" theme="dark" richColors />
               </CommandProvider>
