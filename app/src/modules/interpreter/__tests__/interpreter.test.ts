@@ -484,14 +484,20 @@ describe('humanizeParseError — source-line pattern detectors', () => {
       expect(categorizeParseError(RAW, 'OUTPUT "cost is" Cost')).toBe('output_missing_comma');
       expect(categorizeParseError("extraneous input 'ELSE' expecting {ENDIF, NEWLINE}", 'ELSE')).toBe('stray_else');
       expect(categorizeParseError(RAW, 'Else')).toBe('stray_else');
-      expect(categorizeParseError(RAW, 'elseif age > 12 then')).toBe('stray_else');
       expect(categorizeParseError(RAW, 'DECLARE Count INTEGER')).toBe('declare_syntax');
       expect(categorizeParseError(RAW, 'DECLARE nilai = 90')).toBe('declare_syntax');
       expect(categorizeParseError(RAW, 'a, b, c, temp : INTEGER')).toBe('declare_syntax');
+      expect(categorizeParseError(RAW, 'FOR c <- 1 TO 5 DO')).toBe('for_loop_do');
+      expect(categorizeParseError(RAW, 'FUNCTION F(h : INTEGER) RETURN INTEGER')).toBe('return_vs_returns');
     });
-    it('does not flag a valid DECLARE with a colon', () => {
+    it('does not flag valid syntax the grammar already accepts', () => {
       expect(categorizeParseError(RAW, 'DECLARE Date : STRING')).not.toBe('declare_syntax');
       expect(categorizeParseError(RAW, 'DECLARE Marks : ARRAY[1:10] OF INTEGER')).not.toBe('declare_syntax');
+      // ELSE IF / ELSEIF parse fine → must NOT be mislabelled as stray_else.
+      expect(categorizeParseError(RAW, 'ELSEIF age > 12 THEN')).not.toBe('stray_else');
+      expect(categorizeParseError(RAW, 'ELSE IF age > 12 THEN')).not.toBe('stray_else');
+      // RETURNS (with the S) is the correct header keyword.
+      expect(categorizeParseError(RAW, 'FUNCTION F(h : INTEGER) RETURNS INTEGER')).not.toBe('return_vs_returns');
     });
   });
 

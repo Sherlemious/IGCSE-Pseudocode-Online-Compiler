@@ -446,6 +446,8 @@ function strayCloserHint(line: string): LineDiagnosis | null {
   const t = line.trim();
   // A lone ELSE that ANTLR rejected — there is no open (or no well-formed) IF
   // above it. (ELSE is not a block *closer*, so it is not in the map below.)
+  // NB: ELSE IF / ELSEIF are valid in this grammar, so they are deliberately not
+  // matched here — a flagged ELSEIF line has some *other* error on it.
   if (/^ELSE$/i.test(t)) {
     return {
       category: 'stray_else',
@@ -453,15 +455,6 @@ function strayCloserHint(line: string): LineDiagnosis | null {
         'ELSE must sit inside an IF … THEN … ELSE … ENDIF block.\n' +
         '  Check the IF above it has THEN, and that this block ends with ENDIF.\n' +
         '  Example:\n    IF Score >= 50 THEN\n      OUTPUT "Pass"\n    ELSE\n      OUTPUT "Fail"\n    ENDIF',
-    };
-  }
-  // `ELSEIF …` / `ELSE IF …` — Cambridge pseudocode has no else-if; nest instead.
-  if (/^ELSE\s*IF\b/i.test(t) || /^ELSEIF\b/i.test(t)) {
-    return {
-      category: 'stray_else',
-      message:
-        'Cambridge pseudocode has no ELSEIF / ELSE IF — nest another IF inside the ELSE.\n' +
-        '  Example:\n    IF Mark >= 65 THEN\n      OUTPUT "A"\n    ELSE\n      IF Mark >= 12 THEN\n        OUTPUT "B"\n      ENDIF\n    ENDIF',
     };
   }
   if (/^NEXT(?:\s+[A-Za-z_]\w*)?$/i.test(t)) {
@@ -557,6 +550,34 @@ function declareHint(line: string): LineDiagnosis | null {
   return null;
 }
 
+/** `FOR i <- 1 TO 5 DO` — FOR loops don't take DO (that belongs to WHILE). */
+function forDoHint(line: string): LineDiagnosis | null {
+  const t = line.trim();
+  if (!/^FOR\b.*\bTO\b.*\bDO$/i.test(t)) return null;
+  return {
+    category: 'for_loop_do',
+    message:
+      "A FOR loop doesn't use DO — that keyword belongs to WHILE.\n" +
+      '  Just end the line after the range:\n' +
+      '    FOR i <- 1 TO 5\n      OUTPUT i\n    NEXT i',
+  };
+}
+
+/** `FUNCTION F(...) RETURN INTEGER` — the header declares its type with RETURNS. */
+function returnTypeHint(line: string): LineDiagnosis | null {
+  const t = line.trim();
+  // A FUNCTION header line whose type keyword is RETURN, not RETURNS (`\bRETURN\b`
+  // already excludes RETURNS — there's no word boundary between the N and the S).
+  if (!/^FUNCTION\b[^\n]*\bRETURN\b/i.test(t)) return null;
+  return {
+    category: 'return_vs_returns',
+    message:
+      'A FUNCTION header declares its return type with RETURNS (with an S).\n' +
+      '  Example:\n    FUNCTION Area(w : INTEGER, h : INTEGER) RETURNS INTEGER\n' +
+      '  (RETURN — no S — is only used *inside* the function to send a value back.)',
+  };
+}
+
 /** Shared source-line diagnosis used by both the humanizer and the categorizer. */
 function sourceLineHint(sourceLine: string | undefined): LineDiagnosis | null {
   if (!sourceLine || !sourceLine.trim()) return null;
@@ -566,6 +587,8 @@ function sourceLineHint(sourceLine: string | undefined): LineDiagnosis | null {
     strayCloserHint(sourceLine) ??
     declareHint(sourceLine) ??
     forLoopHint(sourceLine) ??
+    forDoHint(sourceLine) ??
+    returnTypeHint(sourceLine) ??
     outputSeparatorHint(sourceLine)
   );
 }
