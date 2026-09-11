@@ -578,6 +578,36 @@ function returnTypeHint(line: string): LineDiagnosis | null {
   };
 }
 
+/**
+ * A comparison operator with no left-hand value: `x > 12 AND < 65` (they mean
+ * `AND x < 65`) or a condition that starts with a comparator (`IF > 5`).
+ * High-precision: a logical operator or IF/WHILE/UNTIL is never validly followed
+ * straight by a comparison operator, so a correct condition never matches.
+ */
+function missingOperandHint(line: string): LineDiagnosis | null {
+  const t = line.trim();
+  const CMP = '(?:<=|>=|<>|<|>|=)';
+  if (new RegExp(`\\b(?:AND|OR|NOT)\\s+${CMP}`, 'i').test(t)) {
+    return {
+      category: 'missing_operand',
+      message:
+        'A comparison after AND / OR is missing its left-hand value — name the variable again.\n' +
+        '  Wrong:  IF Age > 12 AND < 65 THEN\n' +
+        '  Right:  IF Age > 12 AND Age < 65 THEN',
+    };
+  }
+  if (new RegExp(`^(?:IF|WHILE|UNTIL)\\s+${CMP}`, 'i').test(t)) {
+    return {
+      category: 'missing_operand',
+      message:
+        'A condition needs a value before the comparison operator.\n' +
+        '  Wrong:  IF > 5 THEN\n' +
+        '  Right:  IF Score > 5 THEN',
+    };
+  }
+  return null;
+}
+
 /** Shared source-line diagnosis used by both the humanizer and the categorizer. */
 function sourceLineHint(sourceLine: string | undefined): LineDiagnosis | null {
   if (!sourceLine || !sourceLine.trim()) return null;
@@ -589,6 +619,7 @@ function sourceLineHint(sourceLine: string | undefined): LineDiagnosis | null {
     forLoopHint(sourceLine) ??
     forDoHint(sourceLine) ??
     returnTypeHint(sourceLine) ??
+    missingOperandHint(sourceLine) ??
     outputSeparatorHint(sourceLine)
   );
 }

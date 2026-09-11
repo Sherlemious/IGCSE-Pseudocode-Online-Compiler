@@ -489,6 +489,9 @@ describe('humanizeParseError — source-line pattern detectors', () => {
       expect(categorizeParseError(RAW, 'a, b, c, temp : INTEGER')).toBe('declare_syntax');
       expect(categorizeParseError(RAW, 'FOR c <- 1 TO 5 DO')).toBe('for_loop_do');
       expect(categorizeParseError(RAW, 'FUNCTION F(h : INTEGER) RETURN INTEGER')).toBe('return_vs_returns');
+      expect(categorizeParseError(RAW, 'IF Age > 12 AND < 65 THEN')).toBe('missing_operand');
+      expect(categorizeParseError(RAW, 'IF > 5 THEN')).toBe('missing_operand');
+      expect(categorizeParseError(RAW, 'WHILE < 10 DO')).toBe('missing_operand');
     });
     it('does not flag valid syntax the grammar already accepts', () => {
       expect(categorizeParseError(RAW, 'DECLARE Date : STRING')).not.toBe('declare_syntax');
@@ -498,6 +501,8 @@ describe('humanizeParseError — source-line pattern detectors', () => {
       expect(categorizeParseError(RAW, 'ELSE IF age > 12 THEN')).not.toBe('stray_else');
       // RETURNS (with the S) is the correct header keyword.
       expect(categorizeParseError(RAW, 'FUNCTION F(h : INTEGER) RETURNS INTEGER')).not.toBe('return_vs_returns');
+      // A well-formed AND condition (variable repeated) must not be flagged.
+      expect(categorizeParseError(RAW, 'IF Age > 12 AND Age < 65 THEN')).not.toBe('missing_operand');
     });
   });
 
