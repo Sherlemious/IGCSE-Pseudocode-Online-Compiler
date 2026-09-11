@@ -26,13 +26,35 @@ export async function GET(req: Request) {
   if (!paddle || !user?.paddleCustomerId) {
     return NextResponse.redirect(new URL('/pricing', req.url));
   }
+  const customerId = user.paddleCustomerId;
+  const subscriptionId = user.paddleSubscriptionId;
+
+  // Open a portal session and return its general overview URL. From the overview
+  // page the customer can update payment methods, view invoices, and
+  // cancel/update their subscription — its auth token carries those scopes.
+  const overviewUrl = async (subscriptionIds: string[]) => {
+    const portal = await paddle.customerPortalSessions.create(customerId, subscriptionIds);
+    return portal?.urls?.general?.overview ?? null;
+  };
 
   try {
-    const portal = await paddle.customerPortalSessions.create(
-      user.paddleCustomerId,
-      user.paddleSubscriptionId ? [user.paddleSubscriptionId] : [],
-    );
-    const url = portal?.urls?.general?.overview;
+    let url: string | null = null;
+
+    // Prefer a session with a per-subscription deep link. Paddle currently
+    // rejects this with a generic "Invalid request." even for valid, active,
+    // correctly-owned subscriptions, so treat it as best-effort and fall back to
+    // a plain overview session (which reliably works) rather than erroring out.
+    if (subscriptionId) {
+      try {
+        url = await overviewUrl([subscriptionId]);
+      } catch (err) {
+        console.warn(
+          '[paddle/portal] subscription deep-link session failed, falling back to overview',
+          err,
+        );
+      }
+    }
+    if (!url) url = await overviewUrl([]);
     if (url) return NextResponse.redirect(url);
   } catch (err) {
     console.error('[paddle/portal] failed to create portal session', err);
