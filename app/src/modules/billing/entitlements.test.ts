@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { Plan } from '@prisma/client';
-import { resolveTier, limitsFor, LIMITS, hasPremiumAccess } from './entitlements';
+import { resolveTier, tierForUser, limitsFor, LIMITS, hasPremiumAccess } from './entitlements';
 
 const IN_FUTURE = new Date(Date.now() + 60_000);
 const IN_PAST = new Date(Date.now() - 60_000);
@@ -11,39 +11,58 @@ describe('resolveTier', () => {
   it('maps plans to tiers', () => {
     expect(resolveTier({ plan: 'FREE' as Plan, trialEndsAt: null })).toBe('free');
     expect(resolveTier({ plan: 'STARTER' as Plan, trialEndsAt: null })).toBe('starter');
-    expect(resolveTier({ plan: 'PRO' as Plan, trialEndsAt: null })).toBe('pro');
+    // The Plan enum is coarse: PRO resolves to the Classroom capacity band.
+    expect(resolveTier({ plan: 'PRO' as Plan, trialEndsAt: null })).toBe('classroom');
     expect(resolveTier({ plan: 'SCHOOL' as Plan, trialEndsAt: null })).toBe('school');
     // A paid student plan buys student features, not teaching capacity.
     expect(resolveTier({ plan: 'STUDENT' as Plan, trialEndsAt: null })).toBe('free');
   });
 
-  it('grants Pro during an active trial regardless of plan', () => {
-    expect(resolveTier({ plan: 'FREE' as Plan, trialEndsAt: IN_FUTURE })).toBe('pro');
+  it('grants Classroom-level access during an active trial regardless of plan', () => {
+    expect(resolveTier({ plan: 'FREE' as Plan, trialEndsAt: IN_FUTURE })).toBe('classroom');
   });
 
   it('ignores an expired trial and falls back to the plan', () => {
     expect(resolveTier({ plan: 'FREE' as Plan, trialEndsAt: IN_PAST })).toBe('free');
   });
 
-  it('keeps a School plan even with an active trial (trial only lifts to pro-level access)', () => {
-    // Trial short-circuits to pro; School is only reached via the stored plan.
-    expect(resolveTier({ plan: 'SCHOOL' as Plan, trialEndsAt: IN_FUTURE })).toBe('pro');
+  it('lifts a School plan to Classroom during an active trial (trial short-circuits)', () => {
+    expect(resolveTier({ plan: 'SCHOOL' as Plan, trialEndsAt: IN_FUTURE })).toBe('classroom');
+  });
+});
+
+describe('tierForUser (precise, slug-driven)', () => {
+  const base = { trialEndsAt: null, planExpiresAt: null };
+  it('prefers the exact planTier slug over the coarse plan', () => {
+    expect(tierForUser({ ...base, plan: 'PRO' as Plan, planTier: 'department' })).toBe('department');
+    expect(tierForUser({ ...base, plan: 'SCHOOL' as Plan, planTier: 'school' })).toBe('school');
+  });
+  it('maps legacy slugs (pro→classroom, advanced→campus)', () => {
+    expect(tierForUser({ ...base, plan: 'PRO' as Plan, planTier: 'pro' })).toBe('classroom');
+    expect(tierForUser({ ...base, plan: 'SCHOOL' as Plan, planTier: 'advanced' })).toBe('campus');
+  });
+  it('treats an expired one-time pass as free', () => {
+    expect(tierForUser({ trialEndsAt: null, plan: 'STUDENT' as Plan, planTier: 'student', planExpiresAt: IN_PAST })).toBe('free');
+  });
+  it('falls back to the plan when no slug is recorded', () => {
+    expect(tierForUser({ ...base, plan: 'STARTER' as Plan, planTier: null })).toBe('starter');
   });
 });
 
 describe('limits', () => {
   it('free tier is 1 class / 5 students', () => {
-    expect(limitsFor('free')).toEqual({ maxClasses: 1, maxStudentsPerClass: 5 });
+    expect(limitsFor('free')).toEqual({ maxClasses: 1, maxStudentsTotal: 5, maxStudentsPerClass: 5 });
   });
 
   it('starter tier is 3 classes / 30 students', () => {
-    expect(limitsFor('starter')).toEqual({ maxClasses: 3, maxStudentsPerClass: 30 });
+    expect(limitsFor('starter')).toEqual({ maxClasses: 3, maxStudentsTotal: 30, maxStudentsPerClass: 30 });
   });
 
-  it('pro and school are unlimited', () => {
-    expect(LIMITS.pro.maxClasses).toBe(Infinity);
-    expect(LIMITS.pro.maxStudentsPerClass).toBe(Infinity);
-    expect(LIMITS.school.maxClasses).toBe(Infinity);
+  it('bands scale by total students', () => {
+    expect(LIMITS.classroom.maxStudentsTotal).toBe(90);
+    expect(LIMITS.department.maxStudentsTotal).toBe(250);
+    expect(LIMITS.school.maxStudentsTotal).toBe(750);
+    expect(LIMITS.campus.maxStudentsTotal).toBe(Infinity);
   });
 });
 

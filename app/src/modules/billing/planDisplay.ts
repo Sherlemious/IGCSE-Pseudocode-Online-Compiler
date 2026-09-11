@@ -10,8 +10,12 @@
 const TIER_LABELS: Record<string, string> = {
   student: 'Student',
   starter: 'Starter',
-  pro: 'Pro',
-  advanced: 'Advanced',
+  pro: 'Classroom', // legacy slug now displays as Classroom
+  classroom: 'Classroom',
+  department: 'Department',
+  school: 'School',
+  advanced: 'Campus', // legacy slug now displays as Campus
+  campus: 'Campus',
 };
 
 const PLAN_LABELS: Record<string, string> = {

@@ -42,8 +42,9 @@ model User {
   // user to their Paddle records so webhook events can find them.
   paddleCustomerId     String?   // ctm_…
   paddleSubscriptionId String?   // sub_… (the current/last subscription)
-  planTier             String?   // marketing tier slug for display: student|starter|pro|advanced
+  planTier             String?   // marketing tier slug for display: student|starter|classroom|department|school|campus
   planUpdatedAt        DateTime? // last time the billing webhook changed plan
+  planExpiresAt        DateTime? // one-time student passes expire; null = no expiry (subscriptions / free)
 
   accounts     Account[]
   sessions     Session[]

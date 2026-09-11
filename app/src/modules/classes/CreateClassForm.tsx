@@ -17,8 +17,10 @@ interface Props {
 const PLAN_LABELS: Record<Tier, string> = {
   free: 'Free',
   starter: 'Starter',
-  pro: 'Pro',
+  classroom: 'Classroom',
+  department: 'Department',
   school: 'School',
+  campus: 'Campus',
 };
 
 export default function CreateClassForm({ canCreate, maxClasses, tier }: Props) {

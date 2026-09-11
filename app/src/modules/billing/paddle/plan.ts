@@ -13,8 +13,15 @@ import { prisma } from '@/shared/db';
 export const TIER_TO_PLAN: Record<string, { plan: Plan; tier: string }> = {
   student: { plan: 'STUDENT', tier: 'student' },
   starter: { plan: 'STARTER', tier: 'starter' },
-  pro: { plan: 'PRO', tier: 'pro' },
-  advanced: { plan: 'SCHOOL', tier: 'advanced' },
+  // Classroom (formerly "Pro"): keep the legacy `pro` catalog slug resolving,
+  // but record the display slug `classroom` on the user.
+  pro: { plan: 'PRO', tier: 'classroom' },
+  classroom: { plan: 'PRO', tier: 'classroom' },
+  department: { plan: 'PRO', tier: 'department' },
+  school: { plan: 'SCHOOL', tier: 'school' },
+  // Campus (formerly "Advanced"): contact-only unlimited tier.
+  advanced: { plan: 'SCHOOL', tier: 'campus' },
+  campus: { plan: 'SCHOOL', tier: 'campus' },
 };
 
 /** Resolve a Paddle price ID to a tier slug via the PricingTier catalog for this env. */

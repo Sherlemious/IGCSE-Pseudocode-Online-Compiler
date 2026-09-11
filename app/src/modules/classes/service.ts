@@ -1,7 +1,7 @@
 import { Prisma } from '@prisma/client';
 import { prisma } from '@/shared/db';
 import { normalizeShareCode } from '@/shared/lib/shareCode';
-import { getPremiumAccess, limitsFor, resolveTier } from '@/modules/billing/entitlements';
+import { getPremiumAccess, limitsFor, tierForUser } from '@/modules/billing/entitlements';
 import { PREMIUM_GATING_ENABLED } from '@/modules/billing/featureFlags';
 
 export class ClassRequestError extends Error {
@@ -22,7 +22,10 @@ export function joinClass(userId: string, code: string, assignmentId?: string) {
     if (!locked.length) throw new ClassRequestError(404, 'CLASS_NOT_FOUND', 'No class found for that code.');
     const cls = await tx.class.findUniqueOrThrow({
       where: { id: locked[0].id },
-      select: { id: true, name: true, ownerId: true, owner: { select: { plan: true, trialEndsAt: true } } },
+      select: {
+        id: true, name: true, ownerId: true,
+        owner: { select: { plan: true, planTier: true, trialEndsAt: true, planExpiresAt: true } },
+      },
     });
     if (assignmentId) {
       const assignment = await tx.assignment.findFirst({
@@ -38,8 +41,11 @@ export function joinClass(userId: string, code: string, assignmentId?: string) {
       where: { classId_userId: { classId: cls.id, userId } }, select: { id: true },
     });
     if (member) return { classId: cls.id, name: cls.name, alreadyMember: true };
-    const count = await tx.classMembership.count({ where: { classId: cls.id } });
-    if (count >= limitsFor(resolveTier(cls.owner)).maxStudentsPerClass) {
+    // Seats are priced by TOTAL students across the teacher's classes, not per class.
+    const totalStudents = await tx.classMembership.count({
+      where: { class: { ownerId: cls.ownerId, archived: false } },
+    });
+    if (totalStudents >= limitsFor(tierForUser(cls.owner)).maxStudentsTotal) {
       throw new ClassRequestError(403, 'LIMIT_STUDENTS', 'This class is full. Ask your teacher to make room.');
     }
     await tx.classMembership.create({ data: { classId: cls.id, userId } });

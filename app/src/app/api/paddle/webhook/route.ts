@@ -5,6 +5,7 @@ import { prisma } from '@/shared/db';
 import { getPaddleEnv } from '@/modules/billing/paddle/env';
 import { getPaddleServer } from '@/modules/billing/paddle/server';
 import { TIER_TO_PLAN, tierSlugForPriceId } from '@/modules/billing/paddle/plan';
+import { passForPriceId, passExpiry } from '@/modules/billing/paddle/passes';
 
 // The Paddle SDK verifies signatures with Node crypto, so this can't run on edge.
 export const runtime = 'nodejs';
@@ -12,6 +13,15 @@ export const dynamic = 'force-dynamic';
 
 // Minimal shape we read off a subscription event (the SDK types are richer).
 interface SubscriptionData {
+  id: string;
+  status: string;
+  customerId: string;
+  customData?: Record<string, unknown> | null;
+  items?: Array<{ price?: { id?: string | null } | null }>;
+}
+
+// Minimal shape we read off a transaction.completed event (used for one-time passes).
+interface TransactionData {
   id: string;
   status: string;
   customerId: string;
@@ -62,6 +72,10 @@ export async function POST(req: Request) {
       case EventName.SubscriptionPastDue:
         await downgrade(event.data as unknown as SubscriptionData);
         break;
+      case EventName.TransactionCompleted:
+        // One-time student passes. Ignored unless a line item is a known pass price.
+        await applyPassPurchase(event.data as unknown as TransactionData, paddle);
+        break;
       default:
         // Acknowledged and ignored — we only act on subscription lifecycle events.
         break;
@@ -88,7 +102,9 @@ async function applySubscription(data: SubscriptionData, paddle: Paddle) {
 
   if (!ENTITLED_STATUSES.has(data.status)) {
     // A non-entitling status arrived as an update (e.g. past_due) — drop to Free.
-    await setPlan(user.id, { plan: 'FREE', planTier: null, data });
+    await setPlan(user.id, {
+      plan: 'FREE', planTier: null, subscriptionId: data.id, customerId: data.customerId,
+    });
     return;
   }
 
@@ -102,7 +118,11 @@ async function applySubscription(data: SubscriptionData, paddle: Paddle) {
     return;
   }
 
-  await setPlan(user.id, { plan: mapped.plan, planTier: mapped.tier, data });
+  // Subscriptions never expire on their own — clear any leftover pass expiry.
+  await setPlan(user.id, {
+    plan: mapped.plan, planTier: mapped.tier, planExpiresAt: null,
+    subscriptionId: data.id, customerId: data.customerId,
+  });
 }
 
 /** Cancellation / pause / past-due → revoke entitlement. */
@@ -112,7 +132,45 @@ async function downgrade(data: SubscriptionData) {
     console.warn(`[paddle/webhook] no app user to downgrade for subscription ${data.id}`);
     return;
   }
-  await setPlan(user.id, { plan: 'FREE', planTier: null, data });
+  await setPlan(user.id, {
+    plan: 'FREE', planTier: null, subscriptionId: data.id, customerId: data.customerId,
+  });
+}
+
+/**
+ * One-time student pass purchase. Fired by `transaction.completed`; we act only
+ * when a line item is a known pass price (subscription renewals fire this event
+ * too and must be ignored — the subscription events handle those).
+ */
+async function applyPassPurchase(data: TransactionData, paddle: Paddle) {
+  const env = getPaddleEnv();
+  let pass = null as ReturnType<typeof passForPriceId>;
+  for (const item of data.items ?? []) {
+    pass = passForPriceId(item.price?.id ?? '', env);
+    if (pass) break;
+  }
+  if (!pass) return; // not a pass purchase
+
+  const user = await resolveUser(data as unknown as SubscriptionData, paddle);
+  if (!user) {
+    console.warn(`[paddle/webhook] no app user for pass transaction ${data.id} (customer ${data.customerId})`);
+    return;
+  }
+  // Never downgrade a paying teacher (active subscription) into a student pass.
+  const onSubscription = user.plan !== 'FREE' && user.plan !== 'STUDENT' && !user.planExpiresAt;
+  if (onSubscription) {
+    console.warn(`[paddle/webhook] ignoring pass for user ${user.id} on subscription plan ${user.plan}`);
+    return;
+  }
+  // Stack onto any remaining pass time so a renewal extends rather than resets.
+  const from =
+    user.planExpiresAt && user.planExpiresAt.getTime() > Date.now() ? user.planExpiresAt : new Date();
+  await setPlan(user.id, {
+    plan: 'STUDENT',
+    planTier: pass.tier,
+    planExpiresAt: passExpiry(pass.months, from),
+    customerId: data.customerId, // link customer; a pass has no subscription id
+  });
 }
 
 /** Find the app user behind a subscription, trying the most reliable signals first. */
@@ -166,15 +224,24 @@ function readAppUserId(data: SubscriptionData): string | null {
 
 async function setPlan(
   userId: string,
-  opts: { plan: Plan; planTier: string | null; data: SubscriptionData },
+  opts: {
+    plan: Plan;
+    planTier: string | null;
+    /** Pass expiry; null clears it (subscriptions never expire on their own). */
+    planExpiresAt?: Date | null;
+    subscriptionId?: string | null;
+    customerId?: string | null;
+  },
 ) {
   await prisma.user.update({
     where: { id: userId },
     data: {
       plan: opts.plan,
       planTier: opts.planTier,
-      paddleSubscriptionId: opts.data.id || undefined,
-      paddleCustomerId: opts.data.customerId || undefined,
+      planExpiresAt: opts.planExpiresAt ?? null,
+      // Only overwrite linkage when we actually have an id (a pass has no sub id).
+      paddleSubscriptionId: opts.subscriptionId || undefined,
+      paddleCustomerId: opts.customerId || undefined,
       planUpdatedAt: new Date(),
     },
   });
