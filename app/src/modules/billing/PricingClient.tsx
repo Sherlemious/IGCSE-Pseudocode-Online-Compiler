@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { usePostHog } from 'posthog-js/react';
 import { usePaddle } from './PaddleProvider';
+import { hasRegionalPricing } from './ppp';
 import { SUPPORT_EMAIL } from '@/shared/lib/seo';
 
 export interface PricingTierView {
@@ -63,6 +64,9 @@ export default function PricingClient({
   const [totals, setTotals] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // The country Paddle actually priced against — from the preview when we let it
+  // geo-locate by IP, otherwise the country we passed. Drives the regional badge.
+  const [resolvedCountry, setResolvedCountry] = useState<string | undefined>(countryCode);
 
   // Funnel entry — fire once, as soon as PostHog is available.
   const viewedRef = useRef(false);
@@ -112,12 +116,15 @@ export default function PricingClient({
         }
         setTotals(next);
         setLoading(false);
+        // What Paddle actually localized to — set even when we passed no country
+        // and it geo-located by IP.
+        const resolved = preview.data.address?.countryCode ?? countryCode;
+        setResolvedCountry(resolved);
         ph?.capture('pricing_prices_loaded', {
           paddle_env: paddleEnv,
           country: countryCode ?? null,
-          // What Paddle actually localized to — set even when we passed no
-          // country and it geo-located by IP.
           resolved_country: preview.data.address?.countryCode ?? null,
+          regional_pricing: hasRegionalPricing(resolved),
           price_count: allPriceIds.length,
           priced_count: Object.keys(next).length,
           currency: preview.data.currencyCode,
@@ -164,6 +171,20 @@ export default function PricingClient({
   };
 
   const intervalLabel = interval === 'month' ? 'mo' : 'yr';
+
+  // Regional (PPP) pricing badge — only when Paddle priced against a country we've
+  // configured lower per-country prices for, so the claim is always truthful.
+  const regional = hasRegionalPricing(resolvedCountry);
+  const regionName =
+    regional && resolvedCountry
+      ? (() => {
+          try {
+            return new Intl.DisplayNames(['en'], { type: 'region' }).of(resolvedCountry) ?? null;
+          } catch {
+            return null;
+          }
+        })()
+      : null;
 
   // Keep the grid tight to the number of visible tiers (role filtering can leave
   // 1 or 3 cards) so they don't stretch awkwardly across four columns.
@@ -224,6 +245,17 @@ export default function PricingClient({
           ))}
         </div>
       </div>
+
+      {regional && (
+        <div className="mb-6 flex justify-center">
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/40 bg-primary/5 px-3 py-1 text-xs font-medium text-primary">
+            <span aria-hidden="true">🌍</span>
+            {regionName
+              ? `Regional pricing for ${regionName} — adjusted for your area`
+              : 'Regional pricing applied for your area'}
+          </span>
+        </div>
+      )}
 
       {error && (
         <p className="mb-6 text-center text-sm text-error" role="alert">

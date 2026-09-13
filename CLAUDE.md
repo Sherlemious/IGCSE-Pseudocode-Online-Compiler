@@ -174,17 +174,19 @@ Page-side events fire from `PricingClient`; the `checkout_*` events are bridged 
 | Event | Properties |
 |-------|-----------|
 | `pricing_viewed` | `paddle_env`, `tier_count`, `country`, `signed_in` |
-| `pricing_prices_loaded` | `paddle_env`, `country`, `resolved_country`, `price_count`, `priced_count`, `currency` |
+| `pricing_prices_loaded` | `paddle_env`, `country`, `resolved_country`, `regional_pricing` (bool — resolved country has a per-country override, see `billing/ppp.ts`), `price_count`, `priced_count`, `currency` |
 | `pricing_prices_error` | `paddle_env`, `country`, `error` |
 | `pricing_interval_changed` | `interval`, `paddle_env` |
 | `subscribe_clicked` | `tier`, `interval`, `price_id`, `paddle_env` |
 | `contact_sales_clicked` | `tier`, `paddle_env` |
 | `checkout_loaded` | `paddle_env`, `checkout_id`, `price_id`, `product_name`, `interval`, `currency`, `total`, `recurring_total`, `status` |
+| `checkout_payment_selected` | …base + `payment_method` — method picked (captured even if they abandon; surfaces payment-method friction) |
 | `checkout_payment_initiated` | …base + `payment_method` |
-| `checkout_payment_failed` | …base + `payment_method` |
+| `checkout_payment_failed` | …base + `payment_method` (base merged from last-known checkout context) |
 | `checkout_completed` | …base + `transaction_id` (the conversion) |
 | `checkout_closed` | …base (abandonment) |
-| `checkout_error` | …base + `error_type`, `error_code`, `error_detail` |
+| `checkout_failed` | `paddle_env` + last-known context (terminal failure, distinct from a dismissed error dialog) |
+| `checkout_error` | `paddle_env` + last-known context + `error_name`, `error_type`, `error_code`, `error_detail`. Error events carry no `data`, so price/tier come from the remembered context. |
 | `checkout_success_viewed` | `transaction` (`_ptxn`) — fired on `/welcome` |
 
 ## Environment Variables

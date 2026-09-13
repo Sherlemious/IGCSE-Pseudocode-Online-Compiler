@@ -32,6 +32,11 @@ export default function PaddleProvider({ children }: { children: React.ReactNode
     phRef.current = ph;
   }, [ph]);
 
+  // Last data-bearing checkout context (price/tier/currency). Error and failure
+  // events carry no `data`, so we merge this in to attribute an abandonment to a
+  // specific tier — otherwise a `checkout_error` can't be tied to what was bought.
+  const lastCtxRef = useRef<Record<string, unknown>>({});
+
   useEffect(() => {
     let environment: ReturnType<typeof getPaddleEnv>;
     let token: string;
@@ -65,9 +70,31 @@ export default function PaddleProvider({ children }: { children: React.ReactNode
           recurring_total: d?.recurring_totals?.total,
           status: d?.status,
         };
+        // Remember the latest context so the data-less error/failure events below
+        // can still be attributed to a tier/price.
+        if (d) {
+          lastCtxRef.current = {
+            checkout_id: base.checkout_id,
+            price_id: base.price_id,
+            product_name: base.product_name,
+            interval: base.interval,
+            currency: base.currency,
+            total: base.total,
+            recurring_total: base.recurring_total,
+          };
+        }
+        const ctx = lastCtxRef.current;
         switch (name) {
           case CheckoutEventNames.CHECKOUT_LOADED:
             phRef.current?.capture('checkout_loaded', base);
+            break;
+          // Which payment method the buyer picked — captured even if they then
+          // abandon, so payment-method friction (common in PPP regions) is visible.
+          case CheckoutEventNames.CHECKOUT_PAYMENT_SELECTED:
+            phRef.current?.capture('checkout_payment_selected', {
+              ...base,
+              payment_method: d?.payment?.method_details?.type,
+            });
             break;
           case CheckoutEventNames.CHECKOUT_PAYMENT_INITIATED:
             phRef.current?.capture('checkout_payment_initiated', {
@@ -77,6 +104,7 @@ export default function PaddleProvider({ children }: { children: React.ReactNode
             break;
           case CheckoutEventNames.CHECKOUT_PAYMENT_FAILED:
             phRef.current?.capture('checkout_payment_failed', {
+              ...ctx,
               ...base,
               payment_method: d?.payment?.method_details?.type,
             });
@@ -90,10 +118,19 @@ export default function PaddleProvider({ children }: { children: React.ReactNode
           case CheckoutEventNames.CHECKOUT_CLOSED:
             phRef.current?.capture('checkout_closed', base);
             break;
+          // Terminal failure (distinct from a dismissed error dialog). No `data`,
+          // so lean on the remembered context.
+          case CheckoutEventNames.CHECKOUT_FAILED:
+            phRef.current?.capture('checkout_failed', { paddle_env: environment, ...ctx });
+            break;
           case CheckoutEventNames.CHECKOUT_ERROR:
           case CheckoutEventNames.CHECKOUT_PAYMENT_ERROR:
+            // Error events carry the reason at the top level (CheckoutEventError:
+            // type/code/detail), and no `data` — so merge the remembered context.
             phRef.current?.capture('checkout_error', {
-              ...base,
+              paddle_env: environment,
+              ...ctx,
+              error_name: name,
               error_type: event.type,
               error_code: event.code,
               error_detail: event.detail,
