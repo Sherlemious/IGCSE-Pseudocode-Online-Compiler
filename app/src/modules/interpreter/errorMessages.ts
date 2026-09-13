@@ -365,6 +365,11 @@ function pythonHint(line: string): LineDiagnosis | null {
 
   if (/^elif\b/i.test(t)) return py('elif …:', 'ELSE IF <condition> THEN  (no colon)');
   if (/^else\s*:/i.test(t)) return py('else:', 'ELSE on its own line  (no colon)');
+  if (/^def\s+[A-Za-z_]\w*\s*\(/i.test(t))
+    return py('def name(…):', 'PROCEDURE Name(params) … ENDPROCEDURE, or FUNCTION Name(params) RETURNS <type> … ENDFUNCTION');
+  // `print(...)`, `print "..."`, `print '...'` — Python output. (A bare `print`
+  // used as a variable, e.g. `print <- 5`, is left alone: it needs a `(`/quote.)
+  if (/^print\s*[("']/i.test(t)) return py('print(…)', 'OUTPUT: `OUTPUT "Hello"` or `OUTPUT value`');
   if (/^for\b.*\bin\b.*\brange\s*\(/i.test(t)) return py('for … in range(…):', 'FOR i <- 1 TO n … NEXT i');
   if (/\b(?:int|float|str)\s*\(\s*input\s*\(/i.test(t) || /\binput\s*\(/i.test(t))
     return py('input(…)', 'INPUT on its own line: `INPUT Value`  (INPUT is a statement, no brackets)');
@@ -372,6 +377,50 @@ function pythonHint(line: string): LineDiagnosis | null {
   // Python-style block header ending in a colon (if / while), never valid IGCSE.
   if (/^(?:if|while)\b.*:\s*(?:#.*)?$/i.test(t) && !/\bTHEN\b/i.test(t))
     return py(t.length > 28 ? `${t.slice(0, 28)}…` : t, '`IF <condition> THEN` or `WHILE <condition> DO`  (no trailing colon)');
+  return null;
+}
+
+/**
+ * String/character literal mistakes, checked from the source line because the
+ * lexer reports them as opaque "token recognition error" / "no viable
+ * alternative" that categorize as generic buckets:
+ *   1. Multi-character text in single quotes — `OUTPUT 'POOR'`. Cambridge (and
+ *      this grammar) reserve single quotes for a single CHAR ('A'); text is a
+ *      STRING in double quotes ("POOR"). So this is a real error, not accepted.
+ *   2. A string with no closing quote — an odd number of " on one line (a
+ *      STRING literal can never span a line in the grammar).
+ */
+function stringLiteralHint(line: string): LineDiagnosis | null {
+  const t = line.trim();
+  if (!t) return null;
+
+  // Ignore quotes that sit *inside* a well-formed "double-quoted string" so an
+  // apostrophe in text (OUTPUT "it's fine") can't be mistaken for a CHAR literal.
+  const withoutStrings = t.replace(/"(?:[^"\r\n])*"/g, '');
+
+  // 1) Two or more characters between single quotes → they meant a STRING.
+  if (/'[^'\r\n]{2,}'/.test(withoutStrings)) {
+    return {
+      category: 'single_quote_string',
+      message:
+        'Use double quotes for text (STRING). Single quotes are only for a single character (CHAR).\n' +
+        '  Text:  OUTPUT "POOR"\n' +
+        "  Char:  Letter <- 'A'",
+    };
+  }
+
+  // 2) An unmatched double quote → the string is missing its closing ".
+  if (((t.match(/"/g) ?? []).length) % 2 === 1) {
+    return {
+      category: 'unterminated_string',
+      message:
+        'This line has text that is missing its closing quote.\n' +
+        '  Every " needs a matching " on the same line:\n' +
+        '    OUTPUT "Hello, world"\n' +
+        '  (a STRING cannot run onto the next line.)',
+    };
+  }
+
   return null;
 }
 
@@ -477,17 +526,41 @@ function strayCloserHint(line: string): LineDiagnosis | null {
   };
 }
 
-/** `FOR count : 1 TO 3` / `FOR i = 1 TO 10` — the counter is set with `<-`. */
+/**
+ * `FOR count : 1 TO 3` / `FOR i = 1 TO 10` (wrong operator) or
+ * `FOR count 1 TO 5` (no operator at all) — the counter is set with `<-`.
+ */
 function forLoopHint(line: string): LineDiagnosis | null {
-  const m = line.trim().match(/^FOR\s+([A-Za-z_]\w*)\s*(:=|:|=)\s*/i);
-  if (!m) return null;
-  const v = m[1];
-  return {
-    category: 'for_loop_assignment',
-    message:
-      `Use \`<-\` to set the FOR loop counter, not \`${m[2]}\`.\n` +
-      `  Example:\n    FOR ${v} <- 1 TO 10\n      OUTPUT ${v}\n    NEXT ${v}`,
-  };
+  const t = line.trim();
+
+  // Wrong operator between the counter and its start value.
+  const withOp = t.match(/^FOR\s+([A-Za-z_]\w*)\s*(:=|:|=)\s*/i);
+  if (withOp) {
+    const v = withOp[1];
+    return {
+      category: 'for_loop_assignment',
+      message:
+        `Use \`<-\` to set the FOR loop counter, not \`${withOp[2]}\`.\n` +
+        `  Example:\n    FOR ${v} <- 1 TO 10\n      OUTPUT ${v}\n    NEXT ${v}`,
+    };
+  }
+
+  // No operator at all — `FOR count 1 TO 5`. The start value sits straight after
+  // the counter name (and it isn't the TO keyword, which would be a different
+  // error), so the `<-` is simply missing.
+  const noOp = t.match(/^FOR\s+([A-Za-z_]\w*)\s+(?![Tt][Oo]\b)[^<:=\s]\S*\s+TO\b/i);
+  if (noOp) {
+    const v = noOp[1];
+    return {
+      category: 'for_loop_assignment',
+      message:
+        'Set the FOR loop counter with `<-`.\n' +
+        `  You wrote "${t}".\n` +
+        `  Example:\n    FOR ${v} <- 1 TO 10\n      OUTPUT ${v}\n    NEXT ${v}`,
+    };
+  }
+
+  return null;
 }
 
 /** `OUTPUT "text" value` — OUTPUT items need a comma between them. */
@@ -613,6 +686,7 @@ function sourceLineHint(sourceLine: string | undefined): LineDiagnosis | null {
   if (!sourceLine || !sourceLine.trim()) return null;
   return (
     pythonHint(sourceLine) ??
+    stringLiteralHint(sourceLine) ??
     basicBlockHint(sourceLine) ??
     strayCloserHint(sourceLine) ??
     declareHint(sourceLine) ??

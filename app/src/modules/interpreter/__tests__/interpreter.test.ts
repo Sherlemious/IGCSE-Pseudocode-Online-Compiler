@@ -265,6 +265,65 @@ describe('humanizeParseError — new hints', () => {
     expect(msg).toContain("Letter <- 'A'");
   });
 
+  it("multi-character text in single quotes is redirected to double quotes", () => {
+    const raw = "token recognition error at: '''";
+    const line = "OUTPUT 'POOR'";
+    const msg = humanizeParseError(raw, line);
+    expect(msg).toContain('double quotes for text (STRING)');
+    expect(msg).toContain('OUTPUT "POOR"');
+    expect(categorizeParseError(raw, line)).toBe('single_quote_string');
+  });
+
+  it("a valid one-character CHAR literal is not treated as a string mistake", () => {
+    const raw = "no viable alternative at input 'A'";
+    const msg = humanizeParseError(raw, "Grade <- 'A'");
+    expect(msg).not.toContain('double quotes for text');
+  });
+
+  it("an apostrophe inside a double-quoted string is not a CHAR mistake", () => {
+    // Even on an already-flagged line, "it's" must not read as a single-quoted CHAR.
+    const raw = "no viable alternative at input 'OUTPUT'";
+    const msg = humanizeParseError(raw, 'OUTPUT "it\'s fine" extra');
+    expect(msg).not.toContain('double quotes for text');
+  });
+
+  it("an unterminated string (missing closing quote) is explained", () => {
+    const raw = "token recognition error at: '\\n'";
+    const line = 'OUTPUT "How many rooms';
+    const msg = humanizeParseError(raw, line);
+    expect(msg).toContain('missing its closing quote');
+    expect(msg).toContain('OUTPUT "Hello, world"');
+    expect(categorizeParseError(raw, line)).toBe('unterminated_string');
+  });
+
+  it("a Python def header is redirected to PROCEDURE / FUNCTION", () => {
+    const raw = "no viable alternative at input 'def'";
+    const line = 'def greet_student(name):';
+    const msg = humanizeParseError(raw, line);
+    expect(msg).toContain('looks like Python');
+    expect(msg).toContain('PROCEDURE');
+    expect(msg).toContain('FUNCTION');
+    expect(categorizeParseError(raw, line)).toBe('python_syntax');
+  });
+
+  it("a Python print call is redirected to OUTPUT", () => {
+    const raw = "no viable alternative at input 'print'";
+    const line = "print('total')";
+    const msg = humanizeParseError(raw, line);
+    expect(msg).toContain('looks like Python');
+    expect(msg).toContain('OUTPUT');
+    expect(categorizeParseError(raw, line)).toBe('python_syntax');
+  });
+
+  it("a FOR loop with no assignment operator asks for <-", () => {
+    const raw = "missing {LARROW, '='} at '1'";
+    const line = 'FOR count 1 TO 5';
+    const msg = humanizeParseError(raw, line);
+    expect(msg).toContain('Set the FOR loop counter with `<-`');
+    expect(msg).toContain('FOR count <- 1 TO 10');
+    expect(categorizeParseError(raw, line)).toBe('for_loop_assignment');
+  });
+
   it('assignment arrow at the start of a line asks for a variable on the left', () => {
     const raw = "mismatched input '<-' expecting {DECLARE, CONSTANT, INPUT, OUTPUT, PRINT, IF, THEN, CASE, FOR, WHILE, REPEAT, PROCEDURE, FUNCTION, RETURN, CALL, OPENFILE, READFILE, WRITEFILE, CLOSEFILE, IDENTIFIER, NEWLINE}";
     const msg = humanizeParseError(raw);
