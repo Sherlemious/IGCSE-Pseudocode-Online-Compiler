@@ -276,11 +276,19 @@ const DocsPage = () => {
         <div className="max-w-3xl mx-auto">
           {/* Title */}
           <div className="pt-6 pb-4">
-            <h1 className="display-serif text-3xl leading-tight font-semibold text-light-text">Cambridge Pseudocode Reference</h1>
+            <h1 className="display-serif text-3xl leading-tight font-semibold text-light-text">
+              Cambridge Pseudocode Guide
+            </h1>
             <p className="text-sm text-dark-text mt-1">
-              Complete language reference for Cambridge IGCSE (0478) and Cambridge International AS &amp; A
-              Level Computer Science (9618) pseudocode. IGCSE syntax is a subset — everything below works
-              for both courses unless marked <span className="text-primary font-medium">AS &amp; A Level</span>.
+              Free IGCSE 0478 and A Level 9618 syntax guide — DECLARE, CONSTANT, DIV, ROUND, not equal
+              to (<code className="font-mono text-primary">&lt;&gt;</code>) and the rest of Cambridge
+              pseudocode. IGCSE syntax is a subset: everything below works for both courses unless
+              marked <span className="text-primary font-medium">AS &amp; A Level</span>. Run any example
+              in the{' '}
+              <Link href="/" className="text-primary hover:underline">
+                online compiler
+              </Link>
+              .
             </p>
           </div>
 
@@ -423,7 +431,7 @@ OUTPUT "Total = ", Total`}
           {/* ──────────────────────────────────────────────── */}
           <H2 id="variables">Variables, Constants & Data Types</H2>
 
-          <H3 id="declaring">Declaring Variables</H3>
+          <H3 id="declaring">How to DECLARE a Variable</H3>
           <p className="text-sm text-dark-text mb-2">
             Use <Kw>DECLARE</Kw> followed by the variable name, a colon, and the data type:
           </p>
@@ -435,9 +443,10 @@ DECLARE StudentName : STRING
 DECLARE Initial : CHAR`}
           />
 
-          <H3 id="constants">Constants</H3>
+          <H3 id="constants">How to Declare a Constant</H3>
           <p className="text-sm text-dark-text mb-2">
-            Use <Kw>CONSTANT</Kw> for values that never change during execution:
+            In Cambridge IGCSE pseudocode, declare a constant with <Kw>CONSTANT</Kw>, the name,{' '}
+            <Kw>{'<-'}</Kw> and the value. Constants never change during execution:
           </p>
           <CodeBlock
             code={`CONSTANT HourlyRate <- 6.50
@@ -575,7 +584,13 @@ OUTPUT Grid[1,1]`}
           {/* ──────────────────────────────────────────────── */}
           <H2 id="operators">Operators</H2>
 
-          <H3 id="arithmetic">Arithmetic Operators</H3>
+          <H3 id="arithmetic">Arithmetic Operators (DIV and MOD)</H3>
+          <p className="text-sm text-dark-text mb-2">
+            <Kw>DIV</Kw> in Cambridge IGCSE pseudocode is integer division: how many whole times the
+            second number fits into the first, with no remainder. <code className="font-mono">10 DIV 3</code>{' '}
+            is <code className="font-mono">3</code>. Use <Kw>MOD</Kw> for the remainder (
+            <code className="font-mono">10 MOD 3</code> is <code className="font-mono">1</code>).
+          </p>
           <div className="overflow-x-auto my-2">
             <table className="w-full text-sm border border-border rounded">
               <thead>
@@ -637,7 +652,11 @@ OUTPUT MOD(10, 3)   // 1
 OUTPUT 2 ^ 3        // 8`}
           />
 
-          <H3 id="comparison">Comparison Operators</H3>
+          <H3 id="comparison">Comparison Operators (not equal to)</H3>
+          <p className="text-sm text-dark-text mb-2">
+            Not equal to in Cambridge pseudocode is <code className="font-mono text-primary">&lt;&gt;</code>
+            . There is no <code className="font-mono">!=</code> or <code className="font-mono">/=</code>.
+          </p>
           <div className="overflow-x-auto my-2">
             <table className="w-full text-sm border border-border rounded">
               <thead>
@@ -949,7 +968,12 @@ OUTPUT LEFT("Hello", 2)         // He
 OUTPUT RIGHT("Hello", 3)        // llo`}
           />
 
-          <H3 id="math-functions">Math Functions</H3>
+          <H3 id="math-functions">ROUND and Other Math Functions</H3>
+          <p className="text-sm text-dark-text mb-2">
+            How to round in Cambridge pseudocode: <Kw>ROUND(n, places)</Kw> rounds{' '}
+            <code className="font-mono">n</code> to the given number of decimal places.{' '}
+            <code className="font-mono">ROUND(3.14159, 2)</code> is <code className="font-mono">3.14</code>.
+          </p>
           <div className="overflow-x-auto my-2">
             <table className="w-full text-sm border border-border rounded">
               <thead>

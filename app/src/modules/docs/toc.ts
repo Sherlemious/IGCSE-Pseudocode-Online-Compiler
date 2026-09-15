@@ -22,8 +22,8 @@ const toc: TocEntry[] = [
     id: 'variables',
     label: 'Variables & Types',
     children: [
-      { id: 'declaring', label: 'Declaring Variables' },
-      { id: 'constants', label: 'Constants' },
+      { id: 'declaring', label: 'DECLARE a Variable' },
+      { id: 'constants', label: 'Declare a Constant' },
       { id: 'data-types', label: 'Data Types' },
     ],
   },
@@ -47,8 +47,8 @@ const toc: TocEntry[] = [
     id: 'operators',
     label: 'Operators',
     children: [
-      { id: 'arithmetic', label: 'Arithmetic' },
-      { id: 'comparison', label: 'Comparison' },
+      { id: 'arithmetic', label: 'DIV & Arithmetic' },
+      { id: 'comparison', label: 'Not Equal To (<>)' },
       { id: 'logical', label: 'Logical' },
       { id: 'concatenation', label: 'String Concatenation' },
     ],
@@ -83,7 +83,7 @@ const toc: TocEntry[] = [
     label: 'Built-in Functions',
     children: [
       { id: 'string-functions', label: 'String Functions' },
-      { id: 'math-functions', label: 'Math Functions' },
+      { id: 'math-functions', label: 'ROUND & Math Functions' },
       { id: 'type-conversion', label: 'Type Conversion' },
     ],
   },

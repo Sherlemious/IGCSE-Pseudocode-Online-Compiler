@@ -5,14 +5,16 @@ import { faqByGroup, faqItems } from '@/modules/content/faq';
 import { SITE_NAME, SITE_URL } from '@/shared/lib/seo';
 
 export const metadata: Metadata = {
-  title: 'IGCSE Pseudocode Compiler FAQ',
+  title: {
+    absolute: 'Pseudocode Compiler FAQ | IGCSE 0478 & A Level 9618',
+  },
   description:
-    'FAQ: best IGCSE Paper 2 compiler, vs Pseudocode Pro, $1/month Premium, teacher homework, timed mocks, DECLARE, grading.',
+    'FAQ for the free online Cambridge IGCSE and A Level pseudocode compiler: how to DECLARE a constant, what DIV and ROUND do, not equal to (<>), and how this compares with Pseudocode Pro.',
   alternates: {
     canonical: '/faq',
   },
   openGraph: {
-    title: 'IGCSE Pseudocode Compiler FAQ',
+    title: 'Pseudocode Compiler FAQ | IGCSE 0478 & A Level 9618',
     description:
       'Which tool to use for 0478 Paper 2, how the free Cambridge compiler works, DECLARE, exams, and school use.',
     url: `${SITE_URL}/faq`,
@@ -73,11 +75,13 @@ export default function FaqPage() {
         <div className="rounded-2xl border border-border bg-surface/80 backdrop-blur-sm p-6 sm:p-8 shadow-intense">
           <p className="mono-label text-primary mb-3">Index</p>
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-light-text">
-            Frequently asked questions
+            Pseudocode compiler FAQ
           </h1>
           <p className="text-sm text-dark-text mt-2 leading-relaxed">
-            Free Cambridge IGCSE (0478/0984), O Level (2210) and AS &amp; A Level (9618) pseudocode
-            compiler. Compared with other runners, this is the Paper 2 practice tool — see the{' '}
+            Free Cambridge IGCSE (0478/0984), O Level (2210) and AS &amp; A Level (9618) online
+            pseudocode compiler. How to DECLARE a constant, what DIV and ROUND do, not equal to (
+            <code className="font-mono text-primary">&lt;&gt;</code>), and how this compares with other
+            runners — this is the Paper 2 practice tool. See the{' '}
             <Link href="/compare" className="text-primary hover:text-primary-hover">
               comparison
             </Link>
@@ -87,7 +91,7 @@ export default function FaqPage() {
             </Link>
             ,{' '}
             <Link href="/docs" className="text-primary hover:text-primary-hover">
-              syntax guide
+              Cambridge pseudocode guide
             </Link>
             , or{' '}
             <Link href="/practice" className="text-primary hover:text-primary-hover">

@@ -16,7 +16,19 @@ const AI_CRAWLERS = [
   'Amazonbot',
 ];
 
-const PUBLIC_ALLOW = ['/', '/examples', '/examples/', '/llms.txt', '/llms-full.txt', '/compare', '/faq'];
+const PUBLIC_ALLOW = [
+  '/',
+  '/docs',
+  '/docs/',
+  '/practice',
+  '/practice/',
+  '/examples',
+  '/examples/',
+  '/llms.txt',
+  '/llms-full.txt',
+  '/compare',
+  '/faq',
+];
 const PRIVATE_DISALLOW = ['/api/', '/auth/', '/admin/', '/profile/', '/analytics/', '/exam$', '/exam/'];
 
 export default function robots(): MetadataRoute.Robots {

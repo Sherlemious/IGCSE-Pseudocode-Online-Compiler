@@ -4,7 +4,7 @@ const LINKS = [
   { href: '/compare', label: 'Compare' },
   { href: '/faq', label: 'FAQ' },
   { href: '/examples', label: 'Examples' },
-  { href: '/docs', label: 'Docs' },
+  { href: '/docs', label: 'Pseudocode guide' },
   { href: '/pricing', label: 'Pricing' },
   { href: '/privacy', label: 'Privacy' },
   { href: '/terms', label: 'Terms' },

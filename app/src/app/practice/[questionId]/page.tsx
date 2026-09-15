@@ -55,14 +55,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     }
 
     const ref = paperReference(q);
-    const title = `${q.title}${ref ? ` - ${ref}` : ''}`;
+    const title = `${q.title} | Cambridge pseudocode practice${ref ? ` (${ref})` : ''}`;
     const description = truncateDescription(
-      `${stripMarkdown(q.description)} Practice this Cambridge pseudocode question with instant autograding, hints, model solutions and trace-table friendly feedback.`
+      `${stripMarkdown(q.description)} Free Cambridge IGCSE / A Level pseudocode practice — run this past-paper question in the online compiler with autograding, hints and a model solution.`
     );
     const url = `/practice/${questionId}`;
 
     return {
-      title,
+      title: { absolute: title },
       description,
       alternates: {
         canonical: url,

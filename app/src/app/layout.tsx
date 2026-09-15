@@ -119,22 +119,33 @@ const jsonLd = {
   alternativeHeadline: 'Cambridge IGCSE, O Level and AS & A Level Pseudocode Editor, Runner & Interpreter',
   alternativeName: [
     'pseudocode compiler',
+    'online pseudocode compiler',
+    'pseudocode compiler online',
     'pseudocode editor',
+    'pseudocode editor online',
     'pseudocode runner',
     'pseudocode interpreter',
+    'cambridge pseudocode guide',
     'IGCSE pseudocode compiler',
     'best IGCSE pseudocode compiler',
     'Cambridge Paper 2 practice',
-    'A Level pseudocode compiler',
+    'A Level 9618 pseudocode compiler',
     'psuedocode compiler',
     'pseudocode complier',
   ],
   sameAs: ['https://github.com/Sherlemious/IGCSE-Pseudocode-Online-Compiler'],
-  softwareHelp: {
-    '@type': 'WebPage',
-    url: `${SITE_URL}/faq`,
-    name: 'FAQ',
-  },
+  softwareHelp: [
+    {
+      '@type': 'WebPage',
+      url: `${SITE_URL}/faq`,
+      name: 'FAQ',
+    },
+    {
+      '@type': 'WebPage',
+      url: `${SITE_URL}/docs`,
+      name: 'Cambridge Pseudocode Guide',
+    },
+  ],
   offers: [
     {
       '@type': 'Offer',

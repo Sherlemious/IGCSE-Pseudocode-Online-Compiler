@@ -22,13 +22,23 @@ import {
   type StatusKey,
   type YearFacet,
 } from '@/modules/practice/filterUtils';
+import { SITE_URL } from '@/shared/lib/seo';
 
 export const metadata: Metadata = {
-  title: 'Cambridge Pseudocode Practice Questions - Past Papers',
+  title: {
+    absolute: 'Pseudocode Practice Questions | IGCSE & A Level Past Papers',
+  },
   description:
-    'Solve Cambridge IGCSE, O Level and AS & A Level pseudocode past-paper questions. Practice trace tables, classes/OOP and algorithms with instant autograding, hints and analytics.',
+    'Free Cambridge IGCSE and A Level pseudocode practice questions from past papers. Run algorithms in the online compiler, check answers with hidden tests, and use hints and trace tables.',
   alternates: {
     canonical: '/practice',
+  },
+  openGraph: {
+    title: 'Pseudocode Practice Questions | IGCSE & A Level Past Papers',
+    description:
+      'Free Cambridge IGCSE and A Level pseudocode practice questions from past papers. Run algorithms in the online compiler with hidden tests, hints and trace tables.',
+    url: `${SITE_URL}/practice`,
+    type: 'website',
   },
 };
 
@@ -274,9 +284,12 @@ export default async function PracticePage({ searchParams }: PageProps) {
                 <Sparkles size={11} className="shrink-0" />
                 Past-paper practice
               </div>
-              <h1 className="display-serif text-[1.75rem] leading-tight font-semibold">Practice Questions</h1>
+              <h1 className="display-serif text-[1.75rem] leading-tight font-semibold">
+                Cambridge Pseudocode Practice Questions
+              </h1>
               <p className="text-sm text-dark-text mt-1 max-w-md">
-                Solve autograded pseudocode questions. Every submission is checked against hidden test cases.
+                Solve autograded IGCSE and A Level past-paper questions. Every submission is checked
+                against hidden test cases.
               </p>
             </div>
 

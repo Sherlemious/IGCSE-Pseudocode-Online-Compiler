@@ -6,10 +6,10 @@ export const SITE_NAME = 'Cambridge IGCSE & A Level Pseudocode Compiler';
 // inbox on the sherlemious.com domain (Paddle may email this during verification).
 export const SUPPORT_EMAIL = 'sherlemious@sherlemious.com';
 
-export const DEFAULT_TITLE = 'Cambridge IGCSE & A Level Pseudocode Compiler | Online Editor';
+export const DEFAULT_TITLE = 'Pseudocode Compiler Online | IGCSE 0478 & A Level 9618 Editor';
 
 export const DEFAULT_DESCRIPTION =
-  'Free Cambridge IGCSE 0478 and A Level 9618 pseudocode compiler. Run code in the browser, dry-run with trace tables, and practise past-paper questions with hidden tests and autograding.';
+  'Free online pseudocode compiler, editor and runner for Cambridge IGCSE 0478 and A Level 9618. Run and check code in the browser, dry-run with trace tables, and practise past-paper questions.';
 
 export const SEO_KEYWORDS = [
   '0478',
@@ -52,11 +52,26 @@ export const SEO_KEYWORDS = [
   'pseudo code',
   'pseudo-code',
   'pseudocode compiler',
+  'online pseudocode compiler',
+  'pseudocode compiler online',
   'pseudocode interpreter',
   'pseudocode online',
   'run pseudocode',
+  'where to run pseudocode',
   'pseudocode editor',
+  'pseudocode editor online',
+  'online pseudocode editor',
   'pseudocode runner',
+  'cambridge pseudocode guide',
+  'igcse pseudocode guide',
+  '0478 pseudocode guide',
+  'cambridge 9618 pseudocode guide',
+  'cie pseudocode guide',
+  'a level pseudocode guide',
+  'DIV in pseudocode',
+  'how to declare a constant in pseudocode',
+  'not equal to in pseudocode',
+  'how to round in pseudocode',
   'pseudocode checker',
   'pseudocode tester',
   'pseudocode simulator',
@@ -135,6 +150,8 @@ export const SEO_KEYWORDS = [
   'Egypt',
   'IGCSE Egypt',
   'Cambridge Egypt',
+  'India',
+  'Maldives',
   'UAE',
   'Saudi Arabia',
   'Pakistan',

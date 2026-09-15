@@ -82,7 +82,7 @@ export const faqItems: FaqItem[] = [
     question: 'Is there a free IGCSE pseudocode compiler?',
     paragraphs: [
       'Yes. This site is a free online Cambridge IGCSE, O Level and AS & A Level pseudocode compiler. You can write, run and debug pseudocode in the browser with no install and no paywall on the editor.',
-      'It also includes a syntax guide, runnable examples, past-paper style practice questions, and a timed exam simulator.',
+      'It also includes a Cambridge pseudocode guide, runnable examples, past-paper style practice questions, and a timed exam simulator.',
     ],
   },
   {
@@ -234,6 +234,42 @@ export const faqItems: FaqItem[] = [
     ],
   },
   {
+    id: 'declare-constant',
+    group: 'language',
+    question: 'How do I declare a constant in Cambridge pseudocode?',
+    paragraphs: [
+      'Use `CONSTANT` then the name, `<-`, and the value: `CONSTANT Pi <- 3.14159`. The value cannot change later in the program.',
+      'That is different from `DECLARE`, which creates a variable you can assign to. See the constants section of the Cambridge pseudocode guide for a runnable example.',
+    ],
+  },
+  {
+    id: 'div-operator',
+    group: 'language',
+    question: 'What does DIV do in pseudocode?',
+    paragraphs: [
+      '`DIV` is integer division. `10 DIV 3` is `3` — how many whole times 3 fits into 10. The remainder is `MOD`: `10 MOD 3` is `1`.',
+      'This compiler also accepts function form: `DIV(10, 3)` and `MOD(10, 3)`. Write the infix form (`10 DIV 3`) in exam answers.',
+    ],
+  },
+  {
+    id: 'round-function',
+    group: 'language',
+    question: 'How do I round in Cambridge pseudocode?',
+    paragraphs: [
+      'Use `ROUND(n, places)`. `ROUND(3.14159, 2)` is `3.14`. The second argument is the number of decimal places.',
+      '`INT(n)` truncates towards zero instead of rounding. Both are in the math functions section of the Cambridge pseudocode guide.',
+    ],
+  },
+  {
+    id: 'not-equal',
+    group: 'language',
+    question: 'How do I write not equal to in Cambridge pseudocode?',
+    paragraphs: [
+      'Not equal to is `<>`. Example: `IF Count <> 0 THEN`. There is no `!=` and no `/=` in IGCSE or 9618 pseudocode.',
+      'The other comparisons are `=` `<` `>` `<=` `>=`.',
+    ],
+  },
+  {
     id: 'array-indexing',
     group: 'language',
     question: 'Are arrays 1-indexed?',
@@ -248,7 +284,7 @@ export const faqItems: FaqItem[] = [
     question: 'What A Level (9618) features are included?',
     paragraphs: [
       'User-defined types (`TYPE` records, enums, pointers `^x` / `ptr^`, `SET OF` + `DEFINE`), `DATE` with `dd/mm/yyyy` literals, CASE ranges (`1 TO 5 :`) and multi-value labels, `BYREF` / `BYVAL` (sticky across following parameters), random-access files, and OOP (`CLASS` / `ENDCLASS`, `INHERITS`, `PUBLIC` / `PRIVATE`, `NEW`, `SUPER`).',
-      'See the syntax guide for worked examples. IGCSE students can ignore the A Level section; the extra keywords will not get in the way of 0478 programs.',
+      'See the Cambridge pseudocode guide for worked examples. IGCSE students can ignore the A Level section; the extra keywords will not get in the way of 0478 programs.',
     ],
   },
   {

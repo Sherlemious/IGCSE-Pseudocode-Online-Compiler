@@ -3,7 +3,7 @@ import CompilerPage from '@/modules/compiler/CompilerPage';
 
 const FEATURE_LINKS = [
   { label: 'Practice Questions', href: '/practice' },
-  { label: 'Language Docs', href: '/docs' },
+  { label: 'Cambridge Pseudocode Guide', href: '/docs' },
   { label: 'Timed Exams', href: '/exam' },
   { label: 'Compare compilers', href: '/compare' },
   { label: 'Progress Analytics', href: '/analytics' },
@@ -29,15 +29,15 @@ export default function Home() {
       <section aria-label="About this compiler" className="sr-only">
         <div className="flex items-center gap-2 min-w-0">
           <h1 className="text-xs font-semibold text-light-text whitespace-nowrap">
-            IGCSE and AS &amp; A Level Pseudocode Compiler
+            Online Pseudocode Compiler for IGCSE and A Level
           </h1>
           <span>
-            Free online editor and runner for Cambridge IGCSE Computer Science, Cambridge O Level
-            Computer Science, and Cambridge International AS &amp; A Level Computer Science (9618).
-            Supports 0478, 0984, 2210 and 9618 pseudocode, including a native ANTLR interpreter,
-            interactive INPUT, trace tables, records, pointers, classes, object-oriented programming,
-            dyslexia-friendly editor settings, analytics, timed practice exams, and Cambridge
-            past-paper questions with hidden test cases. Compared with Pseudocode Pro, Coddy,
+            Free online pseudocode compiler, editor and runner for Cambridge IGCSE Computer Science,
+            Cambridge O Level Computer Science, and Cambridge International AS &amp; A Level Computer
+            Science (9618). Supports 0478, 0984, 2210 and 9618 pseudocode, including a native ANTLR
+            interpreter, interactive INPUT, trace tables, records, pointers, classes, object-oriented
+            programming, dyslexia-friendly editor settings, analytics, timed practice exams, and
+            Cambridge past-paper questions with hidden test cases. Compared with Pseudocode Pro, Coddy,
             PseudoRun and PseudoStudio, this site is the Paper 2 practice tool with automatic
             grading.
           </span>

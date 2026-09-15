@@ -6,14 +6,16 @@ import { editorCodeHref } from '@/modules/compiler/editorShare';
 import { SITE_NAME, SITE_URL } from '@/shared/lib/seo';
 
 export const metadata: Metadata = {
-  title: 'Cambridge Pseudocode Examples',
+  title: {
+    absolute: 'Cambridge Pseudocode Examples | Run Online (IGCSE & 9618)',
+  },
   description:
-    'Runnable Cambridge IGCSE, O Level and AS & A Level (9618) pseudocode examples — INPUT/OUTPUT, loops, arrays, files, algorithms, OOP, stacks, queues, linked lists, binary trees and hash tables.',
+    'Runnable Cambridge IGCSE, O Level and A Level 9618 pseudocode examples. Open any snippet in the free online compiler — INPUT/OUTPUT, loops, arrays, files, algorithms and OOP.',
   alternates: {
     canonical: '/examples',
   },
   openGraph: {
-    title: 'Cambridge Pseudocode Examples',
+    title: 'Cambridge Pseudocode Examples | Run Online (IGCSE & 9618)',
     description:
       'Browse and run Cambridge IGCSE and A Level pseudocode examples in the browser compiler.',
     url: `${SITE_URL}/examples`,

@@ -39,7 +39,7 @@ function productLinks() {
     line('/', 'Online compiler', 'write and run Cambridge pseudocode'),
     line('/practice', 'Practice questions', 'past-paper style tasks with autograding and hidden tests'),
     line('/exam', 'Timed exam simulator', 'Paper 2-style timed papers'),
-    line('/docs', 'Syntax documentation', 'IGCSE and 9618 reference'),
+    line('/docs', 'Cambridge pseudocode guide', 'IGCSE 0478 and A Level 9618 syntax — DECLARE, CONSTANT, DIV, ROUND'),
     line('/examples', 'Cambridge pseudocode examples', 'runnable snippets by topic'),
     line('/compare', 'Compare IGCSE pseudocode compilers', 'Paper 2 ranking vs Pseudocode Pro, Coddy, PseudoRun, PseudoStudio'),
     line('/faq', 'FAQ', 'how the site works, DECLARE, teachers, grading, which tool to use'),
@@ -54,7 +54,7 @@ function productLinks() {
 }
 
 function docsAndExamples() {
-  const sections: string[] = ['## Syntax documentation'];
+  const sections: string[] = ['## Cambridge pseudocode guide'];
   for (const entry of toc) {
     sections.push(line(`/docs#${entry.id}`, entry.label));
     for (const child of entry.children ?? []) {

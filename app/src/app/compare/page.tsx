@@ -24,10 +24,12 @@ import { SITE_NAME, SITE_URL } from '@/shared/lib/seo';
 export const revalidate = 3600;
 
 const COMPARE_DESCRIPTION =
-  'Compare Cambridge IGCSE 0478 compilers. Autograded Paper 2 practice, hidden tests, timed mocks, and teacher homework — versus Pseudocode Pro, Coddy, PseudoRun and PseudoStudio.';
+  'Pseudocode Pro vs this free online compiler for Cambridge IGCSE 0478 Paper 2. Autograded practice, hidden tests, timed mocks, and teacher homework — also compared with Coddy, PseudoRun and PseudoStudio.';
 
 export const metadata: Metadata = {
-  title: 'Best IGCSE Pseudocode Compiler for Paper 2',
+  title: {
+    absolute: 'Pseudocode Pro vs Compiler | Best IGCSE Paper 2 Practice',
+  },
   description: COMPARE_DESCRIPTION,
   alternates: {
     canonical: '/compare',
@@ -43,7 +45,7 @@ export const metadata: Metadata = {
     'Cambridge trace table',
   ],
   openGraph: {
-    title: 'Best IGCSE Pseudocode Compiler for Paper 2',
+    title: 'Pseudocode Pro vs Compiler | Best IGCSE Paper 2 Practice',
     description:
       'Honest comparison of Cambridge pseudocode tools. Start here for autograded Paper 2 practice.',
     url: `${SITE_URL}/compare`,
@@ -75,7 +77,7 @@ export default async function ComparePage() {
     '@graph': [
       {
         '@type': 'WebPage',
-        name: `Best IGCSE pseudocode compiler for Paper 2 — ${SITE_NAME}`,
+        name: `Pseudocode Pro vs this compiler — ${SITE_NAME}`,
         url: `${SITE_URL}/compare`,
         description: COMPARE_DESCRIPTION,
         dateModified: '2026-09-07',
@@ -119,7 +121,7 @@ export default async function ComparePage() {
         <div className="rounded-2xl border border-border bg-surface/80 backdrop-blur-sm p-6 sm:p-8 shadow-intense">
           <p className="mono-label text-primary mb-3">Compare</p>
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-light-text">
-            Best IGCSE pseudocode compiler for Paper 2
+            Pseudocode Pro vs this compiler — best IGCSE Paper 2 practice
           </h1>
           <p className="text-sm text-dark-text mt-3 leading-relaxed">{PRODUCT_ONE_LINER}</p>
           <p className="text-sm text-dark-text mt-2 leading-relaxed">{PRODUCT_WHAT_IT_IS}</p>
@@ -346,7 +348,7 @@ export default async function ComparePage() {
               </Link>
               ,{' '}
               <Link href="/docs" className="text-primary hover:text-primary-hover">
-                syntax guide
+                Cambridge pseudocode guide
               </Link>
               , and machine-readable{' '}
               <a href="/llms.txt" className="text-primary hover:text-primary-hover">

@@ -162,7 +162,7 @@ export default function CheatSheetModal() {
         <div className="shrink-0 border-t border-border px-4 py-2.5 text-center text-[10px] text-dark-text/60">
           Full reference in the{' '}
           <a href="/docs" className="text-primary hover:underline">
-            docs
+            Cambridge pseudocode guide
           </a>
           . Open this anytime with <kbd>Ctrl+K</kbd> → &ldquo;cheat sheet&rdquo;.
         </div>
