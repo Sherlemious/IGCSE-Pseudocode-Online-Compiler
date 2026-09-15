@@ -126,7 +126,7 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
   errorFocusKey = 0,
   onPasteCleaned,
 }) => {
-  const { fontSize, dyslexicFont, autocomplete } = useTheme();
+  const { fontSize, dyslexicFont, fontLigatures, autocomplete } = useTheme();
   const editorRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
   const onChangeRef = useRef(onChange);
@@ -277,6 +277,8 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
         color: 'var(--color-light-text)',
         letterSpacing: 'var(--editor-letter-spacing)',
         lineHeight: 'var(--editor-line-height)',
+        fontVariantLigatures: 'var(--editor-font-ligatures)',
+        fontFeatureSettings: 'var(--editor-font-features)',
       },
       '.cm-gutters': {
         backgroundColor: 'var(--color-surface)',
@@ -355,6 +357,8 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
       '.cm-tooltip-autocomplete ul': {
         fontFamily: 'var(--editor-font-family)',
         fontSize: '0.85em',
+        fontVariantLigatures: 'var(--editor-font-ligatures)',
+        fontFeatureSettings: 'var(--editor-font-features)',
       },
       '.cm-tooltip-autocomplete ul li': {
         padding: '4px 10px',
@@ -586,7 +590,7 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
     });
   }, [autocomplete]);
 
-  // Reconfigure typography so CodeMirror remeasures (font size + dyslexia spacing)
+  // Reconfigure typography so CodeMirror remeasures (font size, spacing, ligatures)
   useEffect(() => {
     if (!viewRef.current) return;
     viewRef.current.dispatch({
@@ -596,11 +600,13 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
           '.cm-content': {
             letterSpacing: 'var(--editor-letter-spacing)',
             lineHeight: 'var(--editor-line-height)',
+            fontVariantLigatures: 'var(--editor-font-ligatures)',
+            fontFeatureSettings: 'var(--editor-font-features)',
           },
         })
       ),
     });
-  }, [fontSize, dyslexicFont]);
+  }, [fontSize, dyslexicFont, fontLigatures]);
 
   // Scroll debug line into view
   useEffect(() => {

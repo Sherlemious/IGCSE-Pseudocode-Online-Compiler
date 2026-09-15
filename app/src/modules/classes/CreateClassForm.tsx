@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { usePostHog } from 'posthog-js/react';
 import { Loader2, Plus, Lock } from 'lucide-react';
+import { useSession } from 'next-auth/react';
 import type { Tier } from '@/modules/billing/entitlements';
 
 interface Props {
@@ -24,6 +25,7 @@ const PLAN_LABELS: Record<Tier, string> = {
 export default function CreateClassForm({ canCreate, maxClasses, tier }: Props) {
   const router = useRouter();
   const ph = usePostHog();
+  const { update } = useSession();
   const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -74,6 +76,7 @@ export default function CreateClassForm({ canCreate, maxClasses, tier }: Props) 
         setLoading(false);
         return;
       }
+      await update?.();
       router.push(`/classes/${data.id}`);
     } catch {
       setError('Something went wrong.');

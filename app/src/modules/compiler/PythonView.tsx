@@ -13,7 +13,7 @@ import { useTheme } from '@/theme/ThemeContext';
  * highlighting, reusing the app's theme tokens so it matches the editor.
  */
 const PythonView: React.FC<{ code: string }> = ({ code }) => {
-  const { fontSize } = useTheme();
+  const { fontSize, fontLigatures, dyslexicFont } = useTheme();
   const hostRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
   const fontSizeCompartment = useRef(new Compartment());
@@ -29,6 +29,8 @@ const PythonView: React.FC<{ code: string }> = ({ code }) => {
         color: 'var(--color-light-text)',
         letterSpacing: 'var(--editor-letter-spacing)',
         lineHeight: 'var(--editor-line-height)',
+        fontVariantLigatures: 'var(--editor-font-ligatures)',
+        fontFeatureSettings: 'var(--editor-font-features)',
       },
       '.cm-gutters': {
         backgroundColor: 'var(--color-surface)',
@@ -102,14 +104,22 @@ const PythonView: React.FC<{ code: string }> = ({ code }) => {
     }
   }, [code]);
 
-  // Keep font size in sync with the editor's typography control.
+  // Keep typography in sync with the editor (size + ligatures change glyph widths).
   useEffect(() => {
     const view = viewRef.current;
     if (!view) return;
     view.dispatch({
-      effects: fontSizeCompartment.current.reconfigure(EditorView.theme({ '&': { fontSize: `${fontSize}px` } })),
+      effects: fontSizeCompartment.current.reconfigure(
+        EditorView.theme({
+          '&': { fontSize: `${fontSize}px` },
+          '.cm-content': {
+            fontVariantLigatures: 'var(--editor-font-ligatures)',
+            fontFeatureSettings: 'var(--editor-font-features)',
+          },
+        }),
+      ),
     });
-  }, [fontSize]);
+  }, [fontSize, fontLigatures, dyslexicFont]);
 
   return <div ref={hostRef} className="h-full w-full" />;
 };

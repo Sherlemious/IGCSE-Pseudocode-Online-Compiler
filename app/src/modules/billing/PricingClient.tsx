@@ -46,6 +46,7 @@ export default function PricingClient({
   currentPlanLabel,
   canManageBilling,
   paddleEnv,
+  featuredSlug = 'starter',
 }: {
   tiers: PricingTierView[];
   countryCode?: string;
@@ -55,6 +56,8 @@ export default function PricingClient({
   currentPlanLabel?: string | null;
   canManageBilling?: boolean;
   paddleEnv: string;
+  /** Card to mark as the default checkout. Teacher checkout should land on Starter. */
+  featuredSlug?: string;
 }) {
   const paddle = usePaddle();
   const ph = usePostHog();
@@ -267,7 +270,7 @@ export default function PricingClient({
         {tiers.map((tier) => {
           const priceId = interval === 'month' ? tier.monthPriceId : tier.yearPriceId;
           const total = totals[priceId];
-          const featured = tier.slug === 'pro'; // "Most popular"
+          const featured = tier.slug === featuredSlug;
           const isCurrent = Boolean(currentTier) && tier.slug === currentTier;
           return (
             <div
@@ -287,7 +290,7 @@ export default function PricingClient({
               ) : (
                 featured && (
                   <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-primary px-3 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-white">
-                    Most popular
+                    {tier.slug === 'starter' ? 'Best for classes' : 'Most popular'}
                   </span>
                 )
               )}
@@ -355,18 +358,29 @@ export default function PricingClient({
                   Change plan
                 </a>
               ) : (
-                <button
-                  type="button"
-                  onClick={() => openCheckout(tier, priceId)}
-                  disabled={!paddle}
-                  className={`mt-6 w-full rounded-lg px-4 py-2.5 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
-                    featured
-                      ? 'bg-primary text-white hover:bg-primary-hover'
-                      : 'border border-primary/40 text-primary hover:bg-primary/10'
-                  }`}
-                >
-                  {paddle ? `Subscribe to ${tier.name}` : 'Loading…'}
-                </button>
+                <div className="mt-6">
+                  <button
+                    type="button"
+                    onClick={() => openCheckout(tier, priceId)}
+                    disabled={!paddle}
+                    className={`w-full rounded-lg px-4 py-2.5 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+                      featured
+                        ? 'bg-primary text-white hover:bg-primary-hover'
+                        : 'border border-primary/40 text-primary hover:bg-primary/10'
+                    }`}
+                  >
+                    {paddle
+                      ? tier.slug === 'starter'
+                        ? 'Start with Starter'
+                        : `Subscribe to ${tier.name}`
+                      : 'Loading…'}
+                  </button>
+                  {tier.slug === 'starter' && (
+                    <p className="mt-2 text-center text-[11px] leading-relaxed text-dark-text/80">
+                      Up to 30 students per class get the full practice library — they don&apos;t pay.
+                    </p>
+                  )}
+                </div>
               )}
             </div>
           );

@@ -373,13 +373,14 @@ export default async function QuestionPage({ params }: Props) {
                 Sign in to get started
               </Link>
             ) : (
-              <button
+              <Link
+                href="/pricing"
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-warning/15 text-warning
                   font-medium text-sm hover:bg-warning/25 transition-colors"
               >
                 <Crown size={15} />
-                Upgrade to Premium
-              </button>
+                See plans
+              </Link>
             )}
           </div>
         </div>

@@ -78,7 +78,9 @@ export default function RoleSwitcher({ currentRole }: { currentRole: Role }) {
         <p className="mt-2 text-[11px] text-error">{error}</p>
       ) : (
         <p className="mt-2 text-[11px] text-dark-text/60">
-          Teachers can create classes and set assignments; students get the compiler and practice library.
+          {role === 'TEACHER'
+            ? 'Classes is now in the header. Create a class, share the join code, and set assignments.'
+            : 'Teachers can create classes and set assignments; students get the compiler and practice library. Switch any time.'}
         </p>
       )}
     </div>

@@ -9,6 +9,7 @@ import { planBadge } from '@/modules/billing/planDisplay';
 import { SITE_URL, SITE_NAME } from '@/shared/lib/seo';
 import PaddleProvider from '@/modules/billing/PaddleProvider';
 import PricingClient, { type PricingTierView } from '@/modules/billing/PricingClient';
+import { displayTier } from '@/modules/billing/tierCopy';
 
 // Tier rows are the same for everyone in a given Paddle env and only change on a
 // reseed, so cache them across requests instead of hitting Neon per page view.
@@ -118,15 +119,18 @@ export default async function PricingPage({
         ? { href: '/pricing?view=student', label: 'Just want the student plan? →' }
         : null;
 
-  const tierViews: PricingTierView[] = visibleTiers.map((t) => ({
-    slug: t.slug,
-    name: t.name,
-    description: t.description,
-    features: t.features,
-    monthPriceId: t.monthPriceId,
-    yearPriceId: t.yearPriceId,
-    contactOnly: t.contactOnly,
-  }));
+  const tierViews: PricingTierView[] = visibleTiers.map((t) => {
+    const copy = displayTier(t);
+    return {
+      slug: t.slug,
+      name: copy.name,
+      description: copy.description,
+      features: copy.features,
+      monthPriceId: t.monthPriceId,
+      yearPriceId: t.yearPriceId,
+      contactOnly: t.contactOnly,
+    };
+  });
 
   return (
     <div className="flex-1 min-h-0 overflow-y-auto bg-background bg-dot-grid scrollbar-pretty">
@@ -142,17 +146,28 @@ export default async function PricingPage({
         <div className="mb-8 text-center">
           <p className="mono-label text-primary mb-3">Plans</p>
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-light-text">
-            Choose your plan
+            {view === 'student' ? 'Choose your plan' : 'Plans for teachers'}
           </h1>
           <p className="mx-auto mt-3 max-w-2xl text-sm text-light-text/90 leading-relaxed">
-            The {SITE_NAME} lets students write, run, and practise Cambridge Paper 2
-            pseudocode in the browser — with instant output, trace tables, hidden tests, and timed
-            exams. The editor stays free; paid plans add saved solutions, analytics, classes, and
-            assignments. See how this compares to other IGCSE compilers on the{' '}
-            <Link href="/compare" className="text-primary hover:text-primary-hover">
-              comparison page
-            </Link>
-            .
+            {view === 'student' ? (
+              <>
+                The {SITE_NAME} lets students write, run, and practise Cambridge Paper 2
+                pseudocode in the browser — with instant output, trace tables, hidden tests, and timed
+                exams. The editor stays free; the Student plan adds saved solutions, analytics, and the
+                full library. See how this compares to other IGCSE compilers on the{' '}
+                <Link href="/compare" className="text-primary hover:text-primary-hover">
+                  comparison page
+                </Link>
+                .
+              </>
+            ) : (
+              <>
+                Starter is the plan most teachers pick. Create a class, share the join link, and
+                every student on your roster gets the full practice and exam library — they
+                don&apos;t need their own subscription. The editor stays free; paid teacher plans add
+                classes, assignments, and that student access.
+              </>
+            )}
           </p>
           <p className="mx-auto mt-2 max-w-xl text-sm text-dark-text leading-relaxed">
             Prices are shown in your local currency. Switch between monthly and yearly billing —
@@ -186,6 +201,7 @@ export default async function PricingPage({
               currentPlanLabel={currentPlanLabel}
               canManageBilling={canManageBilling}
               paddleEnv={paddleEnv}
+              featuredSlug={view === 'student' ? 'student' : 'starter'}
             />
           </PaddleProvider>
         )}

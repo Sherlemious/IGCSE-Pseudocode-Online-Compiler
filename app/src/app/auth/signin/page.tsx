@@ -29,7 +29,7 @@ interface SignInPageProps {
 
 export default async function SignInPage({ searchParams }: SignInPageProps) {
   const { error, callbackUrl } = await searchParams;
-  const redirectTo = safeCallback(callbackUrl, '/practice');
+  const redirectTo = safeCallback(callbackUrl, '/onboarding');
 
   const session = await auth();
   if (session?.user?.id) redirect(redirectTo);

@@ -17,11 +17,14 @@ import {
   Search,
   Bug,
   Tag,
+  Users,
 } from 'lucide-react';
 import SettingsPanel from './settingsPanel';
 import UserMenu from '@/modules/auth/UserMenu';
 import { useCommands } from '@/shared/ui/CommandPalette';
 import { OPEN_BUG_REPORT_EVENT } from '@/shared/lib/events';
+import { useSession } from 'next-auth/react';
+import { sessionShowsClasses } from '@/modules/classes/visibility';
 
 const GITHUB_URL = 'https://github.com/Sherlemious/IGCSE-Pseudocode-Online-Compiler';
 const PORTFOLIO_URL = 'https://www.sherlemious.com';
@@ -37,6 +40,8 @@ const Header: React.FC = () => {
   const pathname = usePathname();
   const ph = usePostHog();
   const { openPalette } = useCommands();
+  const { data: session } = useSession();
+  const showClasses = sessionShowsClasses(session?.user);
 
   const trackNav = useCallback(
     (destination: string) => {
@@ -52,9 +57,10 @@ const Header: React.FC = () => {
     pathname === '/exams' ||
     pathname.startsWith('/exams/') ||
     pathname.startsWith('/e/');
+  const isClasses = pathname === '/classes' || pathname.startsWith('/classes/');
   const isCompilerPage = pathname === '/';
   const isPricing = pathname === '/pricing';
-  const activeNavIndex = isDocs ? 0 : isPractice ? 1 : isExam ? 2 : -1;
+  const activeNavIndex = isDocs ? 0 : isPractice ? 1 : isExam ? 2 : showClasses && isClasses ? 3 : -1;
 
   // Text-only nav links with a shared underline that glides between routes.
   const navLinkClass = (active: boolean) =>
@@ -107,7 +113,7 @@ const Header: React.FC = () => {
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center gap-1 text-xs">
-            <div className="relative grid w-45 grid-cols-3">
+            <div className={`relative grid ${showClasses ? 'w-60 grid-cols-4' : 'w-45 grid-cols-3'}`}>
               <Link
                 href="/docs"
                 data-tour="docs-link"
@@ -134,14 +140,28 @@ const Header: React.FC = () => {
               >
                 Exam
               </Link>
+              {showClasses && (
+                <Link
+                  href="/classes"
+                  onClick={() => trackNav('classes')}
+                  className={navLinkClass(isClasses)}
+                  aria-current={isClasses ? 'page' : undefined}
+                >
+                  Classes
+                </Link>
+              )}
               <span
                 aria-hidden="true"
-                className={`pointer-events-none absolute bottom-0 left-0 w-1/3 transition-[transform,opacity] duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] motion-reduce:transition-none ${
+                className={`pointer-events-none absolute bottom-0 left-0 transition-[transform,opacity] duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] motion-reduce:transition-none ${
+                  showClasses ? 'w-1/4' : 'w-1/3'
+                } ${
                   activeNavIndex === 1
                     ? 'translate-x-full'
                     : activeNavIndex === 2
                       ? 'translate-x-[200%]'
-                      : 'translate-x-0'
+                      : activeNavIndex === 3
+                        ? 'translate-x-[300%]'
+                        : 'translate-x-0'
                 } ${activeNavIndex === -1 ? 'opacity-0' : 'opacity-100'}`}
               >
                 <span className="mx-1.5 block h-0.5 rounded-full bg-primary shadow-[0_0_6px_var(--color-primary)]" />
@@ -230,6 +250,18 @@ const Header: React.FC = () => {
               <Clock size={14} />
               Exam
             </Link>
+            {showClasses && (
+              <Link
+                href="/classes"
+                className={`flex items-center gap-2 hover:text-header-text transition duration-200 py-1.5 px-1 rounded hover:bg-white/10 ${
+                  isClasses ? 'text-primary' : 'text-header-text/70'
+                }`}
+                onClick={() => { setIsMenuOpen(false); trackNav('classes'); }}
+              >
+                <Users size={14} />
+                Classes
+              </Link>
+            )}
             <Link
               href="/pricing"
               className={`flex items-center gap-2 hover:text-header-text transition duration-200 py-1.5 px-1 rounded hover:bg-white/10 ${

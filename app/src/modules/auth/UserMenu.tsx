@@ -82,7 +82,7 @@ export default function UserMenu() {
           <div className="px-3 py-2.5 border-b border-border">
             <div className="text-sm font-medium text-light-text truncate">{session.user.name ?? 'User'}</div>
             <div className="text-xs text-dark-text truncate">{session.user.email}</div>
-            <div className="mt-1.5">
+            <div className="mt-1.5 flex items-center gap-1.5 flex-wrap">
               {badge.paid ? (
                 <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded bg-warning/15 border border-warning/30 text-warning">
                   <Crown size={9} />
@@ -93,6 +93,13 @@ export default function UserMenu() {
                   {badge.label}
                 </span>
               )}
+              <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-surface border border-border text-dark-text">
+                {session.user.role === 'ADMIN'
+                  ? 'Admin'
+                  : session.user.role === 'TEACHER'
+                    ? 'Teacher'
+                    : 'Student'}
+              </span>
             </div>
           </div>
 
@@ -134,7 +141,7 @@ export default function UserMenu() {
               Classes
             </Link>
             <Link
-              href="/profile"
+              href="/profile#account-type"
               onClick={() => setOpen(false)}
               className="w-full flex items-center gap-2 px-3 py-2 text-xs text-dark-text hover:text-light-text hover:bg-background transition-colors"
             >

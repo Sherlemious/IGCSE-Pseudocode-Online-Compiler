@@ -3,9 +3,11 @@ import Google from 'next-auth/providers/google';
 import Credentials from 'next-auth/providers/credentials';
 import { PrismaAdapter } from '@auth/prisma-adapter';
 import bcrypt from 'bcryptjs';
+import { cookies } from 'next/headers';
 import { prisma } from '@/shared/db';
 import { getResend, FROM_ADDRESS } from './resend';
 import { welcomeEmailHtml, welcomeEmailText } from '@/modules/auth/emails/welcome';
+import { parseSignupRole, SIGNUP_ROLE_COOKIE } from './signupRole';
 
 const authSecret =
   process.env.AUTH_SECRET ??
@@ -64,6 +66,21 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   },
   events: {
     async createUser({ user }) {
+      if (user.id) {
+        try {
+          const store = await cookies();
+          const pending = store.get(SIGNUP_ROLE_COOKIE)?.value;
+          store.delete(SIGNUP_ROLE_COOKIE);
+          if (pending === 'TEACHER' || pending === 'STUDENT') {
+            await prisma.user.update({
+              where: { id: user.id },
+              data: { role: pending, roleChosen: true },
+            });
+          }
+        } catch {
+          // Cookie store isn't always available in this event; jwt fallback below.
+        }
+      }
       if (!user.email) return;
       const resend = getResend();
       if (!resend) return;
@@ -79,11 +96,65 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   },
   callbacks: {
     async jwt({ token, user, trigger }) {
+      const loadEntitlements = async (userId: string) => {
+        const fresh = await prisma.user.findUnique({
+          where: { id: userId },
+          select: {
+            plan: true,
+            role: true,
+            planTier: true,
+            roleChosen: true,
+            createdAt: true,
+            _count: { select: { taughtClasses: true } },
+          },
+        });
+        if (!fresh) return;
+        token.plan = fresh.plan;
+        token.role = fresh.role;
+        token.planTier = fresh.planTier;
+        token.ownsClass = fresh._count.taughtClasses > 0;
+        // Existing Google accounts predate the picker — don't trap them on
+        // /onboarding. Only brand-new signups (30 min) still get the gate.
+        const accountAgeMs = Date.now() - fresh.createdAt.getTime();
+        token.roleChosen =
+          fresh.roleChosen ||
+          fresh.role === 'TEACHER' ||
+          fresh.role === 'ADMIN' ||
+          accountAgeMs > 30 * 60 * 1000;
+      };
+
       if (user) {
         token.id = user.id!;
-        token.plan = (user as unknown as { plan: string }).plan;
-        token.role = (user as unknown as { role: string }).role;
-        token.planTier = (user as unknown as { planTier?: string | null }).planTier ?? null;
+        // Brand-new Google accounts: apply the signup-page role if createUser
+        // couldn't touch cookies. Only for accounts created in the last 2 min
+        // that still have the default unchosen student role.
+        try {
+          const store = await cookies();
+          const pendingRaw = store.get(SIGNUP_ROLE_COOKIE)?.value;
+          store.delete(SIGNUP_ROLE_COOKIE);
+          const pending = pendingRaw === 'TEACHER' || pendingRaw === 'STUDENT' ? pendingRaw : null;
+          if (pending && token.id) {
+            const current = await prisma.user.findUnique({
+              where: { id: token.id as string },
+              select: { role: true, roleChosen: true, createdAt: true },
+            });
+            const ageMs = current ? Date.now() - current.createdAt.getTime() : Infinity;
+            if (
+              current &&
+              current.role !== 'ADMIN' &&
+              !current.roleChosen &&
+              ageMs < 120_000
+            ) {
+              await prisma.user.update({
+                where: { id: token.id as string },
+                data: { role: parseSignupRole(pending), roleChosen: true },
+              });
+            }
+          }
+        } catch {
+          /* ignore */
+        }
+        await loadEntitlements(token.id as string);
         token.refreshedAt = Date.now();
         return token;
       }
@@ -95,15 +166,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       const refreshedAt = typeof token.refreshedAt === 'number' ? token.refreshedAt : 0;
       const stale = Date.now() - refreshedAt > REFRESH_MS;
       if ((trigger === 'update' || stale) && token.id) {
-        const fresh = await prisma.user.findUnique({
-          where: { id: token.id as string },
-          select: { plan: true, role: true, planTier: true },
-        });
-        if (fresh) {
-          token.plan = fresh.plan;
-          token.role = fresh.role;
-          token.planTier = fresh.planTier;
-        }
+        await loadEntitlements(token.id as string);
         token.refreshedAt = Date.now();
       }
       return token;
@@ -113,6 +176,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       session.user.plan = token.plan as string;
       session.user.role = token.role as string;
       session.user.planTier = (token.planTier as string | null | undefined) ?? null;
+      session.user.ownsClass = Boolean(token.ownsClass);
+      session.user.roleChosen = Boolean(token.roleChosen);
       return session;
     },
   },

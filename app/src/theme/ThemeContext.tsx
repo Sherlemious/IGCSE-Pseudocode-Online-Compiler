@@ -16,10 +16,10 @@ import {
 } from './themes';
 
 export const FONT_FAMILIES = {
-  'fira-code':       { label: 'Fira Code',       css: '"Fira Code Variable", "Fira Code", monospace' },
-  'jetbrains-mono':  { label: 'JetBrains Mono',  css: '"JetBrains Mono", monospace' },
-  'source-code-pro': { label: 'Source Code Pro',  css: '"Source Code Pro", monospace' },
-  'inconsolata':     { label: 'Inconsolata',      css: '"Inconsolata", monospace' },
+  'fira-code':       { label: 'Fira Code',       css: '"Fira Code Variable", "Fira Code", monospace', ligatures: true },
+  'jetbrains-mono':  { label: 'JetBrains Mono',  css: '"JetBrains Mono", monospace',                 ligatures: true },
+  'source-code-pro': { label: 'Source Code Pro',  css: '"Source Code Pro", monospace',                ligatures: false },
+  'inconsolata':     { label: 'Inconsolata',      css: '"Inconsolata", monospace',                    ligatures: false },
 } as const;
 
 export type FontFamilyId = keyof typeof FONT_FAMILIES;
@@ -39,6 +39,9 @@ interface ThemeContextValue {
   /** Keyword / snippet / builtin completions in the editor. */
   autocomplete: boolean;
   setAutocomplete: (v: boolean) => void;
+  /** Programming ligatures (`>=`, `<-`, `!=`, …). Off by default so exam operators stay as typed. */
+  fontLigatures: boolean;
+  setFontLigatures: (v: boolean) => void;
   /** The signed-in user's saved custom themes (empty when signed out). */
   customThemes: SavedTheme[];
   /** True while the initial DB fetch of custom themes is in flight. */
@@ -57,6 +60,7 @@ const STORAGE_KEY_FONT_SIZE = 'pseudocode-font-size';
 const STORAGE_KEY_WORD_WRAP = 'pseudocode-word-wrap';
 const STORAGE_KEY_FONT_FAMILY = 'pseudocode-font-family';
 const STORAGE_KEY_DYSLEXIC = 'pseudocode-dyslexic-font';
+const STORAGE_KEY_LIGATURES = 'pseudocode-font-ligatures';
 const STORAGE_KEY_AUTOCOMPLETE = 'pseudocode-autocomplete';
 const STORAGE_KEY_ACTIVE_COLORS = 'pseudocode-active-colors'; // first-paint cache for active custom theme
 const STORAGE_KEY_LEGACY_CUSTOM = 'pseudocode-custom-theme';  // pre-multi-theme single custom theme
@@ -92,16 +96,25 @@ const DYSLEXIC_LETTER_SPACING = '0.04em';
 const DYSLEXIC_LINE_HEIGHT = '1.7';
 const DEFAULT_LETTER_SPACING = 'normal';
 const DEFAULT_LINE_HEIGHT = '1.5';
+const LIGATURES_ON = 'contextual';
+const LIGATURES_OFF = 'none';
+const LIGATURE_FEATURES_ON = '"liga" 1, "calt" 1';
+const LIGATURE_FEATURES_OFF = '"liga" 0, "calt" 0';
 
 /**
  * Apply editor typography. When `dyslexic` is on, OpenDyslexic plus wider
- * letter-spacing/line-height override the picker selection.
+ * letter-spacing/line-height override the picker selection, and ligatures
+ * stay off (OpenDyslexic has none, and extra spacing would fight them).
  */
-function applyTypography(id: FontFamilyId, dyslexic: boolean) {
+function applyTypography(id: FontFamilyId, dyslexic: boolean, ligatures: boolean) {
   const root = document.documentElement;
   root.style.setProperty('--editor-font-family', dyslexic ? DYSLEXIC_FONT_CSS : FONT_FAMILIES[id].css);
   root.style.setProperty('--editor-letter-spacing', dyslexic ? DYSLEXIC_LETTER_SPACING : DEFAULT_LETTER_SPACING);
   root.style.setProperty('--editor-line-height', dyslexic ? DYSLEXIC_LINE_HEIGHT : DEFAULT_LINE_HEIGHT);
+  const ligaturesOn = ligatures && !dyslexic;
+  root.style.setProperty('--editor-font-ligatures', ligaturesOn ? LIGATURES_ON : LIGATURES_OFF);
+  root.style.setProperty('--editor-font-features', ligaturesOn ? LIGATURE_FEATURES_ON : LIGATURE_FEATURES_OFF);
+  root.dataset.editorLigatures = ligaturesOn ? 'on' : 'off';
 }
 
 function isPreset(id: string): id is PresetThemeId {
@@ -135,6 +148,10 @@ function loadFontFamily(): FontFamilyId {
 
 function loadDyslexicFont(): boolean {
   return localStorage.getItem(STORAGE_KEY_DYSLEXIC) === 'true';
+}
+
+function loadFontLigatures(): boolean {
+  return localStorage.getItem(STORAGE_KEY_LIGATURES) === 'true';
 }
 
 /** Explicit user choice from settings, or false (default off) if never toggled. */
@@ -200,6 +217,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const [wordWrap, setWordWrapState] = useState<boolean>(true);
   const [fontFamilyId, setFontFamilyId] = useState<FontFamilyId>(DEFAULT_FONT_FAMILY);
   const [dyslexicFont, setDyslexicFontState] = useState<boolean>(false);
+  const [fontLigatures, setFontLigaturesState] = useState<boolean>(false);
   const [autocomplete, setAutocompleteState] = useState<boolean>(false);
   const [customThemes, setCustomThemes] = useState<SavedTheme[]>([]);
   const [themesLoading, setThemesLoading] = useState<boolean>(true);
@@ -212,6 +230,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     setWordWrapState(loadWordWrap());
     setFontFamilyId(loadFontFamily());
     setDyslexicFontState(loadDyslexicFont());
+    setFontLigaturesState(loadFontLigatures());
     setAutocompleteState(loadAutocomplete());
   }, []);
 
@@ -293,9 +312,9 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   }, [fontSize]);
 
   useEffect(() => {
-    applyTypography(fontFamilyId, dyslexicFont);
+    applyTypography(fontFamilyId, dyslexicFont, fontLigatures);
     localStorage.setItem(STORAGE_KEY_FONT_FAMILY, fontFamilyId);
-  }, [fontFamilyId, dyslexicFont]);
+  }, [fontFamilyId, dyslexicFont, fontLigatures]);
 
   const setTheme = useCallback(
     (id: ActiveThemeId) => {
@@ -333,6 +352,12 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     setDyslexicFontState(v);
     localStorage.setItem(STORAGE_KEY_DYSLEXIC, String(v));
     try { posthog.capture('dyslexic_font_toggled', { enabled: v }); } catch { /* non-critical */ }
+  };
+
+  const setFontLigatures = (v: boolean) => {
+    setFontLigaturesState(v);
+    localStorage.setItem(STORAGE_KEY_LIGATURES, String(v));
+    try { posthog.capture('font_ligatures_toggled', { enabled: v }); } catch { /* non-critical */ }
   };
 
   const setAutocomplete = (v: boolean) => {
@@ -384,6 +409,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         wordWrap, setWordWrap,
         fontFamilyId, setFontFamily,
         dyslexicFont, setDyslexicFont,
+        fontLigatures, setFontLigatures,
         autocomplete, setAutocomplete,
         customThemes, themesLoading, isSignedIn,
         createTheme, updateTheme, deleteTheme,

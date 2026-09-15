@@ -138,6 +138,8 @@
   --editor-font-size: 14px;
   --editor-letter-spacing: normal;
   --editor-line-height: 1.5;
+  --editor-font-ligatures: none;
+  --editor-font-features: "liga" 0, "calt" 0;
 }
 
 /* ── Tailwind v4 theme tokens ────────────────────────────── */
@@ -177,11 +179,25 @@ body {
   background-color: var(--color-background);
   color: var(--color-light-text);
   font-family: "Inter Variable", Inter, Roboto, Arial, sans-serif;
-  /* Disable programming ligatures site-wide so operators like >=, <=, <-, <>
+  /* Ligatures stay off everywhere by default so operators like >=, <=, <-, <>
      render as separate characters — students must write them that way in exams.
-     Inherited, so it reaches every code surface (editor, font-mono blocks,
-     flowchart, export cards) without per-component styling. */
+     Settings → Font Ligatures opts the editor in via --editor-font-ligatures. */
   font-variant-ligatures: none;
+}
+
+/* Editor surfaces only — docs, export, and flowchart stay exam-faithful.
+   CSS variables + the data attribute both flip; the attribute rule is the
+   reliable override of html/body { font-variant-ligatures: none }. */
+.cm-content,
+.cm-tooltip-autocomplete ul {
+  font-variant-ligatures: var(--editor-font-ligatures);
+  font-feature-settings: var(--editor-font-features);
+}
+
+html[data-editor-ligatures="on"] .cm-content,
+html[data-editor-ligatures="on"] .cm-tooltip-autocomplete ul {
+  font-variant-ligatures: contextual;
+  font-feature-settings: "liga" 1, "calt" 1;
 }
 
 ::selection {

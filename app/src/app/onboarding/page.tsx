@@ -4,22 +4,31 @@ import { auth } from '@/modules/auth/auth';
 import { prisma } from '@/shared/db';
 import { Braces } from 'lucide-react';
 import RolePicker from './RolePicker';
+import { safeCallback } from '@/modules/auth/callback';
 
 export const metadata: Metadata = {
   title: 'Welcome',
   robots: { index: false, follow: false },
 };
 
-export default async function OnboardingPage() {
+export default async function OnboardingPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ callbackUrl?: string }>;
+}) {
+  const { callbackUrl } = await searchParams;
   const session = await auth();
   if (!session?.user?.id) redirect('/auth/signin');
 
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
-    select: { roleChosen: true, name: true },
+    select: { roleChosen: true, name: true, role: true },
   });
-  // Already picked a role (or the account vanished) — nothing to ask here.
-  if (!user || user.roleChosen) redirect('/practice');
+  if (!user) redirect('/auth/signin');
+  if (user.roleChosen || user.role === 'TEACHER' || user.role === 'ADMIN') {
+    const teacherHome = user.role === 'TEACHER' || user.role === 'ADMIN' ? '/classes' : '/practice';
+    redirect(safeCallback(callbackUrl, teacherHome));
+  }
 
   const firstName = user.name?.trim().split(/\s+/)[0] ?? null;
 
@@ -45,7 +54,7 @@ export default async function OnboardingPage() {
             <p className="text-sm text-dark-text mt-1.5">One quick thing — how will you use this?</p>
           </div>
 
-          <RolePicker />
+          <RolePicker callbackUrl={callbackUrl} />
         </div>
       </div>
     </div>

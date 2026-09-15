@@ -42,9 +42,13 @@ export async function POST(req: Request) {
         data: { ownerId: userId, name, joinCode: generateShareCode() },
         select: { id: true, joinCode: true },
       });
-      // First class turns a student into a teacher.
-      if (session.user.role === 'STUDENT') {
-        await prisma.user.update({ where: { id: userId }, data: { role: 'TEACHER' } });
+      // First class turns a student into a teacher and marks the role chosen
+      // so onboarding never re-prompts.
+      if (session.user.role !== 'ADMIN') {
+        await prisma.user.update({
+          where: { id: userId },
+          data: { role: 'TEACHER', roleChosen: true },
+        });
       }
       return NextResponse.json({ id: created.id, joinCode: created.joinCode });
     } catch (err) {

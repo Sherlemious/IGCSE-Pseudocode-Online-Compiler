@@ -51,7 +51,19 @@ export default async function ClassesPage() {
           </div>
           <div>
             <h1 className="display-serif text-2xl font-semibold text-light-text">My Classes</h1>
-            <p className="text-xs text-dark-text mt-0.5">Invite students by link and keep your class in one place</p>
+            <p className="text-xs text-dark-text mt-0.5">
+              {entitlements.tier === 'free' ? (
+                <>
+                  Invite students by link.{' '}
+                  <Link href="/pricing?view=teacher" className="text-primary hover:underline">
+                    Starter unlocks the full practice library for your roster
+                  </Link>
+                  .
+                </>
+              ) : (
+                'Students who join get the full practice and exam library included in your plan.'
+              )}
+            </p>
           </div>
         </div>
 

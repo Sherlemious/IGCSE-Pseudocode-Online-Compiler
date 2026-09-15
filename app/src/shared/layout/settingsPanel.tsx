@@ -24,6 +24,7 @@ export default function SettingsPanel() {
     wordWrap, setWordWrap,
     fontFamilyId, setFontFamily,
     dyslexicFont, setDyslexicFont,
+    fontLigatures, setFontLigatures,
     autocomplete, setAutocomplete,
     customThemes, isSignedIn,
   } = useTheme();
@@ -200,7 +201,11 @@ export default function SettingsPanel() {
                   >
                     <span
                       className="block text-sm text-light-text leading-snug mb-1 truncate"
-                      style={{ fontFamily: font.css }}
+                      style={{
+                        fontFamily: font.css,
+                        fontVariantLigatures: fontLigatures && !dyslexicFont ? 'contextual' : 'none',
+                        fontFeatureSettings: fontLigatures && !dyslexicFont ? '"liga" 1, "calt" 1' : '"liga" 0, "calt" 0',
+                      }}
                     >
                       x &lt;- x + 1
                     </span>
@@ -289,6 +294,35 @@ export default function SettingsPanel() {
                 <div className={`absolute top-0.5 w-3 h-3 rounded-full bg-white transition-transform ${dyslexicFont ? 'translate-x-4' : 'translate-x-0.5'}`} />
               </div>
             </button>
+            <button
+              onClick={() => setFontLigatures(!fontLigatures)}
+              className="w-full flex items-center justify-between px-3 py-2 rounded-lg bg-background border border-border hover:border-border/80 transition"
+              aria-label="Toggle font ligatures"
+              aria-pressed={fontLigatures}
+            >
+              <span className="flex items-center gap-2 text-xs text-dark-text">
+                <span
+                  className="inline-flex h-3.5 w-5 items-center justify-center text-[11px] leading-none"
+                  style={{
+                    fontFamily: FONT_FAMILIES['fira-code'].css,
+                    fontVariantLigatures: fontLigatures && !dyslexicFont ? 'contextual' : 'none',
+                    fontFeatureSettings: fontLigatures && !dyslexicFont ? '"liga" 1, "calt" 1' : '"liga" 0, "calt" 0',
+                  }}
+                  aria-hidden
+                >
+                  {'>='}
+                </span>
+                Font Ligatures
+              </span>
+              <div className={`w-8 h-4 rounded-full transition-colors relative ${fontLigatures ? 'bg-primary' : 'bg-border'}`}>
+                <div className={`absolute top-0.5 w-3 h-3 rounded-full bg-white transition-transform ${fontLigatures ? 'translate-x-4' : 'translate-x-0.5'}`} />
+              </div>
+            </button>
+            {fontLigatures && !dyslexicFont && !FONT_FAMILIES[fontFamilyId].ligatures && (
+              <p className="text-[10px] text-dark-text/70 leading-relaxed px-0.5">
+                Switch to Fira Code or JetBrains Mono to see ligatures.
+              </p>
+            )}
           </div>
 
           <div className="border-t border-border/50" />

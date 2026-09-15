@@ -63,17 +63,20 @@ describe('grade route access control', () => {
     expect(upsert).not.toHaveBeenCalled();
   });
 
-  it('blocks a MEDIUM question for an anonymous user (401 + AUTH_REQUIRED)', async () => {
-    auth.mockResolvedValue(null);
-    findUnique.mockResolvedValue(questionWith('MEDIUM'));
+  it.each(['MEDIUM', 'HARD'] as const)(
+    'blocks a %s question for an anonymous user (401 + AUTH_REQUIRED)',
+    async (difficulty) => {
+      auth.mockResolvedValue(null);
+      findUnique.mockResolvedValue(questionWith(difficulty));
 
-    const response = await gradeRequest();
-    expect(response.status).toBe(401);
-    const body = await response.json();
-    expect(body.code).toBe('AUTH_REQUIRED');
-    // Never runs the interpreter for a blocked request.
-    expect(grade).not.toHaveBeenCalled();
-  });
+      const response = await gradeRequest();
+      expect(response.status).toBe(401);
+      const body = await response.json();
+      expect(body.code).toBe('AUTH_REQUIRED');
+      // Never runs the interpreter for a blocked request.
+      expect(grade).not.toHaveBeenCalled();
+    },
+  );
 
   it('grades a MEDIUM question for a signed-in user (200)', async () => {
     auth.mockResolvedValue({ user: { id: 'student1' } });

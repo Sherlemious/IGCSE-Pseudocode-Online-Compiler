@@ -1,11 +1,13 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import { toast } from 'sonner';
 import { useTheme, themes, type PresetThemeId } from '@/theme';
 import { useRegisterCommands, type Command } from './CommandPalette';
 import { SITE_URL } from '@/shared/lib/seo';
 import { OPEN_BUG_REPORT_EVENT, OPEN_CHEATSHEET_EVENT } from '@/shared/lib/events';
+import { sessionShowsClasses } from '@/modules/classes/visibility';
 
 const GITHUB_URL = 'https://github.com/Sherlemious/IGCSE-Pseudocode-Online-Compiler';
 const PORTFOLIO_URL = 'https://www.sherlemious.com';
@@ -37,12 +39,16 @@ async function shareTool() {
 export default function GlobalCommands() {
   const router = useRouter();
   const theme = useTheme();
+  const { data: session } = useSession();
 
   const commands: Command[] = [
     { id: 'go-home', label: 'Go to Compiler', group: 'Go to', keywords: 'home editor run', run: () => router.push('/') },
     { id: 'go-docs', label: 'Go to Docs', group: 'Go to', keywords: 'reference help', run: () => router.push('/docs') },
     { id: 'go-practice', label: 'Go to Practice', group: 'Go to', keywords: 'questions', run: () => router.push('/practice') },
     { id: 'go-exam', label: 'Go to Exam', group: 'Go to', keywords: 'timed test', run: () => router.push('/exam') },
+    ...(sessionShowsClasses(session?.user)
+      ? [{ id: 'go-classes', label: 'Go to Classes', group: 'Go to', keywords: 'teacher homework roster', run: () => router.push('/classes') } satisfies Command]
+      : []),
     { id: 'go-compare', label: 'Go to Compare', group: 'Go to', keywords: 'pseudocode pro alternative best compiler paper 2', run: () => router.push('/compare') },
     { id: 'go-faq', label: 'Go to FAQ', group: 'Go to', keywords: 'questions help about', run: () => router.push('/faq') },
     { id: 'go-examples', label: 'Go to Examples', group: 'Go to', keywords: 'samples snippets', run: () => router.push('/examples') },
@@ -50,6 +56,7 @@ export default function GlobalCommands() {
     { id: 'view-wrap', label: 'Toggle word wrap', group: 'View', run: () => theme.setWordWrap(!theme.wordWrap) },
     { id: 'view-autocomplete', label: 'Toggle autocomplete', group: 'View', keywords: 'intellisense complete suggestions snippets', run: () => theme.setAutocomplete(!theme.autocomplete) },
     { id: 'view-dyslexic', label: 'Toggle dyslexia-friendly font', group: 'View', keywords: 'opendyslexic accessibility', run: () => theme.setDyslexicFont(!theme.dyslexicFont) },
+    { id: 'view-ligatures', label: 'Toggle font ligatures', group: 'View', keywords: 'liga calt fira arrow operators >= <-', run: () => theme.setFontLigatures(!theme.fontLigatures) },
     { id: 'view-font-inc', label: 'Increase font size', group: 'View', keywords: 'bigger zoom', run: () => theme.setFontSize(theme.fontSize + 1) },
     { id: 'view-font-dec', label: 'Decrease font size', group: 'View', keywords: 'smaller zoom', run: () => theme.setFontSize(theme.fontSize - 1) },
     { id: 'view-shortcuts', label: 'Keyboard shortcuts', group: 'View', keywords: 'keys help', run: () => window.dispatchEvent(new CustomEvent(SHORTCUTS_EVENT)) },

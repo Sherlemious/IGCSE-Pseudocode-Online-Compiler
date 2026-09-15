@@ -115,8 +115,11 @@ export default async function ProfilePage() {
 
         {/* Account type (role) — admins keep their role and don't see this */}
         {!isAdminUser && (
-          <div className="bg-surface border border-border rounded-xl p-5">
-            <h2 className="text-xs font-semibold text-light-text mb-3">Account type</h2>
+          <div id="account-type" className="bg-surface border border-border rounded-xl p-5">
+            <h2 className="text-xs font-semibold text-light-text mb-1">Student or teacher</h2>
+            <p className="text-[11px] text-dark-text/70 mb-3">
+              This controls whether Classes appears in the header. You can switch at any time.
+            </p>
             <RoleSwitcher currentRole={user.role === 'TEACHER' ? 'TEACHER' : 'STUDENT'} />
           </div>
         )}
@@ -127,6 +130,13 @@ export default async function ProfilePage() {
         {/* Quick actions */}
         <div className="bg-surface border border-border rounded-xl overflow-hidden">
           <div className="divide-y divide-border">
+            <Link
+              href="/classes"
+              className="flex items-center gap-3 px-5 py-3.5 text-sm text-dark-text hover:text-light-text hover:bg-background transition-colors"
+            >
+              <GraduationCap size={15} />
+              My Classes
+            </Link>
             <Link
               href="/pricing"
               className="flex items-center gap-3 px-5 py-3.5 text-sm text-dark-text hover:text-light-text hover:bg-background transition-colors"

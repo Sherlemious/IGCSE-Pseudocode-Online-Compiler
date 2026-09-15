@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { GraduationCap, User, Loader2, ArrowRight, AlertCircle } from 'lucide-react';
+import { safeCallback } from '@/modules/auth/callback';
 
 type Role = 'STUDENT' | 'TEACHER';
 
@@ -22,7 +23,7 @@ const OPTIONS = [
   },
 ];
 
-export default function RolePicker() {
+export default function RolePicker({ callbackUrl }: { callbackUrl?: string }) {
   const router = useRouter();
   const { update } = useSession();
   const [role, setRole] = useState<Role>('STUDENT');
@@ -46,7 +47,8 @@ export default function RolePicker() {
       }
       // Refresh the JWT so the new role is live everywhere without a re-login.
       await update?.();
-      router.push(role === 'TEACHER' ? '/pricing' : '/practice');
+      const fallback = role === 'TEACHER' ? '/classes' : '/practice';
+      router.push(safeCallback(callbackUrl, fallback));
       router.refresh();
     } catch {
       setError('Something went wrong. Please try again.');

@@ -147,7 +147,7 @@ export default function OnboardingNudges() {
       savePromptFlagsReadyRef.current = true;
       if (savePromptVariantRef.current === 'test') {
         setActiveNudge((current) => (current === 'signup' ? null : current));
-      } else if (status !== 'authenticated') {
+      } else {
         checkNudges(lsNum(LS.usageMs), lsNum(LS.sessionCount), false);
       }
     };

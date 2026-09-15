@@ -9,6 +9,7 @@ import { Toaster } from 'sonner';
 import PostHogProvider from '@/modules/telemetry/PostHogProvider';
 import SessionIdentifier from '@/modules/telemetry/SessionIdentifier';
 import OnboardingNudges from '@/modules/onboarding/OnboardingNudges';
+import OnboardingGate from '@/modules/onboarding/OnboardingGate';
 import { CommandProvider } from '@/shared/ui/CommandPalette';
 import GlobalCommands from '@/shared/ui/GlobalCommands';
 import KeyboardShortcutsModal from '@/shared/ui/KeyboardShortcutsModal';
@@ -211,6 +212,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <PostHogProvider>
           <SessionWrapper>
             <SessionIdentifier />
+            <OnboardingGate />
             <OnboardingNudges />
             <ThemeProvider>
               <CommandProvider>

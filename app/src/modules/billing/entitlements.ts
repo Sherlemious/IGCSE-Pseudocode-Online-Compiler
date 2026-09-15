@@ -98,6 +98,7 @@ export async function getPremiumAccess(
       plan: true,
       trialEndsAt: true,
       classEnrollments: {
+        where: { class: { archived: false } },
         select: {
           class: { select: { owner: { select: { plan: true, trialEndsAt: true } } } },
         },

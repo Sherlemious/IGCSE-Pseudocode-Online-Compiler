@@ -19,6 +19,7 @@
  */
 import 'dotenv/config';
 import { PrismaClient } from '@prisma/client';
+import { TIER_COPY } from '../src/modules/billing/tierCopy';
 
 const prisma = new PrismaClient();
 
@@ -37,34 +38,10 @@ interface TierSeed {
 
 // Shared display copy — identical across environments; only the price IDs differ.
 const COPY = {
-  student: {
-    name: 'Student',
-    description: 'For students practicing on their own',
-    features: ['Unlimited saved solutions', 'Full practice + exam library', 'Personal progress analytics'],
-    sortOrder: 0,
-    contactOnly: false,
-  },
-  starter: {
-    name: 'Starter',
-    description: 'For an individual teacher getting started',
-    features: ['Up to 3 classes', 'Up to 30 students per class', 'Assignments + autograding'],
-    sortOrder: 1,
-    contactOnly: false,
-  },
-  pro: {
-    name: 'Pro',
-    description: 'For active teachers',
-    features: ['Unlimited classes', 'Unlimited students', 'Progress analytics', 'Priority support'],
-    sortOrder: 2,
-    contactOnly: false,
-  },
-  advanced: {
-    name: 'Advanced',
-    description: 'For departments & schools',
-    features: ['Everything in Pro', 'Multiple teachers', 'School-wide analytics', 'Onboarding help'],
-    sortOrder: 3,
-    contactOnly: true, // contact-sales tier — no self-serve checkout
-  },
+  student: { ...TIER_COPY.student, sortOrder: 0, contactOnly: false },
+  starter: { ...TIER_COPY.starter, sortOrder: 1, contactOnly: false },
+  pro: { ...TIER_COPY.pro, sortOrder: 2, contactOnly: false },
+  advanced: { ...TIER_COPY.advanced, sortOrder: 3, contactOnly: true },
 } as const;
 
 const tier = (slug: keyof typeof COPY, monthPriceId: string, yearPriceId: string): TierSeed => ({

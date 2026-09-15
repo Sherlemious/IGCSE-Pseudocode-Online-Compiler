@@ -74,7 +74,9 @@ export default async function JoinClassLandingPage({ params }: Props) {
 
   const isOwner = cls.ownerId === session.user.id;
   const alreadyMember = cls.memberships.length > 0;
-  const isFull = cls._count.memberships >= limitsFor(resolveTier(cls.owner)).maxStudentsPerClass;
+  const ownerTier = resolveTier(cls.owner);
+  const isFull = cls._count.memberships >= limitsFor(ownerTier).maxStudentsPerClass;
+  const unlocksLibrary = ownerTier !== 'free';
 
   return (
     <Shell>
@@ -87,10 +89,16 @@ export default async function JoinClassLandingPage({ params }: Props) {
         <h1 className="display-serif text-2xl font-semibold text-light-text mb-4">{cls.name}</h1>
 
         {cls.owner?.name && (
-          <div className="flex items-center justify-center gap-1.5 text-[11px] text-dark-text/70 mb-6">
+          <div className="flex items-center justify-center gap-1.5 text-[11px] text-dark-text/70 mb-4">
             <User size={12} />
             Taught by {cls.owner.name}
           </div>
+        )}
+
+        {unlocksLibrary && !isOwner && (
+          <p className="text-xs text-primary bg-primary/8 border border-primary/20 rounded-lg px-3.5 py-2.5 mb-6 leading-relaxed">
+            This class includes the full practice and exam library — you won&apos;t need your own paid plan.
+          </p>
         )}
 
         {isOwner ? (
