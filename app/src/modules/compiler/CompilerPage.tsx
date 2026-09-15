@@ -110,7 +110,9 @@ const CompilerPage: React.FC = () => {
   const skipCloudHydrate = useRef(false);
   const hydratedRef = useRef(false);
   const isSignedInRef = useRef(false);
-  isSignedInRef.current = authStatus === 'authenticated';
+  useEffect(() => {
+    isSignedInRef.current = authStatus === 'authenticated';
+  }, [authStatus]);
 
   const {
     entries,
