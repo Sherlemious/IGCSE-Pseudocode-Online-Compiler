@@ -65,8 +65,6 @@ const DEFAULT_FONT_SIZE = 14;
 const MIN_FONT_SIZE = 12;
 const MAX_FONT_SIZE = 24;
 const DEFAULT_FONT_FAMILY: FontFamilyId = 'fira-code';
-/** PostHog experiment flag: `control` = off by default, `test` = on by default. */
-export const EDITOR_AUTOCOMPLETE_FLAG = 'editor-autocomplete';
 
 function hexToRgb(hex: string): string {
   const shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
@@ -139,23 +137,9 @@ function loadDyslexicFont(): boolean {
   return localStorage.getItem(STORAGE_KEY_DYSLEXIC) === 'true';
 }
 
-/** Explicit user choice from settings, or null if they have never toggled. */
-function loadStoredAutocomplete(): boolean | null {
-  const stored = localStorage.getItem(STORAGE_KEY_AUTOCOMPLETE);
-  if (stored === null) return null;
-  return stored === 'true';
-}
-
-/** Experiment default: test = on, control = off. Fallback on when the flag is missing. */
-function autocompleteFromFlag(): boolean {
-  try {
-    const variant = posthog.getFeatureFlag(EDITOR_AUTOCOMPLETE_FLAG);
-    if (variant === 'test') return true;
-    if (variant === 'control') return false;
-  } catch {
-    /* PostHog may be uninitialized */
-  }
-  return true;
+/** Explicit user choice from settings, or false (default off) if never toggled. */
+function loadAutocomplete(): boolean {
+  return localStorage.getItem(STORAGE_KEY_AUTOCOMPLETE) === 'true';
 }
 
 function parseStoredColors(raw: string | null): CustomColors | null {
@@ -220,34 +204,15 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const [customThemes, setCustomThemes] = useState<SavedTheme[]>([]);
   const [themesLoading, setThemesLoading] = useState<boolean>(true);
 
-  // Load locally-persisted preferences on mount. Autocomplete default comes from
-  // the PostHog experiment until the user explicitly toggles it in settings.
+  // Load locally-persisted preferences on mount. Autocomplete stays off until
+  // the user turns it on in Settings (persisted in localStorage).
   useEffect(() => {
     setThemeId(loadTheme());
     setFontSizeState(loadFontSize());
     setWordWrapState(loadWordWrap());
     setFontFamilyId(loadFontFamily());
     setDyslexicFontState(loadDyslexicFont());
-
-    const storedAutocomplete = loadStoredAutocomplete();
-    if (storedAutocomplete !== null) {
-      setAutocompleteState(storedAutocomplete);
-      return;
-    }
-
-    let cancelled = false;
-    const applyFlagDefault = () => {
-      if (!cancelled) setAutocompleteState(autocompleteFromFlag());
-    };
-    try {
-      const unsubscribe = posthog.onFeatureFlags(applyFlagDefault);
-      return () => {
-        cancelled = true;
-        unsubscribe?.();
-      };
-    } catch {
-      applyFlagDefault();
-    }
+    setAutocompleteState(loadAutocomplete());
   }, []);
 
   // Fetch the user's saved themes when auth state resolves; migrate any legacy theme.
