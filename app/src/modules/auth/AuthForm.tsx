@@ -3,8 +3,11 @@
 import { useState } from 'react';
 import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { Loader2, AlertCircle, ArrowRight, GraduationCap, User } from 'lucide-react';
+import { usePostHog } from 'posthog-js/react';
+import { Loader2, AlertCircle, ArrowRight } from 'lucide-react';
 import { safeCallback } from './callback';
+import RoleToggle from './RoleToggle';
+import type { SignupRole } from './signupRole';
 
 interface AuthFormProps {
   mode: 'signin' | 'signup';
@@ -15,16 +18,21 @@ interface AuthFormProps {
    * on the question and grades in place. `callbackUrl` is ignored in this case.
    */
   onAuthenticated?: () => void | Promise<void>;
+  /** Controlled signup role. When set, the in-form role picker is hidden. */
+  role?: SignupRole;
+  /** If set, fires `sign_in_clicked` with this `source` when the form is submitted. */
+  analyticsSource?: string;
 }
 
-type SignupRole = 'STUDENT' | 'TEACHER';
-
-export default function AuthForm({ mode, callbackUrl, onAuthenticated }: AuthFormProps) {
+export default function AuthForm({ mode, callbackUrl, onAuthenticated, role: roleProp, analyticsSource }: AuthFormProps) {
   const router = useRouter();
+  const ph = usePostHog();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState<SignupRole>('STUDENT');
+  const [internalRole, setInternalRole] = useState<SignupRole>('STUDENT');
+  const role = roleProp ?? internalRole;
+  const showRolePicker = mode === 'signup' && roleProp === undefined;
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -32,6 +40,7 @@ export default function AuthForm({ mode, callbackUrl, onAuthenticated }: AuthFor
     e.preventDefault();
     setError('');
     setLoading(true);
+    if (analyticsSource) ph?.capture('sign_in_clicked', { source: analyticsSource });
 
     try {
       if (mode === 'signup') {
@@ -66,11 +75,15 @@ export default function AuthForm({ mode, callbackUrl, onAuthenticated }: AuthFor
       // Stay on the page when the caller wants to handle the authenticated
       // state in place (e.g. the practice grade sheet).
       if (onAuthenticated) {
-        await onAuthenticated();
+        try {
+          await onAuthenticated();
+        } finally {
+          setLoading(false);
+        }
         return;
       }
 
-      const fallback = mode === 'signup' && role === 'TEACHER' ? '/pricing' : '/practice';
+      const fallback = mode === 'signup' && role === 'TEACHER' ? '/classes' : '/practice';
       router.push(safeCallback(callbackUrl, fallback));
       router.refresh();
     } catch {
@@ -88,41 +101,7 @@ export default function AuthForm({ mode, callbackUrl, onAuthenticated }: AuthFor
         </div>
       )}
 
-      {mode === 'signup' && (
-        <div>
-          <span className="mono-label text-dark-text mb-1.5 block">I&apos;m a…</span>
-          <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label="Account type">
-            {([
-              { value: 'STUDENT', label: 'Student', Icon: User },
-              { value: 'TEACHER', label: 'Teacher', Icon: GraduationCap },
-            ] as const).map(({ value, label, Icon }) => {
-              const active = role === value;
-              return (
-                <button
-                  key={value}
-                  type="button"
-                  role="radio"
-                  aria-checked={active}
-                  onClick={() => setRole(value)}
-                  className={`flex items-center justify-center gap-2 rounded-lg border px-3 py-2.5 text-sm font-medium transition-all duration-200 ${
-                    active
-                      ? 'border-primary/60 bg-primary/10 text-light-text'
-                      : 'border-border bg-background text-dark-text hover:border-primary/30 hover:text-light-text'
-                  }`}
-                >
-                  <Icon size={15} className={active ? 'text-primary' : ''} />
-                  {label}
-                </button>
-              );
-            })}
-          </div>
-          <p className="mt-1.5 text-[11px] leading-relaxed text-dark-text/60">
-            {role === 'TEACHER'
-              ? 'Teachers can create classes, set assignments, and see class plans.'
-              : 'Students get the full compiler, practice library, and progress tracking.'}
-          </p>
-        </div>
-      )}
+      {showRolePicker && <RoleToggle role={role} onChange={setInternalRole} />}
 
       {mode === 'signup' && (
         <div className="group">

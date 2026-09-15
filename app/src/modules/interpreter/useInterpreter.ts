@@ -236,7 +236,12 @@ export function useInterpreter(runContext?: RunContext) {
   );
 
   const startExecution = useCallback(
-    async (sourceCode: string, stepMode: boolean, options?: RunOptions) => {
+    async (sourceCode: string, stepMode: boolean, options?: RunOptions): Promise<RunOutcome | undefined> => {
+      let terminal: RunOutcome | undefined;
+      const finish = (outcome: RunOutcome) => {
+        terminal = outcome;
+        reportRun(outcome);
+      };
       // Clean up any previous run
       if (abortRef.current) {
         abortRef.current.abort();
@@ -313,19 +318,19 @@ export function useInterpreter(runContext?: RunContext) {
           setErrorLine(firstLine);
           setErrorFocusKey((k) => k + 1);
         }
-        reportRun('parse_error');
+        finish('parse_error');
         setIsRunning(false);
         setIsStepping(false);
-        return;
+        return terminal;
       }
 
       if (!tree) {
         setEntries([{ kind: 'error', text: 'Failed to parse pseudocode' }]);
         entriesLenRef.current = 1;
-        reportRun('parse_error');
+        finish('parse_error');
         setIsRunning(false);
         setIsStepping(false);
-        return;
+        return terminal;
       }
 
       const interpreter = new Interpreter(
@@ -355,7 +360,7 @@ export function useInterpreter(runContext?: RunContext) {
             // Flush any remaining output / trace rows
             flushOutputSync();
             flushTraceSync();
-            reportRun('success');
+            finish('success');
             setIsRunning(false);
             setWaitingForInput(false);
             setIsStepping(false);
@@ -379,7 +384,7 @@ export function useInterpreter(runContext?: RunContext) {
                   : humanizeRuntimeError(error.message),
               },
             ]);
-            reportRun('runtime_error');
+            finish('runtime_error');
           },
           onBeforeStep(line: number, variables: DebugVariable[]) {
             // Materialize buffered output so the recorded boundary is accurate.
@@ -437,34 +442,35 @@ export function useInterpreter(runContext?: RunContext) {
                 : humanizeRuntimeError(e.message),
             },
           ]);
-          reportRun('runtime_error');
+          finish('runtime_error');
         } else if (e instanceof Error && e.message === 'Execution cancelled') {
-          reportRun('aborted');
+          finish('aborted');
         } else if (e instanceof Error) {
           recordError('runtime', e.message, null, source.split('\n'));
           entriesLenRef.current += 1;
           setEntries((prev) => [...prev, { kind: 'error', text: `Error: ${e.message}` }]);
-          reportRun('runtime_error');
+          finish('runtime_error');
         }
         setIsRunning(false);
         setWaitingForInput(false);
         setIsStepping(false);
         resetDebugHistory();
       }
+      return terminal;
     },
     [breakpoints, resetDebugHistory, pushDebugSnapshot, reportRun, recordError]
   );
 
   const run = useCallback(
     async (sourceCode: string, options?: RunOptions) => {
-      await startExecution(sourceCode, false, options);
+      return startExecution(sourceCode, false, options);
     },
     [startExecution]
   );
 
   const debugRun = useCallback(
     async (sourceCode: string, options?: RunOptions) => {
-      await startExecution(sourceCode, true, options);
+      return startExecution(sourceCode, true, options);
     },
     [startExecution]
   );

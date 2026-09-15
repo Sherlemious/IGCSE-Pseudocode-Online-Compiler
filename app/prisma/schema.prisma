@@ -54,6 +54,7 @@ model User {
   bugReports   BugReport[]
   contactMessages ContactMessage[]
   customThemes CustomTheme[]
+  playgroundSnapshot PlaygroundSnapshot?
   taughtClasses    Class[]           @relation("TaughtClasses")
   classEnrollments ClassMembership[] @relation("ClassEnrollments")
 
@@ -75,6 +76,14 @@ model CustomTheme {
   updatedAt DateTime @updatedAt
 
   @@index([userId])
+}
+
+/// One playground program blob per user — the "Save this program" snapshot.
+model PlaygroundSnapshot {
+  userId    String   @id
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  code      String   @db.Text
+  updatedAt DateTime @updatedAt
 }
 
 model Account {

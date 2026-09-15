@@ -9,6 +9,8 @@ import {
   PanelBottomOpen,
   Undo2,
 } from 'lucide-react';
+import { useSession } from 'next-auth/react';
+import { usePostHog } from 'posthog-js/react';
 import CodeInput, { type EditorTab, type CursorPosition } from './codeInput';
 import { useRegisterCommands } from '@/shared/ui/CommandPalette';
 import OutputDisplay from './outputDisplay';
@@ -32,6 +34,14 @@ import { FILE_PREFIX, FILES_CHANGED_EVENT } from '@/modules/interpreter/storage'
 import { AUTOSAVE_DELAY, loadSplitPercent } from '@/shared/lib/persist';
 import { ONBOARDING_KEY } from '@/modules/onboarding/constants';
 import { formatOutputEntries } from '@/modules/compiler/formatOutputEntries';
+import { SAVE_PROGRAM_PROMPT_FLAG } from '@/modules/telemetry/experiments';
+import SaveProgramSheet from './SaveProgramSheet';
+import {
+  forceSavePromptFromUrl,
+  hasShownSavePrompt,
+  markSavePromptShown,
+} from './savePrompt';
+import { fetchPlaygroundSnapshot, putPlaygroundSnapshot } from './playgroundSnapshot';
 
 const FEEDBACK_RUN_THRESHOLD = 2;
 const FEEDBACK_RUN_LS_KEY = 'compiler_run_count';
@@ -79,7 +89,11 @@ function loadInitialCode(): string {
   }
 }
 
+const SAVE_PROMPT_PENDING_TOAST_KEY = 'save_prompt_just_authed';
+
 const CompilerPage: React.FC = () => {
+  const { status: authStatus, update: updateSession } = useSession();
+  const ph = usePostHog();
   const savedCode = useRef('');
   const [tabs, setTabs] = useState<EditorTab[]>([{ id: 'main', name: 'main.pseudo', content: '' }]);
   const [activeTabId, setActiveTabId] = useState('main');
@@ -90,6 +104,13 @@ const CompilerPage: React.FC = () => {
   const feedbackShownRef = useRef(false);
   const [jumpToLine, setJumpToLine] = useState<number | null>(null);
   const [outputTab, setOutputTab] = useState<'terminal' | 'trace' | 'python' | 'flowchart'>('terminal');
+  const [saveSheetOpen, setSaveSheetOpen] = useState(false);
+  const [savePromptVariant, setSavePromptVariant] = useState<string | null>(null);
+  const hadLocalOnMount = useRef(false);
+  const skipCloudHydrate = useRef(false);
+  const hydratedRef = useRef(false);
+  const isSignedInRef = useRef(false);
+  isSignedInRef.current = authStatus === 'authenticated';
 
   const {
     entries,
@@ -118,14 +139,79 @@ const CompilerPage: React.FC = () => {
 
   // Load initial code on mount (client-only)
   useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      skipCloudHydrate.current = Boolean(params.get('code'));
+      hadLocalOnMount.current = localStorage.getItem(AUTOSAVE_KEY) !== null;
+    } catch {
+      /* ignore */
+    }
     const code = loadInitialCode();
     savedCode.current = code;
     setTabs([{ id: 'main', name: 'main.pseudo', content: code }]);
+    hydratedRef.current = true;
     // Dev shortcut: ?survey=1 forces the feedback survey open immediately
     if (new URLSearchParams(window.location.search).get('survey') === '1') {
       setTimeout(() => setShowFeedback(true), 500);
     }
+    if (new URLSearchParams(window.location.search).get('save_prompt') === '1') {
+      setSaveSheetOpen(true);
+    }
   }, []);
+
+  // Assign the save-prompt experiment only for anonymous playground visitors so
+  // signed-in users are not counted as exposed.
+  useEffect(() => {
+    if (authStatus === 'authenticated' || !ph) return;
+    const apply = () => {
+      try {
+        const value = ph.getFeatureFlag(SAVE_PROGRAM_PROMPT_FLAG);
+        setSavePromptVariant(typeof value === 'string' ? value : null);
+      } catch {
+        /* PostHog may be uninitialized */
+      }
+    };
+    apply();
+    const unsubscribe = ph.onFeatureFlags(apply);
+    return () => { unsubscribe?.(); };
+  }, [ph, authStatus]);
+
+  // Hydrate from the account snapshot on a new device; otherwise push this
+  // browser's autosave up so "Save this program" is a real cloud copy.
+  useEffect(() => {
+    if (authStatus !== 'authenticated') return;
+    let cancelled = false;
+    (async () => {
+      try {
+        if (!skipCloudHydrate.current && !hadLocalOnMount.current) {
+          const cloud = await fetchPlaygroundSnapshot();
+          if (cancelled) return;
+          if (cloud != null && cloud !== '') {
+            savedCode.current = cloud;
+            setTabs([{ id: 'main', name: 'main.pseudo', content: cloud }]);
+            try { localStorage.setItem(AUTOSAVE_KEY, cloud); } catch { /* ignore */ }
+            hadLocalOnMount.current = true;
+            return;
+          }
+        }
+        const local = localStorage.getItem(AUTOSAVE_KEY);
+        if (local != null) await putPlaygroundSnapshot(local);
+        try {
+          if (sessionStorage.getItem(SAVE_PROMPT_PENDING_TOAST_KEY)) {
+            sessionStorage.removeItem(SAVE_PROMPT_PENDING_TOAST_KEY);
+            toast.success('Program saved to your account');
+          }
+        } catch { /* ignore */ }
+      } catch {
+        /* ignore */
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [authStatus]);
+
+  useEffect(() => {
+    if (authStatus === 'authenticated') setSaveSheetOpen(false);
+  }, [authStatus]);
 
   const activeTab = tabs.find((t) => t.id === activeTabId) ?? tabs[0];
 
@@ -214,6 +300,9 @@ const CompilerPage: React.FC = () => {
         localStorage.setItem(AUTOSAVE_KEY, mainTabContent);
       } catch {
         toast.error('Autosave failed: Storage full?');
+      }
+      if (hydratedRef.current && isSignedInRef.current) {
+        void putPlaygroundSnapshot(mainTabContent);
       }
     }, AUTOSAVE_DELAY);
     return () => clearTimeout(saveTimer.current);
@@ -491,7 +580,16 @@ const CompilerPage: React.FC = () => {
   const handleRunCode = async () => {
     if (!activeTab.content.trim()) return;
     setOutputTab('terminal');
-    await run(activeTab.content, { cursorLine: cursor?.line });
+    const outcome = await run(activeTab.content, { cursorLine: cursor?.line });
+
+    if (
+      outcome === 'success' &&
+      authStatus !== 'authenticated' &&
+      (forceSavePromptFromUrl() || (savePromptVariant === 'test' && !hasShownSavePrompt()))
+    ) {
+      markSavePromptShown();
+      setSaveSheetOpen(true);
+    }
 
     // Track run count and trigger feedback survey after threshold
     try {
@@ -646,6 +744,23 @@ const CompilerPage: React.FC = () => {
       <Footer isRunning={isRunning} cursor={cursor} lineCount={lineCount} />
       <OnboardingTour />
       {showFeedback && <FeedbackSurvey onDismiss={() => setShowFeedback(false)} />}
+      {saveSheetOpen && (
+        <SaveProgramSheet
+          onClose={() => setSaveSheetOpen(false)}
+          onFlushBeforeOAuth={() => {
+            try {
+              localStorage.setItem(AUTOSAVE_KEY, mainTabContent);
+              sessionStorage.setItem(SAVE_PROMPT_PENDING_TOAST_KEY, '1');
+            } catch { /* ignore */ }
+          }}
+          onAuthenticated={async () => {
+            await updateSession();
+            setSaveSheetOpen(false);
+            await putPlaygroundSnapshot(mainTabContent);
+            toast.success('Program saved to your account');
+          }}
+        />
+      )}
     </div>
   );
 };

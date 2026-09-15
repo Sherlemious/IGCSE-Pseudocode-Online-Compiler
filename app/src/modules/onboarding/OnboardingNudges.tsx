@@ -24,6 +24,7 @@ import { UserPlus, GraduationCap, Share2 } from 'lucide-react';
 import { authHref } from '@/modules/auth/callback';
 import NudgeCard from './NudgeCard';
 import ExamNudgeCard from './ExamNudgeCard';
+import { SAVE_PROGRAM_PROMPT_FLAG } from '@/modules/telemetry/experiments';
 
 const LS = {
   usageMs: 'nudge_usage_ms',
@@ -57,6 +58,8 @@ export default function OnboardingNudges() {
   const startRef = useRef<number>(Date.now());
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const dbSyncedRef = useRef(false);
+  const savePromptVariantRef = useRef<string | null>(null);
+  const savePromptFlagsReadyRef = useRef(false);
   const [activeNudge, setActiveNudge] = useState<ActiveNudge>(null);
 
   const markShown = useCallback(
@@ -95,7 +98,14 @@ export default function OnboardingNudges() {
 
   const checkNudges = useCallback(
     (totalMs: number, sessions: number, isAuthed: boolean) => {
-      if (!isAuthed && totalMs >= THRESHOLDS.signupMs && !lsGet(LS.signup)) {
+      const suppressSignup = savePromptVariantRef.current === 'test';
+      if (
+        !isAuthed &&
+        savePromptFlagsReadyRef.current &&
+        !suppressSignup &&
+        totalMs >= THRESHOLDS.signupMs &&
+        !lsGet(LS.signup)
+      ) {
         triggerNudge('signup');
         return;
       }
@@ -114,6 +124,37 @@ export default function OnboardingNudges() {
     },
     [triggerNudge],
   );
+
+  // Assign the save-prompt experiment for anonymous users so test suppresses
+  // the 90s signup nudge. Wait for flags before that nudge so we don't flash control.
+  useEffect(() => {
+    if (status === 'authenticated') {
+      savePromptVariantRef.current = null;
+      savePromptFlagsReadyRef.current = true;
+      return;
+    }
+    if (!ph) {
+      savePromptFlagsReadyRef.current = true;
+      return;
+    }
+    const apply = () => {
+      try {
+        const value = ph.getFeatureFlag(SAVE_PROGRAM_PROMPT_FLAG);
+        savePromptVariantRef.current = typeof value === 'string' ? value : null;
+      } catch {
+        savePromptVariantRef.current = null;
+      }
+      savePromptFlagsReadyRef.current = true;
+      if (savePromptVariantRef.current === 'test') {
+        setActiveNudge((current) => (current === 'signup' ? null : current));
+      } else if (status !== 'authenticated') {
+        checkNudges(lsNum(LS.usageMs), lsNum(LS.sessionCount), false);
+      }
+    };
+    apply();
+    const unsubscribe = ph.onFeatureFlags(apply);
+    return () => { unsubscribe?.(); };
+  }, [ph, status, checkNudges]);
 
   // Dev shortcuts
   useEffect(() => {
