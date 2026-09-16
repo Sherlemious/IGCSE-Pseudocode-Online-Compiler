@@ -167,6 +167,22 @@ npm run antlr:generate  # regenerate parser from grammar
 | `bug_reported` | `category`, `has_code`, `page` |
 | `paste_cleaned` | `looks_ai`, `stripped_prose`, `blocks` — fired when a pasted AI/Markdown answer is stripped to just its fenced code |
 
+### Classes / teacher progress
+
+Page-side events fire via `captureEvent` (same path as `class_joined` / `assignment_link_opened`). Never include student name, email, or `lastCode`.
+
+| Event | Properties |
+|-------|-----------|
+| `class_joined` | `class_id`, optional assignment context |
+| `assignment_link_opened` | `assignment_id`, `class_id`, `source` (`google_classroom`\|`direct`), `signed_in` |
+| `assignment_link_copied` | `assignment_id`, `class_id` |
+| `assignment_started` | `assignment_id`, `class_id`, `source`, `exam_id` (attempt id) |
+| `class_progress_viewed` | `class_id`, `roster_size`, `assignment_count`, `students_with_practice`, `students_active_7d` |
+| `class_roster_sorted` | `class_id`, `sort` (`name`\|`solved`\|`last_active`) |
+| `class_student_progress_clicked` | `class_id`, `source` (`roster`\|`assignment_results`) |
+| `class_student_progress_viewed` | `class_id`, `solved_count`, `attempted_count`, `assignments_submitted`, `assignment_count`, `has_practice` |
+| `class_student_code_expanded` | `class_id`, `surface` (`assigned_work`\|`practice`) |
+
 ### Pricing / subscription funnel (`/pricing` + Paddle checkout)
 
 Page-side events fire from `PricingClient`; the `checkout_*` events are bridged from Paddle.js's own `eventCallback` in `PaddleProvider`. Every event carries `paddle_env` (`sandbox`\|`production`) so test traffic is filterable. Checkout amounts (`total`, `recurring_total`) are Paddle's raw integers (lowest denomination) — analytics only.
