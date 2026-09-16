@@ -2,6 +2,7 @@ import Link from 'next/link';
 import CompilerPage from '@/modules/compiler/CompilerPage';
 
 const FEATURE_LINKS = [
+  { label: 'Paper 2 Path', href: '/learn' },
   { label: 'Practice Questions', href: '/practice' },
   { label: 'Cambridge Pseudocode Guide', href: '/docs' },
   { label: 'Timed Exams', href: '/exam' },

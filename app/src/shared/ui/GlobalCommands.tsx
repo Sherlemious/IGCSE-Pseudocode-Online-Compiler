@@ -44,6 +44,7 @@ export default function GlobalCommands() {
   const commands: Command[] = [
     { id: 'go-home', label: 'Go to Compiler', group: 'Go to', keywords: 'home editor run', run: () => router.push('/') },
     { id: 'go-docs', label: 'Go to Docs', group: 'Go to', keywords: 'reference help', run: () => router.push('/docs') },
+    { id: 'go-learn', label: 'Go to Learn', group: 'Go to', keywords: 'path levels course paper 2 roadmap', run: () => router.push('/learn') },
     { id: 'go-practice', label: 'Go to Practice', group: 'Go to', keywords: 'questions', run: () => router.push('/practice') },
     { id: 'go-exam', label: 'Go to Exam', group: 'Go to', keywords: 'timed test', run: () => router.push('/exam') },
     ...(sessionShowsClasses(session?.user)

@@ -3,13 +3,14 @@
 import { useState, type ReactNode } from 'react';
 import { usePathname } from 'next/navigation';
 
-const SECTION_ORDER = ['compiler', 'docs', 'practice', 'exam'] as const;
+const SECTION_ORDER = ['compiler', 'docs', 'learn', 'practice', 'exam'] as const;
 type Section = (typeof SECTION_ORDER)[number] | 'other';
 type Direction = 'forward' | 'backward' | null;
 
 const sectionFromPathname = (pathname: string): Section => {
   if (pathname === '/') return 'compiler';
   if (pathname === '/docs' || pathname.startsWith('/docs/')) return 'docs';
+  if (pathname === '/learn' || pathname.startsWith('/learn/')) return 'learn';
   if (pathname === '/practice' || pathname.startsWith('/practice/')) return 'practice';
   if (pathname === '/exam' || pathname.startsWith('/exam/')) return 'exam';
   return 'other';
