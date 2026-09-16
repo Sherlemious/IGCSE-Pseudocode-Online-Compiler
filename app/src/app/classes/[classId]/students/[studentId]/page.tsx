@@ -5,6 +5,9 @@ import { ArrowLeft, ClipboardList, Dumbbell, CheckCircle2, Circle, Clock } from 
 import { auth } from '@/modules/auth/auth';
 import { prisma } from '@/shared/db';
 import CodeDetails from '@/modules/classes/CodeDetails';
+import ClassStudentProgressTracker from '@/modules/classes/ClassStudentProgressTracker';
+import { loadProgressReport } from '@/modules/progress/loadReport';
+import ProgressReport from '@/modules/progress/ProgressReport';
 
 export const metadata: Metadata = {
   title: 'Student progress',
@@ -14,6 +17,8 @@ export const metadata: Metadata = {
 interface Props {
   params: Promise<{ classId: string; studentId: string }>;
 }
+
+const RECENT_CODE_LIMIT = 20;
 
 export default async function StudentProgressPage({ params }: Props) {
   const session = await auth();
@@ -35,8 +40,12 @@ export default async function StudentProgressPage({ params }: Props) {
   if (!student) notFound();
 
   const assignmentIds = cls.assignments.map((a) => a.id);
+  const examFilter = assignmentIds.length
+    ? { OR: [{ assignmentId: { in: assignmentIds } }, { assignmentId: null }] }
+    : { assignmentId: null };
 
-  const [attempts, progress] = await Promise.all([
+  const [report, attempts, recentPractice] = await Promise.all([
+    loadProgressReport(studentId, { examFilter, voice: 'teacher' }),
     assignmentIds.length
       ? prisma.examAttempt.findMany({
           where: { userId: studentId, assignmentId: { in: assignmentIds } },
@@ -56,7 +65,7 @@ export default async function StudentProgressPage({ params }: Props) {
     prisma.progress.findMany({
       where: { userId: studentId },
       orderBy: { updatedAt: 'desc' },
-      take: 100,
+      take: RECENT_CODE_LIMIT,
       select: {
         status: true,
         bestScore: true,
@@ -73,25 +82,48 @@ export default async function StudentProgressPage({ params }: Props) {
     if (at.assignmentId && !latestByAssignment.has(at.assignmentId)) latestByAssignment.set(at.assignmentId, at);
   }
 
-  const solvedCount = progress.filter((p) => p.status === 'SOLVED').length;
+  const assignmentsSubmitted = cls.assignments.filter((a) => {
+    const at = latestByAssignment.get(a.id);
+    return at && at.status !== 'IN_PROGRESS';
+  }).length;
+
+  const displayName = student.name || student.email || 'Student';
 
   return (
     <div className="flex-1 overflow-y-auto bg-background bg-dot-grid p-6 relative scrollbar-pretty">
       <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse 80% 40% at 50% 0%, rgba(var(--color-primary-rgb), 0.05) 0%, transparent 60%)' }} />
-      <div className="max-w-2xl mx-auto relative animate-fade-in-up">
+      <div className="max-w-4xl mx-auto relative animate-fade-in-up">
+        <ClassStudentProgressTracker
+          classId={classId}
+          solvedCount={report.totalSolved}
+          attemptedCount={report.totalAttempted}
+          assignmentsSubmitted={assignmentsSubmitted}
+          assignmentCount={cls.assignments.length}
+          hasPractice={report.totalAttempted > 0}
+        />
         <Link href={`/classes/${classId}`} className="inline-flex items-center gap-1.5 text-xs text-dark-text hover:text-primary transition-colors mb-6">
           <ArrowLeft size={13} />
           {cls.name}
         </Link>
 
-        <div className="mb-8">
-          <h1 className="display-serif text-2xl font-semibold text-light-text">{student.name || student.email || 'Student'}</h1>
-          {student.name && student.email && <p className="text-xs text-dark-text mt-0.5">{student.email}</p>}
-          <p className="text-[11px] text-dark-text/60 mt-1 font-mono">{solvedCount} practice question{solvedCount === 1 ? '' : 's'} solved</p>
-        </div>
+        <ProgressReport
+          report={report}
+          viewer="teacher"
+          title={displayName}
+          subtitle={
+            <>
+              Computer Science — Pseudocode · {cls.name}
+              {student.name && student.email && (
+                <>
+                  <br />
+                  <span className="text-xs text-dark-text/70">{student.email}</span>
+                </>
+              )}
+            </>
+          }
+        />
 
-        {/* Assignment results */}
-        <div className="mb-8">
+        <div className="mt-8 mb-8">
           <div className="flex items-center gap-2 mb-3 px-1">
             <ClipboardList size={14} className="text-dark-text" />
             <h2 className="mono-label text-dark-text">Assigned work</h2>
@@ -120,7 +152,13 @@ export default async function StudentProgressPage({ params }: Props) {
                     {at && at.answers.length > 0 && (
                       <div className="mt-2.5 space-y-1.5 border-t border-border/50 pt-2.5">
                         {at.answers.map((ans, i) => (
-                          <CodeDetails key={i} label={`${ans.question.title} — ${ans.passCount}/${ans.totalTests}`} code={ans.code} />
+                          <CodeDetails
+                            key={i}
+                            label={`${ans.question.title} — ${ans.passCount}/${ans.totalTests}`}
+                            code={ans.code}
+                            classId={classId}
+                            surface="assigned_work"
+                          />
                         ))}
                       </div>
                     )}
@@ -131,17 +169,16 @@ export default async function StudentProgressPage({ params }: Props) {
           )}
         </div>
 
-        {/* Practice progress */}
         <div>
           <div className="flex items-center gap-2 mb-3 px-1">
             <Dumbbell size={14} className="text-dark-text" />
-            <h2 className="mono-label text-dark-text">Practice{progress.length > 0 && ` · ${progress.length}`}</h2>
+            <h2 className="mono-label text-dark-text">Latest practice{recentPractice.length > 0 && ` · ${recentPractice.length}`}</h2>
           </div>
-          {progress.length === 0 ? (
+          {recentPractice.length === 0 ? (
             <p className="text-sm text-dark-text/70 px-1 py-3">No practice attempts yet.</p>
           ) : (
             <div className="space-y-2">
-              {progress.map((p, i) => (
+              {recentPractice.map((p, i) => (
                 <div key={i} className="bg-surface border border-border rounded-lg px-4 py-3">
                   <div className="flex items-center justify-between gap-3">
                     <span className="text-sm text-light-text truncate">{p.question.title}</span>
@@ -155,7 +192,7 @@ export default async function StudentProgressPage({ params }: Props) {
                     </span>
                   </div>
                   <div className="mt-2.5 border-t border-border/50 pt-2.5">
-                    <CodeDetails label="Latest submission" code={p.lastCode} />
+                    <CodeDetails label="Latest submission" code={p.lastCode} classId={classId} surface="practice" />
                   </div>
                 </div>
               ))}

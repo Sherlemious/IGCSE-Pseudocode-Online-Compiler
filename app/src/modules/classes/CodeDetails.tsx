@@ -1,13 +1,34 @@
-import { Code2 } from 'lucide-react';
+'use client';
 
-/** Read-only, collapsible code viewer for the teacher dashboard. Server-safe
- *  (native <details>, no client JS). */
-export default function CodeDetails({ label, code }: { label: string; code: string | null }) {
+import type { SyntheticEvent } from 'react';
+import { Code2 } from 'lucide-react';
+import { captureEvent } from '@/modules/interpreter/analytics';
+
+export type CodeDetailsSurface = 'assigned_work' | 'practice';
+
+/** Read-only, collapsible code viewer for the teacher dashboard. */
+export default function CodeDetails({
+  label,
+  code,
+  classId,
+  surface,
+}: {
+  label: string;
+  code: string | null;
+  classId?: string;
+  surface?: CodeDetailsSurface;
+}) {
   if (!code || !code.trim()) {
     return <p className="text-[11px] text-dark-text/50 italic">No code submitted.</p>;
   }
+
+  function onToggle(e: SyntheticEvent<HTMLDetailsElement>) {
+    if (!classId || !surface || !e.currentTarget.open) return;
+    captureEvent('class_student_code_expanded', { class_id: classId, surface });
+  }
+
   return (
-    <details className="group">
+    <details className="group" onToggle={onToggle}>
       <summary className="flex items-center gap-1.5 cursor-pointer text-[11px] text-primary hover:underline list-none">
         <Code2 size={12} />
         {label}

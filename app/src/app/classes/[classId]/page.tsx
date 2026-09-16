@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import type { Metadata } from 'next';
 import { redirect, notFound } from 'next/navigation';
 import Link from 'next/link';
@@ -6,9 +7,10 @@ import { auth } from '@/modules/auth/auth';
 import { prisma } from '@/shared/db';
 import { SITE_URL } from '@/shared/lib/seo';
 import { getEntitlements } from '@/modules/billing/entitlements';
-import ClassManager from '@/modules/classes/ClassManager';
+import ClassManager, { type ClassMember } from '@/modules/classes/ClassManager';
 import ClassAssignments, { type AssignmentRow } from '@/modules/classes/ClassAssignments';
 import StartAssignmentButton from '@/modules/classes/StartAssignmentButton';
+import { loadRosterStats } from '@/modules/classes/loadRosterStats';
 
 export const metadata: Metadata = {
   title: 'Class',
@@ -19,14 +21,14 @@ interface Props {
   params: Promise<{ classId: string }>;
 }
 
-function Shell({ children }: { children: React.ReactNode }) {
+function Shell({ children, wide }: { children: ReactNode; wide?: boolean }) {
   return (
     <div className="flex-1 overflow-y-auto bg-background bg-dot-grid p-6 relative scrollbar-pretty">
       <div
         className="absolute inset-0 pointer-events-none"
         style={{ background: 'radial-gradient(ellipse 80% 40% at 50% 0%, rgba(var(--color-primary-rgb), 0.05) 0%, transparent 60%)' }}
       />
-      <div className="max-w-2xl mx-auto relative animate-fade-in-up">
+      <div className={`${wide ? 'max-w-4xl' : 'max-w-2xl'} mx-auto relative animate-fade-in-up`}>
         <Link href="/classes" className="inline-flex items-center gap-1.5 text-xs text-dark-text hover:text-primary transition-colors mb-6">
           <ArrowLeft size={13} />
           All classes
@@ -96,13 +98,15 @@ export default async function ClassDetailPage({ params }: Props) {
     }
 
     const assignedExamIds = cls.assignments.map((a) => a.exam.id);
-    const [{ limits }, availableExams] = await Promise.all([
+    const memberIds = cls.memberships.map((m) => m.userId);
+    const [{ limits }, availableExams, rosterStats] = await Promise.all([
       getEntitlements(userId),
       prisma.exam.findMany({
         where: { ownerId: userId, isPublished: true, id: { notIn: assignedExamIds } },
         orderBy: { updatedAt: 'desc' },
         select: { id: true, title: true },
       }),
+      loadRosterStats(memberIds, assignmentIds),
     ]);
 
     const assignmentRows: AssignmentRow[] = cls.assignments.map((a) => ({
@@ -115,21 +119,29 @@ export default async function ClassDetailPage({ params }: Props) {
       isPublished: a.exam.isPublished,
     }));
 
-    const members = cls.memberships.map((m) => ({
-      userId: m.userId,
-      name: m.user.name,
-      email: m.user.email,
-      joinedAt: m.joinedAt.toISOString(),
-    }));
+    const members: ClassMember[] = cls.memberships.map((m) => {
+      const stats = rosterStats.get(m.userId);
+      return {
+        userId: m.userId,
+        name: m.user.name,
+        email: m.user.email,
+        joinedAt: m.joinedAt.toISOString(),
+        solvedCount: stats?.solvedCount ?? 0,
+        attemptedCount: stats?.attemptedCount ?? 0,
+        lastActiveAt: stats?.lastActiveAt ?? null,
+        assignmentsSubmitted: stats?.assignmentsSubmitted ?? 0,
+      };
+    });
 
     return (
-      <Shell>
+      <Shell wide>
         <ClassManager
           classId={classId}
           initialName={cls.name}
           joinCode={cls.joinCode}
           joinUrl={`${SITE_URL}/c/${cls.joinCode}`}
           maxStudents={Number.isFinite(limits.maxStudentsPerClass) ? limits.maxStudentsPerClass : null}
+          assignmentCount={cls.assignments.length}
           members={members}
         />
         <div className="mt-8">

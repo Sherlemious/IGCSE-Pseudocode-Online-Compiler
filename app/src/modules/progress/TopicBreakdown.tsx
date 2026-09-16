@@ -3,9 +3,10 @@ import { ArrowRight } from 'lucide-react';
 
 interface Props {
   data: Record<string, { attempted: number; solved: number }>;
+  showCta?: boolean;
 }
 
-export default function TopicBreakdown({ data }: Props) {
+export default function TopicBreakdown({ data, showCta = true }: Props) {
   const entries = Object.entries(data).sort((a, b) => b[1].attempted - a[1].attempted);
   const maxAttempted = Math.max(...entries.map(([, d]) => d.attempted), 1);
 
@@ -15,12 +16,14 @@ export default function TopicBreakdown({ data }: Props) {
       {entries.length === 0 ? (
         <div className="text-center py-6 space-y-3">
           <p className="text-xs text-dark-text/50">No topic data yet</p>
-          <Link
-            href="/practice"
-            className="inline-flex items-center gap-1 text-xs text-primary/70 hover:text-primary transition-colors"
-          >
-            Start practicing <ArrowRight size={11} />
-          </Link>
+          {showCta && (
+            <Link
+              href="/practice"
+              className="inline-flex items-center gap-1 text-xs text-primary/70 hover:text-primary transition-colors"
+            >
+              Start practicing <ArrowRight size={11} />
+            </Link>
+          )}
         </div>
       ) : (
         <div className="space-y-4">

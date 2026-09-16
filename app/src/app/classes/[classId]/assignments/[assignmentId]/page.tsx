@@ -6,6 +6,7 @@ import { auth } from '@/modules/auth/auth';
 import { prisma } from '@/shared/db';
 import CodeDetails from '@/modules/classes/CodeDetails';
 import AssignmentShareActions from '@/modules/classes/AssignmentShareActions';
+import StudentProgressLink from '@/modules/classes/StudentProgressLink';
 
 export const metadata: Metadata = {
   title: 'Assignment results',
@@ -94,9 +95,14 @@ export default async function AssignmentResultsPage({ params }: Props) {
               return (
                 <div key={m.userId} className="bg-surface border border-border rounded-lg px-4 py-3">
                   <div className="flex items-center justify-between gap-3">
-                    <Link href={`/classes/${classId}/students/${m.userId}`} className="text-sm font-medium text-light-text truncate hover:text-primary transition-colors">
+                    <StudentProgressLink
+                      classId={classId}
+                      studentId={m.userId}
+                      source="assignment_results"
+                      className="text-sm font-medium text-light-text truncate hover:text-primary transition-colors"
+                    >
                       {m.user.name || m.user.email || 'Student'}
-                    </Link>
+                    </StudentProgressLink>
                     <span className="shrink-0 text-xs font-mono flex items-center gap-1.5">
                       {done ? (
                         <><CheckCircle2 size={13} className="text-primary" /><span className="text-primary">{at!.score ?? 0}/{at!.totalTests ?? 0}</span></>
@@ -109,9 +115,15 @@ export default async function AssignmentResultsPage({ params }: Props) {
                   </div>
                   {at && at.answers.length > 0 && (
                     <div className="mt-2.5 space-y-1.5 border-t border-border/50 pt-2.5">
-                      {at.answers.map((ans, i) => (
-                        <CodeDetails key={i} label={`${ans.question.title} — ${ans.passCount}/${ans.totalTests}`} code={ans.code} />
-                      ))}
+                        {at.answers.map((ans, i) => (
+                          <CodeDetails
+                            key={i}
+                            label={`${ans.question.title} — ${ans.passCount}/${ans.totalTests}`}
+                            code={ans.code}
+                            classId={classId}
+                            surface="assigned_work"
+                          />
+                        ))}
                     </div>
                   )}
                 </div>

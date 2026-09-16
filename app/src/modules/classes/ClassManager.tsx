@@ -1,16 +1,24 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { Copy, Check, Pencil, Archive, UserMinus, Loader2, Users } from 'lucide-react';
+import { Copy, Check, Pencil, Archive, UserMinus, Loader2, Users, ChevronRight } from 'lucide-react';
+import { captureEvent } from '@/modules/interpreter/analytics';
+import StudentProgressLink from './StudentProgressLink';
+import { formatLastActive, rosterHeadlineStats } from './rosterStats';
 
-interface Member {
+export interface ClassMember {
   userId: string;
   name: string | null;
   email: string | null;
   joinedAt: string;
+  solvedCount: number;
+  attemptedCount: number;
+  lastActiveAt: string | null;
+  assignmentsSubmitted: number;
 }
+
+export type RosterSort = 'name' | 'solved' | 'last_active';
 
 interface Props {
   classId: string;
@@ -18,16 +26,75 @@ interface Props {
   joinUrl: string;
   joinCode: string;
   maxStudents: number | null; // null = unlimited
-  members: Member[];
+  assignmentCount: number;
+  members: ClassMember[];
 }
 
-export default function ClassManager({ classId, initialName, joinUrl, joinCode, maxStudents, members: initialMembers }: Props) {
+function displayName(m: ClassMember): string {
+  return m.name || m.email || 'Student';
+}
+
+function sortMembers(members: ClassMember[], sort: RosterSort): ClassMember[] {
+  const copy = [...members];
+  copy.sort((a, b) => {
+    if (sort === 'solved') {
+      const delta = b.solvedCount - a.solvedCount;
+      return delta !== 0 ? delta : displayName(a).localeCompare(displayName(b), undefined, { sensitivity: 'base' });
+    }
+    if (sort === 'last_active') {
+      const at = a.lastActiveAt ? new Date(a.lastActiveAt).getTime() : 0;
+      const bt = b.lastActiveAt ? new Date(b.lastActiveAt).getTime() : 0;
+      const delta = bt - at;
+      return delta !== 0 ? delta : displayName(a).localeCompare(displayName(b), undefined, { sensitivity: 'base' });
+    }
+    return displayName(a).localeCompare(displayName(b), undefined, { sensitivity: 'base' });
+  });
+  return copy;
+}
+
+const SORTS: { id: RosterSort; label: string }[] = [
+  { id: 'name', label: 'Name' },
+  { id: 'solved', label: 'Solved' },
+  { id: 'last_active', label: 'Last active' },
+];
+
+export default function ClassManager({
+  classId,
+  initialName,
+  joinUrl,
+  joinCode,
+  maxStudents,
+  assignmentCount,
+  members: initialMembers,
+}: Props) {
   const router = useRouter();
   const [members, setMembers] = useState(initialMembers);
   const [name, setName] = useState(initialName);
   const [editing, setEditing] = useState(false);
   const [copied, setCopied] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
+  const [sort, setSort] = useState<RosterSort>('name');
+  const viewedRef = useRef(false);
+
+  useEffect(() => {
+    if (viewedRef.current) return;
+    viewedRef.current = true;
+    const headline = rosterHeadlineStats(initialMembers);
+    captureEvent('class_progress_viewed', {
+      class_id: classId,
+      roster_size: initialMembers.length,
+      assignment_count: assignmentCount,
+      ...headline,
+    });
+  }, [assignmentCount, classId, initialMembers]);
+
+  const sorted = useMemo(() => sortMembers(members, sort), [members, sort]);
+
+  function changeSort(next: RosterSort) {
+    if (next === sort) return;
+    setSort(next);
+    captureEvent('class_roster_sorted', { class_id: classId, sort: next });
+  }
 
   async function copyLink() {
     try {
@@ -135,12 +202,32 @@ export default function ClassManager({ classId, initialName, joinUrl, joinCode, 
 
       {/* Roster */}
       <div>
-        <div className="flex items-center gap-2 mb-3 px-1">
-          <Users size={14} className="text-dark-text" />
-          <h2 className="mono-label text-dark-text">
-            {members.length} student{members.length === 1 ? '' : 's'}
-            {maxStudents != null && ` / ${maxStudents}`}
-          </h2>
+        <div className="flex flex-wrap items-center justify-between gap-2 mb-3 px-1">
+          <div className="flex items-center gap-2">
+            <Users size={14} className="text-dark-text" />
+            <h2 className="mono-label text-dark-text">
+              {members.length} student{members.length === 1 ? '' : 's'}
+              {maxStudents != null && ` / ${maxStudents}`}
+            </h2>
+          </div>
+          {members.length > 0 && (
+            <div className="flex items-center gap-1">
+              {SORTS.map((s) => (
+                <button
+                  key={s.id}
+                  type="button"
+                  onClick={() => changeSort(s.id)}
+                  className={`px-2 py-1 rounded-md text-[10px] font-mono transition-colors ${
+                    sort === s.id
+                      ? 'bg-primary/15 text-primary'
+                      : 'text-dark-text/60 hover:text-light-text hover:bg-surface'
+                  }`}
+                >
+                  {s.label}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         {members.length === 0 ? (
@@ -149,31 +236,53 @@ export default function ClassManager({ classId, initialName, joinUrl, joinCode, 
           </p>
         ) : (
           <div className="space-y-2">
-            {members.map((m) => (
-              <div key={m.userId} className="flex items-center justify-between gap-3 bg-surface border border-border rounded-lg px-4 py-3">
-                <div className="flex items-center gap-3 min-w-0">
-                  <span className="w-7 h-7 rounded-full bg-primary/15 text-primary text-xs font-semibold flex items-center justify-center shrink-0">
-                    {(m.name || m.email || '?').charAt(0).toUpperCase()}
-                  </span>
-                  <div className="min-w-0">
-                    <Link href={`/classes/${classId}/students/${m.userId}`} className="text-sm text-light-text truncate hover:text-primary transition-colors block">
-                      {m.name || m.email || 'Student'}
-                    </Link>
-                    {m.name && m.email && <p className="text-[11px] text-dark-text/60 truncate">{m.email}</p>}
-                  </div>
+            {sorted.map((m) => {
+              const assignLabel = assignmentCount === 0 ? '—' : `${m.assignmentsSubmitted}/${assignmentCount}`;
+              const lastLabel = formatLastActive(m.lastActiveAt);
+              return (
+                <div key={m.userId} className="flex items-center gap-2 bg-surface border border-border rounded-lg px-3 py-3 sm:px-4">
+                  <StudentProgressLink
+                    classId={classId}
+                    studentId={m.userId}
+                    source="roster"
+                    className="flex-1 min-w-0 flex items-center gap-3 group"
+                  >
+                    <span className="w-7 h-7 rounded-full bg-primary/15 text-primary text-xs font-semibold flex items-center justify-center shrink-0">
+                      {displayName(m).charAt(0).toUpperCase()}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm text-light-text truncate group-hover:text-primary transition-colors">
+                        {displayName(m)}
+                      </p>
+                      {m.name && m.email && <p className="text-[11px] text-dark-text/60 truncate">{m.email}</p>}
+                      <p className="sm:hidden text-[10px] font-mono text-dark-text/70 mt-0.5">
+                        {m.solvedCount} solved · {assignLabel} assigned · {lastLabel}
+                      </p>
+                    </div>
+                    <div className="hidden sm:flex items-center gap-4 shrink-0 text-[11px] font-mono tabular-nums">
+                      <span className="text-dark-text w-16 text-right">
+                        <span className="text-light-text">{m.solvedCount}</span> solved
+                      </span>
+                      <span className="text-dark-text w-14 text-right" title="Assignments submitted">
+                        {assignLabel}
+                      </span>
+                      <span className="text-dark-text/70 w-[4.5rem] text-right">{lastLabel}</span>
+                    </div>
+                    <ChevronRight size={14} className="shrink-0 text-dark-text/30 group-hover:text-primary transition-colors" />
+                  </StudentProgressLink>
+                  <button
+                    onClick={() => removeStudent(m.userId)}
+                    disabled={busy === m.userId}
+                    className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1.5 rounded-md text-[11px] text-dark-text
+                      hover:text-error hover:bg-error/10 transition-colors disabled:opacity-50"
+                    aria-label="Remove student"
+                  >
+                    {busy === m.userId ? <Loader2 size={12} className="animate-spin" /> : <UserMinus size={12} />}
+                    <span className="hidden sm:inline">Remove</span>
+                  </button>
                 </div>
-                <button
-                  onClick={() => removeStudent(m.userId)}
-                  disabled={busy === m.userId}
-                  className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1.5 rounded-md text-[11px] text-dark-text
-                    hover:text-error hover:bg-error/10 transition-colors disabled:opacity-50"
-                  aria-label="Remove student"
-                >
-                  {busy === m.userId ? <Loader2 size={12} className="animate-spin" /> : <UserMinus size={12} />}
-                  Remove
-                </button>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

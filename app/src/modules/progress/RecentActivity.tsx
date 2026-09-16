@@ -13,9 +13,10 @@ interface ActivityItem {
 
 interface Props {
   items: ActivityItem[];
+  showCta?: boolean;
 }
 
-export default function RecentActivity({ items }: Props) {
+export default function RecentActivity({ items, showCta = true }: Props) {
   if (items.length === 0) {
     return (
       <div className="bg-surface rounded-xl border border-border p-5 animate-fade-in-up" style={{ animationDelay: '240ms' }}>
@@ -23,12 +24,14 @@ export default function RecentActivity({ items }: Props) {
         <div className="text-center py-8">
           <Circle size={20} className="text-dark-text/20 mx-auto mb-2" />
           <p className="text-xs text-dark-text/50 mb-3">No activity yet</p>
-          <Link
-            href="/practice"
-            className="inline-flex items-center gap-1 text-xs text-primary/70 hover:text-primary transition-colors"
-          >
-            Start practicing <ArrowRight size={11} />
-          </Link>
+          {showCta && (
+            <Link
+              href="/practice"
+              className="inline-flex items-center gap-1 text-xs text-primary/70 hover:text-primary transition-colors"
+            >
+              Start practicing <ArrowRight size={11} />
+            </Link>
+          )}
         </div>
       </div>
     );

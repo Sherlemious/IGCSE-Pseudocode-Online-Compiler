@@ -36,7 +36,7 @@ export const faqItems: FaqItem[] = [
       'Different jobs. Pseudocode Pro is a giant Cambridge IDE and resource platform (converters to Python/Java/VB, downloadable papers, a large activity catalogue). This compiler is the autograding judge: hidden tests, timed exams, classes, and homework assignments.',
       'Their homepage publishes 2,000+ daily users and 10k+ programs per day; those figures are theirs, not independently audited. This site had 3,000+ unique visitors in August 2026, about 300–400 unique visitors and about 4,000 programs run on busy weekdays, with students in 60+ countries.',
       'Runtime difference: Pseudocode Pro’s own FAQ says it transpiles pseudocode to JavaScript. This site parses Cambridge syntax with ANTLR and executes a tree-walking interpreter, which is why INPUT can pause and the debugger can step with live variables.',
-      `Pricing: their individual licence is advertised around $2/year. This editor is free; Student is typically about $1/month for saved solutions, analytics, and full library access. Cheap is not the same as the better Paper 2 tool — ${SITE_URL}/compare`,
+      `Pricing: their individual licence is advertised around $2/year. This editor is free; Student is typically about $2/month for saved solutions, analytics, and full library access. Cheap is not the same as the better Paper 2 tool — ${SITE_URL}/compare`,
     ],
   },
   {
@@ -51,7 +51,7 @@ export const faqItems: FaqItem[] = [
   {
     id: 'worth-one-dollar',
     group: 'choose',
-    question: 'Is Premium worth about $1 per month?',
+    question: 'Is Premium worth about $2 per month?',
     paragraphs: [
       'Yes, if you already practise pseudocode here regularly — especially in the 2–4 months before the exam. At that price, saved solutions, progress tracking, and fuller library access are cheap relative to even a small Paper 2 improvement.',
       'Skip it if you only open the site every couple of weeks. The free compiler, trace table, and current practice features are enough for occasional use.',
@@ -117,7 +117,7 @@ export const faqItems: FaqItem[] = [
     group: 'about',
     question: 'Is it really free?',
     paragraphs: [
-      'The compiler is free — you can write, run, and debug pseudocode in the browser without paying. The Student plan is typically about US$1 per month (shown in local currency on Pricing) for saved solutions, progress analytics, and full library access. Teacher plans add classes, assignments, and autograding.',
+      'The compiler is free — you can write, run, and debug pseudocode in the browser without paying. The Student plan is typically about US$2 per month (shown in local currency on Pricing) for saved solutions, progress analytics, and full library access. Teacher plans add classes, assignments, and autograding.',
     ],
   },
   {
@@ -328,6 +328,7 @@ export const faqItems: FaqItem[] = [
     paragraphs: [
       'Yes. Create a class, share a join link or code, and students sign in with Google. Teacher plans raise class and roster limits; see Pricing.',
       'Assign an exam from the question bank as homework, optionally with a due date. You see how many students have submitted. The same hidden-test autograder used in practice marks the work.',
+      'The class roster shows questions solved, last activity, and assignment completion. Open a student to see their report card (topics, difficulty, heatmap) plus assigned work and latest code.',
       'For a timed mock, publish an exam and share `/e/CODE`. Students sit it against the clock and get a report card on submit. There is no Canvas or Google Classroom gradebook export yet.',
     ],
   },
