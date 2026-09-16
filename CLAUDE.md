@@ -28,6 +28,7 @@ Modular monolith. `src/app/` is a thin routing layer (pages + API route handlers
 | `modules/compiler` | Playground UI + shared editor kit (`editor.ts`) |
 | `modules/billing` | Paddle, plans, entitlements, pricing page |
 | `modules/practice` | Practice UI + autograder |
+| `modules/learn` | Paper 2 Path (`/learn`) — sequenced levels, player, local progress |
 | `modules/exams` | Exam take/author UI |
 | `modules/classes` | Class/assignment UI |
 | `modules/auth` | NextAuth config, session UI, transactional email |
@@ -41,7 +42,7 @@ Dependency rules (enforced by ESLint):
 - `interpreter` ↛ product modules, Prisma, PostHog, Next.js
 - `billing` ↛ interpreter / compiler / practice
 - `shared/ui` + `shared/lib` ↛ product modules (interpreter tokens are allowed). `shared/layout` may compose feature UI (Header → UserMenu).
-- `practice` / `exams` may import `compiler/editor` (CodeMirror + trace table), not `CompilerPage`
+- `practice` / `exams` / `learn` may import `compiler/editor` (CodeMirror + trace table), not `CompilerPage`
 
 ## Key Paths
 
@@ -56,6 +57,7 @@ Dependency rules (enforced by ESLint):
 | `app/src/modules/practice/autograder.ts` | Test-case grading |
 | `app/src/modules/auth/auth.ts` | NextAuth config |
 | `app/src/modules/billing/` | Pricing, Paddle, entitlements |
+| `app/src/modules/learn/` | Paper 2 Path curriculum, player, progress |
 | `app/prisma/schema.prisma` | Database schema |
 
 ## ANTLR4 Quirks
@@ -189,13 +191,17 @@ Page-side events fire from `PricingClient`; the `checkout_*` events are bridged 
 
 | Event | Properties |
 |-------|-----------|
-| `pricing_viewed` | `paddle_env`, `tier_count`, `country`, `signed_in` |
+| `pricing_viewed` | `paddle_env`, `tier_count`, `pass_count`, `has_student_monthly`, `has_session_switcher`, `country`, `signed_in`, `audience` (`student`\|`teacher`) |
+| `pricing_audience_clicked` | `audience` (`student`\|`teacher`\|`choose`), `paddle_env`, `source` (`gate` on I'm a student/teacher, `switch` on in-page links) |
+| `pricing_session_changed` | `session` (`may_june`\|`oct_nov`), `paddle_env` |
+| `pricing_teacher_seats_changed` | `seats`, `plan_tier`, `max_classes`, `paddle_env` |
 | `pricing_prices_loaded` | `paddle_env`, `country`, `resolved_country`, `regional_pricing` (bool — resolved country has a per-country override, see `billing/ppp.ts`), `price_count`, `priced_count`, `currency` |
 | `pricing_prices_error` | `paddle_env`, `country`, `error` |
 | `pricing_interval_changed` | `interval`, `paddle_env` |
-| `subscribe_clicked` | `tier`, `interval`, `price_id`, `paddle_env` |
+| `subscribe_clicked` | `tier`, `interval`, `price_id`, `paddle_env`, `sku_type` (`subscription`) |
+| `pass_clicked` | `tier`, `interval` (`pass`), `price_id`, `paddle_env`, `sku_type` (`session_pass`) |
 | `contact_sales_clicked` | `tier`, `paddle_env` |
-| `checkout_loaded` | `paddle_env`, `checkout_id`, `price_id`, `product_name`, `interval`, `currency`, `total`, `recurring_total`, `status` |
+| `checkout_loaded` | `paddle_env`, `checkout_id`, `price_id`, `product_name`, `interval`, `sku_type` (`subscription`\|`one_time`), `currency`, `total`, `recurring_total`, `status` |
 | `checkout_payment_selected` | …base + `payment_method` — method picked (captured even if they abandon; surfaces payment-method friction) |
 | `checkout_payment_initiated` | …base + `payment_method` |
 | `checkout_payment_failed` | …base + `payment_method` (base merged from last-known checkout context) |
@@ -204,6 +210,32 @@ Page-side events fire from `PricingClient`; the `checkout_*` events are bridged 
 | `checkout_failed` | `paddle_env` + last-known context (terminal failure, distinct from a dismissed error dialog) |
 | `checkout_error` | `paddle_env` + last-known context + `error_name`, `error_type`, `error_code`, `error_detail`. Error events carry no `data`, so price/tier come from the remembered context. |
 | `checkout_success_viewed` | `transaction` (`_ptxn`) — fired on `/welcome` |
+| `subscription_plan_granted` | webhook — `plan`, `plan_tier`, `price_id`, `paddle_env`, `subscription_id`, `status` |
+| `subscription_plan_revoked` | webhook — `reason` (Paddle status), `paddle_env`, `subscription_id` |
+| `student_pass_granted` | webhook — `pass_kind`, `plan_tier`, `paddle_env`, `transaction_id` |
+
+### Paper 2 Path (`/learn`)
+
+Progress is localStorage; these fire from the path map and the lesson player. Interpreter runs inside a lesson also send `code_run` / `interpreter_error` with `feature_context: learn`.
+
+| Event | Properties |
+|-------|-----------|
+| `learn_opened` | `course`, `from`, `signed_in`, `completed_count`, `playable_count`, `next_lesson` |
+| `learn_continue_clicked` | lesson props + `source: continue` |
+| `learn_lesson_clicked` | lesson props + `source: node` |
+| `learn_gate_blocked` | lesson/level props + `source` (`node`) |
+| `learn_gate_viewed` | landed on a locked/unplayable lesson URL |
+| `learn_lesson_started` | lesson props + `already_complete` |
+| `learn_check_submitted` | lesson props + `ok`, `reason` (`passed`\|`must_contain`\|`forbidden`\|`runtime`\|`wrong_output`\|…), `attempts`, `message` |
+| `learn_quiz_submitted` | lesson props + `ok`, `attempts`, `correct_count`, `total` |
+| `learn_lesson_completed` | lesson props + `attempts`, `$set` `learn_level` / `learn_completed_count` |
+| `learn_level_completed` | `level`, `level_name` |
+| `learn_path_completed` | all currently playable lessons done |
+| `learn_path_clicked` | back to `/learn` — `source` `header`\|`gate` |
+| `learn_next_clicked` | `destination` `lesson`\|`path` |
+| `learn_prev_clicked` | `prev_lesson` |
+| `learn_docs_clicked` | `docs_anchor` |
+| `learn_pane_changed` | mobile `pane` `lesson`\|`editor`, `source` `tab`\|`cta` |
 
 ## Environment Variables
 

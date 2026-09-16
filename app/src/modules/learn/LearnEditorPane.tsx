@@ -5,14 +5,17 @@ import { CheckCircle, Play, Square, Terminal, XCircle } from 'lucide-react';
 import { CodeMirrorEditor } from '@/modules/compiler/editor';
 import { useInterpreter } from '@/modules/interpreter/useInterpreter';
 import { checkLessonCode, type LessonCheckResult } from './check';
-import type { LearnLesson } from './types';
+import { markAttempt } from './progress';
+import { captureLearn, learnLessonProps } from './telemetry';
+import type { LearnLesson, LearnLevel } from './types';
 
 type Props = {
+  level: LearnLevel;
   lesson: LearnLesson;
   onPassed: (attempts: number) => void;
 };
 
-export default function LearnEditorPane({ lesson, onPassed }: Props) {
+export default function LearnEditorPane({ level, lesson, onPassed }: Props) {
   const [code, setCode] = useState(lesson.starterCode ?? '');
   const [inputValue, setInputValue] = useState('');
   const [check, setCheck] = useState<LessonCheckResult | null>(null);
@@ -46,11 +49,21 @@ export default function LearnEditorPane({ lesson, onPassed }: Props) {
     try {
       const result = await checkLessonCode(lesson, code);
       setCheck(result);
+      markAttempt(lesson.id);
+      captureLearn(
+        'learn_check_submitted',
+        learnLessonProps(level, lesson, {
+          ok: result.ok,
+          reason: result.reason,
+          attempts: nextAttempts,
+          message: result.message.slice(0, 180),
+        }),
+      );
       if (result.ok) onPassed(nextAttempts);
     } finally {
       setChecking(false);
     }
-  }, [attempts, code, lesson, onPassed]);
+  }, [attempts, code, lesson, level, onPassed]);
 
   const handleInputSubmit = (e: React.FormEvent) => {
     e.preventDefault();

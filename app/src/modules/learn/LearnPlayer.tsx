@@ -6,10 +6,9 @@ import { useRouter } from 'next/navigation';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { ArrowLeft, ArrowRight, BookOpen, Check, Code2, Lock } from 'lucide-react';
-import { captureEvent } from '@/modules/interpreter/analytics';
 import { IGCSE_PAPER_2 } from './curriculum';
 import LearnEditorPane from './LearnEditorPane';
-import { lessonHref, nextLesson, previousLesson } from './path';
+import { flattenLessons, lessonHref, nextLesson, previousLesson } from './path';
 import {
   isComplete,
   isLessonUnlocked,
@@ -17,6 +16,7 @@ import {
   markComplete,
   type ProgressMap,
 } from './progress';
+import { captureLearn, learnCourseProps, learnLessonProps, learnLevelProps } from './telemetry';
 import type { LearnLesson, LearnLevel, QuizItem } from './types';
 
 type Props = {
@@ -31,15 +31,22 @@ export default function LearnPlayer({ level, lesson }: Props) {
   const isQuiz = lesson.type === 'quiz';
 
   useEffect(() => {
-    setProgress(loadProgress());
+    const map = loadProgress();
+    setProgress(map);
     setMobilePane('lesson');
-    captureEvent('learn_lesson_started', {
-      course: IGCSE_PAPER_2.id,
-      level: level.number,
-      lesson: lesson.id,
-      type: lesson.type,
-    });
-  }, [level.number, lesson.id, lesson.type]);
+    const open = isLessonUnlocked(IGCSE_PAPER_2, lesson, map);
+    if (!lesson.playable || !open) {
+      captureLearn(
+        'learn_gate_viewed',
+        learnLessonProps(level, lesson, { unlocked: open, source: 'player' }),
+      );
+      return;
+    }
+    captureLearn(
+      'learn_lesson_started',
+      learnLessonProps(level, lesson, { already_complete: isComplete(map, lesson.id) }),
+    );
+  }, [level, lesson]);
 
   const unlocked = isLessonUnlocked(IGCSE_PAPER_2, lesson, progress);
   const done = isComplete(progress, lesson.id);
@@ -48,12 +55,20 @@ export default function LearnPlayer({ level, lesson }: Props) {
   const playableIndex = level.lessons.filter((item) => item.playable).findIndex((item) => item.id === lesson.id);
 
   const goNext = useCallback(() => {
-    if (next?.lesson.playable) {
+    const toLesson = Boolean(next?.lesson.playable);
+    captureLearn(
+      'learn_next_clicked',
+      learnLessonProps(level, lesson, {
+        destination: toLesson ? 'lesson' : 'path',
+        next_lesson: toLesson && next ? `${next.level.slug}/${next.lesson.slug}` : null,
+      }),
+    );
+    if (toLesson && next) {
       router.push(lessonHref(next.level, next.lesson));
       return;
     }
     router.push('/learn');
-  }, [next, router]);
+  }, [lesson, level, next, router]);
 
   const handlePassed = useCallback(
     (attempts: number) => {
@@ -61,19 +76,28 @@ export default function LearnPlayer({ level, lesson }: Props) {
       const map = markComplete(lesson.id, attempts);
       setProgress(map);
       if (already) return;
-      captureEvent('learn_lesson_completed', {
-        course: IGCSE_PAPER_2.id,
-        level: level.number,
-        lesson: lesson.id,
-        type: lesson.type,
-        attempts,
+      const course = learnCourseProps(map);
+      captureLearn('learn_lesson_completed', {
+        ...learnLessonProps(level, lesson, { attempts }),
+        ...course,
+        $set: {
+          learn_level: level.number,
+          learn_completed_count: course.completed_count,
+        },
+        $set_once: { learn_started_at: new Date().toISOString() },
       });
-      const remaining = level.lessons.filter((item) => item.playable && !isComplete(map, item.id));
-      if (remaining.length === 0) {
-        captureEvent('learn_level_completed', { course: IGCSE_PAPER_2.id, level: level.number });
+      const remainingOnLevel = level.lessons.filter((item) => item.playable && !isComplete(map, item.id));
+      if (remainingOnLevel.length === 0) {
+        captureLearn('learn_level_completed', learnLevelProps(level, course));
+      }
+      const remainingPlayable = flattenLessons(IGCSE_PAPER_2).filter(
+        (item) => item.lesson.playable && !isComplete(map, item.lesson.id),
+      );
+      if (remainingPlayable.length === 0) {
+        captureLearn('learn_path_completed', course);
       }
     },
-    [lesson.id, lesson.type, level.lessons, level.number],
+    [lesson, level],
   );
 
   if (!lesson.playable || !unlocked) {
@@ -87,7 +111,13 @@ export default function LearnPlayer({ level, lesson }: Props) {
               ? 'This lesson is on the map but not playable yet. Finish Levels 1–3 first — we are measuring those.'
               : 'Complete the previous lesson to unlock this one.'}
           </p>
-          <Link href="/learn" className="text-sm text-primary hover:underline">
+          <Link
+            href="/learn"
+            className="text-sm text-primary hover:underline"
+            onClick={() =>
+              captureLearn('learn_path_clicked', learnLessonProps(level, lesson, { source: 'gate' }))
+            }
+          >
             Back to the path
           </Link>
         </div>
@@ -106,6 +136,9 @@ export default function LearnPlayer({ level, lesson }: Props) {
           href="/learn"
           className="text-dark-text hover:text-primary flex items-center gap-1 text-xs shrink-0 min-h-9 px-1"
           aria-label="Back to the path"
+          onClick={() =>
+            captureLearn('learn_path_clicked', learnLessonProps(level, lesson, { source: 'header' }))
+          }
         >
           <ArrowLeft size={14} />
           <span className="hidden sm:inline">Path</span>
@@ -137,7 +170,10 @@ export default function LearnPlayer({ level, lesson }: Props) {
         <div className="lg:hidden flex shrink-0 border-b border-border bg-surface">
           <button
             type="button"
-            onClick={() => setMobilePane('lesson')}
+            onClick={() => {
+              setMobilePane('lesson');
+              captureLearn('learn_pane_changed', learnLessonProps(level, lesson, { pane: 'lesson' }));
+            }}
             className={`flex-1 flex items-center justify-center gap-1.5 min-h-10 py-1.5 text-xs font-medium transition-colors ${
               showLesson ? 'text-light-text border-b-2 border-primary' : 'text-dark-text'
             }`}
@@ -147,7 +183,10 @@ export default function LearnPlayer({ level, lesson }: Props) {
           </button>
           <button
             type="button"
-            onClick={() => setMobilePane('editor')}
+            onClick={() => {
+              setMobilePane('editor');
+              captureLearn('learn_pane_changed', learnLessonProps(level, lesson, { pane: 'editor', source: 'tab' }));
+            }}
             className={`flex-1 flex items-center justify-center gap-1.5 min-h-10 py-1.5 text-xs font-medium transition-colors ${
               showEditor ? 'text-light-text border-b-2 border-primary' : 'text-dark-text'
             }`}
@@ -205,19 +244,40 @@ export default function LearnPlayer({ level, lesson }: Props) {
             </p>
           )}
           {lesson.docsAnchor && (
-            <Link href={`/docs#${lesson.docsAnchor}`} className="inline-block mt-3 text-xs text-primary hover:underline">
+            <Link
+              href={`/docs#${lesson.docsAnchor}`}
+              className="inline-block mt-3 text-xs text-primary hover:underline"
+              onClick={() =>
+                captureLearn(
+                  'learn_docs_clicked',
+                  learnLessonProps(level, lesson, { docs_anchor: lesson.docsAnchor }),
+                )
+              }
+            >
               Docs: {lesson.docsAnchor}
             </Link>
           )}
 
           {lesson.type === 'quiz' && lesson.quiz && (
-            <QuizBlock items={lesson.quiz} alreadyDone={done} onPassed={handlePassed} />
+            <QuizBlock
+              items={lesson.quiz}
+              alreadyDone={done}
+              onPassed={handlePassed}
+              level={level}
+              lesson={lesson}
+            />
           )}
 
           {!isQuiz && (
             <button
               type="button"
-              onClick={() => setMobilePane('editor')}
+              onClick={() => {
+                setMobilePane('editor');
+                captureLearn(
+                  'learn_pane_changed',
+                  learnLessonProps(level, lesson, { pane: 'editor', source: 'cta' }),
+                );
+              }}
               className="lg:hidden mt-5 w-full min-h-11 rounded-lg bg-primary text-on-primary text-sm font-semibold"
             >
               Open editor
@@ -227,7 +287,18 @@ export default function LearnPlayer({ level, lesson }: Props) {
           {(prev || done) && (
             <div className="flex items-center gap-3 mt-6 pt-4 border-t border-border">
               {prev ? (
-                <Link href={lessonHref(prev.level, prev.lesson)} className="text-xs text-dark-text hover:text-primary min-h-9 inline-flex items-center">
+                <Link
+                  href={lessonHref(prev.level, prev.lesson)}
+                  className="text-xs text-dark-text hover:text-primary min-h-9 inline-flex items-center"
+                  onClick={() =>
+                    captureLearn(
+                      'learn_prev_clicked',
+                      learnLessonProps(level, lesson, {
+                        prev_lesson: `${prev.level.slug}/${prev.lesson.slug}`,
+                      }),
+                    )
+                  }
+                >
                   Previous
                 </Link>
               ) : (
@@ -258,6 +329,7 @@ export default function LearnPlayer({ level, lesson }: Props) {
             </div>
           ) : (
             <LearnEditorPane
+              level={level}
               lesson={lesson}
               onPassed={(attempts) => {
                 handlePassed(attempts);
@@ -275,10 +347,14 @@ function QuizBlock({
   items,
   alreadyDone,
   onPassed,
+  level,
+  lesson,
 }: {
   items: QuizItem[];
   alreadyDone: boolean;
   onPassed: (attempts: number) => void;
+  level: LearnLevel;
+  lesson: LearnLesson;
 }) {
   const [answers, setAnswers] = useState<Record<number, string>>({});
   const [submitted, setSubmitted] = useState(alreadyDone);
@@ -292,7 +368,19 @@ function QuizBlock({
     const nextAttempts = attempts + 1;
     setAttempts(nextAttempts);
     setSubmitted(true);
-    if (items.every((item, i) => answers[i] === item.correctId)) {
+    const correctCount = items.filter((item, i) => answers[i] === item.correctId).length;
+    const ok = correctCount === items.length;
+    captureLearn(
+      'learn_quiz_submitted',
+      learnLessonProps(level, lesson, {
+        ok,
+        attempts: nextAttempts,
+        correct_count: correctCount,
+        total: items.length,
+        already_done: alreadyDone,
+      }),
+    );
+    if (ok) {
       onPassed(nextAttempts);
     }
   };

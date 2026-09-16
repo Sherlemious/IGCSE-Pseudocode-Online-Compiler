@@ -638,13 +638,27 @@ textarea:focus-visible {
   animation: trace-row-in 0.24s ease-out both;
 }
 
-@media (prefers-reduced-motion: reduce) {
+@keyframes learn-node-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-primary) 45%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 0 11px color-mix(in srgb, var(--color-primary) 0%, transparent);
+  }
+}
 
+.learn-node-current {
+  animation: learn-node-pulse 2.2s ease-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
   .terminal-line,
   .trace-row-in,
   .run-pulse-success,
   .run-pulse-error,
-  .exec-dot {
+  .exec-dot,
+  .learn-node-current {
     animation: none;
   }
 }

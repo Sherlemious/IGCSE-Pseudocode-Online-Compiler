@@ -54,6 +54,7 @@ describe('IGCSE Paper 2 curriculum', () => {
     const lesson = findLesson(IGCSE_PAPER_2, '1', 'assignment')!.lesson;
     const starter = await checkLessonCode(lesson, lesson.starterCode ?? '');
     expect(starter.ok).toBe(false);
+    expect(starter.reason).not.toBe('passed');
     expect(starter.message).toContain('<-');
   });
 });
