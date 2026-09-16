@@ -1,7 +1,7 @@
 # Pricing redesign — capacity bands + student session passes
 
 **Status:** Implemented on `feat/pricing-bands-session-passes`. Paddle prices created in **sandbox + live** (2026-09-16) and IDs wired into `seedPricing.ts` / `passes.ts`. Notifications include `transaction.completed` (plus created/paid). Remaining: `db:seed:pricing production` at deploy so live main does not list Department/School before this branch ships. See [`docs/paddle-catalog.md`](paddle-catalog.md).
-**Goal:** grow from ~€5.50 MRR (1 Starter) to **€200+ MRR**, without cutting the teacher who already pays.
+**Goal:** grow from **$5 MRR** (1 Starter) to **$200+ MRR**, without cutting the teacher who already pays.
 **Passes are student-only.** They never grant teaching capacity and the webhook ignores a pass purchase by a `TEACHER` or anyone on Starter/Pro/School.
 
 ---
@@ -38,15 +38,16 @@ npx tsx prisma/backfillLegacyCapacity.ts
 
 ---
 
-## Student session passes — one-time, not subscriptions
+## Student — monthly subscription + session passes
 
-1-month top-up is **$2**. Session passes are **33% off** that monthly rate for the window length.
+The **$2/month Student plan is a recurring subscription** (PricingTier slug `student`), not a pass. Session passes are one-time, student-only, 33% off that monthly rate for the window length. The leftover 1-month **one-time** SKU still grants time in the webhook but is no longer listed on `/pricing`.
 
-| Pass | Shown | Covers until | List | Was |
-|------|-------|--------------|------|-----|
-| **May/June** | September–June | 30 June of the series | **$13** | $20 (10 × $2) |
-| **Oct/Nov** | June–November | 30 November of the series | **$8** | $12 (6 × $2) |
-| 1-month | always | +1 month (stacks) | $2 | — |
+| SKU | Shown | Covers until | List | Was |
+|-----|-------|--------------|------|-----|
+| **Student monthly** | always | while subscribed | **$2/mo** | — |
+| **May/June pass** | September–May | 30 June of the series | **$13** | $20 (10 × $2) |
+| **Oct/Nov pass** | June–November | 30 November of the series | **$8** | $12 (6 × $2) |
+| 1-month one-time (legacy) | not listed | +1 month (stacks) | $2 | — |
 
 Buying late does not run past the series end. A second purchase takes the later of the two dates. Teachers never see a working Buy button; the webhook will not apply a pass to them.
 

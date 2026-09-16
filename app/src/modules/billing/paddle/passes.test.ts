@@ -6,10 +6,11 @@ import {
   seriesEnd,
   visiblePasses,
   PASS_CATALOG,
+  MONTH_PASS,
   type PassDef,
 } from './passes';
 
-const month = PASS_CATALOG.find((p) => p.kind === 'month') as PassDef;
+const month = MONTH_PASS;
 const mayJune = PASS_CATALOG.find((p) => p.kind === 'may_june') as PassDef;
 const octNov = PASS_CATALOG.find((p) => p.kind === 'oct_nov') as PassDef;
 
@@ -35,15 +36,12 @@ describe('session pass visibility (UTC months)', () => {
     expect(isPassVisible('oct_nov', utc(2027, 4, 31))).toBe(false); // May
   });
 
-  it('always lists the 1-month top-up', () => {
-    expect(isPassVisible('month', utc(2026, 6, 1))).toBe(true);
-    expect(visiblePasses(utc(2026, 8, 15)).map((p) => p.kind)).toEqual([
-      'may_june',
-      'oct_nov',
-      'month',
-    ]);
-    expect(visiblePasses(utc(2027, 5, 1)).map((p) => p.kind)).toEqual(['oct_nov', 'month']);
-    expect(visiblePasses(utc(2027, 6, 1)).map((p) => p.kind)).toEqual(['oct_nov', 'month']);
+  it('does not list the leftover 1-month one-time SKU', () => {
+    expect(isPassVisible('month', utc(2026, 6, 1))).toBe(false);
+    expect(visiblePasses(utc(2026, 8, 15)).map((p) => p.kind)).toEqual(['may_june', 'oct_nov']);
+    expect(visiblePasses(utc(2027, 4, 1)).map((p) => p.kind)).toEqual(['may_june']);
+    expect(visiblePasses(utc(2027, 5, 1)).map((p) => p.kind)).toEqual(['oct_nov']);
+    expect(visiblePasses(utc(2027, 6, 1)).map((p) => p.kind)).toEqual(['oct_nov']);
   });
 });
 

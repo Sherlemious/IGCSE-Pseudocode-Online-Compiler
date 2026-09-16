@@ -161,7 +161,7 @@ const jsonLd = {
       name: 'Student',
       url: `${SITE_URL}/pricing`,
       description:
-        'Typically about US$1 per month for saved solutions, progress analytics, and full practice library access. See /pricing for local currency.',
+        'Typically about US$2 per month for saved solutions, progress analytics, and full practice library access. See /pricing for local currency.',
     },
   ],
 };

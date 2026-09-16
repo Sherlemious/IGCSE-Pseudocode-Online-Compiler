@@ -1,19 +1,20 @@
 /**
- * Student-only one-time passes. Teachers never see these, and the billing
- * webhook refuses to apply a pass to a teacher role or a teacher subscription.
+ * Student-only one-time **session** passes. Teachers never see these, and the
+ * billing webhook refuses to apply a pass to a teacher role or a teacher
+ * subscription. The $2/mo Student plan is a recurring subscription (PricingTier
+ * slug `student`), not a pass.
  *
  * Session passes have a fixed exam-series end date (not N months from purchase).
  * Visibility is by UTC calendar month:
  *   Oct/Nov   — shown June through November, then it disappears
  *   May/June  — shown September through May; gone once June starts
- * 1-month     — always shown (short top-up)
  *
  * List USD is 33% off the $2/mo rate for the window length (May/June = 10 months
  * from September, Oct/Nov = 6 months from June). Paddle is the source of truth
  * at checkout once price IDs are filled.
  *
- * Fill the `pri_…` IDs once the one-time prices exist. Until then
- * `passForPriceId` returns null and purchases are ignored.
+ * A leftover 1-month **one-time** SKU stays in `PASS_PRICES` so purchases that
+ * already happened still grant time; it is no longer listed on /pricing.
  */
 
 export const MONTH_PASS_USD = 2;
@@ -39,7 +40,7 @@ export interface PassDef {
   discountPct: number;
 }
 
-const MONTH: PassDef = {
+export const MONTH_PASS: PassDef = {
   kind: 'month',
   tier: 'student-month',
   label: '1-month pass',
@@ -62,19 +63,19 @@ const OCT_NOV: PassDef = {
   ...sessionPrice(6),
 };
 
-export const PASS_CATALOG: readonly PassDef[] = [MAY_JUNE, OCT_NOV, MONTH];
+export const PASS_CATALOG: readonly PassDef[] = [MAY_JUNE, OCT_NOV];
 
 /** Paddle one-time price ID → pass definition, per environment. */
 export const PASS_PRICES: Record<'sandbox' | 'production', Record<string, PassDef>> = {
   // Created 2026-09-16 via the paddle-sandbox MCP (see docs/paddle-catalog.md).
   sandbox: {
-    pri_01m2nqdbxe4nmfpzqcn1gnv1x4: MONTH,
+    pri_01m2nqdbxe4nmfpzqcn1gnv1x4: MONTH_PASS,
     pri_01m2nqdc16zf8vpt5gb9wdntc9: MAY_JUNE,
     pri_01m2nqdc50e62nk65nkcvcpkbp: OCT_NOV,
   },
   // Created 2026-09-16 via the paddle-live MCP, mirroring the sandbox passes.
   production: {
-    pri_01m2nqt7289natscexm33zy7pa: MONTH,
+    pri_01m2nqt7289natscexm33zy7pa: MONTH_PASS,
     pri_01m2nqt7729dg9w1gxmmtcj42p: MAY_JUNE,
     pri_01m2nqt7bgw87v9svw5brqe9my: OCT_NOV,
   },
@@ -109,10 +110,10 @@ function endOfUtcDay(year: number, monthIndex: number, day: number): Date {
 
 /**
  * Oct/Nov: June–November. May/June: September–May (hidden in June–August).
- * The 1-month top-up is always listed.
+ * The old 1-month one-time SKU is no longer listed.
  */
 export function isPassVisible(kind: PassKind, now: Date = new Date()): boolean {
-  if (kind === 'month') return true;
+  if (kind === 'month') return false;
   const m = utcMonth(now);
   if (kind === 'may_june') return m >= 8 || m <= 4;
   return m >= 5 && m <= 10;

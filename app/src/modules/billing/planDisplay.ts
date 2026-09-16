@@ -7,7 +7,7 @@
 
 const TIER_LABELS: Record<string, string> = {
   student: 'Student',
-  'student-month': '1-month pass',
+  'student-month': 'Student (legacy month pass)',
   'student-may-june': 'May/June pass',
   'student-oct-nov': 'Oct/Nov pass',
   starter: 'Starter',

@@ -29,6 +29,7 @@ export interface PricingTierView {
 
 export interface StudentPassView {
   slug: string;
+  kind: 'may_june' | 'oct_nov';
   name: string;
   description: string;
   features: string[];
@@ -38,6 +39,15 @@ export interface StudentPassView {
   discountPct: number;
   coversUntil: string;
   featured: boolean;
+}
+
+export interface StudentMonthlyView {
+  slug: string;
+  name: string;
+  description: string;
+  features: string[];
+  monthPriceId: string;
+  listUsdMonth: number;
 }
 
 type Interval = 'month' | 'year';
@@ -92,6 +102,7 @@ function CapacityStats({ maxClasses, maxStudents }: { maxClasses: number; maxStu
 
 export default function PricingClient({
   teacherTiers,
+  studentMonthly,
   studentPasses,
   showTeachers,
   showPasses,
@@ -106,6 +117,7 @@ export default function PricingClient({
   paddleEnv,
 }: {
   teacherTiers: PricingTierView[];
+  studentMonthly: StudentMonthlyView | null;
   studentPasses: StudentPassView[];
   showTeachers: boolean;
   showPasses: boolean;
@@ -127,6 +139,7 @@ export default function PricingClient({
   const [error, setError] = useState<string | null>(null);
   const [resolvedCountry, setResolvedCountry] = useState<string | undefined>(countryCode);
   const [seats, setSeats] = useState(LIMITS.classroom.maxStudentsTotal);
+  const [sessionSlug, setSessionSlug] = useState<string | null>(null);
 
   const viewedRef = useRef(false);
   useEffect(() => {
@@ -136,11 +149,23 @@ export default function PricingClient({
       paddle_env: paddleEnv,
       tier_count: teacherTiers.length,
       pass_count: studentPasses.length,
+      has_student_monthly: Boolean(studentMonthly),
+      has_session_switcher: studentPasses.length > 1,
       country: countryCode ?? null,
       signed_in: Boolean(customerEmail),
       audience: showTeachers && !showPasses ? 'teacher' : showPasses && !showTeachers ? 'student' : 'all',
     });
-  }, [ph, paddleEnv, teacherTiers.length, studentPasses.length, countryCode, customerEmail, showTeachers, showPasses]);
+  }, [
+    ph,
+    paddleEnv,
+    teacherTiers.length,
+    studentPasses.length,
+    studentMonthly,
+    countryCode,
+    customerEmail,
+    showTeachers,
+    showPasses,
+  ]);
 
   const allPriceIds = useMemo(() => {
     const ids: string[] = [];
@@ -153,12 +178,13 @@ export default function PricingClient({
       }
     }
     if (showPasses) {
+      if (studentMonthly?.monthPriceId) ids.push(studentMonthly.monthPriceId);
       for (const p of studentPasses) {
         if (p.priceId) ids.push(p.priceId);
       }
     }
     return ids;
-  }, [showTeachers, showPasses, teacherTiers, studentPasses]);
+  }, [showTeachers, showPasses, teacherTiers, studentPasses, studentMonthly]);
 
   useEffect(() => {
     if (!paddle) return;
@@ -221,6 +247,7 @@ export default function PricingClient({
       interval: opts.interval,
       price_id: opts.priceId,
       paddle_env: paddleEnv,
+      sku_type: opts.interval === 'pass' ? 'session_pass' : 'subscription',
     });
     paddle.Checkout.open({
       items: [{ priceId: opts.priceId, quantity: 1 }],
@@ -247,20 +274,29 @@ export default function PricingClient({
         })()
       : null;
 
-  const sessionPasses = studentPasses.filter((p) => p.slug !== 'student-month');
-  const monthPass = studentPasses.find((p) => p.slug === 'student-month');
-  const passGridClass =
-    sessionPasses.length <= 1
-      ? 'mx-auto grid max-w-md grid-cols-1 gap-6'
-      : 'mx-auto grid max-w-3xl gap-6 sm:grid-cols-2';
+  const sessionPasses = studentPasses;
+  const featuredSession = sessionPasses.find((p) => p.featured) ?? sessionPasses[0] ?? null;
+  const activeSession =
+    sessionPasses.find((p) => p.slug === sessionSlug) ?? featuredSession;
+  const showSessionSwitcher = sessionPasses.length > 1;
 
+  const reportSeats = (next: number) => {
+    const nextBand = teacherBandForStudents(next);
+    const caps = LIMITS[nextBand.tier];
+    ph?.capture('pricing_teacher_seats_changed', {
+      seats: next >= TEACHER_SLIDER_MAX ? 751 : next,
+      plan_tier: nextBand.tier,
+      max_classes: Number.isFinite(caps.maxClasses) ? caps.maxClasses : null,
+      paddle_env: paddleEnv,
+    });
+  };
   const starter = findTierView(teacherTiers, ['starter']);
   const band = teacherBandForStudents(seats);
   const selected = findTierView(teacherTiers, band.slugs);
   const selectedLimits = LIMITS[band.tier];
   const seatLabel = seats >= TEACHER_SLIDER_MAX ? '750+' : String(seats);
 
-  const renderPassCard = (pass: StudentPassView, compact = false) => {
+  const renderPassCard = (pass: StudentPassView) => {
     const total = pass.priceId ? totals[pass.priceId] : undefined;
     const isCurrent = Boolean(currentTier) && pass.slug === currentTier;
     const canBuy = Boolean(paddle) && Boolean(pass.priceId) && !viewerIsTeacher && !isCurrent;
@@ -270,7 +306,7 @@ export default function PricingClient({
           <span className="inline-block h-8 w-24 animate-pulse rounded bg-border/60" />
         ) : (
           <>
-            <span className={compact ? 'text-xl font-bold tracking-tight text-light-text' : 'text-3xl font-bold tracking-tight text-light-text'}>
+            <span className="text-3xl font-bold tracking-tight text-light-text">
               {total ?? usd(pass.listUsd)}
             </span>
             {pass.discountPct > 0 && (
@@ -294,11 +330,7 @@ export default function PricingClient({
       <button
         type="button"
         onClick={() => openCheckout({ slug: pass.slug, priceId: pass.priceId, interval: 'pass' })}
-        className={`rounded-lg px-4 py-2.5 text-sm font-semibold transition-colors ${
-          pass.featured || compact
-            ? 'bg-primary text-white hover:bg-primary-hover'
-            : 'border border-primary/40 text-primary hover:bg-primary/10'
-        }`}
+        className="rounded-lg px-4 py-2.5 text-sm font-semibold transition-colors bg-primary text-white hover:bg-primary-hover"
       >
         Buy pass
       </button>
@@ -311,26 +343,6 @@ export default function PricingClient({
         {pass.priceId ? 'Loading…' : 'Available soon'}
       </button>
     );
-
-    if (compact) {
-      return (
-        <div
-          key={pass.slug}
-          className={`flex flex-col gap-3 rounded-2xl border px-5 py-4 sm:flex-row sm:items-center sm:justify-between ${
-            isCurrent ? 'border-primary bg-surface ring-1 ring-primary/50' : 'border-border bg-surface/80'
-          }`}
-        >
-          <div className="min-w-0">
-            <h3 className="text-sm font-semibold text-light-text">{pass.name}</h3>
-            <p className="mt-0.5 text-sm text-dark-text">{pass.description}</p>
-          </div>
-          <div className="flex flex-none items-center gap-3">
-            <div className="flex items-baseline gap-2">{price}</div>
-            <div className="min-w-[7.5rem]">{cta}</div>
-          </div>
-        </div>
-      );
-    }
 
     return (
       <div
@@ -525,14 +537,138 @@ export default function PricingClient({
       )}
 
       {showPasses && (
-        <section>
+        <section className={`mx-auto grid max-w-4xl gap-6 ${studentMonthly && activeSession ? 'lg:grid-cols-2' : 'max-w-md'}`}>
           {viewerIsTeacher && (
-            <p className="mb-4 text-center text-sm text-dark-text">
-              Session passes are for students only. Your classes stay on a teacher plan.
+            <p className="lg:col-span-2 mb-0 text-center text-sm text-dark-text">
+              Session passes and the student plan are for students only. Your classes stay on a teacher plan.
             </p>
           )}
-          <div className={passGridClass}>{sessionPasses.map((pass) => renderPassCard(pass))}</div>
-          {monthPass && <div className="mx-auto mt-6 max-w-3xl">{renderPassCard(monthPass, true)}</div>}
+
+          {studentMonthly &&
+            (() => {
+              const priceId = studentMonthly.monthPriceId;
+              const total = priceId ? totals[priceId] : undefined;
+              const isCurrent = currentTier === 'student';
+              const canBuy = Boolean(paddle) && Boolean(priceId) && !viewerIsTeacher && !isCurrent;
+              return (
+                <div
+                  className={`relative flex flex-col rounded-2xl border p-6 backdrop-blur-sm ${
+                    isCurrent
+                      ? 'border-primary bg-surface shadow-intense ring-1 ring-primary/50'
+                      : 'border-border bg-surface/80'
+                  }`}
+                >
+                  {isCurrent && (
+                    <span className="absolute -top-3 right-4 rounded-full bg-primary px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">
+                      Current plan
+                    </span>
+                  )}
+                  <h2 className="text-lg font-semibold text-light-text">{studentMonthly.name}</h2>
+                  <p className="mt-1 text-sm text-dark-text">{studentMonthly.description}</p>
+                  <div className="mt-5 flex items-baseline gap-1">
+                    {loading && priceId && total === undefined ? (
+                      <span className="inline-block h-8 w-24 animate-pulse rounded bg-border/60" />
+                    ) : (
+                      <>
+                        <span className="text-3xl font-bold tracking-tight text-light-text">
+                          {total ?? usd(studentMonthly.listUsdMonth)}
+                        </span>
+                        <span className="text-sm text-dark-text">/mo</span>
+                      </>
+                    )}
+                  </div>
+                  <p className="mt-1 text-xs text-dark-text">Recurring monthly · cancel anytime</p>
+                  <ul className="mt-6 flex-1 space-y-2.5">
+                    {studentMonthly.features.map((feature) => (
+                      <li key={feature} className="flex gap-2 text-sm text-dark-text">
+                        <CheckIcon />
+                        <span>{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  {isCurrent ? (
+                    canManageBilling ? (
+                      <a
+                        href="/api/paddle/portal"
+                        className="mt-6 block w-full rounded-lg border border-primary/40 px-4 py-2.5 text-center text-sm font-semibold text-primary transition-colors hover:bg-primary/10"
+                      >
+                        Manage subscription
+                      </a>
+                    ) : (
+                      <button
+                        type="button"
+                        disabled
+                        className="mt-6 w-full cursor-default rounded-lg border border-primary/40 px-4 py-2.5 text-sm font-semibold text-primary opacity-70"
+                      >
+                        Current plan
+                      </button>
+                    )
+                  ) : viewerIsTeacher ? (
+                    <p className="mt-6 text-center text-xs text-dark-text">Student checkout only</p>
+                  ) : canBuy ? (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        openCheckout({
+                          slug: studentMonthly.slug,
+                          priceId,
+                          interval: 'month',
+                        })
+                      }
+                      className="mt-6 w-full rounded-lg border border-primary/40 px-4 py-2.5 text-sm font-semibold text-primary transition-colors hover:bg-primary/10"
+                    >
+                      Subscribe monthly
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      disabled
+                      className="mt-6 w-full cursor-not-allowed rounded-lg border border-border px-4 py-2.5 text-sm font-semibold text-dark-text opacity-70"
+                    >
+                      {priceId ? 'Loading…' : 'Available soon'}
+                    </button>
+                  )}
+                </div>
+              );
+            })()}
+
+          {activeSession && (
+            <div>
+              {showSessionSwitcher && (
+                <div className="mb-6 flex justify-center">
+                  <div
+                    role="radiogroup"
+                    aria-label="Exam series"
+                    className="inline-flex items-center gap-1 rounded-full border border-border bg-surface/80 p-1"
+                  >
+                    {sessionPasses.map((pass) => (
+                      <button
+                        key={pass.slug}
+                        type="button"
+                        role="radio"
+                        aria-checked={activeSession.slug === pass.slug}
+                        onClick={() => {
+                          setSessionSlug(pass.slug);
+                          ph?.capture('pricing_session_changed', {
+                            session: pass.kind,
+                            paddle_env: paddleEnv,
+                          });
+                        }}
+                        className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
+                          activeSession.slug === pass.slug
+                            ? 'bg-primary text-white'
+                            : 'text-dark-text hover:text-light-text'
+                        }`}
+                      >
+                        {pass.kind === 'may_june' ? 'May/June' : 'Oct/Nov'}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {renderPassCard(activeSession)}
+            </div>
+          )}
         </section>
       )}
 
@@ -586,6 +722,8 @@ export default function PricingClient({
                 step={1}
                 value={seats}
                 onChange={(e) => setSeats(Number(e.target.value))}
+                onPointerUp={(e) => reportSeats(Number((e.target as HTMLInputElement).value))}
+                onKeyUp={(e) => reportSeats(Number((e.target as HTMLInputElement).value))}
                 aria-label="Number of students"
                 aria-valuetext={`${seatLabel} students, ${selected?.name ?? band.tier} plan, ${formatCap(selectedLimits.maxClasses)} classes`}
                 className="mt-4 h-2 w-full cursor-pointer appearance-none rounded-full bg-border accent-primary"
@@ -602,7 +740,10 @@ export default function PricingClient({
                   <button
                     key={label}
                     type="button"
-                    onClick={() => setSeats(value)}
+                    onClick={() => {
+                      setSeats(value);
+                      reportSeats(value);
+                    }}
                     className={`rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors ${
                       seats === value
                         ? 'border-primary bg-primary/15 text-primary'

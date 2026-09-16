@@ -73,7 +73,7 @@ Checkout custom data the app already sends: `{ app_user_id }`. The webhook keys 
 
 Create **sandbox + live** (6 prices).
 
-Do **not** add a new $2/mo recurring student plan. The old student sub prices stay in the table above for renewals only.
+The listed **Student** plan on `/pricing` is the existing recurring `student` PricingTier (legacy ~$1/mo IDs until a true $2/mo price exists). The 1-month **one-time** pass stays in `PASS_PRICES` so leftover purchases still grant time; it is not shown on the page.
 
 ---
 

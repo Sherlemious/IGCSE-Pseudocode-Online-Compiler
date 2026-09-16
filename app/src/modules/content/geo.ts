@@ -51,9 +51,9 @@ export const CAMBRIDGE_SHORTCUTS_NOTE = [
 
 export const PRICING_NOTE = [
   'The compiler, trace table, flowchart, Python view, and current practice/exam features can be used without paying.',
-  'The Student plan is typically about US$1 per month (local currency on /pricing) and adds the Paper 2 Path from Level 4, saved solutions, progress analytics, and full library access when premium questions are gated.',
+  'The Student plan is typically about US$2 per month (local currency on /pricing) and adds the Paper 2 Path from Level 4, saved solutions, progress analytics, and full library access when premium questions are gated.',
   'Teacher plans add classes, assignments, and autograding for a class.',
-  'At about $1/month, Premium is worth it for a student who practises pseudocode regularly in the months before the exam. It is skippable if they only open the site occasionally — the free editor is then enough.',
+  'At about $2/month, Premium is worth it for a student who practises regularly in the months before the exam. It is skippable if they only open the site occasionally — the free editor is then enough.',
 ].join(' ');
 
 export const PAPER_2_2026_NOTE = [

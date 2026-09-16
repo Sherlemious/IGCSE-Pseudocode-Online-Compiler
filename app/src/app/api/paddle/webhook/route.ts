@@ -6,6 +6,7 @@ import { getPaddleEnv } from '@/modules/billing/paddle/env';
 import { getPaddleServer } from '@/modules/billing/paddle/server';
 import { BAND_SLUGS, TIER_TO_PLAN, tierSlugForPriceId } from '@/modules/billing/paddle/plan';
 import { expiryForPurchase, isTeacherPlan, passForPriceId } from '@/modules/billing/paddle/passes';
+import { captureServerEvent } from '@/modules/telemetry/serverCapture';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -97,6 +98,11 @@ async function applySubscription(data: SubscriptionData, paddle: Paddle) {
       subscriptionId: data.id,
       customerId: data.customerId,
     });
+    await captureServerEvent(user.id, 'subscription_plan_revoked', {
+      reason: data.status,
+      paddle_env: getPaddleEnv(),
+      subscription_id: data.id,
+    });
     return;
   }
 
@@ -119,6 +125,14 @@ async function applySubscription(data: SubscriptionData, paddle: Paddle) {
     // existing Starter/Pro prices omit this so `legacyCapacity` stays put.
     ...(BAND_SLUGS.has(mapped.tier) ? { legacyCapacity: false } : {}),
   });
+  await captureServerEvent(user.id, 'subscription_plan_granted', {
+    plan: mapped.plan,
+    plan_tier: mapped.tier,
+    price_id: priceId,
+    paddle_env: getPaddleEnv(),
+    subscription_id: data.id,
+    status: data.status,
+  });
 }
 
 async function downgrade(data: SubscriptionData) {
@@ -133,6 +147,11 @@ async function downgrade(data: SubscriptionData) {
     subscriptionId: data.id,
     customerId: data.customerId,
     legacyCapacity: false,
+  });
+  await captureServerEvent(user.id, 'subscription_plan_revoked', {
+    reason: data.status,
+    paddle_env: getPaddleEnv(),
+    subscription_id: data.id,
   });
 }
 
@@ -171,6 +190,12 @@ async function applyPassPurchase(data: TransactionData, paddle: Paddle) {
       existingExpiresAt: user.planExpiresAt,
     }),
     customerId: data.customerId,
+  });
+  await captureServerEvent(user.id, 'student_pass_granted', {
+    pass_kind: pass.kind,
+    plan_tier: pass.tier,
+    paddle_env: env,
+    transaction_id: data.id,
   });
 }
 

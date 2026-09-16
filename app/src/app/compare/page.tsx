@@ -315,7 +315,7 @@ export default async function ComparePage() {
 
           <section id="pricing" className="mt-10 scroll-mt-4 space-y-3">
             <h2 className="text-lg font-semibold text-light-text border-b border-border pb-2">
-              Free vs about $1/month
+              Free vs about $2/month
             </h2>
             <p className="text-sm text-dark-text leading-relaxed">{PRICING_NOTE}</p>
             <p className="text-sm text-dark-text leading-relaxed">

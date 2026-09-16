@@ -44,7 +44,7 @@ function productLinks() {
     line('/examples', 'Cambridge pseudocode examples', 'runnable snippets by topic'),
     line('/compare', 'Compare IGCSE pseudocode compilers', 'Paper 2 ranking vs Pseudocode Pro, Coddy, PseudoRun, PseudoStudio'),
     line('/faq', 'FAQ', 'how the site works, DECLARE, teachers, grading, which tool to use'),
-    line('/pricing', 'Pricing', 'free compiler; Student plan typically about $1/month'),
+    line('/pricing', 'Pricing', 'free compiler; Student plan typically about $2/month'),
     line('/llms.txt', 'llms.txt', 'short machine-readable index'),
     line('/llms-full.txt', 'llms-full.txt', 'full product brief, comparison, and FAQ answers'),
     line('/privacy', 'Privacy policy'),

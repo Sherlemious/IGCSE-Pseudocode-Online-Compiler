@@ -9,12 +9,12 @@ export const TIER_COPY: Record<
 > = {
   student: {
     name: 'Student',
-    description: 'For students practising on their own',
+    description: 'Monthly access while you practise on your own',
     features: [
-      'Paper 2 Path (10 levels)',
-      'Unlimited saved solutions',
       'Full practice + exam library',
+      'Unlimited saved solutions',
       'Personal progress analytics',
+      'Cancel anytime — billed monthly',
     ],
   },
   starter: {
