@@ -47,7 +47,12 @@ export default function UserMenu() {
     );
   }
 
-  const badge = planBadge({ plan: session.user.plan, planTier: session.user.planTier });
+  const badge = planBadge({
+    plan: session.user.plan,
+    planTier: session.user.planTier,
+    legacyCapacity: session.user.legacyCapacity,
+    planExpiresAt: session.user.planExpiresAt ? new Date(session.user.planExpiresAt) : null,
+  });
   const isAdminUser = session.user.role === 'ADMIN';
   const hasValidImage = Boolean(session.user.image) && !avatarLoadFailed;
 

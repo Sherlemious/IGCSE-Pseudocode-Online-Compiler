@@ -57,6 +57,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           plan: user.plan,
           role: user.role,
           planTier: user.planTier,
+          legacyCapacity: user.legacyCapacity,
         };
       },
     }),
@@ -105,6 +106,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             planTier: true,
             roleChosen: true,
             createdAt: true,
+            legacyCapacity: true,
+            planExpiresAt: true,
             _count: { select: { taughtClasses: true } },
           },
         });
@@ -112,6 +115,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         token.plan = fresh.plan;
         token.role = fresh.role;
         token.planTier = fresh.planTier;
+        token.legacyCapacity = fresh.legacyCapacity;
+        token.planExpiresAt = fresh.planExpiresAt ? fresh.planExpiresAt.toISOString() : null;
         token.ownsClass = fresh._count.taughtClasses > 0;
         // Existing Google accounts predate the picker — don't trap them on
         // /onboarding. Only brand-new signups (30 min) still get the gate.
@@ -176,6 +181,9 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       session.user.plan = token.plan as string;
       session.user.role = token.role as string;
       session.user.planTier = (token.planTier as string | null | undefined) ?? null;
+      session.user.legacyCapacity = Boolean(token.legacyCapacity);
+      session.user.planExpiresAt =
+        typeof token.planExpiresAt === 'string' ? token.planExpiresAt : null;
       session.user.ownsClass = Boolean(token.ownsClass);
       session.user.roleChosen = Boolean(token.roleChosen);
       return session;

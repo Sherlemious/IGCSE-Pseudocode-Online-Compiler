@@ -8,13 +8,17 @@ import { getPaddleEnv } from '@/modules/billing/paddle/env';
 import { planBadge } from '@/modules/billing/planDisplay';
 import { SITE_URL, SITE_NAME } from '@/shared/lib/seo';
 import PaddleProvider from '@/modules/billing/PaddleProvider';
-import PricingClient, { type PricingTierView } from '@/modules/billing/PricingClient';
-import { displayTier } from '@/modules/billing/tierCopy';
+import PricingClient, {
+  type PricingTierView,
+  type StudentPassView,
+} from '@/modules/billing/PricingClient';
+import { displayTier, TIER_COPY } from '@/modules/billing/tierCopy';
+import {
+  expiryForPurchase,
+  priceIdForPass,
+  visiblePasses,
+} from '@/modules/billing/paddle/passes';
 
-// Tier rows are the same for everyone in a given Paddle env and only change on a
-// reseed, so cache them across requests instead of hitting Neon per page view.
-// The page stays dynamic (country + auth are per-request); only this read is cached.
-// Revalidate hourly, or bust immediately with revalidateTag('pricing-tiers').
 const getPricingTiers = unstable_cache(
   (env: string) =>
     prisma.pricingTier.findMany({
@@ -37,89 +41,78 @@ const getPricingTiers = unstable_cache(
 export const metadata: Metadata = {
   title: 'Pricing',
   description:
-    'Plans for the Cambridge IGCSE & A Level Pseudocode Compiler — pick Starter, Pro, or Advanced, billed monthly or yearly.',
+    'Teacher plans priced by student capacity, plus one-time May/June and Oct/Nov session passes for students.',
   alternates: { canonical: '/pricing' },
   openGraph: {
     title: 'Pricing',
     description:
-      'Plans for the Cambridge IGCSE & A Level Pseudocode Compiler — Starter, Pro, or Advanced.',
+      'Teacher plans priced by student capacity, plus one-time student session passes.',
     url: `${SITE_URL}/pricing`,
     type: 'website',
   },
 };
 
-// Rendered per request: prices are localized by the visitor's country and the
-// checkout email is prefilled from the session — both are request-specific.
 export const dynamic = 'force-dynamic';
 
-// The single student-facing tier; everything else is teacher/school.
-const STUDENT_SLUGS = new Set(['student']);
-const isStudentTier = (slug: string) => STUDENT_SLUGS.has(slug);
+const STUDENT_SLUGS = new Set(['student', 'student-month', 'student-may-june', 'student-oct-nov']);
+
+const UPCOMING_BANDS: Array<{
+  slug: string;
+  listUsdMonth: number;
+  listUsdYear: number;
+}> = [
+  { slug: 'department', listUsdMonth: 39, listUsdYear: 390 },
+  { slug: 'school', listUsdMonth: 89, listUsdYear: 890 },
+];
 
 type PricingView = 'all' | 'student' | 'teacher';
 
-export default async function PricingPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ view?: string }>;
-}) {
-  const paddleEnv = getPaddleEnv();
+function passDescription(kind: string): { description: string; features: string[] } {
+  if (kind === 'may_june') {
+    return {
+      description: 'Sit the May/June series. One payment, no auto-renew.',
+      features: [
+        'Full practice + exam library until 30 June',
+        'Unlimited saved solutions',
+        'Personal progress analytics',
+        'Does not auto-renew',
+      ],
+    };
+  }
+  if (kind === 'oct_nov') {
+    return {
+      description: 'Sit the Oct/Nov series. One payment, no auto-renew.',
+      features: [
+        'Full practice + exam library until 30 November',
+        'Unlimited saved solutions',
+        'Personal progress analytics',
+        'Does not auto-renew',
+      ],
+    };
+  }
+  return {
+    description: 'Short top-up. Stacks with time you already have.',
+    features: [
+      'One extra month of the full library',
+      'Unlimited saved solutions',
+      'Stacks onto an active pass',
+    ],
+  };
+}
 
-  const [{ view: viewParam }, hdrs, session, tiers] = await Promise.all([
-    searchParams,
-    headers(),
-    auth(),
-    getPricingTiers(paddleEnv),
-  ]);
-
-  // Vercel sets this to an ISO 3166-1 alpha-2 code. Absent off-Vercel (e.g. local
-  // dev) — leave it undefined so Paddle geo-locates by IP instead.
-  const countryCode = hdrs.get('x-vercel-ip-country') ?? undefined;
-  const customerEmail = session?.user?.email ?? undefined;
-
-  // The viewer's current subscription, read fresh from the DB so it reflects the
-  // latest webhook state. Drives the "current plan" marker + the manage-billing link.
-  const dbUser = session?.user?.id
-    ? await prisma.user.findUnique({
-        where: { id: session.user.id },
-        select: { planTier: true, paddleCustomerId: true },
-      })
-    : null;
-  const currentTier = dbUser?.planTier ?? null;
-  const canManageBilling = Boolean(dbUser?.paddleCustomerId);
-  const currentPlanLabel = currentTier ? planBadge({ planTier: currentTier }).label : null;
-
-  // Show plans relevant to who's viewing: students see the student plan, teachers
-  // the teacher/school plans, signed-out visitors everything. An explicit ?view=
-  // (from the "switch plans" link) overrides the role-derived default.
-  const role = session?.user?.role;
-  const defaultView: PricingView = !session
-    ? 'all'
-    : role === 'STUDENT'
-      ? 'student'
-      : 'teacher';
-  const view: PricingView =
-    viewParam === 'student' || viewParam === 'teacher' || viewParam === 'all'
-      ? viewParam
-      : defaultView;
-
-  const visibleTiers =
-    view === 'all'
-      ? tiers
-      : view === 'student'
-        ? tiers.filter((t) => isStudentTier(t.slug))
-        : tiers.filter((t) => !isStudentTier(t.slug));
-
-  const hasStudentTier = tiers.some((t) => isStudentTier(t.slug));
-  const hasTeacherTier = tiers.some((t) => !isStudentTier(t.slug));
-  const switchTo =
-    view === 'student' && hasTeacherTier
-      ? { href: '/pricing?view=teacher', label: 'Teaching a class? See teacher plans →' }
-      : view === 'teacher' && hasStudentTier
-        ? { href: '/pricing?view=student', label: 'Just want the student plan? →' }
-        : null;
-
-  const tierViews: PricingTierView[] = visibleTiers.map((t) => {
+function mergeTeacherTiers(
+  rows: Array<{
+    slug: string;
+    name: string;
+    description: string;
+    features: string[];
+    monthPriceId: string;
+    yearPriceId: string;
+    contactOnly: boolean;
+  }>,
+): PricingTierView[] {
+  const teacherRows = rows.filter((t) => !STUDENT_SLUGS.has(t.slug));
+  const views: PricingTierView[] = teacherRows.map((t) => {
     const copy = displayTier(t);
     return {
       slug: t.slug,
@@ -131,6 +124,122 @@ export default async function PricingPage({
       contactOnly: t.contactOnly,
     };
   });
+  const have = new Set(views.map((t) => t.slug));
+  const extras: PricingTierView[] = [];
+  for (const band of UPCOMING_BANDS) {
+    if (have.has(band.slug)) continue;
+    const copy = TIER_COPY[band.slug];
+    extras.push({
+      slug: band.slug,
+      name: copy.name,
+      description: copy.description,
+      features: copy.features,
+      monthPriceId: '',
+      yearPriceId: '',
+      contactOnly: false,
+      listUsdMonth: band.listUsdMonth,
+      listUsdYear: band.listUsdYear,
+    });
+  }
+  const anchor = views.findIndex((t) => t.slug === 'pro' || t.slug === 'classroom');
+  if (anchor >= 0) views.splice(anchor + 1, 0, ...extras);
+  else views.push(...extras);
+  return views;
+}
+
+export default async function PricingPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ view?: string }>;
+}) {
+  const paddleEnv = getPaddleEnv();
+  const now = new Date();
+
+  const [{ view: viewParam }, hdrs, session, tiers] = await Promise.all([
+    searchParams,
+    headers(),
+    auth(),
+    getPricingTiers(paddleEnv),
+  ]);
+
+  const countryCode = hdrs.get('x-vercel-ip-country') ?? undefined;
+  const customerEmail = session?.user?.email ?? undefined;
+
+  const dbUser = session?.user?.id
+    ? await prisma.user.findUnique({
+        where: { id: session.user.id },
+        select: {
+          plan: true,
+          planTier: true,
+          paddleCustomerId: true,
+          planExpiresAt: true,
+          legacyCapacity: true,
+          role: true,
+        },
+      })
+    : null;
+  const currentTier = dbUser?.planTier ?? null;
+  const canManageBilling = Boolean(dbUser?.paddleCustomerId) && dbUser?.plan !== 'STUDENT';
+  const currentPlanLabel = currentTier
+    ? planBadge({
+        plan: dbUser?.plan,
+        planTier: currentTier,
+        legacyCapacity: dbUser?.legacyCapacity,
+        planExpiresAt: dbUser?.planExpiresAt,
+      }).label
+    : null;
+  const passActiveUntil =
+    dbUser?.planExpiresAt && dbUser.planExpiresAt.getTime() > Date.now()
+      ? dbUser.planExpiresAt.toISOString()
+      : null;
+
+  const role = session?.user?.role;
+  const defaultView: PricingView = !session
+    ? 'all'
+    : role === 'STUDENT'
+      ? 'student'
+      : 'teacher';
+  const view: PricingView =
+    viewParam === 'student' || viewParam === 'teacher' || viewParam === 'all'
+      ? viewParam
+      : defaultView;
+
+  const teacherTiers = mergeTeacherTiers(tiers);
+  const showTeachers = view === 'all' || view === 'teacher';
+  const showPasses = view === 'all' || view === 'student';
+  const viewerIsTeacher = role === 'TEACHER';
+
+  const month = now.getUTCMonth();
+  const mayJuneUp = visiblePasses(now).some((p) => p.kind === 'may_june');
+  const octNovUp = visiblePasses(now).some((p) => p.kind === 'oct_nov');
+  // Academic-year default is May/June. In June–August the next sitting is Oct/Nov.
+  const featuredKind: 'may_june' | 'oct_nov' | undefined =
+    month >= 5 && month <= 7 && octNovUp ? 'oct_nov' : mayJuneUp ? 'may_june' : octNovUp ? 'oct_nov' : undefined;
+
+  const studentPassViews: StudentPassView[] = visiblePasses(now).map((pass) => {
+    const copy = passDescription(pass.kind);
+    return {
+      slug: pass.tier,
+      name: pass.label,
+      description: copy.description,
+      features: copy.features,
+      priceId: priceIdForPass(pass, paddleEnv),
+      listUsd: pass.listUsd,
+      wasUsd: pass.wasUsd,
+      discountPct: pass.discountPct,
+      coversUntil: expiryForPurchase(pass, { now }).toISOString(),
+      featured: pass.kind === featuredKind,
+    };
+  });
+
+  const switchTo =
+    view === 'student' && teacherTiers.length
+      ? { href: '/pricing?view=teacher', label: 'Teaching a class? See teacher plans →' }
+      : view === 'teacher'
+        ? { href: '/pricing?view=student', label: 'Just want a student session pass? →' }
+        : null;
+
+  const empty = (showTeachers ? teacherTiers.length === 0 : true) && (showPasses ? studentPassViews.length === 0 : true);
 
   return (
     <div className="flex-1 min-h-0 overflow-y-auto bg-background bg-dot-grid scrollbar-pretty">
@@ -142,19 +251,23 @@ export default async function PricingPage({
         }}
       />
 
-      <div className="relative mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 sm:py-12">
+      <div className="relative mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 sm:py-12">
         <div className="mb-8 text-center">
           <p className="mono-label text-primary mb-3">Plans</p>
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-light-text">
-            {view === 'student' ? 'Choose your plan' : 'Plans for teachers'}
+            {view === 'student'
+              ? 'Student session passes'
+              : view === 'teacher'
+                ? 'Plans for teachers'
+                : 'Plans for students and teachers'}
           </h1>
           <p className="mx-auto mt-3 max-w-2xl text-sm text-light-text/90 leading-relaxed">
             {view === 'student' ? (
               <>
-                The {SITE_NAME} lets students write, run, and practise Cambridge Paper 2
-                pseudocode in the browser — with instant output, trace tables, hidden tests, and timed
-                exams. The editor stays free; the Student plan adds saved solutions, analytics, and the
-                full library. See how this compares to other IGCSE compilers on the{' '}
+                Buy the exam series you&apos;re sitting — May/June (from September) or Oct/Nov
+                (from June). One payment, no subscription. The {SITE_NAME} editor stays free; a
+                pass unlocks the full practice and exam library until the series ends. See how
+                this compares on the{' '}
                 <Link href="/compare" className="text-primary hover:text-primary-hover">
                   comparison page
                 </Link>
@@ -162,17 +275,20 @@ export default async function PricingPage({
               </>
             ) : (
               <>
-                Starter is the plan most teachers pick. Create a class, share the join link, and
-                every student on your roster gets the full practice and exam library — they
-                don&apos;t need their own subscription. The editor stays free; paid teacher plans add
-                classes, assignments, and that student access.
+                Teacher plans are priced by how many students you teach in total. Create a class,
+                share the join link, and every student on your roster gets the library — they
+                don&apos;t buy a pass. If you already subscribe, your current limits stay as they
+                are.
               </>
             )}
           </p>
-          <p className="mx-auto mt-2 max-w-xl text-sm text-dark-text leading-relaxed">
-            Prices are shown in your local currency. Switch between monthly and yearly billing —
-            you&apos;ll see the exact amount before you pay.
-          </p>
+          {view !== 'student' && (
+            <p className="mx-auto mt-2 max-w-xl text-sm text-dark-text leading-relaxed">
+              Teacher prices are shown in your local currency. Switch between monthly and yearly
+              billing — you&apos;ll see the exact amount before you pay. Yearly is about two
+              months free.
+            </p>
+          )}
         </div>
 
         {switchTo && (
@@ -186,22 +302,27 @@ export default async function PricingPage({
           </div>
         )}
 
-        {tierViews.length === 0 ? (
+        {empty ? (
           <div className="rounded-2xl border border-border bg-surface/80 p-8 text-center text-sm text-dark-text">
             Pricing is being finalized — please check back soon.
           </div>
         ) : (
           <PaddleProvider>
             <PricingClient
-              tiers={tierViews}
+              teacherTiers={teacherTiers}
+              studentPasses={studentPassViews}
+              showTeachers={showTeachers}
+              showPasses={showPasses}
+              viewerIsTeacher={viewerIsTeacher}
               countryCode={countryCode}
               customerEmail={customerEmail}
               appUserId={session?.user?.id}
               currentTier={currentTier}
               currentPlanLabel={currentPlanLabel}
+              passActiveUntil={passActiveUntil}
               canManageBilling={canManageBilling}
               paddleEnv={paddleEnv}
-              featuredSlug={view === 'student' ? 'student' : 'starter'}
+              featuredSlug="pro"
             />
           </PaddleProvider>
         )}

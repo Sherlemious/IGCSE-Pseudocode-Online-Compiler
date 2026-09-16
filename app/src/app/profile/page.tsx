@@ -30,12 +30,28 @@ export default async function ProfilePage() {
 
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
-    select: { id: true, name: true, email: true, image: true, plan: true, planTier: true, role: true, createdAt: true },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      image: true,
+      plan: true,
+      planTier: true,
+      role: true,
+      createdAt: true,
+      legacyCapacity: true,
+      planExpiresAt: true,
+    },
   });
   if (!user) redirect('/auth/signin');
 
   const isAdminUser = user.role === 'ADMIN';
-  const badge = planBadge({ plan: user.plan, planTier: user.planTier });
+  const badge = planBadge({
+    plan: user.plan,
+    planTier: user.planTier,
+    legacyCapacity: user.legacyCapacity,
+    planExpiresAt: user.planExpiresAt,
+  });
   const roleKey = user.role as keyof typeof ROLE_CONFIG;
   const roleConf = ROLE_CONFIG[roleKey] ?? ROLE_CONFIG.STUDENT;
   const RoleIcon = roleConf.Icon;

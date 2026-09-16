@@ -12,10 +12,10 @@ datasource db {
 
 enum Plan {
   FREE
-  STUDENT // paid student plan (display) — no teacher-class entitlement
-  STARTER // teacher tier: up to 3 classes / 30 students per class
-  PRO // teacher tier: unlimited classes + students
-  SCHOOL // department/school tier: unlimited
+  STUDENT // paid student pass/sub — no teacher-class entitlement
+  STARTER // teacher: new = 30 students total; legacyCapacity keeps 3×30 per class
+  PRO // teacher: new = Classroom (90); legacyCapacity keeps unlimited
+  SCHOOL // teacher: School (750) or Campus (unlimited / legacy)
 }
 
 enum Role {
@@ -42,8 +42,12 @@ model User {
   // user to their Paddle records so webhook events can find them.
   paddleCustomerId     String?   // ctm_…
   paddleSubscriptionId String?   // sub_… (the current/last subscription)
-  planTier             String?   // marketing tier slug for display: student|starter|pro|advanced
+  planTier             String?   // marketing slug: student|starter|pro|classroom|department|school|campus|student-*
   planUpdatedAt        DateTime? // last time the billing webhook changed plan
+  planExpiresAt        DateTime? // student session/month passes expire; null = no expiry (subs / free)
+  // Paid teachers at cutover keep pre-band limits (Starter 3×30/class, Pro unlimited).
+  // New checkouts of the capacity bands get false. Never set for student passes.
+  legacyCapacity       Boolean   @default(false)
 
   accounts     Account[]
   sessions     Session[]

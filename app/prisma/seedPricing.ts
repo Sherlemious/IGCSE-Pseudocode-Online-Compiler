@@ -14,8 +14,10 @@
  *
  * Amounts/currency are NOT stored here — Paddle is the source of truth for money
  * (the /pricing page shows Paddle's formattedTotals). This only holds the display
- * copy and the price IDs to preview + check out. Contact-only tiers (e.g. Advanced)
- * have no self-serve price, so their price IDs are intentionally empty.
+ * copy and the price IDs to preview + check out. Contact-only tiers (e.g. Campus,
+ * formerly Advanced) have no self-serve price, so their price IDs are intentionally empty.
+ * Department and School have Paddle IDs in both envs. Seed sandbox anytime;
+ * seed production only at deploy so live main does not list those tiers early.
  */
 import 'dotenv/config';
 import { PrismaClient } from '@prisma/client';
@@ -41,7 +43,9 @@ const COPY = {
   student: { ...TIER_COPY.student, sortOrder: 0, contactOnly: false },
   starter: { ...TIER_COPY.starter, sortOrder: 1, contactOnly: false },
   pro: { ...TIER_COPY.pro, sortOrder: 2, contactOnly: false },
-  advanced: { ...TIER_COPY.advanced, sortOrder: 3, contactOnly: true },
+  department: { ...TIER_COPY.department, sortOrder: 3, contactOnly: false },
+  school: { ...TIER_COPY.school, sortOrder: 4, contactOnly: false },
+  advanced: { ...TIER_COPY.advanced, sortOrder: 5, contactOnly: true },
 } as const;
 
 const tier = (slug: keyof typeof COPY, monthPriceId: string, yearPriceId: string): TierSeed => ({
@@ -57,6 +61,9 @@ const SANDBOX_TIERS: TierSeed[] = [
   tier('student', 'pri_01m1j4kxapd6a1dgfaw5tdjpgt', 'pri_01m1j4kxfevc4yw6m7664cck4h'),
   tier('starter', 'pri_01m1j4kxtxewyftebqsvryp50k', 'pri_01m1j4kxzn6cp0ywqr2m7qc73s'),
   tier('pro', 'pri_01m1j4kyafpw7v0r985s1tmhzf', 'pri_01m1j4kyezssa9erzpzwe9nc88'),
+  // Created 2026-09-16 via the paddle-sandbox MCP (see docs/paddle-catalog.md).
+  tier('department', 'pri_01m2nqdavv70rmdvhp3dps1xfx', 'pri_01m2nqdb01nqnxaa9bpvf4qgx5'),
+  tier('school', 'pri_01m2nqdb9a319kcwny4pf01m2d', 'pri_01m2nqdbd4dvbew96tnbjmt8yx'),
   tier('advanced', '', ''), // contact-only
 ];
 
@@ -68,6 +75,9 @@ const PRODUCTION_TIERS: TierSeed[] = [
   tier('student', 'pri_01m1mbfxkdvv0esey8wcaktkxr', 'pri_01m1mbfxqpt6018eessnr3mnhw'),
   tier('starter', 'pri_01m1mbfxw6enq2faxm3wnkc3de', 'pri_01m1mbfy1hm2fndbp227dqvk02'),
   tier('pro', 'pri_01m1mbfy5rmde0sb9eq8emg292', 'pri_01m1mbfy9x1vkj2h7gnecdrtym'),
+  // Created 2026-09-16 via the paddle-live MCP, mirroring the sandbox catalog.
+  tier('department', 'pri_01m2nqt61vncea5t0g6qe80n28', 'pri_01m2nqt66336h29kpb3pafv90q'),
+  tier('school', 'pri_01m2nqt6krpwdzxep16epjahdm', 'pri_01m2nqt6qw9xx9trwqcykedb6h'),
   tier('advanced', '', ''), // contact-only
 ];
 // ──────────────────────────────────────────────────────────────────────────────

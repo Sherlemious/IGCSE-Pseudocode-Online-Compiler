@@ -3,7 +3,8 @@ import Link from 'next/link';
 import { ClipboardList, Clock, ListChecks } from 'lucide-react';
 import { auth } from '@/modules/auth/auth';
 import { authHref } from '@/modules/auth/callback';
-import { limitsFor, resolveTier } from '@/modules/billing/entitlements';
+import { isAtStudentCap, limitsForUser } from '@/modules/billing/entitlements';
+import { prisma } from '@/shared/db';
 import { getAssignmentInvitation } from '@/modules/classes/service';
 import { assignmentStudentPath } from '@/modules/classes/assignmentLinks';
 import AssignmentLinkTracker from '@/modules/classes/AssignmentLinkTracker';
@@ -58,7 +59,14 @@ export default async function AssignmentLandingPage({ params, searchParams }: {
   const cls = assignment.class;
   const isOwner = cls.ownerId === session.user.id;
   const isMember = cls.memberships.length > 0;
-  const full = cls._count.memberships >= limitsFor(resolveTier(cls.owner)).maxStudentsPerClass;
+  const studentsAcrossClasses = await prisma.classMembership.count({
+    where: { class: { ownerId: cls.ownerId, archived: false } },
+  });
+  const full = isAtStudentCap({
+    limits: limitsForUser(cls.owner),
+    studentsInClass: cls._count.memberships,
+    studentsAcrossClasses,
+  });
   const latest = assignment.attempts[0];
   const context = { assignmentId, classId: assignment.classId };
   return <Shell>

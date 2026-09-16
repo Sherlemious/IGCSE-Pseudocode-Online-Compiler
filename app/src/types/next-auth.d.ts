@@ -11,6 +11,8 @@ declare module 'next-auth' {
       plan: string; // 'FREE' | 'STUDENT' | 'STARTER' | 'PRO' | 'SCHOOL'
       role: string; // 'STUDENT' | 'TEACHER' | 'ADMIN'
       planTier?: string | null; // marketing tier slug for display, set by the billing webhook
+      legacyCapacity?: boolean;
+      planExpiresAt?: string | null;
       ownsClass?: boolean;
       roleChosen?: boolean;
     };
@@ -20,6 +22,7 @@ declare module 'next-auth' {
     plan: string;
     role: string;
     planTier?: string | null;
+    legacyCapacity?: boolean;
   }
 }
 
@@ -29,6 +32,8 @@ declare module 'next-auth/jwt' {
     plan: string;
     role: string;
     planTier?: string | null;
+    legacyCapacity?: boolean;
+    planExpiresAt?: string | null;
     ownsClass?: boolean;
     roleChosen?: boolean;
     refreshedAt?: number; // epoch ms of the last DB re-read of plan/role/planTier
