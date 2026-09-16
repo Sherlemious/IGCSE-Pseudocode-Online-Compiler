@@ -11,6 +11,7 @@ const productModules = [
   'docs',
   'exams',
   'feedback',
+  'learn',
   'onboarding',
   'practice',
   'progress',

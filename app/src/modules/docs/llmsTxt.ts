@@ -37,6 +37,7 @@ function productLinks() {
   return [
     '## Pages',
     line('/', 'Online compiler', 'write and run Cambridge pseudocode'),
+    line('/learn', 'Paper 2 Path', 'sequenced IGCSE pseudocode levels — write, run, check'),
     line('/practice', 'Practice questions', 'past-paper style tasks with autograding and hidden tests'),
     line('/exam', 'Timed exam simulator', 'Paper 2-style timed papers'),
     line('/docs', 'Cambridge pseudocode guide', 'IGCSE 0478 and A Level 9618 syntax — DECLARE, CONSTANT, DIV, ROUND'),

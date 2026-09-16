@@ -14,6 +14,7 @@ import {
   GraduationCap,
   Clock,
   ArrowLeft,
+  Route,
   Search,
   Bug,
   Tag,
@@ -50,6 +51,7 @@ const Header: React.FC = () => {
     [ph, pathname],
   );
   const isDocs = pathname === '/docs' || pathname.startsWith('/docs/');
+  const isLearn = pathname === '/learn' || pathname.startsWith('/learn/');
   const isPractice = pathname === '/practice' || pathname.startsWith('/practice/');
   const isExam =
     pathname === '/exam' ||
@@ -60,7 +62,17 @@ const Header: React.FC = () => {
   const isClasses = pathname === '/classes' || pathname.startsWith('/classes/');
   const isCompilerPage = pathname === '/';
   const isPricing = pathname === '/pricing';
-  const activeNavIndex = isDocs ? 0 : isPractice ? 1 : isExam ? 2 : showClasses && isClasses ? 3 : -1;
+  const activeNavIndex = isDocs
+    ? 0
+    : isLearn
+      ? 1
+      : isPractice
+        ? 2
+        : isExam
+          ? 3
+          : showClasses && isClasses
+            ? 4
+            : -1;
 
   // Text-only nav links with a shared underline that glides between routes.
   const navLinkClass = (active: boolean) =>
@@ -93,18 +105,18 @@ const Header: React.FC = () => {
                   aria-hidden="true"
                 />
               )}
-              <span className="text-sm font-bold tracking-tight text-header-text whitespace-nowrap">
+              <span className="text-sm font-bold tracking-tight text-header-text whitespace-nowrap truncate max-w-[42vw] sm:max-w-none">
                 Pseudocode <span className="font-normal text-header-text/60">Compiler</span>
               </span>
             </Link>
-            <span className="hidden md:inline text-header-text/20 select-none" aria-hidden>
+            <span className="hidden lg:inline text-header-text/20 select-none" aria-hidden>
               ·
             </span>
             <a
               href={PORTFOLIO_URL}
               target="_blank"
               rel="noopener noreferrer"
-              className="hidden md:inline text-[11px] text-header-text/40 hover:text-primary transition-colors whitespace-nowrap"
+              className="hidden lg:inline text-[11px] text-header-text/40 hover:text-primary transition-colors whitespace-nowrap"
               title="Made by Sherlemious — view portfolio"
             >
               by Sherlemious
@@ -112,8 +124,8 @@ const Header: React.FC = () => {
           </div>
 
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center gap-1 text-xs">
-            <div className={`relative grid ${showClasses ? 'w-60 grid-cols-4' : 'w-45 grid-cols-3'}`}>
+          <nav className="hidden lg:flex items-center gap-1 text-xs">
+            <div className={`relative grid ${showClasses ? 'w-80 grid-cols-5' : 'w-64 grid-cols-4'}`}>
               <Link
                 href="/docs"
                 data-tour="docs-link"
@@ -122,6 +134,15 @@ const Header: React.FC = () => {
                 aria-current={isDocs ? 'page' : undefined}
               >
                 Docs
+              </Link>
+              <Link
+                href="/learn"
+                data-tour="learn-link"
+                onClick={() => trackNav('learn')}
+                className={navLinkClass(isLearn)}
+                aria-current={isLearn ? 'page' : undefined}
+              >
+                Learn
               </Link>
               <Link
                 href="/practice"
@@ -153,7 +174,7 @@ const Header: React.FC = () => {
               <span
                 aria-hidden="true"
                 className={`pointer-events-none absolute bottom-0 left-0 transition-[transform,opacity] duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] motion-reduce:transition-none ${
-                  showClasses ? 'w-1/4' : 'w-1/3'
+                  showClasses ? 'w-1/5' : 'w-1/4'
                 } ${
                   activeNavIndex === 1
                     ? 'translate-x-full'
@@ -161,7 +182,9 @@ const Header: React.FC = () => {
                       ? 'translate-x-[200%]'
                       : activeNavIndex === 3
                         ? 'translate-x-[300%]'
-                        : 'translate-x-0'
+                        : activeNavIndex === 4
+                          ? 'translate-x-[400%]'
+                          : 'translate-x-0'
                 } ${activeNavIndex === -1 ? 'opacity-0' : 'opacity-100'}`}
               >
                 <span className="mx-1.5 block h-0.5 rounded-full bg-primary shadow-[0_0_6px_var(--color-primary)]" />
@@ -197,7 +220,7 @@ const Header: React.FC = () => {
           </nav>
 
           {/* Mobile */}
-          <div className="md:hidden flex items-center gap-1">
+          <div className="lg:hidden flex items-center gap-1">
             <button
               onClick={openPalette}
               className="p-1 rounded hover:bg-white/10 transition duration-200 text-header-text/80"
@@ -219,7 +242,7 @@ const Header: React.FC = () => {
 
         {/* Mobile Navigation */}
         {isMenuOpen && (
-          <nav className="md:hidden mt-2 space-y-0.5 pb-2 text-sm border-t border-header-text/20 pt-2">
+          <nav className="lg:hidden mt-2 space-y-0.5 pb-2 text-sm border-t border-header-text/20 pt-2">
             <Link
               href="/docs"
               className={`flex items-center gap-2 hover:text-header-text transition duration-200 py-1.5 px-1 rounded hover:bg-white/10 ${
@@ -229,6 +252,16 @@ const Header: React.FC = () => {
             >
               <BookOpen size={14} />
               Docs
+            </Link>
+            <Link
+              href="/learn"
+              className={`flex items-center gap-2 hover:text-header-text transition duration-200 py-1.5 px-1 rounded hover:bg-white/10 ${
+                isLearn ? 'text-primary' : 'text-header-text/70'
+              }`}
+              onClick={() => { setIsMenuOpen(false); trackNav('learn'); }}
+            >
+              <Route size={14} />
+              Learn
             </Link>
             <Link
               href="/practice"

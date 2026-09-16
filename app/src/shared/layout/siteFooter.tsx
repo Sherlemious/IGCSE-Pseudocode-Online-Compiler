@@ -30,7 +30,7 @@ export default function SiteFooter() {
     <footer className="shrink-0 h-6 bg-header-bg border-t border-border flex items-center justify-center select-none">
       <nav
         aria-label="Legal and contact"
-        className="flex items-center gap-3 text-[11px] text-header-text/40 font-mono"
+        className="flex items-center gap-2 sm:gap-3 text-[11px] text-header-text/40 font-mono px-2 overflow-x-auto max-w-full"
       >
         <Link href="/terms" onClick={() => trackNav('terms')} className="hover:text-primary transition-colors">
           Terms
