@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { headers } from 'next/headers';
 import { unstable_cache } from 'next/cache';
+import { GraduationCap, User } from 'lucide-react';
 import { prisma } from '@/shared/db';
 import { auth } from '@/modules/auth/auth';
 import { getPaddleEnv } from '@/modules/billing/paddle/env';
@@ -41,7 +42,7 @@ const getPricingTiers = unstable_cache(
 export const metadata: Metadata = {
   title: 'Pricing',
   description:
-    'Teacher plans priced by student capacity, plus one-time May/June and Oct/Nov session passes for students.',
+    'Student session passes for the exam series you are sitting, and teacher plans priced by how many students you teach.',
   alternates: { canonical: '/pricing' },
   openGraph: {
     title: 'Pricing',
@@ -56,6 +57,8 @@ export const dynamic = 'force-dynamic';
 
 const STUDENT_SLUGS = new Set(['student', 'student-month', 'student-may-june', 'student-oct-nov']);
 
+type PricingView = 'choose' | 'student' | 'teacher';
+
 const UPCOMING_BANDS: Array<{
   slug: string;
   listUsdMonth: number;
@@ -65,7 +68,51 @@ const UPCOMING_BANDS: Array<{
   { slug: 'school', listUsdMonth: 89, listUsdYear: 890 },
 ];
 
-type PricingView = 'all' | 'student' | 'teacher';
+function studentBlurb(passes: StudentPassView[]): string {
+  const hasMay = passes.some((p) => p.slug === 'student-may-june');
+  const hasOct = passes.some((p) => p.slug === 'student-oct-nov');
+  if (hasMay && hasOct) {
+    return 'Buy the series you are sitting — May/June or Oct/Nov. One payment, no subscription.';
+  }
+  if (hasMay) {
+    return 'The May/June session pass is on sale through May. One payment, no subscription.';
+  }
+  if (hasOct) {
+    return 'The Oct/Nov session pass is on sale through November. One payment, no subscription.';
+  }
+  return 'A one-month top-up while the next series pass is off-sale.';
+}
+
+function AudiencePicker() {
+  return (
+    <div className="mx-auto grid w-full max-w-2xl gap-4 sm:grid-cols-2">
+      <Link
+        href="/pricing?view=student"
+        className="group flex flex-col rounded-2xl border border-border bg-surface/80 p-6 text-left transition-colors hover:border-primary/50 hover:bg-primary/5"
+      >
+        <span className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-background text-dark-text group-hover:bg-primary/20 group-hover:text-primary">
+          <User size={18} />
+        </span>
+        <span className="mt-4 text-lg font-semibold text-light-text">I&apos;m a student</span>
+        <span className="mt-1 text-sm leading-relaxed text-dark-text">
+          Session passes for the exam series you&apos;re sitting. One payment, no auto-renew.
+        </span>
+      </Link>
+      <Link
+        href="/pricing?view=teacher"
+        className="group flex flex-col rounded-2xl border border-border bg-surface/80 p-6 text-left transition-colors hover:border-primary/50 hover:bg-primary/5"
+      >
+        <span className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-background text-dark-text group-hover:bg-primary/20 group-hover:text-primary">
+          <GraduationCap size={18} />
+        </span>
+        <span className="mt-4 text-lg font-semibold text-light-text">I&apos;m a teacher</span>
+        <span className="mt-1 text-sm leading-relaxed text-dark-text">
+          Starter for a small class, or pick how many students you teach and we&apos;ll show the plan.
+        </span>
+      </Link>
+    </div>
+  );
+}
 
 function passDescription(kind: string): { description: string; features: string[] } {
   if (kind === 'may_june') {
@@ -189,24 +236,22 @@ export default async function PricingPage({
       }).label
     : null;
   const passActiveUntil =
-    dbUser?.planExpiresAt && dbUser.planExpiresAt.getTime() > Date.now()
+    dbUser?.planExpiresAt && dbUser.planExpiresAt.getTime() > now.getTime()
       ? dbUser.planExpiresAt.toISOString()
       : null;
 
   const role = session?.user?.role;
   const defaultView: PricingView = !session
-    ? 'all'
+    ? 'choose'
     : role === 'STUDENT'
       ? 'student'
       : 'teacher';
   const view: PricingView =
-    viewParam === 'student' || viewParam === 'teacher' || viewParam === 'all'
-      ? viewParam
-      : defaultView;
+    viewParam === 'student' || viewParam === 'teacher' ? viewParam : defaultView;
 
   const teacherTiers = mergeTeacherTiers(tiers);
-  const showTeachers = view === 'all' || view === 'teacher';
-  const showPasses = view === 'all' || view === 'student';
+  const showTeachers = view === 'teacher';
+  const showPasses = view === 'student';
   const viewerIsTeacher = role === 'TEACHER';
 
   const month = now.getUTCMonth();
@@ -255,19 +300,19 @@ export default async function PricingPage({
         <div className="mb-8 text-center">
           <p className="mono-label text-primary mb-3">Plans</p>
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-light-text">
-            {view === 'student'
-              ? 'Student session passes'
-              : view === 'teacher'
-                ? 'Plans for teachers'
-                : 'Plans for students and teachers'}
+            {view === 'choose'
+              ? 'Who are you buying for?'
+              : view === 'student'
+                ? 'Student session passes'
+                : 'Plans for teachers'}
           </h1>
           <p className="mx-auto mt-3 max-w-2xl text-sm text-light-text/90 leading-relaxed">
-            {view === 'student' ? (
+            {view === 'choose' ? (
+              'Pick student or teacher and we will show the right prices — not both at once.'
+            ) : view === 'student' ? (
               <>
-                Buy the exam series you&apos;re sitting — May/June (from September) or Oct/Nov
-                (from June). One payment, no subscription. The {SITE_NAME} editor stays free; a
-                pass unlocks the full practice and exam library until the series ends. See how
-                this compares on the{' '}
+                {studentBlurb(studentPassViews)} The {SITE_NAME} editor stays free; a pass unlocks
+                the practice and exam library until the series ends. See the{' '}
                 <Link href="/compare" className="text-primary hover:text-primary-hover">
                   comparison page
                 </Link>
@@ -275,18 +320,15 @@ export default async function PricingPage({
               </>
             ) : (
               <>
-                Teacher plans are priced by how many students you teach in total. Create a class,
-                share the join link, and every student on your roster gets the library — they
-                don&apos;t buy a pass. If you already subscribe, your current limits stay as they
-                are.
+                Start with Starter, or tell us how many students you teach — we&apos;ll show the
+                matching plan and how many classes you get. Students on your roster get the
+                library; they don&apos;t buy a pass.
               </>
             )}
           </p>
-          {view !== 'student' && (
+          {view === 'teacher' && (
             <p className="mx-auto mt-2 max-w-xl text-sm text-dark-text leading-relaxed">
-              Teacher prices are shown in your local currency. Switch between monthly and yearly
-              billing — you&apos;ll see the exact amount before you pay. Yearly is about two
-              months free.
+              Prices are shown in your local currency. Yearly is about two months free.
             </p>
           )}
         </div>
@@ -299,18 +341,31 @@ export default async function PricingPage({
             >
               {switchTo.label}
             </Link>
+            {!session && (
+              <>
+                <span className="mx-2 text-dark-text/50">·</span>
+                <Link
+                  href="/pricing"
+                  className="inline-flex items-center gap-1 text-sm font-medium text-dark-text hover:text-light-text transition-colors"
+                >
+                  Choose again
+                </Link>
+              </>
+            )}
           </div>
         )}
 
-        {empty ? (
+        {view === 'choose' ? (
+          <AudiencePicker />
+        ) : empty ? (
           <div className="rounded-2xl border border-border bg-surface/80 p-8 text-center text-sm text-dark-text">
             Pricing is being finalized — please check back soon.
           </div>
         ) : (
           <PaddleProvider>
             <PricingClient
-              teacherTiers={teacherTiers}
-              studentPasses={studentPassViews}
+              teacherTiers={showTeachers ? teacherTiers : []}
+              studentPasses={showPasses ? studentPassViews : []}
               showTeachers={showTeachers}
               showPasses={showPasses}
               viewerIsTeacher={viewerIsTeacher}
@@ -322,7 +377,6 @@ export default async function PricingPage({
               passActiveUntil={passActiveUntil}
               canManageBilling={canManageBilling}
               paddleEnv={paddleEnv}
-              featuredSlug="pro"
             />
           </PaddleProvider>
         )}

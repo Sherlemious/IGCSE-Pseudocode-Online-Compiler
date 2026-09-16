@@ -10,8 +10,10 @@ import {
   hasPremiumAccess,
   isAtStudentCap,
   isPlanActive,
+  teacherBandForStudents,
   type PlanHolder,
 } from './entitlements';
+import { TEACHER_SLIDER_MIN } from './limits';
 
 const IN_FUTURE = new Date(Date.now() + 60_000);
 const IN_PAST = new Date(Date.now() - 60_000);
@@ -99,6 +101,17 @@ describe('limits', () => {
     expect(LIMITS.department.maxStudentsTotal).toBe(250);
     expect(LIMITS.school.maxStudentsTotal).toBe(750);
     expect(LIMITS.campus.maxStudentsTotal).toBe(Infinity);
+  });
+
+  it('maps a student-count onto the matching paid band', () => {
+    expect(teacherBandForStudents(30).tier).toBe('starter');
+    expect(teacherBandForStudents(TEACHER_SLIDER_MIN).tier).toBe('classroom');
+    expect(teacherBandForStudents(90).tier).toBe('classroom');
+    expect(teacherBandForStudents(91).tier).toBe('department');
+    expect(teacherBandForStudents(250).tier).toBe('department');
+    expect(teacherBandForStudents(251).tier).toBe('school');
+    expect(teacherBandForStudents(750).tier).toBe('school');
+    expect(teacherBandForStudents(751).tier).toBe('campus');
   });
 
   it('grandfathered Starter keeps 3 classes × 30 per class with no total cap', () => {
