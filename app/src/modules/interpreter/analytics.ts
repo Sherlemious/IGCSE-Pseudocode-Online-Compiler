@@ -8,7 +8,7 @@
 import { captureRaw } from './telemetry';
 
 /** Which surface the interpreter is running inside. */
-export type FeatureContext = 'playground' | 'practice' | 'exam' | 'docs';
+export type FeatureContext = 'playground' | 'practice' | 'exam' | 'docs' | 'learn';
 
 /** Passed to useInterpreter so every event knows where it happened. */
 export interface RunContext {
