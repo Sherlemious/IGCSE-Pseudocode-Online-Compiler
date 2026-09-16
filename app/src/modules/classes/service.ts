@@ -1,7 +1,12 @@
 import { Prisma } from '@prisma/client';
 import { prisma } from '@/shared/db';
 import { normalizeShareCode } from '@/shared/lib/shareCode';
-import { getPremiumAccess, limitsFor, resolveTier } from '@/modules/billing/entitlements';
+import {
+  getPremiumAccess,
+  isAtStudentCap,
+  limitsForUser,
+  OWNER_PLAN_SELECT,
+} from '@/modules/billing/entitlements';
 import { PREMIUM_GATING_ENABLED } from '@/modules/billing/featureFlags';
 
 export class ClassRequestError extends Error {
@@ -22,7 +27,10 @@ export function joinClass(userId: string, code: string, assignmentId?: string) {
     if (!locked.length) throw new ClassRequestError(404, 'CLASS_NOT_FOUND', 'No class found for that code.');
     const cls = await tx.class.findUniqueOrThrow({
       where: { id: locked[0].id },
-      select: { id: true, name: true, ownerId: true, owner: { select: { plan: true, trialEndsAt: true } } },
+      select: {
+        id: true, name: true, ownerId: true,
+        owner: { select: OWNER_PLAN_SELECT },
+      },
     });
     if (assignmentId) {
       const assignment = await tx.assignment.findFirst({
@@ -38,8 +46,17 @@ export function joinClass(userId: string, code: string, assignmentId?: string) {
       where: { classId_userId: { classId: cls.id, userId } }, select: { id: true },
     });
     if (member) return { classId: cls.id, name: cls.name, alreadyMember: true };
-    const count = await tx.classMembership.count({ where: { classId: cls.id } });
-    if (count >= limitsFor(resolveTier(cls.owner)).maxStudentsPerClass) {
+    const [studentsInClass, studentsAcrossClasses] = await Promise.all([
+      tx.classMembership.count({ where: { classId: cls.id } }),
+      tx.classMembership.count({ where: { class: { ownerId: cls.ownerId, archived: false } } }),
+    ]);
+    if (
+      isAtStudentCap({
+        limits: limitsForUser(cls.owner),
+        studentsInClass,
+        studentsAcrossClasses,
+      })
+    ) {
       throw new ClassRequestError(403, 'LIMIT_STUDENTS', 'This class is full. Ask your teacher to make room.');
     }
     await tx.classMembership.create({ data: { classId: cls.id, userId } });
@@ -102,7 +119,7 @@ export function getAssignmentInvitation(userId: string, code: string, assignment
       id: true, classId: true, dueDate: true,
       class: { select: {
         name: true, ownerId: true,
-        owner: { select: { plan: true, trialEndsAt: true } },
+        owner: { select: OWNER_PLAN_SELECT },
         _count: { select: { memberships: true } },
         memberships: { where: { userId }, select: { id: true } },
       } },

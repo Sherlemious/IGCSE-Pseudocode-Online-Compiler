@@ -32,7 +32,9 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     data: {
       plan: newPlan as Plan,
       planUpdatedAt: new Date(),
-      ...(clearBilling ? { planTier: null, trialEndsAt: null } : {}),
+      ...(clearBilling
+        ? { planTier: null, trialEndsAt: null, planExpiresAt: null, legacyCapacity: false }
+        : {}),
     },
     select: { id: true, plan: true, planTier: true, trialEndsAt: true, planUpdatedAt: true },
   });

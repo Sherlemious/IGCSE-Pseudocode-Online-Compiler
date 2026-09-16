@@ -3,21 +3,26 @@ import { prisma } from '@/shared/db';
 
 /**
  * Marketing tier slug → the entitlement `Plan` enum it grants + the display slug.
- * Single source of truth for what a purchased tier unlocks. Keep in sync with the
- * PricingTier rows (seedPricing.ts) and modules/billing/entitlements.ts.
+ * Keep in sync with PricingTier rows, entitlements.ts, and paddle/passes.ts.
  *
- * Each tier now maps to a distinct Plan value, so the entitlement system can tell
- * Starter (3 classes / 30 students) from Pro (unlimited). `planTier` still carries
- * the exact label for display, but `plan` alone is now unambiguous.
+ * The live $15 price keeps slug `pro` so existing subscriptions keep resolving.
+ * New buyers of that price get Classroom limits (`legacyCapacity = false`);
+ * teachers flagged at cutover keep unlimited Pro.
  */
 export const TIER_TO_PLAN: Record<string, { plan: Plan; tier: string }> = {
   student: { plan: 'STUDENT', tier: 'student' },
   starter: { plan: 'STARTER', tier: 'starter' },
   pro: { plan: 'PRO', tier: 'pro' },
-  advanced: { plan: 'SCHOOL', tier: 'advanced' },
+  classroom: { plan: 'PRO', tier: 'classroom' },
+  department: { plan: 'PRO', tier: 'department' },
+  school: { plan: 'SCHOOL', tier: 'school' },
+  advanced: { plan: 'SCHOOL', tier: 'campus' },
+  campus: { plan: 'SCHOOL', tier: 'campus' },
 };
 
-/** Resolve a Paddle price ID to a tier slug via the PricingTier catalog for this env. */
+/** Slugs that are the new capacity bands — buying one clears grandfathered limits. */
+export const BAND_SLUGS = new Set(['classroom', 'department', 'school', 'campus']);
+
 export async function tierSlugForPriceId(
   priceId: string,
   paddleEnv: string,

@@ -4,13 +4,12 @@ import type { Plan } from '@prisma/client';
 import { prisma } from '@/shared/db';
 import { getPaddleEnv } from '@/modules/billing/paddle/env';
 import { getPaddleServer } from '@/modules/billing/paddle/server';
-import { TIER_TO_PLAN, tierSlugForPriceId } from '@/modules/billing/paddle/plan';
+import { BAND_SLUGS, TIER_TO_PLAN, tierSlugForPriceId } from '@/modules/billing/paddle/plan';
+import { expiryForPurchase, isTeacherPlan, passForPriceId } from '@/modules/billing/paddle/passes';
 
-// The Paddle SDK verifies signatures with Node crypto, so this can't run on edge.
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-// Minimal shape we read off a subscription event (the SDK types are richer).
 interface SubscriptionData {
   id: string;
   status: string;
@@ -19,7 +18,14 @@ interface SubscriptionData {
   items?: Array<{ price?: { id?: string | null } | null }>;
 }
 
-// Statuses that should grant entitlement. Anything else drops the user to Free.
+interface TransactionData {
+  id: string;
+  status: string;
+  customerId: string;
+  customData?: Record<string, unknown> | null;
+  items?: Array<{ price?: { id?: string | null } | null }>;
+}
+
 const ENTITLED_STATUSES = new Set(['active', 'trialing']);
 
 export async function POST(req: Request) {
@@ -36,7 +42,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Missing signature.' }, { status: 400 });
   }
 
-  // Signature verification is the security gate — a forged body fails here.
   let event;
   try {
     event = await paddle.webhooks.unmarshal(raw, secret, signature);
@@ -62,13 +67,13 @@ export async function POST(req: Request) {
       case EventName.SubscriptionPastDue:
         await downgrade(event.data as unknown as SubscriptionData);
         break;
+      case EventName.TransactionCompleted:
+        await applyPassPurchase(event.data as unknown as TransactionData, paddle);
+        break;
       default:
-        // Acknowledged and ignored — we only act on subscription lifecycle events.
         break;
     }
   } catch (err) {
-    // The signature was valid but our handling failed (e.g. a transient DB error).
-    // Return 500 so Paddle retries the delivery.
     console.error(`[paddle/webhook] handler error for ${event.eventType}`, err);
     return NextResponse.json({ error: 'Handler error.' }, { status: 500 });
   }
@@ -76,19 +81,22 @@ export async function POST(req: Request) {
   return NextResponse.json({ received: true });
 }
 
-/** Grant/refresh entitlement from an active subscription. */
 async function applySubscription(data: SubscriptionData, paddle: Paddle) {
   const user = await resolveUser(data, paddle);
   if (!user) {
     console.warn(
       `[paddle/webhook] no app user for subscription ${data.id} (customer ${data.customerId})`,
     );
-    return; // acknowledged, nothing to update
+    return;
   }
 
   if (!ENTITLED_STATUSES.has(data.status)) {
-    // A non-entitling status arrived as an update (e.g. past_due) — drop to Free.
-    await setPlan(user.id, { plan: 'FREE', planTier: null, data });
+    await setPlan(user.id, {
+      plan: 'FREE',
+      planTier: null,
+      subscriptionId: data.id,
+      customerId: data.customerId,
+    });
     return;
   }
 
@@ -97,38 +105,85 @@ async function applySubscription(data: SubscriptionData, paddle: Paddle) {
   const mapped = slug ? TIER_TO_PLAN[slug] : undefined;
   if (!mapped) {
     console.warn(`[paddle/webhook] unmapped price ${priceId} on subscription ${data.id}`);
-    // Keep the Paddle linkage so future events resolve, but don't guess a plan.
     await linkPaddleIds(user.id, data);
     return;
   }
 
-  await setPlan(user.id, { plan: mapped.plan, planTier: mapped.tier, data });
+  await setPlan(user.id, {
+    plan: mapped.plan,
+    planTier: mapped.tier,
+    planExpiresAt: null,
+    subscriptionId: data.id,
+    customerId: data.customerId,
+    // New band SKUs drop grandfathered unlimited/3×30 limits. Renewals of the
+    // existing Starter/Pro prices omit this so `legacyCapacity` stays put.
+    ...(BAND_SLUGS.has(mapped.tier) ? { legacyCapacity: false } : {}),
+  });
 }
 
-/** Cancellation / pause / past-due → revoke entitlement. */
 async function downgrade(data: SubscriptionData) {
   const user = await findLinkedUser(data);
   if (!user) {
     console.warn(`[paddle/webhook] no app user to downgrade for subscription ${data.id}`);
     return;
   }
-  await setPlan(user.id, { plan: 'FREE', planTier: null, data });
+  await setPlan(user.id, {
+    plan: 'FREE',
+    planTier: null,
+    subscriptionId: data.id,
+    customerId: data.customerId,
+    legacyCapacity: false,
+  });
 }
 
-/** Find the app user behind a subscription, trying the most reliable signals first. */
+/**
+ * Student-only one-time pass. Ignored for teacher accounts (role or plan) and
+ * for transactions that aren't a known pass price (subscription renewals).
+ */
+async function applyPassPurchase(data: TransactionData, paddle: Paddle) {
+  const env = getPaddleEnv();
+  let pass = null as ReturnType<typeof passForPriceId>;
+  for (const item of data.items ?? []) {
+    pass = passForPriceId(item.price?.id ?? '', env);
+    if (pass) break;
+  }
+  if (!pass) return;
+
+  const user = await resolveUser(data as unknown as SubscriptionData, paddle);
+  if (!user) {
+    console.warn(
+      `[paddle/webhook] no app user for pass transaction ${data.id} (customer ${data.customerId})`,
+    );
+    return;
+  }
+  if (user.role === 'TEACHER' || isTeacherPlan(user.plan)) {
+    console.warn(
+      `[paddle/webhook] ignoring student pass for teacher user ${user.id} (role=${user.role} plan=${user.plan})`,
+    );
+    return;
+  }
+
+  await setPlan(user.id, {
+    plan: 'STUDENT',
+    planTier: pass.tier,
+    planExpiresAt: expiryForPurchase(pass, {
+      now: new Date(),
+      existingExpiresAt: user.planExpiresAt,
+    }),
+    customerId: data.customerId,
+  });
+}
+
 async function resolveUser(data: SubscriptionData, paddle: Paddle) {
-  // 1) custom_data.app_user_id — set at checkout for signed-in users (most reliable).
   const appUserId = readAppUserId(data);
   if (appUserId) {
     const byId = await prisma.user.findUnique({ where: { id: appUserId } });
     if (byId) return byId;
   }
-  // 2) already linked by Paddle customer id.
   if (data.customerId) {
     const byCustomer = await prisma.user.findFirst({ where: { paddleCustomerId: data.customerId } });
     if (byCustomer) return byCustomer;
   }
-  // 3) match by the Paddle customer's email (requires an API lookup).
   if (data.customerId) {
     try {
       const customer = await paddle.customers.get(data.customerId);
@@ -144,7 +199,6 @@ async function resolveUser(data: SubscriptionData, paddle: Paddle) {
   return null;
 }
 
-/** Downgrade lookups don't need the email API round-trip. */
 async function findLinkedUser(data: SubscriptionData) {
   if (data.id) {
     const bySub = await prisma.user.findFirst({ where: { paddleSubscriptionId: data.id } });
@@ -166,16 +220,25 @@ function readAppUserId(data: SubscriptionData): string | null {
 
 async function setPlan(
   userId: string,
-  opts: { plan: Plan; planTier: string | null; data: SubscriptionData },
+  opts: {
+    plan: Plan;
+    planTier: string | null;
+    planExpiresAt?: Date | null;
+    subscriptionId?: string | null;
+    customerId?: string | null;
+    legacyCapacity?: boolean;
+  },
 ) {
   await prisma.user.update({
     where: { id: userId },
     data: {
       plan: opts.plan,
       planTier: opts.planTier,
-      paddleSubscriptionId: opts.data.id || undefined,
-      paddleCustomerId: opts.data.customerId || undefined,
+      planExpiresAt: opts.planExpiresAt ?? null,
+      paddleSubscriptionId: opts.subscriptionId || undefined,
+      paddleCustomerId: opts.customerId || undefined,
       planUpdatedAt: new Date(),
+      ...(opts.legacyCapacity !== undefined ? { legacyCapacity: opts.legacyCapacity } : {}),
     },
   });
 }

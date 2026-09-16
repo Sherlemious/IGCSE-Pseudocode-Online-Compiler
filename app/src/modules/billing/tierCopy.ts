@@ -10,35 +10,80 @@ export const TIER_COPY: Record<
   student: {
     name: 'Student',
     description: 'For students practising on their own',
-    features: ['Unlimited saved solutions', 'Full practice + exam library', 'Personal progress analytics'],
+    features: [
+      'Paper 2 Path (10 levels)',
+      'Unlimited saved solutions',
+      'Full practice + exam library',
+      'Personal progress analytics',
+    ],
   },
   starter: {
     name: 'Starter',
     description: 'One teacher, a real class — your students get the full library',
     features: [
       'Every student in your class unlocks premium practice & exams',
-      'Roster: up to 3 classes, 30 students each',
+      'Up to 3 classes, 30 students in total',
       'Assignments with autograding',
       'Share a join link — students do not pay',
     ],
   },
   pro: {
-    name: 'Pro',
-    description: 'For teachers running several classes',
+    name: 'Classroom',
+    description: 'Several classes, up to 90 students',
     features: [
       'Everything in Starter, including student premium access',
-      'Unlimited classes and students',
+      'Up to 6 classes, 90 students in total',
       'Progress analytics',
       'Priority support',
     ],
   },
-  advanced: {
-    name: 'Advanced',
-    description: 'For departments & schools',
+  classroom: {
+    name: 'Classroom',
+    description: 'Several classes, up to 90 students',
     features: [
-      'Everything in Pro',
-      'Multiple teachers',
+      'Everything in Starter, including student premium access',
+      'Up to 6 classes, 90 students in total',
+      'Progress analytics',
+      'Priority support',
+    ],
+  },
+  department: {
+    name: 'Department',
+    description: 'A department running many classes',
+    features: [
+      'Everything in Classroom',
+      'Up to 15 classes, 250 students in total',
+      'Progress analytics',
+      'Priority support',
+    ],
+  },
+  school: {
+    name: 'School',
+    description: 'Whole-school seat capacity',
+    features: [
+      'Everything in Department',
+      'Up to 40 classes, 750 students in total',
       'School-wide analytics',
+      'Onboarding help',
+    ],
+  },
+  advanced: {
+    name: 'Campus',
+    description: 'For large schools that need unlimited seats',
+    features: [
+      'Everything in School',
+      'Unlimited classes and students',
+      'Multiple teachers',
+      'Onboarding help',
+    ],
+  },
+  campus: {
+    name: 'Campus',
+    description: 'For large schools that need unlimited seats',
+    features: [
+      'Everything in School',
+      'Unlimited classes and students',
+      'Multiple teachers',
       'Onboarding help',
     ],
   },

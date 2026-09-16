@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { auth } from '@/modules/auth/auth';
 import { prisma } from '@/shared/db';
 import { normalizeShareCode } from '@/shared/lib/shareCode';
-import { resolveTier, limitsFor } from '@/modules/billing/entitlements';
+import { isAtStudentCap, limitsForUser, OWNER_PLAN_SELECT, resolveTier } from '@/modules/billing/entitlements';
 import { GraduationCap, User, AlertCircle, Check } from 'lucide-react';
 import JoinClassButton from '@/modules/classes/JoinClassButton';
 
@@ -62,7 +62,7 @@ export default async function JoinClassLandingPage({ params }: Props) {
       id: true,
       name: true,
       ownerId: true,
-      owner: { select: { name: true, plan: true, trialEndsAt: true } },
+      owner: { select: { name: true, ...OWNER_PLAN_SELECT } },
       _count: { select: { memberships: true } },
       memberships: { where: { userId: session.user.id }, select: { id: true } },
     },
@@ -74,9 +74,16 @@ export default async function JoinClassLandingPage({ params }: Props) {
 
   const isOwner = cls.ownerId === session.user.id;
   const alreadyMember = cls.memberships.length > 0;
-  const ownerTier = resolveTier(cls.owner);
-  const isFull = cls._count.memberships >= limitsFor(ownerTier).maxStudentsPerClass;
-  const unlocksLibrary = ownerTier !== 'free';
+  const limits = limitsForUser(cls.owner);
+  const studentsAcrossClasses = await prisma.classMembership.count({
+    where: { class: { ownerId: cls.ownerId, archived: false } },
+  });
+  const isFull = isAtStudentCap({
+    limits,
+    studentsInClass: cls._count.memberships,
+    studentsAcrossClasses,
+  });
+  const unlocksLibrary = resolveTier(cls.owner) !== 'free';
 
   return (
     <Shell>

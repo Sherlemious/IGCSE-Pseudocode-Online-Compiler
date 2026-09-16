@@ -1,49 +1,148 @@
 import { describe, it, expect } from 'vitest';
 import type { Plan } from '@prisma/client';
-import { resolveTier, limitsFor, LIMITS, hasPremiumAccess } from './entitlements';
+import {
+  resolveTier,
+  tierForUser,
+  limitsFor,
+  limitsForUser,
+  LIMITS,
+  LEGACY_STARTER_LIMITS,
+  hasPremiumAccess,
+  isAtStudentCap,
+  isPlanActive,
+  type PlanHolder,
+} from './entitlements';
 
 const IN_FUTURE = new Date(Date.now() + 60_000);
 const IN_PAST = new Date(Date.now() - 60_000);
 
-const plan = (p: string, trialEndsAt: Date | null = null) => ({ plan: p as Plan, trialEndsAt });
+const plan = (p: string, trialEndsAt: Date | null = null): PlanHolder => ({
+  plan: p as Plan,
+  trialEndsAt,
+});
 
 describe('resolveTier', () => {
   it('maps plans to tiers', () => {
     expect(resolveTier({ plan: 'FREE' as Plan, trialEndsAt: null })).toBe('free');
     expect(resolveTier({ plan: 'STARTER' as Plan, trialEndsAt: null })).toBe('starter');
-    expect(resolveTier({ plan: 'PRO' as Plan, trialEndsAt: null })).toBe('pro');
+    expect(resolveTier({ plan: 'PRO' as Plan, trialEndsAt: null })).toBe('classroom');
     expect(resolveTier({ plan: 'SCHOOL' as Plan, trialEndsAt: null })).toBe('school');
-    // A paid student plan buys student features, not teaching capacity.
     expect(resolveTier({ plan: 'STUDENT' as Plan, trialEndsAt: null })).toBe('free');
   });
 
-  it('grants Pro during an active trial regardless of plan', () => {
-    expect(resolveTier({ plan: 'FREE' as Plan, trialEndsAt: IN_FUTURE })).toBe('pro');
+  it('grants Classroom-level access during an active trial', () => {
+    expect(resolveTier({ plan: 'FREE' as Plan, trialEndsAt: IN_FUTURE })).toBe('classroom');
   });
 
-  it('ignores an expired trial and falls back to the plan', () => {
+  it('ignores an expired trial', () => {
     expect(resolveTier({ plan: 'FREE' as Plan, trialEndsAt: IN_PAST })).toBe('free');
   });
+});
 
-  it('keeps a School plan even with an active trial (trial only lifts to pro-level access)', () => {
-    // Trial short-circuits to pro; School is only reached via the stored plan.
-    expect(resolveTier({ plan: 'SCHOOL' as Plan, trialEndsAt: IN_FUTURE })).toBe('pro');
+describe('tierForUser', () => {
+  const base = { trialEndsAt: null, planExpiresAt: null, legacyCapacity: false };
+
+  it('prefers the exact planTier slug over the coarse plan', () => {
+    expect(tierForUser({ ...base, plan: 'PRO' as Plan, planTier: 'department' })).toBe('department');
+    expect(tierForUser({ ...base, plan: 'SCHOOL' as Plan, planTier: 'school' })).toBe('school');
+  });
+
+  it('maps the live $15 price slug pro → classroom for new buyers', () => {
+    expect(tierForUser({ ...base, plan: 'PRO' as Plan, planTier: 'pro' })).toBe('classroom');
+  });
+
+  it('keeps grandfathered Pro on unlimited pro, not Classroom', () => {
+    expect(
+      tierForUser({
+        ...base,
+        plan: 'PRO' as Plan,
+        planTier: 'pro',
+        legacyCapacity: true,
+      }),
+    ).toBe('pro');
+  });
+
+  it('treats an expired student pass as free', () => {
+    expect(
+      tierForUser({
+        trialEndsAt: null,
+        plan: 'STUDENT' as Plan,
+        planTier: 'student-may-june',
+        planExpiresAt: IN_PAST,
+      }),
+    ).toBe('free');
+  });
+
+  it('does not grant teaching capacity for an active student pass', () => {
+    expect(
+      tierForUser({
+        trialEndsAt: null,
+        plan: 'STUDENT' as Plan,
+        planTier: 'student-may-june',
+        planExpiresAt: IN_FUTURE,
+      }),
+    ).toBe('free');
   });
 });
 
 describe('limits', () => {
-  it('free tier is 1 class / 5 students', () => {
-    expect(limitsFor('free')).toEqual({ maxClasses: 1, maxStudentsPerClass: 5 });
+  it('new starter is 3 classes / 30 students total', () => {
+    expect(limitsFor('starter')).toEqual({
+      maxClasses: 3,
+      maxStudentsTotal: 30,
+      maxStudentsPerClass: 30,
+    });
   });
 
-  it('starter tier is 3 classes / 30 students', () => {
-    expect(limitsFor('starter')).toEqual({ maxClasses: 3, maxStudentsPerClass: 30 });
+  it('bands scale by total students', () => {
+    expect(LIMITS.classroom.maxStudentsTotal).toBe(90);
+    expect(LIMITS.department.maxStudentsTotal).toBe(250);
+    expect(LIMITS.school.maxStudentsTotal).toBe(750);
+    expect(LIMITS.campus.maxStudentsTotal).toBe(Infinity);
   });
 
-  it('pro and school are unlimited', () => {
-    expect(LIMITS.pro.maxClasses).toBe(Infinity);
-    expect(LIMITS.pro.maxStudentsPerClass).toBe(Infinity);
-    expect(LIMITS.school.maxClasses).toBe(Infinity);
+  it('grandfathered Starter keeps 3 classes × 30 per class with no total cap', () => {
+    const limits = limitsForUser({
+      plan: 'STARTER' as Plan,
+      trialEndsAt: null,
+      planTier: 'starter',
+      legacyCapacity: true,
+    });
+    expect(limits).toEqual(LEGACY_STARTER_LIMITS);
+    expect(limits.maxStudentsTotal).toBe(Infinity);
+    expect(isAtStudentCap({ limits, studentsInClass: 30, studentsAcrossClasses: 90 })).toBe(true);
+    expect(isAtStudentCap({ limits, studentsInClass: 29, studentsAcrossClasses: 87 })).toBe(false);
+  });
+
+  it('new Starter hits the total cap even when a class is not full', () => {
+    const limits = limitsForUser({
+      plan: 'STARTER' as Plan,
+      trialEndsAt: null,
+      planTier: 'starter',
+      legacyCapacity: false,
+    });
+    expect(isAtStudentCap({ limits, studentsInClass: 10, studentsAcrossClasses: 30 })).toBe(true);
+    expect(isAtStudentCap({ limits, studentsInClass: 10, studentsAcrossClasses: 29 })).toBe(false);
+  });
+
+  it('grandfathered Pro stays unlimited', () => {
+    const limits = limitsForUser({
+      plan: 'PRO' as Plan,
+      trialEndsAt: null,
+      planTier: 'pro',
+      legacyCapacity: true,
+    });
+    expect(limits.maxStudentsTotal).toBe(Infinity);
+    expect(limits.maxClasses).toBe(Infinity);
+  });
+});
+
+describe('isPlanActive', () => {
+  it('rejects an expired pass', () => {
+    expect(isPlanActive({ plan: 'STUDENT' as Plan, planExpiresAt: IN_PAST })).toBe(false);
+  });
+  it('accepts a subscription with no expiry', () => {
+    expect(isPlanActive({ plan: 'STARTER' as Plan, planExpiresAt: null })).toBe(true);
   });
 });
 
@@ -58,6 +157,26 @@ describe('hasPremiumAccess', () => {
     }
   });
 
+  it('does not grant an expired student pass', () => {
+    expect(
+      hasPremiumAccess({
+        ...plan('STUDENT'),
+        planExpiresAt: IN_PAST,
+        classOwners: [],
+      }),
+    ).toBe(false);
+  });
+
+  it('grants a still-valid student pass', () => {
+    expect(
+      hasPremiumAccess({
+        ...plan('STUDENT'),
+        planExpiresAt: IN_FUTURE,
+        classOwners: [],
+      }),
+    ).toBe(true);
+  });
+
   it('grants a free student during their own active trial', () => {
     expect(hasPremiumAccess({ ...plan('FREE', IN_FUTURE), classOwners: [] })).toBe(true);
     expect(hasPremiumAccess({ ...plan('FREE', IN_PAST), classOwners: [] })).toBe(false);
@@ -69,19 +188,8 @@ describe('hasPremiumAccess', () => {
     }
   });
 
-  it('grants a free student whose teacher is on an active trial', () => {
-    expect(hasPremiumAccess({ ...plan('FREE'), classOwners: [plan('FREE', IN_FUTURE)] })).toBe(true);
-  });
-
-  it('does NOT inherit from a free or plain-Student teacher', () => {
+  it('does NOT inherit from a free or student-pass teacher', () => {
     expect(hasPremiumAccess({ ...plan('FREE'), classOwners: [plan('FREE')] })).toBe(false);
-    // A teacher on the personal Student plan has no teaching entitlement to confer.
     expect(hasPremiumAccess({ ...plan('FREE'), classOwners: [plan('STUDENT')] })).toBe(false);
-  });
-
-  it('grants access when at least one of several teachers has paid', () => {
-    expect(
-      hasPremiumAccess({ ...plan('FREE'), classOwners: [plan('FREE'), plan('STUDENT'), plan('PRO')] }),
-    ).toBe(true);
   });
 });
