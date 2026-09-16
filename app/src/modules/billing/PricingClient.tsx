@@ -376,7 +376,7 @@ export default function PricingClient({
 
   const renderTeacherCta = (tier: PricingTierView, matchSlugs: readonly string[], featured: boolean) => {
     const priceId = interval === 'month' ? tier.monthPriceId : tier.yearPriceId;
-    const isCurrent = Boolean(currentTier) && matchSlugs.includes(currentTier);
+    const isCurrent = currentTier ? matchSlugs.includes(currentTier) : false;
     if (tier.contactOnly) {
       return (
         <a

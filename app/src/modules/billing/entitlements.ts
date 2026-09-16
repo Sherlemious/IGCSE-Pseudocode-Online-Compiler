@@ -20,7 +20,7 @@
  */
 import { prisma } from '@/shared/db';
 import type { Plan, Prisma } from '@prisma/client';
-import { LEGACY_STARTER_LIMITS, LIMITS, type Tier } from './limits';
+import { LEGACY_STARTER_LIMITS, LIMITS, type Tier, type TierLimits } from './limits';
 
 export type { Tier, TierLimits } from './limits';
 export { LEGACY_STARTER_LIMITS, LIMITS, teacherBandForStudents } from './limits';
