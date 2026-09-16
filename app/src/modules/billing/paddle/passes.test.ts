@@ -18,11 +18,12 @@ function utc(y: number, m: number, d: number, hh = 12): Date {
 }
 
 describe('session pass visibility (UTC months)', () => {
-  it('shows May/June from September through June, hides July–August', () => {
+  it('shows May/June from September through May; gone in June–August', () => {
     expect(isPassVisible('may_june', utc(2026, 8, 1))).toBe(true); // Sep
     expect(isPassVisible('may_june', utc(2026, 11, 15))).toBe(true); // Dec
     expect(isPassVisible('may_june', utc(2027, 0, 10))).toBe(true); // Jan
-    expect(isPassVisible('may_june', utc(2027, 5, 30))).toBe(true); // Jun
+    expect(isPassVisible('may_june', utc(2027, 4, 31))).toBe(true); // May
+    expect(isPassVisible('may_june', utc(2027, 5, 1))).toBe(false); // Jun
     expect(isPassVisible('may_june', utc(2027, 6, 1))).toBe(false); // Jul
     expect(isPassVisible('may_june', utc(2027, 7, 31))).toBe(false); // Aug
   });
@@ -41,6 +42,7 @@ describe('session pass visibility (UTC months)', () => {
       'oct_nov',
       'month',
     ]);
+    expect(visiblePasses(utc(2027, 5, 1)).map((p) => p.kind)).toEqual(['oct_nov', 'month']);
     expect(visiblePasses(utc(2027, 6, 1)).map((p) => p.kind)).toEqual(['oct_nov', 'month']);
   });
 });

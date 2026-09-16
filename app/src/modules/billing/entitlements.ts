@@ -20,39 +20,10 @@
  */
 import { prisma } from '@/shared/db';
 import type { Plan, Prisma } from '@prisma/client';
+import { LEGACY_STARTER_LIMITS, LIMITS, type Tier } from './limits';
 
-export type Tier = 'free' | 'starter' | 'pro' | 'classroom' | 'department' | 'school' | 'campus';
-
-export interface TierLimits {
-  maxClasses: number;
-  /** Total students across ALL of the teacher's classes — the priced axis for new bands. */
-  maxStudentsTotal: number;
-  /** Per-class cap. Legacy Starter is enforced here (30) with no total cap. */
-  maxStudentsPerClass: number;
-}
-
-const UNLIMITED: TierLimits = {
-  maxClasses: Infinity,
-  maxStudentsTotal: Infinity,
-  maxStudentsPerClass: Infinity,
-};
-
-/** Pre-band Starter: 3 classes, 30 students each, no cross-class total. */
-export const LEGACY_STARTER_LIMITS: TierLimits = {
-  maxClasses: 3,
-  maxStudentsTotal: Infinity,
-  maxStudentsPerClass: 30,
-};
-
-export const LIMITS: Record<Tier, TierLimits> = {
-  free: { maxClasses: 1, maxStudentsTotal: 5, maxStudentsPerClass: 5 },
-  starter: { maxClasses: 3, maxStudentsTotal: 30, maxStudentsPerClass: 30 },
-  classroom: { maxClasses: 6, maxStudentsTotal: 90, maxStudentsPerClass: 90 },
-  department: { maxClasses: 15, maxStudentsTotal: 250, maxStudentsPerClass: 250 },
-  school: { maxClasses: 40, maxStudentsTotal: 750, maxStudentsPerClass: 750 },
-  campus: UNLIMITED,
-  pro: UNLIMITED,
-};
+export type { Tier, TierLimits } from './limits';
+export { LEGACY_STARTER_LIMITS, LIMITS, teacherBandForStudents } from './limits';
 
 /**
  * Marketing slug → capacity tier. `pro` maps to Classroom for *new* buyers of
@@ -136,7 +107,7 @@ export function limitsForUser(user: PlanHolder): TierLimits {
   if (user.trialEndsAt && user.trialEndsAt.getTime() > Date.now()) return LIMITS.classroom;
   if (!isPlanActive(user)) return LIMITS.free;
   if (user.legacyCapacity && user.plan === 'STARTER') return LEGACY_STARTER_LIMITS;
-  if (user.legacyCapacity && (user.plan === 'PRO' || user.plan === 'SCHOOL')) return UNLIMITED;
+  if (user.legacyCapacity && (user.plan === 'PRO' || user.plan === 'SCHOOL')) return LIMITS.pro;
   return LIMITS[tierForUser(user)];
 }
 

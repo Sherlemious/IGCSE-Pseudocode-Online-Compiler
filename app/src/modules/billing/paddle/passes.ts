@@ -4,8 +4,8 @@
  *
  * Session passes have a fixed exam-series end date (not N months from purchase).
  * Visibility is by UTC calendar month:
- *   May/June  — shown September through June (covers through 30 June of the series)
- *   Oct/Nov   — shown June through November (covers through 30 November)
+ *   Oct/Nov   — shown June through November, then it disappears
+ *   May/June  — shown September through May; gone once June starts
  * 1-month     — always shown (short top-up)
  *
  * List USD is 33% off the $2/mo rate for the window length (May/June = 10 months
@@ -108,14 +108,13 @@ function endOfUtcDay(year: number, monthIndex: number, day: number): Date {
 }
 
 /**
- * May/June pass is listed from September through June (hidden in July–August).
- * Oct/Nov pass is listed from June through November.
+ * Oct/Nov: June–November. May/June: September–May (hidden in June–August).
  * The 1-month top-up is always listed.
  */
 export function isPassVisible(kind: PassKind, now: Date = new Date()): boolean {
   if (kind === 'month') return true;
   const m = utcMonth(now);
-  if (kind === 'may_june') return m >= 8 || m <= 5;
+  if (kind === 'may_june') return m >= 8 || m <= 4;
   return m >= 5 && m <= 10;
 }
 
