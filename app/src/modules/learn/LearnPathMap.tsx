@@ -1,18 +1,20 @@
 'use client';
 
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, type CSSProperties, type ReactNode } from 'react';
 import Link from 'next/link';
-import { Check, HelpCircle, Lock, Star } from 'lucide-react';
+import { ArrowRight, Check, Flag, Lock } from 'lucide-react';
 import { IGCSE_PAPER_2 } from './curriculum';
 import { lessonHref } from './path';
 import {
   curveThrough,
   isBossLesson,
   layoutPath,
+  leadingCompleted,
   progressAlongPath,
-  snakeOffset,
-  type PathStop,
+  type LevelSection,
+  type Side,
 } from './pathLayout';
+import { TRACK, formatMinutes, lessonTypeMeta, levelHue, levelMinutes, pad2 } from './pathTheme';
 import {
   isComplete,
   isLessonUnlocked,
@@ -24,314 +26,477 @@ import { captureLearn, learnLessonProps, learnLevelProps } from './telemetry';
 import type { LearnLesson, LearnLevel } from './types';
 
 const LAYOUT = layoutPath(IGCSE_PAPER_2);
-const PATH_D = curveThrough(LAYOUT.stops.map((stop) => ({ x: stop.x, y: stop.y })));
+const SECTION_PATHS = LAYOUT.sections.map((section) =>
+  curveThrough(section.stops.map((stop) => ({ x: stop.x, y: stop.y }))),
+);
+
+type NodeState = 'complete' | 'current' | 'open' | 'gated';
+type BannerState = 'complete' | 'current' | 'upcoming';
 
 type Props = {
   progress: ProgressMap;
   nextLessonId: string | null;
   ready: boolean;
+  completedCount: number;
 };
 
-export default function LearnPathMap({ progress, nextLessonId, ready }: Props) {
+export default function LearnPathMap({ progress, nextLessonId, ready, completedCount }: Props) {
   const completedIds = useMemo(() => {
     const ids = new Set<string>();
     for (const stop of LAYOUT.stops) {
-      if (stop.kind === 'lesson' && isComplete(progress, stop.lesson.id)) {
-        ids.add(stop.lesson.id);
-      }
+      if (isComplete(progress, stop.lesson.id)) ids.add(stop.lesson.id);
     }
     return ids;
   }, [progress]);
 
-  const lit = progressAlongPath(LAYOUT.stops, completedIds);
-
+  // Bring a returning student to their next node. First-time visitors keep the hero.
   const scrolled = useRef(false);
   useEffect(() => {
-    if (!ready || !nextLessonId || scrolled.current) return;
+    if (!ready || !nextLessonId || completedCount === 0 || scrolled.current) return;
     scrolled.current = true;
-    const node = document.getElementById(`learn-stop-${nextLessonId}`);
-    node?.scrollIntoView({ block: 'center', behavior: 'smooth' });
-  }, [ready, nextLessonId]);
+    const nodes = document.querySelectorAll<HTMLElement>(`[data-learn-stop="${nextLessonId}"]`);
+    const visible = Array.from(nodes).find((node) => node.offsetParent !== null);
+    visible?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  }, [ready, nextLessonId, completedCount]);
 
   return (
     <>
-      <div className="md:hidden space-y-8 px-4 pb-10">
-        {IGCSE_PAPER_2.levels.map((level) => (
-          <MobileLevel
-            key={level.slug}
-            level={level}
-            stops={LAYOUT.stops.filter((stop) => stop.level.slug === level.slug)}
+      {/* Phones: level banner + rail list, every lesson titled and tappable. */}
+      <div className="md:hidden px-4 pb-12 space-y-10">
+        {LAYOUT.sections.map((section) => (
+          <MobileSection
+            key={section.level.slug}
+            section={section}
             progress={progress}
+            completedIds={completedIds}
             nextLessonId={nextLessonId}
           />
         ))}
+        <Roadmap levels={LAYOUT.ahead} />
       </div>
 
-      <nav
-        aria-label="Paper 2 Path"
-        className="relative hidden md:block max-w-5xl mx-auto px-4 sm:px-8 pb-16"
-        style={{ height: LAYOUT.height }}
-      >
-        <svg
-          className="absolute inset-0 w-full h-full pointer-events-none"
-          viewBox={`0 0 ${LAYOUT.width} ${LAYOUT.height}`}
-          preserveAspectRatio="none"
-          aria-hidden="true"
-        >
-          <defs>
-            <linearGradient id="learn-path-lit" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="var(--color-success)" />
-              <stop offset="100%" stopColor="var(--color-primary)" />
-            </linearGradient>
-            <filter id="learn-path-glow" x="-20%" y="-20%" width="140%" height="140%">
-              <feGaussianBlur stdDeviation="1.2" result="blur" />
-              <feMerge>
-                <feMergeNode in="blur" />
-                <feMergeNode in="SourceGraphic" />
-              </feMerge>
-            </filter>
-          </defs>
-          <path
-            d={PATH_D}
-            fill="none"
-            stroke="var(--color-border)"
-            strokeWidth="2.4"
-            strokeLinecap="round"
-            vectorEffect="non-scaling-stroke"
-          />
-          <path
-            d={PATH_D}
-            fill="none"
-            stroke="url(#learn-path-lit)"
-            strokeWidth="2.6"
-            strokeLinecap="round"
-            pathLength={1}
-            strokeDasharray={`${lit} 1`}
-            filter="url(#learn-path-glow)"
-            vectorEffect="non-scaling-stroke"
-          />
-        </svg>
+      {/* Desktop: the winding map. */}
+      <div className="hidden md:block max-w-3xl mx-auto px-6 pb-16">
+        <nav aria-label="Paper 2 Path" className="relative" style={{ height: LAYOUT.height }}>
+          <svg
+            className="absolute inset-0 w-full h-full pointer-events-none"
+            viewBox={`0 0 ${LAYOUT.width} ${LAYOUT.height}`}
+            preserveAspectRatio="none"
+            aria-hidden="true"
+          >
+            <defs>
+              <linearGradient id="learn-path-lit" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="var(--color-success)" />
+                <stop offset="100%" stopColor="var(--color-primary)" />
+              </linearGradient>
+              <filter id="learn-path-glow" x="-20%" y="-20%" width="140%" height="140%">
+                <feGaussianBlur stdDeviation="1.6" result="blur" />
+                <feMerge>
+                  <feMergeNode in="blur" />
+                  <feMergeNode in="SourceGraphic" />
+                </feMerge>
+              </filter>
+            </defs>
+            {LAYOUT.sections.map((section, i) => {
+              const d = SECTION_PATHS[i]!;
+              const lit = progressAlongPath(section.stops, completedIds);
+              return (
+                <g key={section.level.slug}>
+                  <path
+                    d={d}
+                    fill="none"
+                    stroke={TRACK}
+                    strokeWidth="6"
+                    strokeLinecap="round"
+                    vectorEffect="non-scaling-stroke"
+                  />
+                  {lit > 0 && (
+                    <path
+                      d={d}
+                      fill="none"
+                      stroke="url(#learn-path-lit)"
+                      strokeWidth="6"
+                      strokeLinecap="round"
+                      pathLength={1}
+                      strokeDasharray={`${lit} 1`}
+                      filter="url(#learn-path-glow)"
+                      vectorEffect="non-scaling-stroke"
+                    />
+                  )}
+                </g>
+              );
+            })}
+          </svg>
 
-        {LAYOUT.plaques.map((plaque) => (
-          <LevelPlaque
-            key={plaque.level.slug}
-            level={plaque.level}
-            x={plaque.x}
-            y={plaque.y}
-            current={plaque.level.lessons.some((lesson) => lesson.id === nextLessonId)}
-            progress={progress}
-          />
-        ))}
-
-        <ol className="contents">
-          {LAYOUT.stops.map((stop) => (
-            <li
-              key={stop.id}
-              className="absolute z-[1] -translate-x-1/2 -translate-y-1/2"
-              style={{ left: `${stop.x}%`, top: stop.y }}
-            >
-              <StopNode stop={stop} progress={progress} nextLessonId={nextLessonId} desktop />
-            </li>
+          {LAYOUT.sections.map((section) => (
+            <DesktopSection
+              key={section.level.slug}
+              section={section}
+              progress={progress}
+              nextLessonId={nextLessonId}
+            />
           ))}
-        </ol>
-      </nav>
+        </nav>
+        <Roadmap levels={LAYOUT.ahead} />
+      </div>
     </>
   );
 }
 
-function MobileLevel({
-  level,
-  stops,
+/* ── State helpers ─────────────────────────────────────────── */
+
+function nodeState(lesson: LearnLesson, progress: ProgressMap, nextLessonId: string | null): NodeState {
+  if (isComplete(progress, lesson.id)) return 'complete';
+  if (lesson.id === nextLessonId) return 'current';
+  if (isLessonUnlocked(IGCSE_PAPER_2, lesson, progress)) return 'open';
+  return 'gated';
+}
+
+function bannerState(level: LearnLevel, progress: ProgressMap, nextLessonId: string | null): BannerState {
+  const total = playableCount(level);
+  if (total > 0 && levelCompletedCount(level, progress) === total) return 'complete';
+  if (level.lessons.some((lesson) => lesson.id === nextLessonId)) return 'current';
+  return 'upcoming';
+}
+
+/* ── Desktop section: watermark + banner + nodes ───────────── */
+
+function DesktopSection({
+  section,
   progress,
   nextLessonId,
 }: {
-  level: LearnLevel;
-  stops: PathStop[];
+  section: LevelSection;
   progress: ProgressMap;
   nextLessonId: string | null;
 }) {
-  const total = playableCount(level) || level.lessons.length;
-  const done = levelCompletedCount(level, progress);
+  const { level } = section;
+  const hue = levelHue(level);
+  // The first node sits on the centre line with its label on the watermark's
+  // side, so the numeral starts level with the second node instead.
+  const anchor = section.stops[1] ?? section.stops[0];
+  const watermark: CSSProperties = {
+    top: (anchor?.y ?? section.bannerY + section.bannerHeight) - 60,
+    color: hue,
+    opacity: 0.07,
+  };
+  if (section.watermarkSide === 'left') watermark.left = -6;
+  else watermark.right = -6;
+
   return (
-    <section>
-      <div
-        className={`rounded-2xl border px-4 py-3 mb-5 ${
-          level.playable ? 'border-border bg-surface/80' : 'border-border/70 bg-surface/40'
-        }`}
+    <>
+      <span
+        aria-hidden
+        className="absolute z-0 display-serif font-semibold text-[11rem] leading-none select-none pointer-events-none"
+        style={watermark}
       >
-        <div className="flex items-baseline gap-2">
-          <span className="mono-label text-primary/70">Level {String(level.number).padStart(2, '0')}</span>
-          {level.free ? (
-            <span className="text-[10px] px-1.5 py-0.5 rounded border border-success/25 text-success">Free</span>
-          ) : (
-            <span className="text-[10px] px-1.5 py-0.5 rounded border border-border text-dark-text">Coming next</span>
-          )}
-          <span className="ml-auto font-mono text-[10px] text-dark-text tabular-nums">
-            {level.playable ? `${done}/${total}` : `${level.hours}h`}
-          </span>
-        </div>
-        <h2 className="display-serif text-lg font-semibold mt-1">{level.name}</h2>
-        <p className="text-xs text-dark-text mt-0.5">{level.leaveWith}</p>
+        {pad2(level.number)}
+      </span>
+      <div
+        className="absolute left-0 right-0 z-[2]"
+        style={{ top: section.bannerY, height: section.bannerHeight }}
+      >
+        <LevelBanner
+          level={level}
+          progress={progress}
+          state={bannerState(level, progress, nextLessonId)}
+          className="h-full"
+        />
       </div>
-      <ol className="relative">
-        <span className="absolute left-1/2 top-2 bottom-2 w-px bg-border -translate-x-1/2" aria-hidden />
-        {stops.map((stop) => (
+      <ol className="contents">
+        {section.stops.map((stop) => (
           <li
             key={stop.id}
-            className="relative flex justify-center py-2"
-            style={{ transform: `translateX(${snakeOffset(stop.stopIndex) * 28}px)` }}
+            className="absolute z-[1] -translate-x-1/2 -translate-y-1/2"
+            style={{ left: `${stop.x}%`, top: stop.y }}
           >
-            <StopNode stop={stop} progress={progress} nextLessonId={nextLessonId} />
+            <LessonNode
+              level={level}
+              lesson={stop.lesson}
+              state={nodeState(stop.lesson, progress, nextLessonId)}
+              size="lg"
+              labelSide={stop.labelSide}
+              bubble
+            />
           </li>
         ))}
+      </ol>
+    </>
+  );
+}
+
+/* ── Mobile section: banner + rail list ────────────────────── */
+
+function MobileSection({
+  section,
+  progress,
+  completedIds,
+  nextLessonId,
+}: {
+  section: LevelSection;
+  progress: ProgressMap;
+  completedIds: Set<string>;
+  nextLessonId: string | null;
+}) {
+  const lit = leadingCompleted(section.stops, completedIds);
+  return (
+    <section>
+      <LevelBanner
+        level={section.level}
+        progress={progress}
+        state={bannerState(section.level, progress, nextLessonId)}
+      />
+      <ol className="mt-4">
+        {section.stops.map((stop, i) => {
+          const last = i === section.stops.length - 1;
+          return (
+            <li key={stop.id} className="relative">
+              {i > 0 && (
+                <span
+                  aria-hidden
+                  className="absolute left-[26px] top-0 h-1/2 w-1"
+                  style={{ background: i <= lit ? 'var(--color-success)' : TRACK }}
+                />
+              )}
+              {!last && (
+                <span
+                  aria-hidden
+                  className="absolute left-[26px] top-1/2 h-1/2 w-1"
+                  style={{ background: i < lit ? 'var(--color-success)' : TRACK }}
+                />
+              )}
+              <LessonNode
+                level={section.level}
+                lesson={stop.lesson}
+                state={nodeState(stop.lesson, progress, nextLessonId)}
+                size="sm"
+                row
+              />
+            </li>
+          );
+        })}
       </ol>
     </section>
   );
 }
 
-function LevelPlaque({
+/* ── Level banner ──────────────────────────────────────────── */
+
+function LevelBanner({
   level,
-  x,
-  y,
-  current,
   progress,
+  state,
+  className = '',
 }: {
   level: LearnLevel;
-  x: number;
-  y: number;
-  current: boolean;
   progress: ProgressMap;
+  state: BannerState;
+  className?: string;
 }) {
+  const hue = levelHue(level);
   const total = playableCount(level) || level.lessons.length;
   const done = levelCompletedCount(level, progress);
-  const complete = level.playable && total > 0 && done === total;
+  const style: CSSProperties = {
+    background: `linear-gradient(135deg, color-mix(in srgb, ${hue} 18%, var(--color-surface)) 0%, var(--color-surface) 68%)`,
+    borderColor: `color-mix(in srgb, ${hue} ${state === 'current' ? 55 : 32}%, var(--color-border))`,
+    boxShadow:
+      state === 'current'
+        ? `0 0 64px -14px color-mix(in srgb, ${hue} 75%, transparent), 0 1px 2px rgba(0, 0, 0, 0.25)`
+        : '0 1px 2px rgba(0, 0, 0, 0.2)',
+  };
+
   return (
-    <div
-      className={`absolute z-[2] w-44 lg:w-52 -translate-x-1/2 rounded-2xl border px-3.5 py-3 backdrop-blur-sm ${
-        current
-          ? 'border-primary/40 bg-surface/95 shadow-[0_0_48px_-10px_rgba(var(--color-primary-rgb),0.55)]'
-          : complete
-            ? 'border-success/30 bg-surface/90'
-            : 'border-border/80 bg-surface/80'
-      }`}
-      style={{ left: `${x}%`, top: y }}
-    >
-      <div className="flex items-center gap-2">
-        <span className="mono-label text-primary/70">Level {String(level.number).padStart(2, '0')}</span>
-        {level.free ? (
-          <span className="text-[10px] px-1.5 py-0.5 rounded border border-success/25 text-success">Free</span>
-        ) : (
-          <span className="text-[10px] px-1.5 py-0.5 rounded border border-border text-dark-text">Coming next</span>
-        )}
+    <div className={`relative overflow-hidden rounded-2xl border px-5 py-4 ${className}`} style={style}>
+      <span
+        aria-hidden
+        className="absolute -top-12 -right-10 w-36 h-36 rounded-full blur-2xl pointer-events-none"
+        style={{ background: `color-mix(in srgb, ${hue} 22%, transparent)` }}
+      />
+      <div className="relative">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2 flex-wrap min-w-0">
+            <span className="mono-label font-semibold" style={{ color: hue }}>
+              Level {pad2(level.number)}
+            </span>
+            {level.free && <Chip tone="success">Free</Chip>}
+            {state === 'current' && <Chip tone="primary">Up next</Chip>}
+            {state === 'complete' && (
+              <Chip tone="success">
+                <Check size={10} strokeWidth={3} />
+                Complete
+              </Chip>
+            )}
+          </div>
+          <div
+            className="shrink-0 flex items-center gap-1.5"
+            aria-label={`${done} of ${total} lessons complete`}
+          >
+            {level.lessons.map((lesson) => (
+              <span
+                key={lesson.id}
+                className="h-1.5 w-4 sm:w-5 rounded-full"
+                style={{ background: isComplete(progress, lesson.id) ? 'var(--color-success)' : TRACK }}
+              />
+            ))}
+            <span className="font-mono text-[11px] tabular-nums text-dark-text ml-1">
+              {done}/{total}
+            </span>
+          </div>
+        </div>
+        <h2 className="display-serif text-[1.65rem] font-semibold leading-tight mt-1.5 text-light-text">
+          {level.name}
+        </h2>
+        <p className="text-sm text-dark-text mt-1 leading-snug">{level.leaveWith}</p>
+        <p className="mono-label text-dark-text/80 mt-3 tabular-nums">
+          § {level.syllabus} · {level.lessons.length} lessons · {formatMinutes(levelMinutes(level))}
+        </p>
       </div>
-      <h2 className="display-serif text-[1.05rem] font-semibold leading-tight mt-1">{level.name}</h2>
-      <p className="text-[11px] text-dark-text leading-snug mt-1">{level.leaveWith}</p>
-      <p className="font-mono text-[10px] text-dark-text/80 tabular-nums mt-2">
-        {level.playable ? `${done}/${total} lessons` : `${level.lessons.length} lessons · ${level.hours}h`}
-      </p>
     </div>
   );
 }
 
-function StopNode({
-  stop,
-  progress,
-  nextLessonId,
-  desktop = false,
-}: {
-  stop: PathStop;
-  progress: ProgressMap;
-  nextLessonId: string | null;
-  desktop?: boolean;
-}) {
-  if (stop.kind === 'locked-level') {
-    return (
-      <LockedLevelNode
-        level={stop.level}
-        desktop={desktop}
-        offset={snakeOffset(stop.stopIndex)}
-      />
-    );
-  }
+function Chip({ tone, children }: { tone: 'success' | 'primary'; children: ReactNode }) {
+  const cls =
+    tone === 'success'
+      ? 'border-success/30 text-success bg-success/10'
+      : 'border-primary/30 text-primary bg-primary/10';
   return (
-    <LessonNode
-      level={stop.level}
-      lesson={stop.lesson}
-      progress={progress}
-      current={stop.lesson.id === nextLessonId}
-      desktop={desktop}
-      offset={snakeOffset(stop.stopIndex)}
-    />
+    <span
+      className={`inline-flex items-center gap-1 text-[10px] leading-none px-1.5 py-1 rounded-md border font-medium ${cls}`}
+    >
+      {children}
+    </span>
   );
 }
+
+/* ── Lesson node (shared by the map and the mobile list) ───── */
+
+type NodeStyle = CSSProperties & Record<'--learn-node-shade', string>;
+
+const NODE_SHADE: Record<NodeState, string> = {
+  complete: 'color-mix(in srgb, var(--color-success) 55%, black)',
+  current: 'color-mix(in srgb, var(--color-primary) 55%, black)',
+  open: 'color-mix(in srgb, var(--color-primary) 45%, black)',
+  gated: 'color-mix(in srgb, var(--color-border) 65%, black)',
+};
+
+const NODE_FACE: Record<NodeState, string> = {
+  complete: 'border-success bg-success/20 text-success',
+  current: 'learn-node-current border-primary bg-primary text-on-primary',
+  open: 'border-primary/70 bg-primary/15 text-primary',
+  gated: 'border-border bg-surface text-dark-text/60',
+};
 
 function LessonNode({
   level,
   lesson,
-  progress,
-  current,
-  desktop,
-  offset,
+  state,
+  size,
+  labelSide = 'right',
+  bubble = false,
+  row = false,
 }: {
   level: LearnLevel;
   lesson: LearnLesson;
-  progress: ProgressMap;
-  current: boolean;
-  desktop: boolean;
-  offset: number;
+  state: NodeState;
+  size: 'sm' | 'lg';
+  labelSide?: Side;
+  /** Show the bouncing START tag above the current node (desktop only). */
+  bubble?: boolean;
+  /** Render as a full-width row: node on the left, label inline (mobile). */
+  row?: boolean;
 }) {
-  const complete = isComplete(progress, lesson.id);
-  const unlocked = isLessonUnlocked(IGCSE_PAPER_2, lesson, progress);
+  const meta = lessonTypeMeta(lesson);
+  const Icon = meta.icon;
   const boss = isBossLesson(lesson);
+  const quiz = lesson.type === 'quiz';
   const href = lessonHref(level, lesson);
-  const labelSide = offset >= 0 ? 'left' : 'right';
+  const gated = state === 'gated';
 
-  const inner = (
-    <>
-      {complete ? (
-        <Check size={18} strokeWidth={2.5} />
-      ) : lesson.type === 'quiz' ? (
-        <HelpCircle size={18} />
-      ) : boss ? (
-        <Star size={18} />
-      ) : unlocked ? (
-        <span className="font-mono text-xs tabular-nums">{lesson.id.split('.').pop()}</span>
+  const shape = boss ? 'rounded-[24px]' : quiz ? 'rounded-2xl' : 'rounded-full';
+  const dims = size === 'lg' ? (boss ? 'w-20 h-20' : 'w-[72px] h-[72px]') : 'w-14 h-14';
+  const iconSize = size === 'lg' ? (boss ? 26 : 22) : 20;
+  const nodeStyle: NodeStyle = { '--learn-node-shade': NODE_SHADE[state] };
+
+  const face = (
+    <span
+      className={`learn-node relative shrink-0 flex items-center justify-center ${dims} ${shape} border-2 transition-colors ${NODE_FACE[state]}`}
+      style={nodeStyle}
+    >
+      {state === 'complete' ? (
+        <Check size={iconSize} strokeWidth={2.75} />
       ) : (
-        <Lock size={15} />
+        <Icon
+          size={iconSize}
+          strokeWidth={state === 'current' ? 2.5 : 2}
+          className={gated ? 'opacity-60' : undefined}
+        />
       )}
-      {current && (
-        <span className="absolute -top-7 left-1/2 -translate-x-1/2 mono-label text-primary whitespace-nowrap">
-          Up next
+      {gated && (
+        <span className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full border border-border bg-background flex items-center justify-center text-dark-text">
+          <Lock size={10} />
         </span>
       )}
-      <span
-        className={`pointer-events-none absolute top-1/2 -translate-y-1/2 text-[11px] font-medium whitespace-nowrap opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100 transition-opacity ${
-          desktop ? '' : 'hidden'
-        } ${labelSide === 'left' ? 'right-[calc(100%+14px)] text-right' : 'left-[calc(100%+14px)] text-left'}`}
-      >
-        <span className={complete ? 'text-success' : unlocked ? 'text-light-text' : 'text-dark-text'}>
-          {lesson.title}
+      {bubble && state === 'current' && (
+        <span
+          aria-hidden
+          className="learn-start-bubble absolute -top-[42px] left-1/2 -translate-x-1/2 mono-label font-bold px-2.5 py-1.5 rounded-lg bg-primary text-on-primary whitespace-nowrap shadow-[0_8px_22px_-8px_rgba(var(--color-primary-rgb),0.7)]"
+        >
+          Start
+          <span className="absolute left-1/2 -bottom-1 -translate-x-1/2 w-2 h-2 rotate-45 bg-primary" />
         </span>
-        <span className="text-dark-text/70 font-mono ml-1.5">{lesson.minutes}m</span>
-      </span>
-    </>
+      )}
+    </span>
   );
 
-  const nodeClass = nodeSurfaceClass({ complete, current, unlocked, boss, quiz: lesson.type === 'quiz' });
+  const label = (
+    <span
+      className={
+        row
+          ? 'min-w-0 flex-1'
+          : `absolute top-1/2 -translate-y-1/2 w-[190px] ${
+              labelSide === 'left' ? 'right-[calc(100%+16px)] text-right' : 'left-[calc(100%+16px)] text-left'
+            }`
+      }
+    >
+      <span
+        className={`block text-[13px] font-medium leading-snug ${
+          gated ? 'text-dark-text' : 'text-light-text'
+        }`}
+      >
+        {lesson.title}
+      </span>
+      <span className="block mono-label mt-1 text-dark-text/70 tabular-nums">
+        {meta.label} · {lesson.minutes} min
+      </span>
+    </span>
+  );
 
-  if (unlocked) {
+  const shell = row
+    ? 'group relative flex items-center gap-4 w-full min-h-16 py-1.5 pr-2 rounded-xl text-left'
+    : 'group relative inline-flex items-center justify-center';
+  const focus = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/70 focus-visible:ring-offset-2 focus-visible:ring-offset-background';
+
+  if (!gated) {
     return (
       <Link
-        id={`learn-stop-${lesson.id}`}
         href={href}
-        aria-current={current ? 'step' : undefined}
-        aria-label={`${lesson.title}, ${lesson.minutes} minutes`}
+        data-learn-stop={lesson.id}
+        aria-current={state === 'current' ? 'step' : undefined}
+        aria-label={`${lesson.title}, ${meta.label}, ${lesson.minutes} minutes`}
         onClick={() =>
           captureLearn('learn_lesson_clicked', learnLessonProps(level, lesson, { source: 'node' }))
         }
-        className={nodeClass}
+        className={`${shell} ${focus} ${row ? 'hover:bg-surface/70' : ''} ${shape}`}
       >
-        {inner}
+        {face}
+        {label}
+        {row && state === 'current' && (
+          <span className="mono-label text-primary shrink-0 inline-flex items-center gap-1">
+            Start
+            <ArrowRight size={11} />
+          </span>
+        )}
       </Link>
     );
   }
@@ -339,9 +504,9 @@ function LessonNode({
   return (
     <button
       type="button"
-      id={`learn-stop-${lesson.id}`}
+      data-learn-stop={lesson.id}
       aria-label={`${lesson.title} (locked)`}
-      className={nodeClass}
+      className={`${shell} ${focus} cursor-not-allowed ${shape}`}
       onClick={() =>
         captureLearn(
           'learn_gate_blocked',
@@ -349,73 +514,86 @@ function LessonNode({
         )
       }
     >
-      {inner}
+      {face}
+      {label}
     </button>
   );
 }
 
-function LockedLevelNode({
-  level,
-  desktop,
-  offset,
-}: {
-  level: LearnLevel;
-  desktop: boolean;
-  offset: number;
-}) {
-  const labelSide = offset >= 0 ? 'left' : 'right';
-  const first = level.lessons[0];
+/* ── Roadmap: the levels that are not playable yet ─────────── */
+
+function Roadmap({ levels }: { levels: LearnLevel[] }) {
+  if (levels.length === 0) return null;
+  const lessons = levels.reduce((sum, level) => sum + level.lessons.length, 0);
+  const hours = levels.reduce((sum, level) => sum + (parseFloat(level.hours) || 0), 0);
+  const first = levels[0]!;
+  const lastLevel = levels[levels.length - 1]!;
+
   return (
-    <button
-      type="button"
-      id={`learn-stop-level-${level.slug}`}
-      aria-label={`Level ${level.number} ${level.name} (coming next)`}
-      className={nodeSurfaceClass({ complete: false, current: false, unlocked: false, boss: true, quiz: false })}
-      onClick={() =>
-        captureLearn(
-          'learn_gate_blocked',
-          first
-            ? learnLessonProps(level, first, { source: 'node', playable: false })
-            : learnLevelProps(level, { source: 'node', playable: false }),
-        )
-      }
-    >
-      <Lock size={16} />
-      <span className="absolute -bottom-6 left-1/2 -translate-x-1/2 font-mono text-[10px] text-dark-text tabular-nums whitespace-nowrap">
-        {level.lessons.length} ahead
-      </span>
-      <span
-        className={`pointer-events-none absolute top-1/2 -translate-y-1/2 text-[11px] font-medium whitespace-nowrap opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100 transition-opacity ${
-          desktop ? '' : 'hidden'
-        } ${labelSide === 'left' ? 'right-[calc(100%+14px)] text-right' : 'left-[calc(100%+14px)] text-left'}`}
-      >
-        <span className="text-dark-text">{level.name} — coming next</span>
-      </span>
-    </button>
+    <section aria-label="Coming levels" className="mt-6 md:mt-2">
+      <div className="flex items-center gap-3">
+        <span className="mono-label text-dark-text">Ahead on the path</span>
+        <span className="flex-1 h-px" style={{ background: TRACK }} aria-hidden />
+        <span className="mono-label text-dark-text/70 tabular-nums">
+          {levels.length} levels · {lessons} lessons · {hours} h
+        </span>
+      </div>
+      <p className="text-xs text-dark-text mt-1.5 mb-4">
+        Levels {first.number}–{lastLevel.number} unlock as we ship them. Levels 1–3 are being
+        measured first.
+      </p>
+      <ol className="relative">
+        <span
+          aria-hidden
+          className="absolute left-[19px] top-6 bottom-6 border-l-2 border-dashed"
+          style={{ borderColor: TRACK }}
+        />
+        {levels.map((level, i) => {
+          const hue = levelHue(level);
+          const finish = i === levels.length - 1;
+          const firstLesson = level.lessons[0];
+          return (
+            <li key={level.slug} className="relative">
+              <button
+                type="button"
+                className="group w-full flex items-center gap-4 py-2.5 pr-3 rounded-xl text-left hover:bg-surface/70 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/70"
+                onClick={() =>
+                  captureLearn(
+                    'learn_gate_blocked',
+                    firstLesson
+                      ? learnLessonProps(level, firstLesson, { source: 'roadmap', playable: false })
+                      : learnLevelProps(level, { source: 'roadmap', playable: false }),
+                  )
+                }
+              >
+                <span
+                  className="relative z-[1] shrink-0 w-10 h-10 rounded-full border-2 bg-background flex items-center justify-center text-dark-text/70 transition-colors group-hover:text-light-text"
+                  style={{ borderColor: `color-mix(in srgb, ${hue} 45%, var(--color-border))` }}
+                >
+                  {finish ? <Flag size={14} /> : <Lock size={13} />}
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="flex items-baseline gap-2">
+                    <span className="mono-label font-semibold" style={{ color: hue }}>
+                      {pad2(level.number)}
+                    </span>
+                    <span className="display-serif text-lg font-semibold text-light-text leading-tight">
+                      {level.name}
+                    </span>
+                  </span>
+                  <span className="block text-xs text-dark-text truncate mt-0.5">{level.leaveWith}</span>
+                  <span className="block sm:hidden mono-label text-dark-text/70 tabular-nums mt-1">
+                    {level.lessons.length} lessons · {level.hours} h
+                  </span>
+                </span>
+                <span className="hidden sm:block mono-label text-dark-text/70 tabular-nums shrink-0">
+                  {level.lessons.length} lessons · {level.hours} h
+                </span>
+              </button>
+            </li>
+          );
+        })}
+      </ol>
+    </section>
   );
-}
-
-function nodeSurfaceClass({
-  complete,
-  current,
-  unlocked,
-  boss,
-  quiz,
-}: {
-  complete: boolean;
-  current: boolean;
-  unlocked: boolean;
-  boss: boolean;
-  quiz: boolean;
-}): string {
-  const shape = quiz ? 'rounded-xl' : 'rounded-full';
-  const size = boss ? 'w-16 h-16 md:w-[4.25rem] md:h-[4.25rem]' : 'w-14 h-14 md:w-16 md:h-16';
-  const state = complete
-    ? 'border-success/50 bg-success/15 text-success'
-    : current
-      ? 'border-primary bg-primary/20 text-primary learn-node-current'
-      : unlocked
-        ? 'border-primary/40 bg-background text-light-text hover:border-primary hover:bg-primary/10 hover:text-primary'
-        : 'border-border bg-surface text-dark-text/55 cursor-not-allowed';
-  return `group relative ${size} ${shape} border-2 flex items-center justify-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/70 ${state}`;
 }

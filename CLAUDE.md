@@ -223,7 +223,7 @@ Progress is localStorage; these fire from the path map and the lesson player. In
 | `learn_opened` | `course`, `from`, `signed_in`, `completed_count`, `playable_count`, `next_lesson` |
 | `learn_continue_clicked` | lesson props + `source: continue` |
 | `learn_lesson_clicked` | lesson props + `source: node` |
-| `learn_gate_blocked` | lesson/level props + `source` (`node`) |
+| `learn_gate_blocked` | lesson/level props + `source` (`node` on a gated map node, `roadmap` on a coming-level row) |
 | `learn_gate_viewed` | landed on a locked/unplayable lesson URL |
 | `learn_lesson_started` | lesson props + `already_complete` |
 | `learn_check_submitted` | lesson props + `ok`, `reason` (`passed`\|`must_contain`\|`forbidden`\|`runtime`\|`wrong_output`\|…), `attempts`, `message` |

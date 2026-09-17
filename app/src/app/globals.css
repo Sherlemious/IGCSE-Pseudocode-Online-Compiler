@@ -638,18 +638,60 @@ textarea:focus-visible {
   animation: trace-row-in 0.24s ease-out both;
 }
 
+/* ── Paper 2 Path nodes ─────────────────────────────────── */
+/* Chunky "pressable" stops: a solid shade under each node (set per state via  */
+/* --learn-node-shade) that collapses on press. The current node also pulses a */
+/* ring; the pulse keyframes carry the shade so the two shadows compose.       */
+.learn-node {
+  box-shadow: 0 5px 0 var(--learn-node-shade, var(--color-border));
+  transition:
+    transform 120ms ease,
+    box-shadow 120ms ease,
+    filter 120ms ease;
+}
+
+.learn-node:hover {
+  filter: brightness(1.08);
+}
+
+a:active > .learn-node,
+button:active > .learn-node {
+  transform: translateY(3px);
+  box-shadow: 0 2px 0 var(--learn-node-shade, var(--color-border));
+}
+
 @keyframes learn-node-pulse {
   0%,
   100% {
-    box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-primary) 45%, transparent);
+    box-shadow:
+      0 5px 0 var(--learn-node-shade, var(--color-border)),
+      0 0 0 0 color-mix(in srgb, var(--color-primary) 45%, transparent);
   }
   50% {
-    box-shadow: 0 0 0 11px color-mix(in srgb, var(--color-primary) 0%, transparent);
+    box-shadow:
+      0 5px 0 var(--learn-node-shade, var(--color-border)),
+      0 0 0 12px color-mix(in srgb, var(--color-primary) 0%, transparent);
   }
 }
 
 .learn-node-current {
   animation: learn-node-pulse 2.2s ease-out infinite;
+}
+
+/* The START tag above the current node bobs; centring stays on the `translate` */
+/* property so the transform keyframe composes with it.                          */
+@keyframes learn-start-bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+.learn-start-bubble {
+  animation: learn-start-bob 1.6s ease-in-out infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -658,7 +700,8 @@ textarea:focus-visible {
   .run-pulse-success,
   .run-pulse-error,
   .exec-dot,
-  .learn-node-current {
+  .learn-node-current,
+  .learn-start-bubble {
     animation: none;
   }
 }

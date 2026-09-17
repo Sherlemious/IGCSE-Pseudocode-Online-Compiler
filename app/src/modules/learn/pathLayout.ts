@@ -32,108 +32,134 @@ export function curveThrough(points: { x: number; y: number }[]): string {
   return parts.join(' ');
 }
 
+export type Side = 'left' | 'right';
+
 export type LessonStop = {
   kind: 'lesson';
   id: string;
   level: LearnLevel;
   lesson: LearnLesson;
+  /** Percent of the column width. */
   x: number;
+  /** Pixels from the top of the map. */
   y: number;
+  /** Signed offset from centre in [-1, 1]; negative is left. */
+  offset: number;
+  /** Side of the node where the always-visible label sits — away from the curve. */
+  labelSide: Side;
   stopIndex: number;
 };
 
-export type LockedLevelStop = {
-  kind: 'locked-level';
-  id: string;
-  level: LearnLevel;
-  x: number;
-  y: number;
-  stopIndex: number;
-};
+export type PathStop = LessonStop;
 
-export type PathStop = LessonStop | LockedLevelStop;
-
-export type LevelPlaque = {
+export type LevelSection = {
   level: LearnLevel;
-  x: number;
-  y: number;
-  side: 'left' | 'right';
+  bannerY: number;
+  bannerHeight: number;
+  /** +1 winds right, -1 winds left. Alternates per level so 4–5 lesson levels don't all swing one way. */
+  snakeDir: 1 | -1;
+  /** Opposite the snake, so the big numeral sits in the empty half. */
+  watermarkSide: Side;
+  stops: LessonStop[];
+  /** Section extent in px: banner top → padded bottom. */
+  top: number;
+  bottom: number;
 };
 
 export type PathLayout = {
   width: number;
   height: number;
-  plaques: LevelPlaque[];
-  stops: PathStop[];
+  /** One section per playable level, in order. */
+  sections: LevelSection[];
+  /** Every playable lesson stop, in path order. */
+  stops: LessonStop[];
+  /** Levels that are not playable yet — rendered as the roadmap after the map. */
+  ahead: LearnLevel[];
 };
 
-const WIDTH = 100;
+export const PATH_WIDTH = 100;
 const CENTER = 50;
-const AMP = 24;
-const NODE_STEP = 104;
-const LOCKED_STEP = 128;
-const LEVEL_PAD = 72;
-const START_Y = 52;
+const AMP = 17;
+export const NODE_STEP = 108;
+export const BANNER_HEIGHT = 140;
+const BANNER_TO_NODE = 92;
+const NODE_TO_END = 64;
+const LEVEL_GAP = 28;
+const START_Y = 8;
+const TAIL = 24;
 
 export function layoutPath(course: LearnCourse): PathLayout {
-  const plaques: LevelPlaque[] = [];
-  const stops: PathStop[] = [];
+  const sections: LevelSection[] = [];
+  const stops: LessonStop[] = [];
+  const ahead: LearnLevel[] = [];
   let y = START_Y;
   let stopIndex = 0;
 
   for (const level of course.levels) {
-    const side: 'left' | 'right' = level.number % 2 === 1 ? 'left' : 'right';
-    plaques.push({
-      level,
-      x: side === 'left' ? 16 : 84,
-      y: y + 4,
-      side,
-    });
-
-    if (level.playable) {
-      for (const lesson of level.lessons) {
-        stops.push({
-          kind: 'lesson',
-          id: lesson.id,
-          level,
-          lesson,
-          x: CENTER + snakeOffset(stopIndex) * AMP,
-          y,
-          stopIndex,
-        });
-        y += NODE_STEP;
-        stopIndex += 1;
-      }
-    } else {
-      stops.push({
-        kind: 'locked-level',
-        id: `level-${level.slug}`,
-        level,
-        x: CENTER + snakeOffset(stopIndex) * AMP,
-        y,
-        stopIndex,
-      });
-      y += LOCKED_STEP;
-      stopIndex += 1;
+    if (!level.playable) {
+      ahead.push(level);
+      continue;
     }
-    y += LEVEL_PAD;
+
+    const snakeDir: 1 | -1 = level.number % 2 === 1 ? 1 : -1;
+    const top = y;
+    const bannerY = y;
+    y += BANNER_HEIGHT + BANNER_TO_NODE;
+
+    const sectionStops: LessonStop[] = level.lessons.map((lesson, i) => {
+      const offset = snakeDir * snakeOffset(i);
+      const labelSide: Side =
+        offset > 0 ? 'right' : offset < 0 ? 'left' : snakeDir > 0 ? 'left' : 'right';
+      return {
+        kind: 'lesson',
+        id: lesson.id,
+        level,
+        lesson,
+        x: CENTER + offset * AMP,
+        y: y + i * NODE_STEP,
+        offset,
+        labelSide,
+        stopIndex: stopIndex + i,
+      };
+    });
+    stopIndex += level.lessons.length;
+    y += Math.max(0, level.lessons.length - 1) * NODE_STEP + NODE_TO_END;
+
+    sections.push({
+      level,
+      bannerY,
+      bannerHeight: BANNER_HEIGHT,
+      snakeDir,
+      watermarkSide: snakeDir > 0 ? 'left' : 'right',
+      stops: sectionStops,
+      top,
+      bottom: y,
+    });
+    stops.push(...sectionStops);
+    y += LEVEL_GAP;
   }
 
-  return { width: WIDTH, height: y + 28, plaques, stops };
+  const height = (sections.length > 0 ? y - LEVEL_GAP : y) + TAIL;
+  return { width: PATH_WIDTH, height, sections, stops, ahead };
 }
 
-/** Fraction of the connector to light, stopping at the first incomplete stop. */
-export function progressAlongPath(stops: PathStop[], completedIds: Set<string>): number {
-  if (stops.length < 2) return 0;
+/** Number of leading stops that are complete — the connector is lit up to here. */
+export function leadingCompleted(stops: PathStop[], completedIds: Set<string>): number {
   let lit = 0;
   for (const stop of stops) {
-    if (stop.kind === 'lesson' && completedIds.has(stop.lesson.id)) {
+    if (completedIds.has(stop.lesson.id)) {
       lit += 1;
       continue;
     }
     break;
   }
-  return lit / (stops.length - 1);
+  return lit;
+}
+
+/** Fraction of the connector to light, stopping at the first incomplete stop. */
+export function progressAlongPath(stops: PathStop[], completedIds: Set<string>): number {
+  if (stops.length < 2) return 0;
+  return Math.min(1, leadingCompleted(stops, completedIds) / (stops.length - 1));
 }
 
 export function isBossLesson(lesson: LearnLesson): boolean {
