@@ -214,7 +214,9 @@ function DesktopSection({
         {section.stops.map((stop) => (
           <li
             key={stop.id}
-            className="absolute z-[1] -translate-x-1/2 -translate-y-1/2"
+            /* Zero-size anchor sitting exactly on the path point; the link
+               positions itself around it so the node stays centred. */
+            className="absolute z-[1]"
             style={{ left: `${stop.x}%`, top: stop.y }}
           >
             <LessonNode
@@ -380,6 +382,9 @@ function Chip({ tone, children }: { tone: 'success' | 'primary'; children: React
 
 type NodeStyle = CSSProperties & Record<'--learn-node-shade' | '--learn-node-gloss', string>;
 
+/** Padding inside a map lesson's hover pill, in px — also its anchor offset. */
+const PILL_PAD = 8;
+
 const NODE_SHADE: Record<NodeState, string> = {
   complete: 'color-mix(in srgb, var(--color-success) 55%, black)',
   current: 'color-mix(in srgb, var(--color-primary) 55%, black)',
@@ -483,16 +488,12 @@ function LessonNode({
   const label = (
     <span
       className={
-        row
-          ? 'min-w-0 flex-1'
-          : `absolute top-1/2 -translate-y-1/2 w-[190px] ${
-              labelSide === 'left' ? 'right-[calc(100%+16px)] text-right' : 'left-[calc(100%+16px)] text-left'
-            }`
+        row ? 'min-w-0 flex-1' : `w-[190px] ${labelSide === 'left' ? 'text-right' : 'text-left'}`
       }
     >
       <span
-        className={`block text-[13px] font-medium leading-snug ${
-          gated ? 'text-dark-text' : 'text-light-text'
+        className={`block text-[13px] font-medium leading-snug transition-colors ${
+          gated ? 'text-dark-text group-hover:text-light-text' : 'text-light-text group-hover:text-primary'
         }`}
       >
         {lesson.title}
@@ -503,9 +504,20 @@ function LessonNode({
     </span>
   );
 
+  // On the map the label is an in-flow sibling, so the link's box (and therefore
+  // its hover surface and hit area) covers the node and its text. The row is
+  // anchored by whichever edge keeps the node centred on the path point.
+  const half = size === 'lg' ? (boss ? 40 : 36) : 28;
+  const shellStyle: CSSProperties | undefined = row
+    ? undefined
+    : labelSide === 'left'
+      ? { right: -(half + PILL_PAD) }
+      : { left: -(half + PILL_PAD) };
   const shell = row
-    ? 'group relative flex items-center gap-4 w-full min-h-16 py-1.5 pr-2 rounded-xl text-left'
-    : 'group relative inline-flex items-center justify-center';
+    ? 'group relative flex items-center gap-4 w-full min-h-16 py-1.5 pr-2 rounded-xl text-left transition-colors hover:bg-surface/70'
+    : `group absolute top-0 -translate-y-1/2 flex items-center gap-4 p-2 rounded-2xl text-left transition-colors hover:bg-surface/70 ${
+        labelSide === 'left' ? 'flex-row-reverse' : ''
+      }`;
   const focus = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/70 focus-visible:ring-offset-2 focus-visible:ring-offset-background';
 
   if (!gated) {
@@ -518,7 +530,8 @@ function LessonNode({
         onClick={() =>
           captureLearn('learn_lesson_clicked', learnLessonProps(level, lesson, { source: 'node' }))
         }
-        className={`${shell} ${focus} ${row ? 'hover:bg-surface/70' : ''} ${shape}`}
+        className={`${shell} ${focus}`}
+        style={shellStyle}
       >
         {face}
         {label}
@@ -537,7 +550,8 @@ function LessonNode({
       type="button"
       data-learn-stop={lesson.id}
       aria-label={`${lesson.title} (locked)`}
-      className={`${shell} ${focus} cursor-not-allowed ${shape}`}
+      className={`${shell} ${focus} cursor-not-allowed`}
+      style={shellStyle}
       onClick={() =>
         captureLearn(
           'learn_gate_blocked',
