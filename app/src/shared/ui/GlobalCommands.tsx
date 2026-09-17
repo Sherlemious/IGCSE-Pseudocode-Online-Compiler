@@ -50,7 +50,7 @@ export default function GlobalCommands() {
     ...(sessionShowsClasses(session?.user)
       ? [{ id: 'go-classes', label: 'Go to Classes', group: 'Go to', keywords: 'teacher homework roster', run: () => router.push('/classes') } satisfies Command]
       : []),
-    { id: 'go-compare', label: 'Go to Compare', group: 'Go to', keywords: 'pseudocode pro alternative best compiler paper 2', run: () => router.push('/compare') },
+    { id: 'go-compare', label: 'Why this compiler', group: 'Go to', keywords: 'why this compiler best paper 2 practice plans pricing compare', run: () => router.push('/compare') },
     { id: 'go-faq', label: 'Go to FAQ', group: 'Go to', keywords: 'questions help about', run: () => router.push('/faq') },
     { id: 'go-examples', label: 'Go to Examples', group: 'Go to', keywords: 'samples snippets', run: () => router.push('/examples') },
 

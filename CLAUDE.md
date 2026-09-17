@@ -237,6 +237,16 @@ Progress is localStorage; these fire from the path map and the lesson player. In
 | `learn_docs_clicked` | `docs_anchor` |
 | `learn_pane_changed` | mobile `pane` `lesson`\|`editor`, `source` `tab`\|`cta` |
 
+### Compare (`/compare`)
+
+Page-side events fire via `captureEvent` from `CompareAnalytics`. `$pageview` still fires automatically; these are the conversion funnel.
+
+| Event | Properties |
+|-------|-----------|
+| `compare_viewed` | `signed_in`, `from` (query `from`, internal pathname, or referrer host), `question_count` |
+| `compare_cta_clicked` | `destination` (`compiler`\|`practice`\|`exam`\|`pricing`\|`teacher_pricing`\|`classes`\|`faq`\|`docs`), `source` (`hero`\|`plans`\|`teachers`\|`pricing`\|`faq`) |
+| `compare_section_clicked` | `section` (`why`\|`plans`\|`teachers`\|`usage`\|`pricing`\|`faq`) |
+
 ## Environment Variables
 
 Copy `app/.env.example` → `app/.env`. Required:

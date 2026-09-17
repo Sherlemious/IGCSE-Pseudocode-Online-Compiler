@@ -42,7 +42,7 @@ function productLinks() {
     line('/exam', 'Timed exam simulator', 'Paper 2-style timed papers'),
     line('/docs', 'Cambridge pseudocode guide', 'IGCSE 0478 and A Level 9618 syntax — DECLARE, CONSTANT, DIV, ROUND'),
     line('/examples', 'Cambridge pseudocode examples', 'runnable snippets by topic'),
-    line('/compare', 'Compare IGCSE pseudocode compilers', 'Paper 2 ranking vs Pseudocode Pro, Coddy, PseudoRun, PseudoStudio'),
+    line('/compare', 'Why this compiler for Paper 2', 'hidden tests, timed mocks, trace table, Student and teacher plans'),
     line('/faq', 'FAQ', 'how the site works, DECLARE, teachers, grading, which tool to use'),
     line('/pricing', 'Pricing', 'free compiler; Student plan typically about $2/month'),
     line('/llms.txt', 'llms.txt', 'short machine-readable index'),

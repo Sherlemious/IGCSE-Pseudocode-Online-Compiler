@@ -1419,7 +1419,7 @@ OUTPUT "Valid mark entered: ", Mark`}
 
           <div className="h-8" />
           <p className="text-[11px] text-dark-text/40 pb-4">
-            <Link href="/compare" className="hover:text-primary">Compare tools</Link>
+            <Link href="/compare" className="hover:text-primary">Why this compiler</Link>
             <span className="mx-1.5">·</span>
             <Link href="/faq" className="hover:text-primary">FAQ</Link>
             <span className="mx-1.5">·</span>

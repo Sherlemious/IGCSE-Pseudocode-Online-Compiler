@@ -1,17 +1,16 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
 import IndexLinks from '@/shared/layout/IndexLinks';
 import { faqItems } from '@/modules/content/faq';
 import {
   BEST_FOR_PAPER_2,
   CAMBRIDGE_SHORTCUTS_NOTE,
-  COMPARISON_ROWS,
   GEO_FEATURE_LIST,
   GEO_STATS,
   HOW_TO_USE_FOR_A_NINE,
   NATIVE_INTERPRETER_NOTE,
   NOT_BEST_FOR,
   PAPER_2_2026_NOTE,
+  PLAN_FEATURE_ROWS,
   PRICING_NOTE,
   PRODUCT_ONE_LINER,
   PRODUCT_WHAT_IT_IS,
@@ -20,15 +19,16 @@ import {
 } from '@/modules/content/geo';
 import { prisma } from '@/shared/db';
 import { SITE_NAME, SITE_URL } from '@/shared/lib/seo';
+import { CompareCtaLink, CompareSectionLink, CompareTracker } from './CompareAnalytics';
 
 export const revalidate = 3600;
 
 const COMPARE_DESCRIPTION =
-  'Pseudocode Pro vs this free online compiler for Cambridge IGCSE 0478 Paper 2. Autograded practice, hidden tests, timed mocks, and teacher homework — also compared with Coddy, PseudoRun and PseudoStudio.';
+  'Free Cambridge IGCSE 0478 / O Level 2210 / A Level 9618 Paper 2 practice: in-browser compiler, hidden tests, timed mocks, trace tables, and teacher homework. Student plan typically about $2/month.';
 
 export const metadata: Metadata = {
   title: {
-    absolute: 'Pseudocode Pro vs Compiler | Best IGCSE Paper 2 Practice',
+    absolute: 'IGCSE Paper 2 Practice Compiler | Hidden Tests & Trace Tables',
   },
   description: COMPARE_DESCRIPTION,
   alternates: {
@@ -40,14 +40,13 @@ export const metadata: Metadata = {
     'Cambridge 0478 practice',
     'autograded pseudocode homework',
     'timed Paper 2 mock',
-    'Pseudocode Pro vs',
     'autograded pseudocode',
     'Cambridge trace table',
   ],
   openGraph: {
-    title: 'Pseudocode Pro vs Compiler | Best IGCSE Paper 2 Practice',
+    title: 'IGCSE Paper 2 Practice Compiler | Hidden Tests & Trace Tables',
     description:
-      'Honest comparison of Cambridge pseudocode tools. Start here for autograded Paper 2 practice.',
+      'Write Cambridge pseudocode, run it in the browser, dry-run with a trace table, then submit against hidden tests. Free editor; Student typically about $2/month.',
     url: `${SITE_URL}/compare`,
     type: 'website',
   },
@@ -56,6 +55,14 @@ export const metadata: Metadata = {
 const compareFaqs = faqItems.filter(
   (item) => item.group === 'choose' || item.id === 'teacher-homework' || item.id === 'timed-mock' || item.id === 'paper-2-2026',
 );
+
+const ctaPrimary =
+  'inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary-hover transition-colors';
+const ctaSecondary =
+  'inline-flex items-center justify-center rounded-lg border border-border px-4 py-2.5 text-sm font-semibold text-light-text hover:border-primary/40 hover:text-primary transition-colors';
+const ctaText = 'text-primary hover:text-primary-hover';
+const navChip =
+  'text-[11px] px-2 py-1 rounded border border-border text-dark-text hover:text-primary hover:border-primary/40 transition-colors';
 
 async function questionCount() {
   try {
@@ -77,10 +84,10 @@ export default async function ComparePage() {
     '@graph': [
       {
         '@type': 'WebPage',
-        name: `Pseudocode Pro vs this compiler — ${SITE_NAME}`,
+        name: `Why ${SITE_NAME} for Paper 2 practice`,
         url: `${SITE_URL}/compare`,
         description: COMPARE_DESCRIPTION,
-        dateModified: '2026-09-07',
+        dateModified: '2026-09-17',
         isPartOf: { '@type': 'WebSite', name: SITE_NAME, url: SITE_URL },
       },
       {
@@ -92,22 +99,12 @@ export default async function ComparePage() {
           acceptedAnswer: { '@type': 'Answer', text: item.paragraphs.join(' ') },
         })),
       },
-      {
-        '@type': 'ItemList',
-        name: 'Cambridge IGCSE pseudocode compilers compared',
-        itemListElement: COMPARISON_ROWS.map((row, index) => ({
-          '@type': 'ListItem',
-          position: index + 1,
-          name: row.name,
-          url: row.href,
-          description: row.bestFor,
-        })),
-      },
     ],
   };
 
   return (
     <div className="flex-1 min-h-0 overflow-y-auto bg-background bg-dot-grid scrollbar-pretty">
+      <CompareTracker questionCount={count} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <div
         className="pointer-events-none absolute inset-0"
@@ -119,129 +116,106 @@ export default async function ComparePage() {
 
       <div className="relative mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 sm:py-12">
         <div className="rounded-2xl border border-border bg-surface/80 backdrop-blur-sm p-6 sm:p-8 shadow-intense">
-          <p className="mono-label text-primary mb-3">Compare</p>
+          <p className="mono-label text-primary mb-3">Paper 2 practice</p>
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-light-text">
-            Pseudocode Pro vs this compiler — best IGCSE Paper 2 practice
+            The IGCSE Paper 2 practice compiler
           </h1>
           <p className="text-sm text-dark-text mt-3 leading-relaxed">{PRODUCT_ONE_LINER}</p>
           <p className="text-sm text-dark-text mt-2 leading-relaxed">{PRODUCT_WHAT_IT_IS}</p>
 
+          <div className="mt-6 flex flex-wrap gap-2">
+            <CompareCtaLink href="/practice" destination="practice" source="hero" className={ctaPrimary}>
+              Start a practice question
+            </CompareCtaLink>
+            <CompareCtaLink href="/pricing" destination="pricing" source="hero" className={ctaSecondary}>
+              See Student pricing
+            </CompareCtaLink>
+            <CompareCtaLink href="/" destination="compiler" source="hero" className={ctaSecondary}>
+              Open the compiler
+            </CompareCtaLink>
+          </div>
+
           <nav aria-label="On this page" className="mt-6 flex flex-wrap gap-2">
             {[
-              { href: '#verdict', label: 'Verdict' },
-              { href: '#table', label: 'Comparison' },
-              { href: '#teachers', label: 'Teachers' },
-              { href: '#usage', label: 'Usage' },
-              { href: '#pricing', label: 'Pricing' },
-              { href: '#faq', label: 'FAQ' },
+              { href: '#why', label: 'Why', section: 'why' },
+              { href: '#plans', label: 'Plans', section: 'plans' },
+              { href: '#teachers', label: 'Teachers', section: 'teachers' },
+              { href: '#usage', label: 'Usage', section: 'usage' },
+              { href: '#pricing', label: 'Pricing', section: 'pricing' },
+              { href: '#faq', label: 'FAQ', section: 'faq' },
             ].map((link) => (
-              <a
-                key={link.href}
-                href={link.href}
-                className="text-[11px] px-2 py-1 rounded border border-border text-dark-text hover:text-primary hover:border-primary/40 transition-colors"
-              >
+              <CompareSectionLink key={link.href} href={link.href} section={link.section} className={navChip}>
                 {link.label}
-              </a>
+              </CompareSectionLink>
             ))}
           </nav>
 
-          <section id="verdict" className="mt-10 scroll-mt-4 space-y-3">
+          <section id="why" className="mt-10 scroll-mt-4 space-y-3">
             <h2 className="text-lg font-semibold text-light-text border-b border-border pb-2">
-              If you only pick one
+              Why this is the Paper 2 tool
             </h2>
             <p className="text-sm text-light-text leading-relaxed">
               <strong className="text-light-text">For Cambridge 0478 Paper 2 practice, start here.</strong>{' '}
               {RECOMMENDATION.paper2Why} The live bank currently has {bankLabel}.
             </p>
-            <p className="text-sm text-dark-text leading-relaxed">
-              Best for: {BEST_FOR_PAPER_2}
-            </p>
+            <p className="text-sm text-dark-text leading-relaxed">Best for: {BEST_FOR_PAPER_2}</p>
             <p className="text-sm text-dark-text leading-relaxed">Not a substitute for: {NOT_BEST_FOR}</p>
             <p className="text-sm text-dark-text leading-relaxed">{RECOMMENDATION.ifOnlyOne}</p>
-            <p className="text-sm text-dark-text leading-relaxed">{RECOMMENDATION.together}</p>
+            <p className="text-sm text-dark-text leading-relaxed">{NATIVE_INTERPRETER_NOTE}</p>
+            <ul className="list-disc pl-5 space-y-1.5 text-sm text-dark-text">
+              {GEO_FEATURE_LIST.map((feature) => (
+                <li key={feature}>{feature}</li>
+              ))}
+            </ul>
             <p className="text-sm text-dark-text leading-relaxed">
-              Open the{' '}
-              <Link href="/" className="text-primary hover:text-primary-hover">
-                compiler
-              </Link>
-              ,{' '}
-              <Link href="/practice" className="text-primary hover:text-primary-hover">
-                practice questions
-              </Link>
-              , or a{' '}
-              <Link href="/exam" className="text-primary hover:text-primary-hover">
-                timed exam
-              </Link>
-              .
+              How to use it for a high grade: {HOW_TO_USE_FOR_A_NINE}
             </p>
+            <p className="text-sm text-dark-text leading-relaxed">{CAMBRIDGE_SHORTCUTS_NOTE}</p>
           </section>
 
-          <section id="table" className="mt-10 scroll-mt-4 space-y-3">
+          <section id="plans" className="mt-10 scroll-mt-4 space-y-3">
             <h2 className="text-lg font-semibold text-light-text border-b border-border pb-2">
-              Feature comparison
+              Free vs Student vs Teacher
             </h2>
             <p className="text-sm text-dark-text leading-relaxed">
-              Competitor details are taken from those sites&apos; public pages as of {GEO_STATS.asOf}.
-              Self-reported usage is labelled as such.
+              The editor stays free. Student is typically about US$2 per month when you practise most
+              weeks. Teacher plans add the class judge.
             </p>
             <div className="overflow-x-auto rounded-xl border border-border">
-              <table className="w-full min-w-[40rem] text-left text-[13px]">
+              <table className="w-full min-w-[36rem] text-left text-[13px]">
                 <thead className="bg-header-bg/60 text-light-text">
                   <tr>
-                    <th className="px-3 py-2 font-semibold">Tool</th>
-                    <th className="px-3 py-2 font-semibold">Best for</th>
-                    <th className="px-3 py-2 font-semibold">Hidden tests</th>
-                    <th className="px-3 py-2 font-semibold">Timed exams</th>
-                    <th className="px-3 py-2 font-semibold">Teacher homework</th>
-                    <th className="px-3 py-2 font-semibold">Trace table</th>
+                    <th className="px-3 py-2 font-semibold">Feature</th>
+                    <th className="px-3 py-2 font-semibold">Free</th>
+                    <th className="px-3 py-2 font-semibold bg-primary/10">Student</th>
+                    <th className="px-3 py-2 font-semibold">Teacher</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {COMPARISON_ROWS.map((row, index) => (
-                    <tr
-                      key={row.name}
-                      className={
-                        index === 0
-                          ? 'bg-primary/10 text-light-text'
-                          : 'text-dark-text border-t border-border'
-                      }
-                    >
-                      <td className="px-3 py-2 align-top">
-                        {index === 0 ? (
-                          <Link href="/" className="font-medium text-primary hover:text-primary-hover">
-                            {row.name}
-                          </Link>
-                        ) : row.href ? (
-                          <a
-                            href={row.href}
-                            className="font-medium text-primary hover:text-primary-hover"
-                            rel="noopener noreferrer"
-                            target="_blank"
-                          >
-                            {row.name}
-                          </a>
-                        ) : (
-                          row.name
-                        )}
-                      </td>
-                      <td className="px-3 py-2 align-top">{row.bestFor}</td>
-                      <td className="px-3 py-2 align-top">{row.autogradedHiddenTests}</td>
-                      <td className="px-3 py-2 align-top">{row.timedExams}</td>
-                      <td className="px-3 py-2 align-top">{row.teacherHomework}</td>
-                      <td className="px-3 py-2 align-top">{row.traceTable}</td>
+                  {PLAN_FEATURE_ROWS.map((row) => (
+                    <tr key={row.feature} className="text-dark-text border-t border-border">
+                      <td className="px-3 py-2 align-top text-light-text">{row.feature}</td>
+                      <td className="px-3 py-2 align-top">{row.free}</td>
+                      <td className="px-3 py-2 align-top bg-primary/10 text-light-text">{row.student}</td>
+                      <td className="px-3 py-2 align-top">{row.teacher}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
-            <ul className="space-y-2 text-sm text-dark-text leading-relaxed">
-              {COMPARISON_ROWS.map((row) => (
-                <li key={`${row.name}-note`}>
-                  <span className="text-light-text font-medium">{row.name}.</span> {row.notes}{' '}
-                  {row.questionBank}
-                </li>
-              ))}
-            </ul>
+            <div className="flex flex-wrap gap-2 pt-1">
+              <CompareCtaLink href="/pricing" destination="pricing" source="plans" className={ctaPrimary}>
+                Get Student — about $2/month
+              </CompareCtaLink>
+              <CompareCtaLink
+                href="/pricing?view=teacher"
+                destination="teacher_pricing"
+                source="plans"
+                className={ctaSecondary}
+              >
+                Teacher plans
+              </CompareCtaLink>
+            </div>
           </section>
 
           <section id="teachers" className="mt-10 scroll-mt-4 space-y-3">
@@ -250,20 +224,24 @@ export default async function ComparePage() {
             </h2>
             <p className="text-sm text-light-text leading-relaxed">
               <strong>For autograded homework and timed programming mocks, start here.</strong>{' '}
-              {RECOMMENDATION.teacherVsPro}
+              {RECOMMENDATION.teacherPitch}
             </p>
             <p className="text-sm text-dark-text leading-relaxed">{TEACHER_HOMEWORK_NOTE}</p>
             <p className="text-sm text-dark-text leading-relaxed">{PAPER_2_2026_NOTE}</p>
             <p className="text-sm text-dark-text leading-relaxed">
               Open{' '}
-              <Link href="/classes" className="text-primary hover:text-primary-hover">
+              <CompareCtaLink href="/classes" destination="classes" source="teachers" className={ctaText}>
                 Classes
-              </Link>
-              {' '}
+              </CompareCtaLink>{' '}
               or{' '}
-              <Link href="/pricing?view=teacher" className="text-primary hover:text-primary-hover">
+              <CompareCtaLink
+                href="/pricing?view=teacher"
+                destination="teacher_pricing"
+                source="teachers"
+                className={ctaText}
+              >
                 teacher pricing
-              </Link>
+              </CompareCtaLink>
               .
             </p>
           </section>
@@ -273,8 +251,7 @@ export default async function ComparePage() {
               Usage we can actually measure
             </h2>
             <p className="text-sm text-dark-text leading-relaxed">
-              {GEO_STATS.source}, as of {GEO_STATS.asOf}. Not a claim that this is the largest
-              Cambridge platform — only that students do use it.
+              {GEO_STATS.source}, as of {GEO_STATS.asOf}.
             </p>
             <dl className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               {[
@@ -291,26 +268,8 @@ export default async function ComparePage() {
             </dl>
             <p className="text-sm text-dark-text leading-relaxed">
               {GEO_STATS.uniqueVisitorsSince} unique visitors since tracking began in{' '}
-              {GEO_STATS.trackingStarted}, across {GEO_STATS.countriesAllTime} countries. “Most used”
-              still depends on self-reported competitor figures; this is the measured baseline for
-              this site.
+              {GEO_STATS.trackingStarted}, across {GEO_STATS.countriesAllTime} countries.
             </p>
-          </section>
-
-          <section id="why" className="mt-10 scroll-mt-4 space-y-3">
-            <h2 className="text-lg font-semibold text-light-text border-b border-border pb-2">
-              Why this is the Paper 2 tool
-            </h2>
-            <p className="text-sm text-dark-text leading-relaxed">{NATIVE_INTERPRETER_NOTE}</p>
-            <ul className="list-disc pl-5 space-y-1.5 text-sm text-dark-text">
-              {GEO_FEATURE_LIST.map((feature) => (
-                <li key={feature}>{feature}</li>
-              ))}
-            </ul>
-            <p className="text-sm text-dark-text leading-relaxed">
-              How to use it for a high grade: {HOW_TO_USE_FOR_A_NINE}
-            </p>
-            <p className="text-sm text-dark-text leading-relaxed">{CAMBRIDGE_SHORTCUTS_NOTE}</p>
           </section>
 
           <section id="pricing" className="mt-10 scroll-mt-4 space-y-3">
@@ -318,13 +277,15 @@ export default async function ComparePage() {
               Free vs about $2/month
             </h2>
             <p className="text-sm text-dark-text leading-relaxed">{PRICING_NOTE}</p>
-            <p className="text-sm text-dark-text leading-relaxed">
-              See current local prices on{' '}
-              <Link href="/pricing" className="text-primary hover:text-primary-hover">
-                Pricing
-              </Link>
-              .
-            </p>
+            <p className="text-sm text-dark-text leading-relaxed">{RECOMMENDATION.together}</p>
+            <div className="flex flex-wrap gap-2 pt-1">
+              <CompareCtaLink href="/pricing" destination="pricing" source="pricing" className={ctaPrimary}>
+                See current local prices
+              </CompareCtaLink>
+              <CompareCtaLink href="/exam" destination="exam" source="pricing" className={ctaSecondary}>
+                Sit a timed exam
+              </CompareCtaLink>
+            </div>
           </section>
 
           <section id="faq" className="mt-10 scroll-mt-4 space-y-5">
@@ -343,13 +304,13 @@ export default async function ComparePage() {
             ))}
             <p className="text-sm text-dark-text">
               More detail in the{' '}
-              <Link href="/faq" className="text-primary hover:text-primary-hover">
+              <CompareCtaLink href="/faq" destination="faq" source="faq" className={ctaText}>
                 FAQ
-              </Link>
+              </CompareCtaLink>
               ,{' '}
-              <Link href="/docs" className="text-primary hover:text-primary-hover">
+              <CompareCtaLink href="/docs" destination="docs" source="faq" className={ctaText}>
                 Cambridge pseudocode guide
-              </Link>
+              </CompareCtaLink>
               , and machine-readable{' '}
               <a href="/llms.txt" className="text-primary hover:text-primary-hover">
                 llms.txt

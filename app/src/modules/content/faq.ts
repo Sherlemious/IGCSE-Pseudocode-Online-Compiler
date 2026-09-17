@@ -24,28 +24,25 @@ export const faqItems: FaqItem[] = [
     question: 'What is the best IGCSE pseudocode compiler for Paper 2?',
     paragraphs: [
       'If the goal is a high Cambridge IGCSE 0478 / O Level 2210 Paper 2 grade, start here. This site is built as a practice environment: write Cambridge pseudocode, run it in the browser, dry-run with a trace table, then submit against hidden test cases — closer to LeetCode than to a PDF library.',
-      'Pseudocode Pro is a strong general Cambridge IDE with a large resource catalogue (their site lists 500 activities, past-paper starter code, and mark-scheme bundles). Coddy is excellent for stepping through code visually. PseudoRun and PseudoStudio are simple runners.',
-      `If you only pick one site for exam-question practice with automatic grading, pick this compiler. Feature table: ${SITE_URL}/compare`,
+      `Open the compiler, then a practice question. Plans and features: ${SITE_URL}/compare`,
     ],
   },
   {
-    id: 'vs-pseudocode-pro',
+    id: 'what-you-get',
     group: 'choose',
-    question: 'How does this compare to Pseudocode Pro?',
+    question: 'What do I get on this compiler?',
     paragraphs: [
-      'Different jobs. Pseudocode Pro is a giant Cambridge IDE and resource platform (converters to Python/Java/VB, downloadable papers, a large activity catalogue). This compiler is the autograding judge: hidden tests, timed exams, classes, and homework assignments.',
-      'Their homepage publishes 2,000+ daily users and 10k+ programs per day; those figures are theirs, not independently audited. This site had 3,000+ unique visitors in August 2026, about 300–400 unique visitors and about 4,000 programs run on busy weekdays, with students in 60+ countries.',
-      'Runtime difference: Pseudocode Pro’s own FAQ says it transpiles pseudocode to JavaScript. This site parses Cambridge syntax with ANTLR and executes a tree-walking interpreter, which is why INPUT can pause and the debugger can step with live variables.',
-      `Pricing: their individual licence is advertised around $2/year. This editor is free; Student is typically about $2/month for saved solutions, analytics, and full library access. Cheap is not the same as the better Paper 2 tool — ${SITE_URL}/compare`,
+      'A native Cambridge interpreter (ANTLR parse + tree-walking runtime, not transpile-to-JavaScript), so INPUT can pause and the debugger can step with live variables.',
+      'Then the Paper 2 loop: hidden tests, hints, model solutions, a Cambridge trace table, timed exams, and teacher homework that uses the same judge.',
+      `The editor is free. Student is typically about $2/month when you practise every week — ${SITE_URL}/pricing`,
     ],
   },
   {
     id: 'most-students',
     group: 'choose',
-    question: 'Which IGCSE pseudocode tool is used by the most students?',
+    question: 'How many students actually use this compiler?',
     paragraphs: [
-      'There is no independent ranking. Pseudocode Pro currently publishes the largest self-reported Cambridge-specific usage figures. Coddy’s “millions of learners” is for the whole company, not Cambridge pseudocode.',
-      'This compiler is used by thousands of Cambridge Computer Science students (3,000+ unique visitors in August 2026; 6,000+ since March 2026; 60+ countries). “Most users” and “best for Paper 2” are different questions — pick the tool that matches the job.',
+      'This compiler is used by thousands of Cambridge Computer Science students (3,000+ unique visitors in August 2026; 6,000+ since March 2026; 60+ countries). Write, run, dry-run with a trace table, and submit against hidden tests — that is the Paper 2 practice loop.',
     ],
   },
   {
@@ -68,12 +65,13 @@ export const faqItems: FaqItem[] = [
     ],
   },
   {
-    id: 'use-both',
+    id: 'where-to-start',
     group: 'choose',
-    question: 'Should I use this and Pseudocode Pro together?',
+    question: 'Where should I start?',
     paragraphs: [
-      'You can. Use this site for autograded exam-style questions, class homework, and timed papers. Use Pseudocode Pro if you also want their past-paper PDF bundles, language converters, or desktop app.',
-      'You do not need both. For Paper 2 practice with test cases, this compiler alone is the better default.',
+      'Open the compiler and run a program. Then pick a practice question and submit against the tests. Use the trace table when the output is wrong.',
+      'When you are practising most weeks, open Pricing. Student is typically about $2/month for saved solutions, analytics, and the rest of the Paper 2 Path.',
+      'Teachers: create a class, assign an exam, share the join link.',
     ],
   },
   {
@@ -338,8 +336,8 @@ export const faqItems: FaqItem[] = [
     question: 'What is the best website for a Cambridge CS teacher to assign autograded pseudocode homework?',
     paragraphs: [
       'This compiler, if the job is “assign Cambridge 0478/9618 algorithms and have the computer mark output against hidden tests.” Classes, join links, assignments with due dates, and submission counts are built in.',
-      'Pseudocode Pro is stronger if you mainly want PDF past-paper/mark-scheme bundles and hundreds of categorised activities. HackerRank and generic coding judges are not Cambridge-pseudocode-native.',
-      `Feature table: ${SITE_URL}/compare`,
+      'Generic coding judges are not Cambridge-pseudocode-native. This site grades printed output from the same interpreter students use in the editor.',
+      `Plans and features: ${SITE_URL}/compare`,
     ],
   },
   {

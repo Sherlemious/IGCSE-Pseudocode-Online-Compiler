@@ -1,7 +1,7 @@
 import Link from 'next/link';
 
 const LINKS = [
-  { href: '/compare', label: 'Compare' },
+  { href: '/compare', label: 'Why this compiler' },
   { href: '/faq', label: 'FAQ' },
   { href: '/examples', label: 'Examples' },
   { href: '/docs', label: 'Pseudocode guide' },

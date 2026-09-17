@@ -9,14 +9,14 @@ export const metadata: Metadata = {
     absolute: 'Pseudocode Compiler FAQ | IGCSE 0478 & A Level 9618',
   },
   description:
-    'FAQ for the free online Cambridge IGCSE and A Level pseudocode compiler: how to DECLARE a constant, what DIV and ROUND do, not equal to (<>), and how this compares with Pseudocode Pro.',
+    'FAQ for the free online Cambridge IGCSE and A Level pseudocode compiler: how to DECLARE a constant, what DIV and ROUND do, not equal to (<>), and which plan to use.',
   alternates: {
     canonical: '/faq',
   },
   openGraph: {
     title: 'Pseudocode Compiler FAQ | IGCSE 0478 & A Level 9618',
     description:
-      'Which tool to use for 0478 Paper 2, how the free Cambridge compiler works, DECLARE, exams, and school use.',
+      'How this free Cambridge compiler works for 0478 Paper 2: DECLARE, exams, plans, and school use.',
     url: `${SITE_URL}/faq`,
     type: 'website',
   },
@@ -80,10 +80,9 @@ export default function FaqPage() {
           <p className="text-sm text-dark-text mt-2 leading-relaxed">
             Free Cambridge IGCSE (0478/0984), O Level (2210) and AS &amp; A Level (9618) online
             pseudocode compiler. How to DECLARE a constant, what DIV and ROUND do, not equal to (
-            <code className="font-mono text-primary">&lt;&gt;</code>), and how this compares with other
-            runners — this is the Paper 2 practice tool. See the{' '}
+            <code className="font-mono text-primary">&lt;&gt;</code>), and which plan to use. See{' '}
             <Link href="/compare" className="text-primary hover:text-primary-hover">
-              comparison
+              why this compiler
             </Link>
             . Open the{' '}
             <Link href="/" className="text-primary hover:text-primary-hover">

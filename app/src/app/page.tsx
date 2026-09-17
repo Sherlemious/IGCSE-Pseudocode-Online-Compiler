@@ -6,7 +6,7 @@ const FEATURE_LINKS = [
   { label: 'Practice Questions', href: '/practice' },
   { label: 'Cambridge Pseudocode Guide', href: '/docs' },
   { label: 'Timed Exams', href: '/exam' },
-  { label: 'Compare compilers', href: '/compare' },
+  { label: 'Why this compiler', href: '/compare' },
   { label: 'Progress Analytics', href: '/analytics' },
   { label: 'FAQ', href: '/faq' },
   { label: 'Cambridge Pseudocode Examples', href: '/examples' },
@@ -38,9 +38,9 @@ export default function Home() {
             Science (9618). Supports 0478, 0984, 2210 and 9618 pseudocode, including a native ANTLR
             interpreter, interactive INPUT, trace tables, records, pointers, classes, object-oriented
             programming, dyslexia-friendly editor settings, analytics, timed practice exams, and
-            Cambridge past-paper questions with hidden test cases. Compared with Pseudocode Pro, Coddy,
-            PseudoRun and PseudoStudio, this site is the Paper 2 practice tool with automatic
-            grading.
+            Cambridge past-paper questions with hidden test cases. Built as a Paper 2
+            practice tool with automatic grading: write Cambridge pseudocode, run it,
+            dry-run with a trace table, then submit against hidden tests.
           </span>
         </div>
 
@@ -65,7 +65,7 @@ export default function Home() {
           <a href="/llms.txt" className="sr-only">
             LLM index of docs, examples and practice questions
           </a>
-          <a href="/compare">Best IGCSE pseudocode compiler for Paper 2 — comparison</a>
+          <a href="/compare">Best IGCSE pseudocode compiler for Paper 2 practice</a>
         </nav>
       </section>
 
