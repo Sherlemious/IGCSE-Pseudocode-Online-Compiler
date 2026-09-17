@@ -576,7 +576,9 @@ function Roadmap({ levels }: { levels: LearnLevel[] }) {
       <ol className="relative">
         <span
           aria-hidden
-          className="absolute left-[19px] top-6 bottom-6 border-l-2 border-dashed"
+          /* 31px = the row's 12px left padding + half the 40px disc, so the rail
+             runs through the centre of every lock. */
+          className="absolute left-[31px] top-6 bottom-6 border-l-2 border-dashed"
           style={{ borderColor: TRACK }}
         />
         {levels.map((level, i) => {
@@ -587,7 +589,7 @@ function Roadmap({ levels }: { levels: LearnLevel[] }) {
             <li key={level.slug} className="relative">
               <button
                 type="button"
-                className="group w-full flex items-center gap-4 py-2.5 pr-3 rounded-xl text-left hover:bg-surface/70 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/70"
+                className="learn-row group w-full flex items-center gap-4 py-2.5 px-3 rounded-xl text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/70"
                 onClick={() =>
                   captureLearn(
                     'learn_gate_blocked',
@@ -598,7 +600,7 @@ function Roadmap({ levels }: { levels: LearnLevel[] }) {
                 }
               >
                 <span
-                  className="relative z-[1] shrink-0 w-10 h-10 rounded-full border-2 bg-background flex items-center justify-center text-dark-text/70 transition-colors group-hover:text-light-text"
+                  className="learn-row-disc relative z-[1] shrink-0 w-10 h-10 rounded-full border-2 bg-background flex items-center justify-center text-dark-text/70 transition-colors group-hover:text-light-text"
                   style={{ borderColor: `color-mix(in srgb, ${hue} 45%, var(--color-border))` }}
                 >
                   {finish ? <Flag size={14} /> : <Lock size={13} />}

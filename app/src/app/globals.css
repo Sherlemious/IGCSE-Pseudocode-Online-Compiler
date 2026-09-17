@@ -686,6 +686,25 @@ button:active > .learn-node {
 
 /* The START tag above the current node bobs; centring stays on the `translate` */
 /* property so the transform keyframe composes with it.                          */
+/* Rail rows (the "ahead on the path" roadmap). The lock disc is opaque so it
+   can mask the dashed rail running behind it — which also makes it punch a
+   hole in the row's hover highlight. Painting the disc with the same hover
+   colour keeps the row reading as one continuous surface. */
+.learn-row {
+  --learn-row-hover: color-mix(in srgb, var(--color-surface) 70%, var(--color-background));
+  transition: background-color 150ms ease;
+}
+
+.learn-row:hover,
+.learn-row:focus-visible {
+  background-color: var(--learn-row-hover);
+}
+
+.learn-row:hover .learn-row-disc,
+.learn-row:focus-visible .learn-row-disc {
+  background-color: var(--learn-row-hover);
+}
+
 @keyframes learn-start-bob {
   0%,
   100% {
