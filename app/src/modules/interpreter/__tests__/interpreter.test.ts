@@ -601,6 +601,51 @@ describe('execute — division chains', () => {
   });
 });
 
+describe('execute — MOD with real operands', () => {
+  it('keeps the fractional remainder so a whole-number check works', async () => {
+    const { outputs } = await runCode('OUTPUT 7.5 MOD 1\n');
+    expect(outputs).toEqual(['0.5']);
+  });
+
+  it('keeps the fractional remainder in the function form', async () => {
+    const { outputs } = await runCode('OUTPUT MOD(7.5, 2)\n');
+    expect(outputs).toEqual(['1.5']);
+  });
+
+  it('keeps decimal remainders exact instead of showing float noise', async () => {
+    const { outputs } = await runCode(`OUTPUT 0.3 MOD 0.1
+OUTPUT 1.1 MOD 0.3
+OUTPUT 10.75 MOD 0.25
+`);
+    expect(outputs).toEqual(['0', '0.2', '0']);
+  });
+
+  it('still returns a whole remainder for integers', async () => {
+    const { outputs } = await runCode('OUTPUT 10 MOD 3\nOUTPUT MOD(10, 3)\n');
+    expect(outputs).toEqual(['1', '1']);
+  });
+
+  it('DIV stays integer division with a real operand', async () => {
+    const { outputs } = await runCode('OUTPUT 7.5 DIV 2\n');
+    expect(outputs).toEqual(['3']);
+  });
+
+  it('tells a decimal apart from a whole number entered as REAL', async () => {
+    const source = `DECLARE Num : REAL
+INPUT Num
+IF Num MOD 1 = 0 THEN
+    OUTPUT "Whole"
+ELSE
+    OUTPUT "Not whole"
+ENDIF
+`;
+    const decimal = await runCode(source, ['7.5']);
+    expect(decimal.outputs).toEqual(['Not whole']);
+    const whole = await runCode(source, ['8']);
+    expect(whole.outputs).toEqual(['Whole']);
+  });
+});
+
 describe('execute — CASE with OTHERWISE', () => {
   it('matches a clause and skips OTHERWISE', async () => {
     const code = [

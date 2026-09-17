@@ -1260,10 +1260,8 @@ export class Interpreter {
           if (r === 0) throw new RuntimeError('Division by zero', ctx.start?.line);
           return mkInteger(Math.trunc(l / r));
         }
-        case 'MOD': {
-          if (r === 0) throw new RuntimeError('Division by zero', ctx.start?.line);
-          return mkInteger(((l % r) + r) % r);
-        }
+        case 'MOD':
+          return this.modulo(left, right, ctx.start?.line);
       }
     }
 
@@ -1450,13 +1448,36 @@ export class Interpreter {
     }
 
     if (ctx instanceof ModFunctionAtomContext) {
-      const l = toNumber(await this.evalExpr(ctx.expr(0)!));
-      const r = toNumber(await this.evalExpr(ctx.expr(1)!));
-      if (r === 0) throw new RuntimeError('Division by zero', ctx.start?.line);
-      return mkInteger(((l % r) + r) % r);
+      const left = await this.evalExpr(ctx.expr(0)!);
+      const right = await this.evalExpr(ctx.expr(1)!);
+      return this.modulo(left, right, ctx.start?.line);
     }
 
     throw new RuntimeError('Unknown atom type');
+  }
+
+  /**
+   * MOD, shared by the `a MOD b` operator and the MOD(a, b) function form.
+   * A fractional operand keeps a fractional remainder — truncating it would
+   * break the usual "is it whole?" check (Num MOD 1 = 0). Both sides are scaled
+   * to whole numbers first so `%` leaves no floating-point noise behind
+   * (0.3 % 0.1 is 0.09999999999999998 unscaled).
+   */
+  private modulo(left: RuntimeValue, right: RuntimeValue, line?: number): RuntimeValue {
+    const l = toNumber(left);
+    const r = toNumber(right);
+    if (r === 0) throw new RuntimeError('Division by zero', line);
+
+    const scale = Math.pow(10, Math.max(decimalPlaces(l), decimalPlaces(r)));
+    const sl = Math.round(l * scale);
+    const sr = Math.round(r * scale);
+    // Only trust the scaled form when both sides survive the round trip — very
+    // large values and exponent notation fall back to plain %.
+    const exact =
+      Number.isSafeInteger(sl) && Number.isSafeInteger(sr) && sl / scale === l && sr / scale === r;
+    const res = exact ? (((sl % sr) + sr) % sr) / scale : ((l % r) + r) % r;
+
+    return left.type === 'INTEGER' && right.type === 'INTEGER' ? mkInteger(res) : mkReal(res);
   }
 
   private async evalArgList(ctx: { expr(): ExprContext[] }): Promise<RuntimeValue[]> {
@@ -1466,4 +1487,12 @@ export class Interpreter {
     }
     return results;
   }
+}
+
+/** Decimal places in a number's plain decimal form; 0 for integers or exponent form. */
+function decimalPlaces(n: number): number {
+  if (!Number.isFinite(n) || Number.isInteger(n)) return 0;
+  const text = String(n);
+  const dot = text.indexOf('.');
+  return dot === -1 ? 0 : text.length - dot - 1;
 }

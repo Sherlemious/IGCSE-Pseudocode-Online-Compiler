@@ -651,6 +651,13 @@ OUTPUT Grid[1,1]`}
 OUTPUT MOD(10, 3)   // 1
 OUTPUT 2 ^ 3        // 8`}
           />
+          <p className="text-sm text-dark-text mt-2">
+            With a decimal operand <Kw>MOD</Kw> keeps the fraction (
+            <code className="font-mono">7.5 MOD 1</code> is <code className="font-mono">0.5</code>), so{' '}
+            <code className="font-mono">Num MOD 1 = 0</code> is a quick check for a whole number.{' '}
+            <Kw>DIV</Kw> always throws the remainder away (
+            <code className="font-mono">7.5 DIV 2</code> is <code className="font-mono">3</code>).
+          </p>
 
           <H3 id="comparison">Comparison Operators (not equal to)</H3>
           <p className="text-sm text-dark-text mb-2">
