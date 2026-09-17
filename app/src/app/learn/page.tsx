@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
+import { auth } from '@/modules/auth/auth';
+import { resolveLearnPremiumAccess } from '@/modules/learn/access';
 import LearnLadder from '@/modules/learn/LearnLadder';
 import { SITE_URL } from '@/shared/lib/seo';
 
@@ -21,10 +23,12 @@ export const metadata: Metadata = {
   },
 };
 
-export default function LearnPage() {
+export default async function LearnPage() {
+  const session = await auth();
+  const premiumAccess = await resolveLearnPremiumAccess(session?.user);
   return (
     <Suspense fallback={<div className="flex-1 bg-background" />}>
-      <LearnLadder />
+      <LearnLadder premiumAccess={premiumAccess} />
     </Suspense>
   );
 }

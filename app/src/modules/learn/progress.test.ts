@@ -31,17 +31,17 @@ describe('learn sequential unlock', () => {
     expect(isLessonUnlocked(IGCSE_PAPER_2, lesson('1', 'assignment'), afterFirst)).toBe(false);
   });
 
-  it('never unlocks coming-next shells', () => {
-    const allPlayable: ProgressMap = {};
+  it('locks paid lessons without premium even after earlier levels complete', () => {
+    const afterFree: ProgressMap = {};
     for (const level of IGCSE_PAPER_2.levels) {
+      if (!level.free) continue;
       for (const item of level.lessons) {
-        if (item.playable) {
-          allPlayable[item.id] = { completedAt: '2026-09-16T00:00:00.000Z', attempts: 1 };
-        }
+        afterFree[item.id] = { completedAt: '2026-09-16T00:00:00.000Z', attempts: 1 };
       }
     }
-    expect(isLessonUnlocked(IGCSE_PAPER_2, lesson('4', 'if'), allPlayable)).toBe(false);
-    expect(isLessonUnlocked(IGCSE_PAPER_2, lesson('10', 'scenario'), allPlayable)).toBe(false);
+    expect(isLessonUnlocked(IGCSE_PAPER_2, lesson('4', 'if'), afterFree)).toBe(false);
+    expect(isLessonUnlocked(IGCSE_PAPER_2, lesson('4', 'if'), afterFree, { premium: true })).toBe(true);
+    expect(isLessonUnlocked(IGCSE_PAPER_2, lesson('10', 'scenario'), afterFree, { premium: true })).toBe(false);
   });
 });
 

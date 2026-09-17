@@ -6,13 +6,15 @@ import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { ArrowLeft, ArrowRight, BookOpen, Check, Code2, Lock } from 'lucide-react';
+import { ArrowLeft, ArrowRight, BookOpen, Check, Code2, Crown, Lock } from 'lucide-react';
+import { authHref } from '@/modules/auth/callback';
 import { IGCSE_PAPER_2 } from './curriculum';
 import LearnEditorPane from './LearnEditorPane';
 import { flattenLessons, lessonHref, nextLesson, previousLesson } from './path';
 import {
   isComplete,
   isLessonUnlocked,
+  isSequentiallyOpen,
   loadProgress,
   markAttempt,
   markComplete,
@@ -25,15 +27,23 @@ import type { LearnLesson, LearnLevel, QuizItem } from './types';
 type Props = {
   level: LearnLevel;
   lesson: LearnLesson;
+  premiumAccess: boolean;
 };
 
-export default function LearnPlayer({ level, lesson }: Props) {
+export default function LearnPlayer({ level, lesson, premiumAccess: initialPremium }: Props) {
   const router = useRouter();
   const { status } = useSession();
   const [progress, setProgress] = useState<ProgressMap>({});
+  const [premiumAccess, setPremiumAccess] = useState(initialPremium);
   const [mobilePane, setMobilePane] = useState<'lesson' | 'editor'>('lesson');
   const startedFor = useRef<string | null>(null);
   const isQuiz = lesson.type === 'quiz';
+  const hasEditor = Boolean(lesson.starterCode);
+  const access = { premium: premiumAccess };
+
+  useEffect(() => {
+    setPremiumAccess(initialPremium);
+  }, [initialPremium]);
 
   useEffect(() => {
     if (status === 'loading') return;
@@ -42,17 +52,32 @@ export default function LearnPlayer({ level, lesson }: Props) {
     void (async () => {
       const local = loadProgress();
       if (!cancelled) setProgress(local);
-      const map = status === 'authenticated' ? await hydrateLearnProgress() : local;
+      const hydrated = status === 'authenticated' ? await hydrateLearnProgress() : null;
       if (cancelled) return;
+      const map = hydrated?.progress ?? local;
       setProgress(map);
+      if (typeof hydrated?.premiumAccess === 'boolean') setPremiumAccess(hydrated.premiumAccess);
       if (startedFor.current === lesson.id) return;
       startedFor.current = lesson.id;
-      const open = isLessonUnlocked(IGCSE_PAPER_2, lesson, map);
+      const open = isLessonUnlocked(IGCSE_PAPER_2, lesson, map, {
+        premium: hydrated?.premiumAccess ?? initialPremium,
+      });
       if (!lesson.playable || !open) {
+        const sequential = isSequentiallyOpen(IGCSE_PAPER_2, lesson, map);
+        const paywalled = sequential && lesson.playable;
         captureLearn(
           'learn_gate_viewed',
-          learnLessonProps(level, lesson, { unlocked: open, source: 'player' }),
+          learnLessonProps(level, lesson, {
+            unlocked: open,
+            source: paywalled ? 'paywall' : 'player',
+          }),
         );
+        if (paywalled) {
+          captureLearn(
+            'learn_gate_blocked',
+            learnLessonProps(level, lesson, { unlocked: false, source: 'paywall' }),
+          );
+        }
         return;
       }
       captureLearn(
@@ -63,9 +88,10 @@ export default function LearnPlayer({ level, lesson }: Props) {
     return () => {
       cancelled = true;
     };
-  }, [level, lesson, status]);
+  }, [level, lesson, status, initialPremium]);
 
-  const unlocked = isLessonUnlocked(IGCSE_PAPER_2, lesson, progress);
+  const sequential = isSequentiallyOpen(IGCSE_PAPER_2, lesson, progress);
+  const unlocked = isLessonUnlocked(IGCSE_PAPER_2, lesson, progress, access);
   const done = isComplete(progress, lesson.id);
   const prev = previousLesson(IGCSE_PAPER_2, lesson.id);
   const next = nextLesson(IGCSE_PAPER_2, lesson.id);
@@ -120,16 +146,42 @@ export default function LearnPlayer({ level, lesson }: Props) {
   );
 
   if (!lesson.playable || !unlocked) {
+    const paywalled = lesson.playable && sequential && !premiumAccess && !level.free;
+    const lessonPath = lessonHref(level, lesson);
     return (
       <div className="flex-1 min-h-0 overflow-y-auto bg-background bg-dot-grid px-4 py-8 sm:py-10">
         <div className="max-w-lg mx-auto rounded-2xl border border-border bg-surface p-5 sm:p-6">
-          <Lock className="h-5 w-5 text-dark-text mb-3" />
+          {paywalled ? (
+            <Crown className="h-5 w-5 text-warning mb-3" />
+          ) : (
+            <Lock className="h-5 w-5 text-dark-text mb-3" />
+          )}
           <h1 className="display-serif text-xl font-semibold text-light-text mb-2">{lesson.title}</h1>
           <p className="text-sm text-dark-text mb-4">
-            {!lesson.playable
-              ? 'This lesson is on the map but not playable yet. Finish Levels 1–3 first — we are measuring those.'
+            {paywalled
+              ? 'Levels 4–10 are part of the Student and teacher plans. Upgrade, or join a class from a teacher who has one.'
               : 'Complete the previous lesson to unlock this one.'}
           </p>
+          {paywalled && (
+            <div className="flex flex-wrap items-center gap-3 mb-4">
+              {status !== 'authenticated' ? (
+                <Link
+                  href={authHref('signin', lessonPath)}
+                  className="inline-flex items-center min-h-10 px-3 rounded-lg bg-primary/15 text-primary text-sm font-medium hover:bg-primary/25"
+                >
+                  Sign in to continue
+                </Link>
+              ) : (
+                <Link
+                  href="/pricing?view=student"
+                  className="inline-flex items-center gap-1.5 min-h-10 px-3 rounded-lg bg-warning/15 text-warning text-sm font-medium hover:bg-warning/25"
+                >
+                  <Crown size={14} />
+                  See student plans
+                </Link>
+              )}
+            </div>
+          )}
           <Link
             href="/learn"
             className="text-sm text-primary hover:underline"
@@ -144,8 +196,8 @@ export default function LearnPlayer({ level, lesson }: Props) {
     );
   }
 
-  const showLesson = mobilePane === 'lesson' || isQuiz;
-  const showEditor = !isQuiz && mobilePane === 'editor';
+  const showLesson = mobilePane === 'lesson' || (isQuiz && !hasEditor);
+  const showEditor = hasEditor && mobilePane === 'editor';
   const nextLabel = next?.lesson.playable ? 'Next' : 'Path';
 
   return (
@@ -185,7 +237,7 @@ export default function LearnPlayer({ level, lesson }: Props) {
         )}
       </div>
 
-      {!isQuiz && (
+      {!isQuiz || hasEditor ? (
         <div className="lg:hidden flex shrink-0 border-b border-border bg-surface">
           <button
             type="button"
@@ -215,7 +267,7 @@ export default function LearnPlayer({ level, lesson }: Props) {
             {done && <Check size={12} className="text-success" />}
           </button>
         </div>
-      )}
+      ) : null}
 
       <div className="flex-1 min-h-0 min-w-0 flex flex-col lg:grid lg:grid-cols-[minmax(16rem,22rem)_minmax(0,1fr)] lg:grid-rows-1">
         <aside
@@ -233,6 +285,13 @@ export default function LearnPlayer({ level, lesson }: Props) {
                 strong: (props) => <strong className="text-light-text font-semibold" {...props} />,
                 ul: (props) => <ul className="list-disc pl-5 mb-3 space-y-1" {...props} />,
                 li: (props) => <li {...props} />,
+                table: (props) => (
+                  <table className="w-full text-xs border-collapse my-3 font-mono" {...props} />
+                ),
+                th: (props) => (
+                  <th className="border border-border bg-surface px-2 py-1 text-left text-light-text" {...props} />
+                ),
+                td: (props) => <td className="border border-border px-2 py-1" {...props} />,
                 code: ({ className, children, ...props }) => {
                   const content = String(children);
                   const isInline = !className && !content.includes('\n');
@@ -287,7 +346,7 @@ export default function LearnPlayer({ level, lesson }: Props) {
             />
           )}
 
-          {!isQuiz && (
+          {!isQuiz || hasEditor ? (
             <button
               type="button"
               onClick={() => {
@@ -301,7 +360,7 @@ export default function LearnPlayer({ level, lesson }: Props) {
             >
               Open editor
             </button>
-          )}
+          ) : null}
 
           {(prev || done) && (
             <div className="flex items-center gap-3 mt-6 pt-4 border-t border-border">
@@ -339,14 +398,10 @@ export default function LearnPlayer({ level, lesson }: Props) {
 
         <div
           className={`min-h-0 min-w-0 p-2 sm:p-3 lg:p-4 lg:h-full flex-col ${
-            isQuiz ? 'hidden lg:flex' : showEditor ? 'flex flex-1' : 'hidden lg:flex'
+            hasEditor ? (showEditor ? 'flex flex-1' : 'hidden lg:flex') : 'hidden lg:flex'
           }`}
         >
-          {isQuiz ? (
-            <div className="h-full min-h-[160px] w-full rounded-xl border border-dashed border-border bg-surface/40 flex items-center justify-center text-sm text-dark-text px-6 text-center">
-              Answer the questions on the left. No editor for this one.
-            </div>
-          ) : (
+          {hasEditor ? (
             <LearnEditorPane
               level={level}
               lesson={lesson}
@@ -355,6 +410,10 @@ export default function LearnPlayer({ level, lesson }: Props) {
                 setMobilePane('editor');
               }}
             />
+          ) : (
+            <div className="h-full min-h-[160px] w-full rounded-xl border border-dashed border-border bg-surface/40 flex items-center justify-center text-sm text-dark-text px-6 text-center">
+              Answer the questions on the left. No editor for this one.
+            </div>
           )}
         </div>
       </div>

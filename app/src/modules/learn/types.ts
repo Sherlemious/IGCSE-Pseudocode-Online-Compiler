@@ -5,6 +5,8 @@ export type LessonType = 'run' | 'mutate' | 'grade' | 'quiz';
 export type LessonTest = {
   inputs: string[];
   expectedOutput: string;
+  /** Seeded into the autograder VFS (`filename → contents`) for file-handling checks. */
+  initialFiles?: Record<string, string>;
 };
 
 export type QuizOption = {

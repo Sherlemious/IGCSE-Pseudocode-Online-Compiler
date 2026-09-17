@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, type CSSProperties, type ReactNode } from 'react';
 import Link from 'next/link';
-import { ArrowRight, Check, Flag, Lock } from 'lucide-react';
+import { ArrowRight, Check, Crown, Flag, Lock } from 'lucide-react';
 import { IGCSE_PAPER_2 } from './curriculum';
 import { lessonHref } from './path';
 import {
@@ -18,6 +18,7 @@ import { TRACK, formatMinutes, lessonTypeMeta, levelHue, levelMinutes, pad2 } fr
 import {
   isComplete,
   isLessonUnlocked,
+  isSequentiallyOpen,
   levelCompletedCount,
   playableCount,
   type ProgressMap,
@@ -30,7 +31,7 @@ const SECTION_PATHS = LAYOUT.sections.map((section) =>
   curveThrough(section.stops.map((stop) => ({ x: stop.x, y: stop.y }))),
 );
 
-type NodeState = 'complete' | 'current' | 'open' | 'gated';
+type NodeState = 'complete' | 'current' | 'open' | 'gated' | 'paywall';
 type BannerState = 'complete' | 'current' | 'upcoming';
 
 type Props = {
@@ -38,9 +39,16 @@ type Props = {
   nextLessonId: string | null;
   ready: boolean;
   completedCount: number;
+  premiumAccess: boolean;
 };
 
-export default function LearnPathMap({ progress, nextLessonId, ready, completedCount }: Props) {
+export default function LearnPathMap({
+  progress,
+  nextLessonId,
+  ready,
+  completedCount,
+  premiumAccess,
+}: Props) {
   const completedIds = useMemo(() => {
     const ids = new Set<string>();
     for (const stop of LAYOUT.stops) {
@@ -70,6 +78,7 @@ export default function LearnPathMap({ progress, nextLessonId, ready, completedC
             progress={progress}
             completedIds={completedIds}
             nextLessonId={nextLessonId}
+            premiumAccess={premiumAccess}
           />
         ))}
         <Roadmap levels={LAYOUT.ahead} />
@@ -141,6 +150,7 @@ export default function LearnPathMap({ progress, nextLessonId, ready, completedC
               section={section}
               progress={progress}
               nextLessonId={nextLessonId}
+              premiumAccess={premiumAccess}
             />
           ))}
         </nav>
@@ -152,10 +162,18 @@ export default function LearnPathMap({ progress, nextLessonId, ready, completedC
 
 /* ── State helpers ─────────────────────────────────────────── */
 
-function nodeState(lesson: LearnLesson, progress: ProgressMap, nextLessonId: string | null): NodeState {
+function nodeState(
+  lesson: LearnLesson,
+  level: LearnLevel,
+  progress: ProgressMap,
+  nextLessonId: string | null,
+  premiumAccess: boolean,
+): NodeState {
   if (isComplete(progress, lesson.id)) return 'complete';
+  const sequential = isSequentiallyOpen(IGCSE_PAPER_2, lesson, progress);
+  if (sequential && !level.free && !premiumAccess) return 'paywall';
   if (lesson.id === nextLessonId) return 'current';
-  if (isLessonUnlocked(IGCSE_PAPER_2, lesson, progress)) return 'open';
+  if (isLessonUnlocked(IGCSE_PAPER_2, lesson, progress, { premium: premiumAccess })) return 'open';
   return 'gated';
 }
 
@@ -172,10 +190,12 @@ function DesktopSection({
   section,
   progress,
   nextLessonId,
+  premiumAccess,
 }: {
   section: LevelSection;
   progress: ProgressMap;
   nextLessonId: string | null;
+  premiumAccess: boolean;
 }) {
   const { level } = section;
   const hue = levelHue(level);
@@ -220,7 +240,7 @@ function DesktopSection({
             <LessonNode
               level={level}
               lesson={stop.lesson}
-              state={nodeState(stop.lesson, progress, nextLessonId)}
+              state={nodeState(stop.lesson, level, progress, nextLessonId, premiumAccess)}
               size="lg"
               labelSide={stop.labelSide}
               bubble
@@ -239,11 +259,13 @@ function MobileSection({
   progress,
   completedIds,
   nextLessonId,
+  premiumAccess,
 }: {
   section: LevelSection;
   progress: ProgressMap;
   completedIds: Set<string>;
   nextLessonId: string | null;
+  premiumAccess: boolean;
 }) {
   const lit = leadingCompleted(section.stops, completedIds);
   return (
@@ -275,7 +297,7 @@ function MobileSection({
               <LessonNode
                 level={section.level}
                 lesson={stop.lesson}
-                state={nodeState(stop.lesson, progress, nextLessonId)}
+                state={nodeState(stop.lesson, section.level, progress, nextLessonId, premiumAccess)}
                 size="sm"
                 row
               />
@@ -326,6 +348,12 @@ function LevelBanner({
               Level {pad2(level.number)}
             </span>
             {level.free && <Chip tone="success">Free</Chip>}
+            {!level.free && (
+              <Chip tone="warning">
+                <Crown size={10} />
+                Plan
+              </Chip>
+            )}
             {state === 'current' && <Chip tone="primary">Up next</Chip>}
             {state === 'complete' && (
               <Chip tone="success">
@@ -362,11 +390,13 @@ function LevelBanner({
   );
 }
 
-function Chip({ tone, children }: { tone: 'success' | 'primary'; children: ReactNode }) {
+function Chip({ tone, children }: { tone: 'success' | 'primary' | 'warning'; children: ReactNode }) {
   const cls =
     tone === 'success'
       ? 'border-success/30 text-success bg-success/10'
-      : 'border-primary/30 text-primary bg-primary/10';
+      : tone === 'warning'
+        ? 'border-warning/30 text-warning bg-warning/10'
+        : 'border-primary/30 text-primary bg-primary/10';
   return (
     <span
       className={`inline-flex items-center gap-1 text-[10px] leading-none px-1.5 py-1 rounded-md border font-medium ${cls}`}
@@ -385,6 +415,7 @@ const NODE_SHADE: Record<NodeState, string> = {
   current: 'color-mix(in srgb, var(--color-primary) 55%, black)',
   open: 'color-mix(in srgb, var(--color-primary) 45%, black)',
   gated: 'color-mix(in srgb, var(--color-border) 65%, black)',
+  paywall: 'color-mix(in srgb, var(--color-warning) 45%, black)',
 };
 
 const NODE_GLOSS: Record<NodeState, string> = {
@@ -392,6 +423,7 @@ const NODE_GLOSS: Record<NodeState, string> = {
   current: 'color-mix(in srgb, white 22%, transparent)',
   open: 'transparent',
   gated: 'transparent',
+  paywall: 'color-mix(in srgb, var(--color-warning) 18%, transparent)',
 };
 
 /**
@@ -405,6 +437,7 @@ const NODE_FILL: Record<NodeState, string> = {
   current: 'var(--color-primary)',
   open: 'color-mix(in srgb, var(--color-primary) 16%, var(--color-background))',
   gated: 'var(--color-surface)',
+  paywall: 'color-mix(in srgb, var(--color-warning) 14%, var(--color-background))',
 };
 
 const NODE_FACE: Record<NodeState, string> = {
@@ -412,6 +445,7 @@ const NODE_FACE: Record<NodeState, string> = {
   current: 'learn-node-current border-primary text-on-primary',
   open: 'border-primary/70 text-primary',
   gated: 'border-border text-dark-text/60',
+  paywall: 'border-warning/50 text-warning',
 };
 
 function LessonNode({
@@ -439,6 +473,8 @@ function LessonNode({
   const quiz = lesson.type === 'quiz';
   const href = lessonHref(level, lesson);
   const gated = state === 'gated';
+  const paywalled = state === 'paywall';
+  const lockedLook = gated || paywalled;
 
   const shape = boss ? 'rounded-[24px]' : quiz ? 'rounded-2xl' : 'rounded-full';
   const dims = size === 'lg' ? (boss ? 'w-20 h-20' : 'w-[72px] h-[72px]') : 'w-14 h-14';
@@ -460,8 +496,13 @@ function LessonNode({
         <Icon
           size={iconSize}
           strokeWidth={state === 'current' ? 2.5 : 2}
-          className={gated ? 'opacity-60' : undefined}
+          className={lockedLook ? 'opacity-60' : undefined}
         />
+      )}
+      {paywalled && (
+        <span className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full border border-warning/40 bg-background flex items-center justify-center text-warning">
+          <Crown size={10} />
+        </span>
       )}
       {gated && (
         <span className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full border border-border bg-background flex items-center justify-center text-dark-text">
@@ -492,7 +533,7 @@ function LessonNode({
     >
       <span
         className={`block text-[13px] font-medium leading-snug ${
-          gated ? 'text-dark-text' : 'text-light-text'
+          gated || paywalled ? 'text-dark-text' : 'text-light-text'
         }`}
       >
         {lesson.title}
@@ -514,9 +555,16 @@ function LessonNode({
         href={href}
         data-learn-stop={lesson.id}
         aria-current={state === 'current' ? 'step' : undefined}
-        aria-label={`${lesson.title}, ${meta.label}, ${lesson.minutes} minutes`}
+        aria-label={
+          paywalled
+            ? `${lesson.title} (needs a plan)`
+            : `${lesson.title}, ${meta.label}, ${lesson.minutes} minutes`
+        }
         onClick={() =>
-          captureLearn('learn_lesson_clicked', learnLessonProps(level, lesson, { source: 'node' }))
+          captureLearn(
+            paywalled ? 'learn_gate_blocked' : 'learn_lesson_clicked',
+            learnLessonProps(level, lesson, { source: paywalled ? 'paywall' : 'node' }),
+          )
         }
         className={`${shell} ${focus} ${row ? 'hover:bg-surface/70' : ''} ${shape}`}
       >
@@ -525,6 +573,12 @@ function LessonNode({
         {row && state === 'current' && (
           <span className="mono-label text-primary shrink-0 inline-flex items-center gap-1">
             Start
+            <ArrowRight size={11} />
+          </span>
+        )}
+        {row && paywalled && (
+          <span className="mono-label text-warning shrink-0 inline-flex items-center gap-1">
+            Plan
             <ArrowRight size={11} />
           </span>
         )}
@@ -551,7 +605,7 @@ function LessonNode({
   );
 }
 
-/* ── Roadmap: the levels that are not playable yet ─────────── */
+/* ── Roadmap: leftover unplayable levels (empty once 4–10 ship) ─ */
 
 function Roadmap({ levels }: { levels: LearnLevel[] }) {
   if (levels.length === 0) return null;
@@ -570,8 +624,7 @@ function Roadmap({ levels }: { levels: LearnLevel[] }) {
         </span>
       </div>
       <p className="text-xs text-dark-text mt-1.5 mb-4">
-        Levels {first.number}–{lastLevel.number} unlock as we ship them. Levels 1–3 are being
-        measured first.
+        Levels {first.number}–{lastLevel.number} unlock as we ship them.
       </p>
       <ol className="relative">
         <span

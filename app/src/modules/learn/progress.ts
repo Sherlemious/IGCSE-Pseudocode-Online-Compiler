@@ -1,6 +1,6 @@
 import { COURSE_ID } from './types';
 import type { LearnCourse, LearnLesson } from './types';
-import { playableLessonsBefore } from './path';
+import { findLevelForLesson, playableLessonsBefore } from './path';
 
 const storageKey = (courseId: string) => `learn_progress:${courseId}`;
 
@@ -88,7 +88,12 @@ export function isComplete(map: ProgressMap, lessonId: string): boolean {
   return Boolean(map[lessonId]?.completedAt);
 }
 
-export function isLessonUnlocked(
+export type LearnAccess = {
+  /** True when paid levels (4–10) may be opened. */
+  premium?: boolean;
+};
+
+export function isSequentiallyOpen(
   course: LearnCourse,
   lesson: LearnLesson,
   map: ProgressMap,
@@ -96,6 +101,18 @@ export function isLessonUnlocked(
   if (!lesson.playable) return false;
   const prior = playableLessonsBefore(course, lesson.id);
   return prior.every((item) => isComplete(map, item.lesson.id));
+}
+
+export function isLessonUnlocked(
+  course: LearnCourse,
+  lesson: LearnLesson,
+  map: ProgressMap,
+  access: LearnAccess = {},
+): boolean {
+  if (!isSequentiallyOpen(course, lesson, map)) return false;
+  const level = findLevelForLesson(course, lesson.id);
+  if (level && !level.free && !access.premium) return false;
+  return true;
 }
 
 export function nextIncomplete(

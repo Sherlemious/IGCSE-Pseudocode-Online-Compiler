@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
-import { ArrowRight, Play, Route, Trophy } from 'lucide-react';
+import { ArrowRight, Crown, Play, Route, Trophy } from 'lucide-react';
 import { IGCSE_PAPER_2 } from './curriculum';
 import LearnPathMap from './LearnPathMap';
 import { findLesson, flattenLessons } from './path';
@@ -26,10 +26,15 @@ const RING_STROKE = 5;
 const RING_R = (RING - RING_STROKE) / 2;
 const RING_C = 2 * Math.PI * RING_R;
 
-export default function LearnLadder() {
+const FREE_LESSONS = flattenLessons(IGCSE_PAPER_2).filter(
+  (item) => item.level.free && item.lesson.playable,
+);
+
+export default function LearnLadder({ premiumAccess: initialPremium }: { premiumAccess: boolean }) {
   const searchParams = useSearchParams();
   const { status } = useSession();
   const [progress, setProgress] = useState<ProgressMap>({});
+  const [premiumAccess, setPremiumAccess] = useState(initialPremium);
   const [ready, setReady] = useState(false);
   const opened = useRef(false);
 
@@ -37,9 +42,11 @@ export default function LearnLadder() {
     if (status === 'loading') return;
     let cancelled = false;
     void (async () => {
-      const map = status === 'authenticated' ? await hydrateLearnProgress() : loadProgress();
+      const hydrated = status === 'authenticated' ? await hydrateLearnProgress() : null;
       if (cancelled) return;
+      const map = hydrated?.progress ?? loadProgress();
       setProgress(map);
+      if (typeof hydrated?.premiumAccess === 'boolean') setPremiumAccess(hydrated.premiumAccess);
       setReady(true);
       if (opened.current) return;
       opened.current = true;
@@ -72,6 +79,8 @@ export default function LearnLadder() {
   const nextFound = next ? findLesson(IGCSE_PAPER_2, next.levelSlug, next.lessonSlug) : null;
   const nextHref = nextFound ? `/learn/${nextFound.level.slug}/${nextFound.lesson.slug}` : null;
   const allPlayableDone = ready && !next;
+  const freeDone = FREE_LESSONS.every((item) => isComplete(progress, item.lesson.id));
+  const showUpgrade = ready && freeDone && !premiumAccess && !allPlayableDone;
   const completed = PLAYABLE.filter((item) => isComplete(progress, item.lesson.id)).length;
   const pct = PLAYABLE.length > 0 ? Math.round((completed / PLAYABLE.length) * 100) : 0;
   const ringOffset = RING_C * (1 - pct / 100);
@@ -212,11 +221,26 @@ export default function LearnLadder() {
             </span>
             <div className="min-w-0">
               <div className="mono-label text-success mb-0.5">Path complete</div>
-              <div className="text-sm text-light-text">
-                {FREE_RANGE ?? 'All live levels'} done. The rest of the map unlocks as we ship each
-                level.
-              </div>
+              <div className="text-sm text-light-text">All ten levels done. Rewrite a Paper 2 algorithm on paper next — the hall will not show a syntax error.</div>
             </div>
+          </div>
+        )}
+
+        {showUpgrade && (
+          <div className="mt-6 sm:mt-8 flex items-center gap-3.5 px-4 py-3.5 rounded-2xl border border-warning/30 bg-warning/[0.07]">
+            <span className="shrink-0 w-10 h-10 rounded-xl bg-warning/15 border border-warning/30 text-warning flex items-center justify-center">
+              <Crown size={16} />
+            </span>
+            <div className="min-w-0 flex-1">
+              <div className="mono-label text-warning mb-0.5">Levels 1–3 complete</div>
+              <div className="text-sm text-light-text">Unlock Levels 4–10 with a Student plan, or join a class from a teacher who has one.</div>
+            </div>
+            <Link
+              href="/pricing?view=student"
+              className="shrink-0 text-sm font-semibold text-warning hover:underline"
+            >
+              See plans
+            </Link>
           </div>
         )}
       </div>
@@ -226,6 +250,7 @@ export default function LearnLadder() {
         nextLessonId={nextFound?.lesson.id ?? null}
         ready={ready}
         completedCount={completed}
+        premiumAccess={premiumAccess}
       />
     </div>
   );

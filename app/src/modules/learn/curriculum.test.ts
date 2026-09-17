@@ -14,12 +14,11 @@ describe('IGCSE Paper 2 curriculum', () => {
     expect(new Set(slugs).size).toBe(slugs.length);
   });
 
-  it('makes only levels 1–3 free and playable', () => {
+  it('makes levels 1–3 free and every level playable', () => {
     for (const level of IGCSE_PAPER_2.levels) {
-      const shouldPlay = level.number <= 3;
-      expect(level.free).toBe(shouldPlay);
-      expect(level.playable).toBe(shouldPlay);
-      expect(level.lessons.every((lesson) => lesson.playable === shouldPlay)).toBe(true);
+      expect(level.playable).toBe(true);
+      expect(level.free).toBe(level.number <= 3);
+      expect(level.lessons.every((lesson) => lesson.playable === true)).toBe(true);
     }
   });
 
@@ -34,7 +33,10 @@ describe('IGCSE Paper 2 curriculum', () => {
 
   it('accepts solutionCode for every playable non-quiz lesson', async () => {
     const playable = flattenLessons(IGCSE_PAPER_2).filter(({ lesson }) => lesson.playable);
-    expect(playable.length).toBeGreaterThan(8);
+    expect(playable.length).toBe(56);
+    expect(IGCSE_PAPER_2.levels.map((level) => level.lessons.length)).toEqual([
+      4, 5, 4, 6, 8, 5, 7, 5, 4, 8,
+    ]);
 
     for (const { lesson } of playable) {
       if (lesson.type === 'quiz') {
@@ -48,6 +50,9 @@ describe('IGCSE Paper 2 curriculum', () => {
       const result = await checkLessonCode(lesson, lesson.solutionCode ?? '');
       expect(result.ok, `${lesson.id}: ${result.message}`).toBe(true);
     }
+    const trace = findLesson(IGCSE_PAPER_2, '10', 'trace')!.lesson;
+    expect(trace.type).toBe('quiz');
+    expect(trace.starterCode).toContain('A <- 3');
   });
 
   it('fails the assignment trap until <- is used', async () => {
@@ -56,5 +61,13 @@ describe('IGCSE Paper 2 curriculum', () => {
     expect(starter.ok).toBe(false);
     expect(starter.reason).not.toBe('passed');
     expect(starter.message).toContain('<-');
+  });
+
+  it('fails 10.3 starter until the four errors are fixed', async () => {
+    const lesson = findLesson(IGCSE_PAPER_2, '10', 'errors')!.lesson;
+    const starter = await checkLessonCode(lesson, lesson.starterCode ?? '');
+    expect(starter.ok).toBe(false);
+    const fixed = await checkLessonCode(lesson, lesson.solutionCode ?? '');
+    expect(fixed.ok, fixed.message).toBe(true);
   });
 });

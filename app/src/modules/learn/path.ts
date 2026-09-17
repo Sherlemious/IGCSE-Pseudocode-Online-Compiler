@@ -61,3 +61,15 @@ export function playableLessonsBefore(
 export function firstPlayableLesson(course: LearnCourse): { level: LearnLevel; lesson: LearnLesson } | null {
   return flattenLessons(course).find((item) => item.lesson.playable) ?? null;
 }
+
+export function findLevelForLesson(course: LearnCourse, lessonId: string): LearnLevel | null {
+  return course.levels.find((level) => level.lessons.some((item) => item.id === lessonId)) ?? null;
+}
+
+export function paidPlayableLessonIds(course: LearnCourse): Set<string> {
+  return new Set(
+    flattenLessons(course)
+      .filter(({ level, lesson }) => lesson.playable && !level.free)
+      .map(({ lesson }) => lesson.id),
+  );
+}

@@ -21,6 +21,7 @@ describe('path layout', () => {
     const locked = IGCSE_PAPER_2.levels.filter((level) => !level.playable);
 
     expect(layout.sections.map((section) => section.level.slug)).toEqual(playable.map((level) => level.slug));
+    expect(layout.ahead).toHaveLength(0);
     expect(layout.ahead.map((level) => level.slug)).toEqual(locked.map((level) => level.slug));
     expect(layout.stops).toHaveLength(playable.reduce((sum, level) => sum + level.lessons.length, 0));
     expect(layout.stops.every((stop, i) => i === 0 || stop.y >= layout.stops[i - 1]!.y)).toBe(true);

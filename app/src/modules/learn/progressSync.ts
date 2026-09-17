@@ -7,12 +7,21 @@ import {
   type ProgressMap,
 } from './progress';
 
-export async function fetchLearnProgress(): Promise<ProgressMap | null> {
+export type RemoteLearnProgress = {
+  lessons: ProgressMap;
+  premiumAccess: boolean;
+};
+
+export async function fetchLearnProgress(): Promise<RemoteLearnProgress | null> {
   try {
     const res = await fetch('/api/learn/progress');
     if (!res.ok) return null;
-    const data = (await res.json()) as { lessons?: ProgressMap };
-    return data.lessons && typeof data.lessons === 'object' ? data.lessons : {};
+    const data = (await res.json()) as { lessons?: ProgressMap; premiumAccess?: boolean };
+    if (!data.lessons || typeof data.lessons !== 'object') return { lessons: {}, premiumAccess: Boolean(data.premiumAccess) };
+    return {
+      lessons: data.lessons,
+      premiumAccess: Boolean(data.premiumAccess),
+    };
   } catch {
     return null;
   }
@@ -31,14 +40,16 @@ export async function persistLearnProgress(lessons: ProgressMap): Promise<void> 
   }
 }
 
-export async function hydrateLearnProgress(courseId: string = COURSE_ID): Promise<ProgressMap> {
+export async function hydrateLearnProgress(
+  courseId: string = COURSE_ID,
+): Promise<{ progress: ProgressMap; premiumAccess: boolean | null }> {
   const local = loadProgress(courseId);
   const remote = await fetchLearnProgress();
-  if (!remote) return local;
-  const merged = mergeProgress(local, remote);
+  if (!remote) return { progress: local, premiumAccess: null };
+  const merged = mergeProgress(local, remote.lessons);
   saveProgress(merged, courseId);
-  if (progressHasLocalExtras(local, remote)) {
+  if (progressHasLocalExtras(local, remote.lessons)) {
     void persistLearnProgress(merged);
   }
-  return merged;
+  return { progress: merged, premiumAccess: remote.premiumAccess };
 }

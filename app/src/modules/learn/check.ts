@@ -63,7 +63,8 @@ export async function checkLessonCode(lesson: LearnLesson, code: string): Promis
 
   for (let i = 0; i < cases.length; i++) {
     const test = cases[i];
-    const result = await gradeSubmission(code, test.inputs, test.expectedOutput);
+    const initialFiles = test.initialFiles ? JSON.stringify(test.initialFiles) : undefined;
+    const result = await gradeSubmission(code, test.inputs, test.expectedOutput, initialFiles);
     if (result.error) {
       const where = result.error.line ? ` (line ${result.error.line})` : '';
       return {

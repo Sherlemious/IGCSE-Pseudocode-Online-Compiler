@@ -1,10 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { findMany, upsert, transaction, auth } = vi.hoisted(() => ({
+const { findMany, upsert, transaction, auth, resolveLearnPremiumAccess } = vi.hoisted(() => ({
   findMany: vi.fn(),
   upsert: vi.fn(),
   transaction: vi.fn(async (ops: unknown[]) => Promise.all(ops)),
   auth: vi.fn(),
+  resolveLearnPremiumAccess: vi.fn(),
 }));
 
 vi.mock('@/shared/db', () => ({
@@ -14,6 +15,7 @@ vi.mock('@/shared/db', () => ({
   },
 }));
 vi.mock('@/modules/auth/auth', () => ({ auth }));
+vi.mock('@/modules/learn/access', () => ({ resolveLearnPremiumAccess }));
 
 import { GET, PUT } from './route';
 import { __resetRateLimit } from '@/shared/lib/rateLimit';
@@ -37,6 +39,7 @@ describe('learn progress API', () => {
     transaction.mockImplementation(async (ops: unknown[]) => Promise.all(ops as Promise<unknown>[]));
     upsert.mockResolvedValue({});
     findMany.mockResolvedValue([]);
+    resolveLearnPremiumAccess.mockResolvedValue(true);
   });
 
   it('GET returns 401 when signed out', async () => {
@@ -44,6 +47,15 @@ describe('learn progress API', () => {
     const res = await GET();
     expect(res.status).toBe(401);
     expect(findMany).not.toHaveBeenCalled();
+  });
+
+  it('GET includes premiumAccess', async () => {
+    auth.mockResolvedValue(session());
+    const res = await GET();
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { premiumAccess: boolean; lessons: object };
+    expect(body.premiumAccess).toBe(true);
+    expect(body.lessons).toEqual({});
   });
 
   it('PUT returns 401 when signed out', async () => {
@@ -77,6 +89,18 @@ describe('learn progress API', () => {
     expect(arg.create.status).toBe('COMPLETED');
     expect(arg.create.attempts).toBe(2);
     expect(arg.update.status).toBe('COMPLETED');
+  });
+
+  it('PUT rejects paid lesson ids without premium access', async () => {
+    auth.mockResolvedValue(session());
+    resolveLearnPremiumAccess.mockResolvedValue(false);
+    const res = await PUT(
+      putRequest({
+        lessons: { '4.1': { completedAt: '2026-09-17T08:00:00.000Z', attempts: 1, lastOk: true } },
+      }),
+    );
+    expect(res.status).toBe(403);
+    expect(upsert).not.toHaveBeenCalled();
   });
 
   it('PUT does not downgrade COMPLETED', async () => {

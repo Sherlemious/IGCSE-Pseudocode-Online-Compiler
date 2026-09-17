@@ -1,24 +1,11 @@
-import { COURSE_ID, type LearnCourse, type LearnLesson } from './types';
-
-function shell(
-  id: string,
-  slug: string,
-  title: string,
-  type: LearnLesson['type'],
-  minutes: number,
-  why: string,
-): LearnLesson {
-  return {
-    id,
-    slug,
-    title,
-    type,
-    minutes,
-    why,
-    body: 'This lesson is written. It ships after we measure how far students get through Levels 1–3.',
-    playable: false,
-  };
-}
+import { COURSE_ID, type LearnCourse } from './types';
+import { level4 } from './curriculum/level4';
+import { level5 } from './curriculum/level5';
+import { level6 } from './curriculum/level6';
+import { level7 } from './curriculum/level7';
+import { level8 } from './curriculum/level8';
+import { level9 } from './curriculum/level9';
+import { level10 } from './curriculum/level10';
 
 export const IGCSE_PAPER_2: LearnCourse = {
   id: COURSE_ID,
@@ -416,132 +403,13 @@ OUTPUT A + B`,
         },
       ],
     },
-    {
-      number: 4,
-      slug: '4',
-      name: 'Branch',
-      hours: '2.5',
-      leaveWith: 'IF / CASE with both branches closed',
-      syllabus: '8.1.4b, 8.1.5',
-      free: false,
-      playable: false,
-      lessons: [
-        shell('4.1', 'if', 'IF … THEN … ENDIF', 'run', 5, 'THEN sits on its own line. ENDIF closes the block.'),
-        shell('4.2', 'else', 'ELSE and ELSEIF', 'run', 5, 'Both branches must be visible to the marker.'),
-        shell('4.3', 'relational', 'Relational operators', 'grade', 8, '= <> > < >= <= — not !=.'),
-        shell('4.4', 'logic', 'AND OR NOT', 'run', 5, 'BOOLEAN operators on conditions, not on integers.'),
-        shell('4.5', 'case', 'CASE OF … OTHERWISE', 'run', 6, 'When CASE beats a stack of ELSEIF.'),
-        shell('4.6', 'boss', 'Boss: Easy then Medium Selection', 'grade', 12, 'Gate: two Selection questions.'),
-      ],
-    },
-    {
-      number: 5,
-      slug: '5',
-      name: 'Repeat',
-      hours: '4',
-      leaveWith: 'Totaller, counter, flag; pick FOR / WHILE / REPEAT',
-      syllabus: '8.1.4c–d, 8.1.5',
-      free: false,
-      playable: false,
-      lessons: [
-        shell('5.1', 'for', 'FOR … TO … NEXT', 'run', 6, 'NEXT must match the counter identifier.'),
-        shell('5.2', 'totaller', 'The totaller pattern', 'run', 6, 'Total <- 0 before the loop. Always.'),
-        shell('5.3', 'counter', 'The counter pattern', 'run', 6, 'Count <- Count + 1 only inside the IF.'),
-        shell('5.4', 'while', 'WHILE can run zero times', 'run', 6, 'Pre-condition loop.'),
-        shell('5.5', 'repeat', 'REPEAT UNTIL validation', 'run', 6, 'Post-condition — at least one prompt.'),
-        shell('5.6', 'which-loop', 'Which loop?', 'quiz', 5, 'Fixed count vs pre vs post condition.'),
-        shell('5.7', 'nested', 'Nested statements, max 3', 'grade', 10, 'Indentation is how the marker sees the nest.'),
-        shell('5.8', 'boss', 'Boss: totaller + counter + trace', 'grade', 12, 'One FOR, two patterns, first blank trace.'),
-      ],
-    },
-    {
-      number: 6,
-      slug: '6',
-      name: 'Text',
-      hours: '2',
-      leaveWith: 'LENGTH / SUBSTRING with 1-based index',
-      syllabus: '8.1.4e',
-      free: false,
-      playable: false,
-      lessons: [
-        shell('6.1', 'string', 'STRING is 1-based', 'run', 5, 'Position 1 is the first character — not 0.'),
-        shell('6.2', 'length', 'LENGTH, UCASE, LCASE', 'grade', 8, 'Library string functions.'),
-        shell('6.3', 'substring', 'SUBSTRING(str, start, length)', 'grade', 8, 'Start is 1-based.'),
-        shell('6.4', 'concat', 'Join with &', 'run', 4, 'Concatenation is &, not +.'),
-        shell('6.5', 'boss', 'Boss: Medium String Processing', 'grade', 12, 'Gate on a seeded Medium question.'),
-      ],
-    },
-    {
-      number: 7,
-      slug: '7',
-      name: 'Arrays',
-      hours: '4',
-      leaveWith: 'ARRAY[1:n], fill loop, linear search, 2D [row, col]',
-      syllabus: '8.2, 7.4',
-      free: false,
-      playable: false,
-      lessons: [
-        shell('7.1', 'declare', 'DECLARE ARRAY[1:n]', 'run', 5, 'Bounds come from the question. Lower bound is usually 1.'),
-        shell('7.2', 'fill', 'Fill every slot with FOR', 'grade', 8, 'The fill loop is the array’s first friend.'),
-        shell('7.3', 'scan', 'Totaller/counter over the array', 'grade', 8, 'One pass, two patterns.'),
-        shell('7.4', 'search', 'Linear search + Found flag', 'grade', 10, 'Memorise the template, then vary it.'),
-        shell('7.5', 'extreme', 'Max / min / average', 'grade', 8, 'Initialise max from the first element, not from 0.'),
-        shell('7.6', 'grid', '2D arrays [row, col]', 'grade', 12, 'Nested FOR. Row first in Cambridge wording.'),
-        shell('7.7', 'boss', 'Boss: Medium 1D then Easy 2D', 'grade', 15, 'Level gate.'),
-      ],
-    },
-    {
-      number: 8,
-      slug: '8',
-      name: 'Routines',
-      hours: '2',
-      leaveWith: 'PROCEDURE vs FUNCTION, ≤3 params, ROUND/RANDOM',
-      syllabus: '8.1 procedures/functions/library',
-      free: false,
-      playable: false,
-      lessons: [
-        shell('8.1', 'procedure', 'PROCEDURE and CALL', 'run', 6, 'Actions, no return value.'),
-        shell('8.2', 'function', 'FUNCTION and RETURN', 'run', 6, 'Use the result in an expression.'),
-        shell('8.3', 'params', 'Parameters, local vs global', 'quiz', 6, 'Syllabus max 3 parameters.'),
-        shell('8.4', 'library', 'ROUND, RANDOM, DIV, MOD', 'grade', 8, 'Library routines you must recognise.'),
-        shell('8.5', 'boss', 'Boss: Easy Procedures', 'grade', 10, 'Gate.'),
-      ],
-    },
-    {
-      number: 9,
-      slug: '9',
-      name: 'Files',
-      hours: '1.5',
-      leaveWith: 'OPEN → USE → CLOSE, read until EOF',
-      syllabus: '8.3',
-      free: false,
-      playable: false,
-      lessons: [
-        shell('9.1', 'why', 'Why a file beats variables', 'quiz', 4, 'Data outlives the run.'),
-        shell('9.2', 'write', 'WRITEFILE and CLOSEFILE', 'grade', 8, 'Missing CLOSEFILE is a top examiner error.'),
-        shell('9.3', 'read', 'READFILE until EOF', 'grade', 8, 'Do not hard-code the number of lines.'),
-        shell('9.4', 'boss', 'Boss: Easy File Handling', 'grade', 10, 'Gate.'),
-      ],
-    },
-    {
-      number: 10,
-      slug: '10',
-      name: 'Paper',
-      hours: '5',
-      leaveWith: 'Validation, traces, bubble sort, SQL, gates, 15-mark skeleton',
-      syllabus: '7.4–7.9, 9, 10',
-      free: false,
-      playable: false,
-      lessons: [
-        shell('10.1', 'validation', 'Validation checks', 'grade', 8, 'Range, length, type, presence, format, check digit.'),
-        shell('10.2', 'test-data', 'Test data and verification', 'quiz', 8, 'Normal, abnormal, extreme, boundary.'),
-        shell('10.3', 'errors', 'Find four errors', 'grade', 10, 'Specimen-style error hunt.'),
-        shell('10.4', 'trace', 'Blank trace table', 'grade', 12, 'Fill cells, then reveal the live trace.'),
-        shell('10.5', 'flowchart', 'Flowchart → pseudocode', 'quiz', 8, 'Diamond is IF or a loop condition.'),
-        shell('10.6', 'sort', 'Bubble sort with Temp', 'grade', 10, 'Do not write “swap” as English.'),
-        shell('10.7', 'closed', 'SQL and truth tables', 'quiz', 10, 'Small closed topics — sit them first in the hall.'),
-        shell('10.8', 'scenario', 'Boss: timed 15-mark', 'grade', 30, 'DECLARE → init → INPUT + validation → loop → OUTPUT.'),
-      ],
-    },
+    level4,
+    level5,
+    level6,
+    level7,
+    level8,
+    level9,
+    level10,
   ],
 };
+

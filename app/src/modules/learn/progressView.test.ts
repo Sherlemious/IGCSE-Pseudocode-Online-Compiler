@@ -52,6 +52,6 @@ describe('buildLearnProgressView', () => {
     const view = buildLearnProgressView([]);
     const groups = groupLessonsByLevel(view.lessons);
     expect(groups[0]?.levelNumber).toBe(1);
-    expect(groups.some((group) => group.levelNumber === 4)).toBe(false);
+    expect(groups.some((group) => group.levelNumber === 4)).toBe(true);
   });
 });

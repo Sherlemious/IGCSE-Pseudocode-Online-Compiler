@@ -2,8 +2,9 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/modules/auth/auth';
 import { prisma } from '@/shared/db';
 import { rateLimit } from '@/shared/lib/rateLimit';
+import { resolveLearnPremiumAccess } from '@/modules/learn/access';
 import { IGCSE_PAPER_2 } from '@/modules/learn/curriculum';
-import { playableLessonIdSet } from '@/modules/learn/path';
+import { paidPlayableLessonIds, playableLessonIdSet } from '@/modules/learn/path';
 import {
   COURSE_ID,
 } from '@/modules/learn/types';
@@ -18,6 +19,7 @@ import {
 const PUT_RATE_LIMIT = 40;
 const PUT_RATE_WINDOW_MS = 60_000;
 const ALLOWED_LESSON_IDS = playableLessonIdSet(IGCSE_PAPER_2);
+const PAID_LESSON_IDS = paidPlayableLessonIds(IGCSE_PAPER_2);
 
 const ROW_SELECT = {
   lessonId: true,
@@ -42,13 +44,17 @@ export async function GET() {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const rows = await prisma.learnProgress.findMany({
-    where: { userId: session.user.id, courseId: COURSE_ID },
-    select: ROW_SELECT,
-  });
+  const [rows, premiumAccess] = await Promise.all([
+    prisma.learnProgress.findMany({
+      where: { userId: session.user.id, courseId: COURSE_ID },
+      select: ROW_SELECT,
+    }),
+    resolveLearnPremiumAccess(session.user),
+  ]);
 
   return NextResponse.json({
     lessons: progressMapToApiLessons(recordsToProgressMap(rows as LearnProgressRecord[])),
+    premiumAccess,
   });
 }
 
@@ -79,6 +85,17 @@ export async function PUT(req: Request) {
   const parsed = parseLearnProgressBody(body, ALLOWED_LESSON_IDS);
   if (!parsed.ok) {
     return NextResponse.json({ error: parsed.error }, { status: parsed.status });
+  }
+
+  const paidIds = Object.keys(parsed.lessons).filter((id) => PAID_LESSON_IDS.has(id));
+  if (paidIds.length > 0 && !(await resolveLearnPremiumAccess(session.user))) {
+    return NextResponse.json(
+      {
+        error: 'Levels 4–10 need a Student or teacher plan.',
+        code: 'PREMIUM_REQUIRED',
+      },
+      { status: 403 },
+    );
   }
 
   const userId = session.user.id;

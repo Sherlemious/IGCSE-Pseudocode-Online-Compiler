@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { CheckCircle, Play, Square, Terminal, XCircle } from 'lucide-react';
-import { CodeMirrorEditor } from '@/modules/compiler/editor';
+import { CodeMirrorEditor, TraceTable } from '@/modules/compiler/editor';
 import { useInterpreter } from '@/modules/interpreter/useInterpreter';
 import { checkLessonCode, type LessonCheckResult } from './check';
 import { markAttempt } from './progress';
@@ -23,8 +23,9 @@ export default function LearnEditorPane({ level, lesson, onPassed }: Props) {
   const [checking, setChecking] = useState(false);
   const [attempts, setAttempts] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
-  const { run, stop, clearEntries, provideInput, entries, isRunning, waitingForInput, errorLine } =
+  const { run, stop, clearEntries, provideInput, entries, isRunning, waitingForInput, errorLine, traceRows, maxTraceRows } =
     useInterpreter({ feature: 'learn', questionId: lesson.id });
+  const canCheck = lesson.type !== 'quiz';
 
   useEffect(() => {
     setCode(lesson.starterCode ?? '');
@@ -102,6 +103,7 @@ export default function LearnEditorPane({ level, lesson, onPassed }: Props) {
             Stop
           </button>
         )}
+        {canCheck && (
         <button
           type="button"
           onClick={() => void handleCheck()}
@@ -111,8 +113,9 @@ export default function LearnEditorPane({ level, lesson, onPassed }: Props) {
           <CheckCircle size={12} />
           {checking ? 'Checking…' : 'Check'}
         </button>
+        )}
         <span className="ml-auto hidden sm:inline text-[10px] uppercase tracking-wider text-dark-text/60 truncate min-w-0">
-          {lesson.type === 'mutate' ? 'Change the starter' : lesson.type === 'grade' ? 'Hidden tests' : 'Match the output'}
+        {lesson.type === 'mutate' ? 'Change the starter' : lesson.type === 'grade' ? 'Hidden tests' : lesson.type === 'quiz' ? 'Run to fill the trace' : 'Match the output'}
         </span>
       </div>
 
@@ -178,6 +181,12 @@ export default function LearnEditorPane({ level, lesson, onPassed }: Props) {
           return null;
         })}
       </div>
+
+      {traceRows.length > 0 && (
+        <div className="shrink-0 border-t border-border max-h-40 sm:max-h-52 overflow-auto">
+          <TraceTable rows={traceRows} maxRows={maxTraceRows} isLive={isRunning} />
+        </div>
+      )}
 
       {check && (
         <div
