@@ -23,6 +23,17 @@ export const TIER_TO_PLAN: Record<string, { plan: Plan; tier: string }> = {
 /** Slugs that are the new capacity bands — buying one clears grandfathered limits. */
 export const BAND_SLUGS = new Set(['classroom', 'department', 'school', 'campus']);
 
+/**
+ * Original $1/mo student prices. `/pricing` now checkouts the $2 SKUs; these
+ * must still resolve so existing subscriptions renew and cancel correctly.
+ */
+export const LEGACY_STUDENT_PRICE_IDS: ReadonlySet<string> = new Set([
+  'pri_01m1j4kxapd6a1dgfaw5tdjpgt', // sandbox month $1
+  'pri_01m1j4kxfevc4yw6m7664cck4h', // sandbox year $10
+  'pri_01m1mbfxkdvv0esey8wcaktkxr', // live month $1
+  'pri_01m1mbfxqpt6018eessnr3mnhw', // live year $10
+]);
+
 export async function tierSlugForPriceId(
   priceId: string,
   paddleEnv: string,
@@ -35,5 +46,7 @@ export async function tierSlugForPriceId(
     },
     select: { slug: true },
   });
-  return row?.slug ?? null;
+  if (row?.slug) return row.slug;
+  if (LEGACY_STUDENT_PRICE_IDS.has(priceId)) return 'student';
+  return null;
 }

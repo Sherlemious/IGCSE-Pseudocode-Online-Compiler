@@ -58,7 +58,8 @@ const tier = (slug: keyof typeof COPY, monthPriceId: string, yearPriceId: string
 
 // ─── Sandbox price IDs (Athaar sandbox account) ───────────────────────────────
 const SANDBOX_TIERS: TierSeed[] = [
-  tier('student', 'pri_01m1j4kxapd6a1dgfaw5tdjpgt', 'pri_01m1j4kxfevc4yw6m7664cck4h'),
+  // $2/mo + $20/yr (10×). Legacy $1 IDs stay in paddle/plan.ts so existing subs still map.
+  tier('student', 'pri_01m2qsfmqenmdk2w1nez6zdjrb', 'pri_01m2qsfneshwq06csfmp5hjgxz'),
   tier('starter', 'pri_01m1j4kxtxewyftebqsvryp50k', 'pri_01m1j4kxzn6cp0ywqr2m7qc73s'),
   tier('pro', 'pri_01m1j4kyafpw7v0r985s1tmhzf', 'pri_01m1j4kyezssa9erzpzwe9nc88'),
   // Created 2026-09-16 via the paddle-sandbox MCP (see docs/paddle-catalog.md).
@@ -72,7 +73,8 @@ const SANDBOX_TIERS: TierSeed[] = [
 // Advanced stays blank (contact-only) even though live Advanced prices exist —
 // the app gates that tier behind contact-sales, same as sandbox.
 const PRODUCTION_TIERS: TierSeed[] = [
-  tier('student', 'pri_01m1mbfxkdvv0esey8wcaktkxr', 'pri_01m1mbfxqpt6018eessnr3mnhw'),
+  // $2/mo + $20/yr (10×). Legacy $1 IDs stay in paddle/plan.ts so existing subs still map.
+  tier('student', 'pri_01m2qsfnyh5wt3qxfsc3ab8d1a', 'pri_01m2qsfppe91t5y31gc2bpg50g'),
   tier('starter', 'pri_01m1mbfxw6enq2faxm3wnkc3de', 'pri_01m1mbfy1hm2fndbp227dqvk02'),
   tier('pro', 'pri_01m1mbfy5rmde0sb9eq8emg292', 'pri_01m1mbfy9x1vkj2h7gnecdrtym'),
   // Created 2026-09-16 via the paddle-live MCP, mirroring the sandbox catalog.

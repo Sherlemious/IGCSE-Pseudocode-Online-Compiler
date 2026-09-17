@@ -37,7 +37,7 @@ const getPricingTiers = unstable_cache(
         contactOnly: true,
       },
     }),
-  ['pricing-tiers'],
+  ['pricing-tiers', 'student-2usd'],
   { revalidate: 3600, tags: ['pricing-tiers'] },
 );
 
@@ -302,9 +302,9 @@ export default async function PricingPage({
             ) : view === 'student' ? (
               <>
                 {studentBlurb(studentPassViews)} The {SITE_NAME} editor stays free; a plan unlocks
-                the practice and exam library. See the{' '}
+                the practice and exam library. See{' '}
                 <Link href="/compare" className="text-primary hover:text-primary-hover">
-                  comparison page
+                  what Student includes
                 </Link>
                 .
               </>

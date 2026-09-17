@@ -10,7 +10,7 @@ Tax category: same as existing compiler products (digital / SaaS).
 
 ## Already in Paddle — leave alone
 
-App still sells Starter and the $15 Pro price (shown as **Classroom**). Existing student *subscriptions* are hidden on `/pricing` but the prices must stay so any remaining sub can renew.
+App still sells Starter and the $15 Pro price (shown as **Classroom**). The listed Student plan is the **$2/mo** recurring SKU. Existing $1 student subscriptions must stay so those subs can renew.
 
 | Env | Slug | Interval | Price ID (already seeded) |
 |-----|------|----------|---------------------------|
@@ -73,7 +73,7 @@ Checkout custom data the app already sends: `{ app_user_id }`. The webhook keys 
 
 Create **sandbox + live** (6 prices).
 
-The listed **Student** plan on `/pricing` is the existing recurring `student` PricingTier (legacy ~$1/mo IDs until a true $2/mo price exists). The 1-month **one-time** pass stays in `PASS_PRICES` so leftover purchases still grant time; it is not shown on the page.
+The listed **Student** plan on `/pricing` is the recurring `student` PricingTier at **$2/mo** (yearly $20, 10×, not shown on the student cards). Legacy $1 IDs stay mapped in `paddle/plan.ts` so existing subs still resolve. The 1-month **one-time** pass stays in `PASS_PRICES` so leftover purchases still grant time; it is not shown on the page.
 
 ---
 
@@ -135,7 +135,17 @@ Same USD base + PPP override structure as sandbox.
 | `student-oct-nov` | (same pass product) | `pri_01m2nqt7bgw87v9svw5brqe9my` ($8, PPP $5) | — |
 
 Pasted into `seedPricing.ts` (`PRODUCTION_TIERS`) + `passes.ts` (`PASS_PRICES.production`).
-**`db:seed:pricing production` intentionally NOT run yet** — the live `/pricing` page reads teacher tiers from the `PricingTier` table, so seeding production rows would expose Department/School (with working checkout) on the live site before this branch's capacity/entitlement/webhook code deploys. Run it at deploy time (Deploy order step 5).
+
+## Created — student $2 subscription (2026-09-17)
+
+New recurring prices on the **existing Student product**. Do not reprice the $1 SKUs — existing subs stay on those. PPP override ~40% below list for the 13 `ppp.ts` countries ($2 → $1, $20 → $12).
+
+| Env | Product | Month $2 | Year $20 |
+|-----|---------|----------|----------|
+| sandbox | `pro_01m1j4kx6wb4m8hka7tzasx0d2` | `pri_01m2qsfmqenmdk2w1nez6zdjrb` | `pri_01m2qsfneshwq06csfmp5hjgxz` |
+| live | `pro_01m1mbfwxdx17e0he7eqekg1y1` | `pri_01m2qsfnyh5wt3qxfsc3ab8d1a` | `pri_01m2qsfppe91t5y31gc2bpg50g` |
+
+Pasted into `seedPricing.ts`. Legacy $1 IDs remain mapped in `app/src/modules/billing/paddle/plan.ts`.
 
 ## Checklist
 
@@ -145,6 +155,8 @@ Sandbox
 - [x] Department year $390
 - [x] School month $89
 - [x] School year $890
+- [x] Student monthly recurring $2
+- [x] Student yearly recurring $20
 - [x] Student 1-month one-time $2
 - [x] Student May/June one-time $13
 - [x] Student Oct/Nov one-time $8
@@ -154,7 +166,9 @@ Sandbox
 
 Live (same list)
 
+- [x] Student monthly recurring $2
+- [x] Student yearly recurring $20
 - [x] All seven new prices
 - [x] PPP overrides
 - [x] `transaction.completed` on the live destination (user added 2026-09-16, also transaction.created/paid)
-- [x] IDs pasted; [ ] `db:seed:pricing production` (deferred to deploy — see note above)
+- [x] IDs pasted + `db:seed:pricing` (student $2 SKUs, 2026-09-17)
