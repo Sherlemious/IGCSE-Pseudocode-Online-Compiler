@@ -89,13 +89,6 @@ export default function LearnPathMap({ progress, nextLessonId, ready, completedC
                 <stop offset="0%" stopColor="var(--color-success)" />
                 <stop offset="100%" stopColor="var(--color-primary)" />
               </linearGradient>
-              <filter id="learn-path-glow" x="-20%" y="-20%" width="140%" height="140%">
-                <feGaussianBlur stdDeviation="1.6" result="blur" />
-                <feMerge>
-                  <feMergeNode in="blur" />
-                  <feMergeNode in="SourceGraphic" />
-                </feMerge>
-              </filter>
             </defs>
             {LAYOUT.sections.map((section, i) => {
               const d = SECTION_PATHS[i]!;
@@ -110,18 +103,32 @@ export default function LearnPathMap({ progress, nextLessonId, ready, completedC
                     strokeLinecap="round"
                     vectorEffect="non-scaling-stroke"
                   />
+                  {/* Halo as a second wide stroke rather than a blur filter: the viewBox
+                      scales x and y differently, so a Gaussian blur smears sideways. */}
                   {lit > 0 && (
-                    <path
-                      d={d}
-                      fill="none"
-                      stroke="url(#learn-path-lit)"
-                      strokeWidth="6"
-                      strokeLinecap="round"
-                      pathLength={1}
-                      strokeDasharray={`${lit} 1`}
-                      filter="url(#learn-path-glow)"
-                      vectorEffect="non-scaling-stroke"
-                    />
+                    <>
+                      <path
+                        d={d}
+                        fill="none"
+                        stroke="url(#learn-path-lit)"
+                        strokeWidth="14"
+                        strokeLinecap="round"
+                        opacity="0.16"
+                        pathLength={1}
+                        strokeDasharray={`${lit} 1`}
+                        vectorEffect="non-scaling-stroke"
+                      />
+                      <path
+                        d={d}
+                        fill="none"
+                        stroke="url(#learn-path-lit)"
+                        strokeWidth="6"
+                        strokeLinecap="round"
+                        pathLength={1}
+                        strokeDasharray={`${lit} 1`}
+                        vectorEffect="non-scaling-stroke"
+                      />
+                    </>
                   )}
                 </g>
               );
@@ -371,7 +378,7 @@ function Chip({ tone, children }: { tone: 'success' | 'primary'; children: React
 
 /* ── Lesson node (shared by the map and the mobile list) ───── */
 
-type NodeStyle = CSSProperties & Record<'--learn-node-shade', string>;
+type NodeStyle = CSSProperties & Record<'--learn-node-shade' | '--learn-node-gloss', string>;
 
 const NODE_SHADE: Record<NodeState, string> = {
   complete: 'color-mix(in srgb, var(--color-success) 55%, black)',
@@ -380,11 +387,31 @@ const NODE_SHADE: Record<NodeState, string> = {
   gated: 'color-mix(in srgb, var(--color-border) 65%, black)',
 };
 
+const NODE_GLOSS: Record<NodeState, string> = {
+  complete: 'color-mix(in srgb, var(--color-success) 28%, transparent)',
+  current: 'color-mix(in srgb, white 22%, transparent)',
+  open: 'transparent',
+  gated: 'transparent',
+};
+
+/**
+ * Fills are opaque on purpose: the connector runs to each node's centre, so a
+ * translucent face lets the lit path draw straight across the glyph.
+ * Tinting toward the page background (rather than a flat success fill) keeps the
+ * glyph readable on light and dark themes alike.
+ */
+const NODE_FILL: Record<NodeState, string> = {
+  complete: 'color-mix(in srgb, var(--color-success) 22%, var(--color-background))',
+  current: 'var(--color-primary)',
+  open: 'color-mix(in srgb, var(--color-primary) 16%, var(--color-background))',
+  gated: 'var(--color-surface)',
+};
+
 const NODE_FACE: Record<NodeState, string> = {
-  complete: 'border-success bg-success/20 text-success',
-  current: 'learn-node-current border-primary bg-primary text-on-primary',
-  open: 'border-primary/70 bg-primary/15 text-primary',
-  gated: 'border-border bg-surface text-dark-text/60',
+  complete: 'border-success text-success',
+  current: 'learn-node-current border-primary text-on-primary',
+  open: 'border-primary/70 text-primary',
+  gated: 'border-border text-dark-text/60',
 };
 
 function LessonNode({
@@ -416,7 +443,11 @@ function LessonNode({
   const shape = boss ? 'rounded-[24px]' : quiz ? 'rounded-2xl' : 'rounded-full';
   const dims = size === 'lg' ? (boss ? 'w-20 h-20' : 'w-[72px] h-[72px]') : 'w-14 h-14';
   const iconSize = size === 'lg' ? (boss ? 26 : 22) : 20;
-  const nodeStyle: NodeStyle = { '--learn-node-shade': NODE_SHADE[state] };
+  const nodeStyle: NodeStyle = {
+    '--learn-node-shade': NODE_SHADE[state],
+    '--learn-node-gloss': NODE_GLOSS[state],
+    background: NODE_FILL[state],
+  };
 
   const face = (
     <span
@@ -424,7 +455,7 @@ function LessonNode({
       style={nodeStyle}
     >
       {state === 'complete' ? (
-        <Check size={iconSize} strokeWidth={2.75} />
+        <Check size={iconSize + 4} strokeWidth={3.25} />
       ) : (
         <Icon
           size={iconSize}

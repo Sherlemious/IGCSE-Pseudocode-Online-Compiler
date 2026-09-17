@@ -643,7 +643,9 @@ textarea:focus-visible {
 /* --learn-node-shade) that collapses on press. The current node also pulses a */
 /* ring; the pulse keyframes carry the shade so the two shadows compose.       */
 .learn-node {
-  box-shadow: 0 5px 0 var(--learn-node-shade, var(--color-border));
+  box-shadow:
+    inset 0 2px 0 var(--learn-node-gloss, transparent),
+    0 5px 0 var(--learn-node-shade, var(--color-border));
   transition:
     transform 120ms ease,
     box-shadow 120ms ease,
@@ -657,18 +659,22 @@ textarea:focus-visible {
 a:active > .learn-node,
 button:active > .learn-node {
   transform: translateY(3px);
-  box-shadow: 0 2px 0 var(--learn-node-shade, var(--color-border));
+  box-shadow:
+    inset 0 2px 0 var(--learn-node-gloss, transparent),
+    0 2px 0 var(--learn-node-shade, var(--color-border));
 }
 
 @keyframes learn-node-pulse {
   0%,
   100% {
     box-shadow:
+      inset 0 2px 0 var(--learn-node-gloss, transparent),
       0 5px 0 var(--learn-node-shade, var(--color-border)),
       0 0 0 0 color-mix(in srgb, var(--color-primary) 45%, transparent);
   }
   50% {
     box-shadow:
+      inset 0 2px 0 var(--learn-node-gloss, transparent),
       0 5px 0 var(--learn-node-shade, var(--color-border)),
       0 0 0 12px color-mix(in srgb, var(--color-primary) 0%, transparent);
   }
