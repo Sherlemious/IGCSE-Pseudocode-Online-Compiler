@@ -652,12 +652,8 @@ textarea:focus-visible {
     filter 120ms ease;
 }
 
-/* Brighten from the whole lesson row, not just the disc — the title beside a
-   node is part of the same link and hovering it must feel like one target. */
-a:hover > .learn-node,
-button:hover > .learn-node,
 .learn-node:hover {
-  filter: brightness(1.12);
+  filter: brightness(1.08);
 }
 
 a:active > .learn-node,
