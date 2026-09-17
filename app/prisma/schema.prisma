@@ -52,6 +52,7 @@ model User {
   accounts     Account[]
   sessions     Session[]
   progress     Progress[]
+  learnProgress LearnProgress[]
   examAttempts ExamAttempt[]
   exams        Exam[]
   feedbackSubmissions FeedbackSubmission[]
@@ -226,6 +227,33 @@ model Progress {
   @@unique([userId, questionId])
   @@index([userId])
   @@index([questionId])
+}
+
+enum LearnLessonStatus {
+  ATTEMPTED
+  COMPLETED
+}
+
+/// One row per signed-in user per Paper 2 Path lesson.
+model LearnProgress {
+  id          String            @id @default(cuid())
+  userId      String
+  courseId    String
+  lessonId    String
+  status      LearnLessonStatus @default(ATTEMPTED)
+  attempts    Int               @default(0)
+  lastOk      Boolean           @default(false)
+  lastReason  String?
+  lastCode    String?           @db.Text
+  completedAt DateTime?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, courseId, lessonId])
+  @@index([userId, courseId])
+  @@index([courseId, lessonId])
 }
 
 // ── Exam Simulation ─────────────────────────────────────────

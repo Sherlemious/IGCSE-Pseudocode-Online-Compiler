@@ -8,6 +8,14 @@ export function flattenLessons(course: LearnCourse): { level: LearnLevel; lesson
   return course.levels.flatMap((level) => level.lessons.map((lesson) => ({ level, lesson })));
 }
 
+export function playableLessonIdSet(course: LearnCourse): Set<string> {
+  return new Set(
+    flattenLessons(course)
+      .filter((item) => item.lesson.playable)
+      .map((item) => item.lesson.id),
+  );
+}
+
 export function findLesson(
   course: LearnCourse,
   levelSlug: string,

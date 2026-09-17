@@ -10,6 +10,7 @@ import LearnPathMap from './LearnPathMap';
 import { findLesson, flattenLessons } from './path';
 import { formatMinutes } from './pathTheme';
 import { isComplete, loadProgress, nextIncomplete, type ProgressMap } from './progress';
+import { hydrateLearnProgress } from './progressSync';
 import { captureLearn, learnCourseProps, learnLessonProps } from './telemetry';
 
 const PLAYABLE = flattenLessons(IGCSE_PAPER_2).filter((item) => item.lesson.playable);
@@ -33,21 +34,26 @@ export default function LearnLadder() {
   const opened = useRef(false);
 
   useEffect(() => {
-    setProgress(loadProgress());
-    setReady(true);
-  }, []);
-
-  useEffect(() => {
-    if (status === 'loading' || opened.current) return;
-    opened.current = true;
-    const map = loadProgress();
-    const next = nextIncomplete(IGCSE_PAPER_2, map);
-    captureLearn('learn_opened', {
-      ...learnCourseProps(map),
-      from: searchParams.get('from') ?? 'direct',
-      signed_in: status === 'authenticated',
-      next_lesson: next ? `${next.levelSlug}/${next.lessonSlug}` : null,
-    });
+    if (status === 'loading') return;
+    let cancelled = false;
+    void (async () => {
+      const map = status === 'authenticated' ? await hydrateLearnProgress() : loadProgress();
+      if (cancelled) return;
+      setProgress(map);
+      setReady(true);
+      if (opened.current) return;
+      opened.current = true;
+      const next = nextIncomplete(IGCSE_PAPER_2, map);
+      captureLearn('learn_opened', {
+        ...learnCourseProps(map),
+        from: searchParams.get('from') ?? 'direct',
+        signed_in: status === 'authenticated',
+        next_lesson: next ? `${next.levelSlug}/${next.lessonSlug}` : null,
+      });
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [searchParams, status]);
 
   useEffect(() => {
@@ -188,6 +194,15 @@ export default function LearnLadder() {
               />
             </span>
           </Link>
+        )}
+
+        {status === 'unauthenticated' && (
+          <p className="mt-3 text-xs text-dark-text">
+            <Link href="/auth/signin?callbackUrl=/learn" className="text-primary hover:underline">
+              Sign in
+            </Link>{' '}
+            to save progress across devices.
+          </p>
         )}
 
         {allPlayableDone && (

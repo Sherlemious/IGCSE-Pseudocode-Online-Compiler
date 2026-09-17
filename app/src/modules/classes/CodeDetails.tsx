@@ -4,7 +4,7 @@ import type { SyntheticEvent } from 'react';
 import { Code2 } from 'lucide-react';
 import { captureEvent } from '@/modules/interpreter/analytics';
 
-export type CodeDetailsSurface = 'assigned_work' | 'practice';
+export type CodeDetailsSurface = 'assigned_work' | 'practice' | 'learn';
 
 /** Read-only, collapsible code viewer for the teacher dashboard. */
 export default function CodeDetails({

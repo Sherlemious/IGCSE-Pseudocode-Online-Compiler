@@ -6,6 +6,7 @@ import { CodeMirrorEditor } from '@/modules/compiler/editor';
 import { useInterpreter } from '@/modules/interpreter/useInterpreter';
 import { checkLessonCode, type LessonCheckResult } from './check';
 import { markAttempt } from './progress';
+import { persistLearnProgress } from './progressSync';
 import { captureLearn, learnLessonProps } from './telemetry';
 import type { LearnLesson, LearnLevel } from './types';
 
@@ -49,7 +50,11 @@ export default function LearnEditorPane({ level, lesson, onPassed }: Props) {
     try {
       const result = await checkLessonCode(lesson, code);
       setCheck(result);
-      markAttempt(lesson.id);
+      const map = markAttempt(lesson.id, {
+        lastOk: result.ok,
+        lastReason: result.reason,
+        lastCode: code,
+      });
       captureLearn(
         'learn_check_submitted',
         learnLessonProps(level, lesson, {
@@ -60,6 +65,10 @@ export default function LearnEditorPane({ level, lesson, onPassed }: Props) {
         }),
       );
       if (result.ok) onPassed(nextAttempts);
+      else {
+        const entry = map[lesson.id];
+        if (entry) void persistLearnProgress({ [lesson.id]: entry });
+      }
     } finally {
       setChecking(false);
     }

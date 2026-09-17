@@ -1,11 +1,14 @@
 import type { Metadata } from 'next';
 import { redirect, notFound } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, ClipboardList, Dumbbell, CheckCircle2, Circle, Clock } from 'lucide-react';
+import { ArrowLeft, ClipboardList, Dumbbell, CheckCircle2, Circle, Clock, Route } from 'lucide-react';
 import { auth } from '@/modules/auth/auth';
 import { prisma } from '@/shared/db';
 import CodeDetails from '@/modules/classes/CodeDetails';
 import ClassStudentProgressTracker from '@/modules/classes/ClassStudentProgressTracker';
+import LearnProgressChecklist from '@/modules/learn/LearnProgressChecklist';
+import { buildLearnProgressView } from '@/modules/learn/progressView';
+import { COURSE_ID } from '@/modules/learn/types';
 import { loadProgressReport } from '@/modules/progress/loadReport';
 import ProgressReport from '@/modules/progress/ProgressReport';
 
@@ -44,7 +47,7 @@ export default async function StudentProgressPage({ params }: Props) {
     ? { OR: [{ assignmentId: { in: assignmentIds } }, { assignmentId: null }] }
     : { assignmentId: null };
 
-  const [report, attempts, recentPractice] = await Promise.all([
+  const [report, attempts, recentPractice, learnRows] = await Promise.all([
     loadProgressReport(studentId, { examFilter, voice: 'teacher' }),
     assignmentIds.length
       ? prisma.examAttempt.findMany({
@@ -75,6 +78,19 @@ export default async function StudentProgressPage({ params }: Props) {
         question: { select: { title: true } },
       },
     }),
+    prisma.learnProgress.findMany({
+      where: { userId: studentId, courseId: COURSE_ID },
+      select: {
+        lessonId: true,
+        status: true,
+        attempts: true,
+        lastOk: true,
+        lastReason: true,
+        lastCode: true,
+        completedAt: true,
+        updatedAt: true,
+      },
+    }),
   ]);
 
   const latestByAssignment = new Map<string, (typeof attempts)[number]>();
@@ -88,6 +104,7 @@ export default async function StudentProgressPage({ params }: Props) {
   }).length;
 
   const displayName = student.name || student.email || 'Student';
+  const learnView = buildLearnProgressView(learnRows);
 
   return (
     <div className="flex-1 overflow-y-auto bg-background bg-dot-grid p-6 relative scrollbar-pretty">
@@ -122,6 +139,14 @@ export default async function StudentProgressPage({ params }: Props) {
             </>
           }
         />
+
+        <div className="mt-8 mb-8">
+          <div className="flex items-center gap-2 mb-3 px-1">
+            <Route size={14} className="text-dark-text" />
+            <h2 className="mono-label text-dark-text">Paper 2 Path</h2>
+          </div>
+          <LearnProgressChecklist view={learnView} classId={classId} showCode />
+        </div>
 
         <div className="mt-8 mb-8">
           <div className="flex items-center gap-2 mb-3 px-1">

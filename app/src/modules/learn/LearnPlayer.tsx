@@ -1,8 +1,9 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { ArrowLeft, ArrowRight, BookOpen, Check, Code2, Lock } from 'lucide-react';
@@ -13,9 +14,11 @@ import {
   isComplete,
   isLessonUnlocked,
   loadProgress,
+  markAttempt,
   markComplete,
   type ProgressMap,
 } from './progress';
+import { hydrateLearnProgress, persistLearnProgress } from './progressSync';
 import { captureLearn, learnCourseProps, learnLessonProps, learnLevelProps } from './telemetry';
 import type { LearnLesson, LearnLevel, QuizItem } from './types';
 
@@ -26,27 +29,41 @@ type Props = {
 
 export default function LearnPlayer({ level, lesson }: Props) {
   const router = useRouter();
+  const { status } = useSession();
   const [progress, setProgress] = useState<ProgressMap>({});
   const [mobilePane, setMobilePane] = useState<'lesson' | 'editor'>('lesson');
+  const startedFor = useRef<string | null>(null);
   const isQuiz = lesson.type === 'quiz';
 
   useEffect(() => {
-    const map = loadProgress();
-    setProgress(map);
+    if (status === 'loading') return;
+    let cancelled = false;
     setMobilePane('lesson');
-    const open = isLessonUnlocked(IGCSE_PAPER_2, lesson, map);
-    if (!lesson.playable || !open) {
+    void (async () => {
+      const local = loadProgress();
+      if (!cancelled) setProgress(local);
+      const map = status === 'authenticated' ? await hydrateLearnProgress() : local;
+      if (cancelled) return;
+      setProgress(map);
+      if (startedFor.current === lesson.id) return;
+      startedFor.current = lesson.id;
+      const open = isLessonUnlocked(IGCSE_PAPER_2, lesson, map);
+      if (!lesson.playable || !open) {
+        captureLearn(
+          'learn_gate_viewed',
+          learnLessonProps(level, lesson, { unlocked: open, source: 'player' }),
+        );
+        return;
+      }
       captureLearn(
-        'learn_gate_viewed',
-        learnLessonProps(level, lesson, { unlocked: open, source: 'player' }),
+        'learn_lesson_started',
+        learnLessonProps(level, lesson, { already_complete: isComplete(map, lesson.id) }),
       );
-      return;
-    }
-    captureLearn(
-      'learn_lesson_started',
-      learnLessonProps(level, lesson, { already_complete: isComplete(map, lesson.id) }),
-    );
-  }, [level, lesson]);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [level, lesson, status]);
 
   const unlocked = isLessonUnlocked(IGCSE_PAPER_2, lesson, progress);
   const done = isComplete(progress, lesson.id);
@@ -75,6 +92,8 @@ export default function LearnPlayer({ level, lesson }: Props) {
       const already = isComplete(loadProgress(), lesson.id);
       const map = markComplete(lesson.id, attempts);
       setProgress(map);
+      const entry = map[lesson.id];
+      if (entry) void persistLearnProgress({ [lesson.id]: entry });
       if (already) return;
       const course = learnCourseProps(map);
       captureLearn('learn_lesson_completed', {
@@ -382,6 +401,10 @@ function QuizBlock({
     );
     if (ok) {
       onPassed(nextAttempts);
+    } else {
+      const map = markAttempt(lesson.id, { lastOk: false, lastReason: 'quiz' });
+      const entry = map[lesson.id];
+      if (entry) void persistLearnProgress({ [lesson.id]: entry });
     }
   };
 

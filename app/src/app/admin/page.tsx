@@ -4,7 +4,7 @@ import { prisma } from '@/shared/db';
 import { auth } from '@/modules/auth/auth';
 import {
   Users, MessageSquare, BookOpen, BookOpenCheck,
-  BarChart3, ArrowUpRight, ArrowRight, Mail,
+  BarChart3, ArrowUpRight, ArrowRight, Mail, Route,
 } from 'lucide-react';
 import { Panel, SectionHeading } from './analytics/_components/charts';
 
@@ -13,7 +13,7 @@ export const metadata = { title: 'Admin — Overview' };
 
 export default async function AdminOverviewPage() {
   const [
-    session, userCount, feedbackCount, examCount, questionCount,
+    session, userCount, feedbackCount, examCount, questionCount, learnLearnerCount,
     feedbackAgg, recentFeedback, recentUsers, newContactCount, recentContact,
   ] =
     await Promise.all([
@@ -22,6 +22,7 @@ export default async function AdminOverviewPage() {
       prisma.feedbackSubmission.count(),
       prisma.examAttempt.count(),
       prisma.question.count(),
+      prisma.user.count({ where: { learnProgress: { some: {} } } }),
       prisma.feedbackSubmission.aggregate({ _avg: { rating: true } }),
       prisma.feedbackSubmission.findMany({
         orderBy: { createdAt: 'desc' },
@@ -45,14 +46,16 @@ export default async function AdminOverviewPage() {
   const avgRating = feedbackAgg._avg.rating;
 
   const stats = [
-    { label: 'Total users',    value: userCount,     icon: Users,         color: 'text-primary', tint: 'bg-primary/10', href: '/admin/users',     cta: 'Manage users' },
-    { label: 'Feedback items', value: feedbackCount, icon: MessageSquare, color: 'text-success', tint: 'bg-success/10', href: '/admin/feedback',  cta: 'Read feedback' },
-    { label: 'Exam attempts',  value: examCount,     icon: BookOpen,      color: 'text-warning', tint: 'bg-warning/10', href: '/admin/analytics', cta: 'View analytics' },
-    { label: 'Questions',      value: questionCount, icon: BookOpenCheck, color: 'text-error',   tint: 'bg-error/10',   href: '/admin/analytics', cta: 'View analytics' },
+    { label: 'Total users',    value: userCount,          icon: Users,         color: 'text-primary', tint: 'bg-primary/10', href: '/admin/users',     cta: 'Manage users' },
+    { label: 'Path learners',  value: learnLearnerCount,  icon: Route,         color: 'text-success', tint: 'bg-success/10', href: '/admin/learn',     cta: 'View path' },
+    { label: 'Feedback items', value: feedbackCount,      icon: MessageSquare, color: 'text-success', tint: 'bg-success/10', href: '/admin/feedback',  cta: 'Read feedback' },
+    { label: 'Exam attempts',  value: examCount,          icon: BookOpen,      color: 'text-warning', tint: 'bg-warning/10', href: '/admin/analytics', cta: 'View analytics' },
+    { label: 'Questions',      value: questionCount,      icon: BookOpenCheck, color: 'text-error',   tint: 'bg-error/10',   href: '/admin/analytics', cta: 'View analytics' },
   ];
 
   const navCards = [
     { title: 'Users',     desc: 'Roles, plans & activity',       icon: Users,         href: '/admin/users' },
+    { title: 'Path',      desc: 'Paper 2 Path progress',         icon: Route,         href: '/admin/learn' },
     { title: 'Feedback',  desc: 'Ratings & comments',            icon: MessageSquare, href: '/admin/feedback' },
     { title: 'Contact',   desc: newContactCount > 0 ? `${newContactCount} new message${newContactCount !== 1 ? 's' : ''}` : 'No new messages', icon: Mail, href: '/admin/contact' },
     { title: 'Analytics', desc: 'Growth & learning insights',    icon: BarChart3,     href: '/admin/analytics' },
@@ -78,7 +81,7 @@ export default async function AdminOverviewPage() {
       </header>
 
       {/* ── Clickable stat cards ── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
         {stats.map(({ label, value, icon: Icon, color, tint, href, cta }) => (
           <Link
             key={label}
@@ -105,7 +108,7 @@ export default async function AdminOverviewPage() {
       </div>
 
       {/* ── Quick-access nav cards ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
         {navCards.map(({ title, desc, icon: Icon, href }) => (
           <Link
             key={title}
