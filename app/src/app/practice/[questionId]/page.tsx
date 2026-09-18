@@ -9,6 +9,7 @@ import { auth } from '@/modules/auth/auth';
 import { authHref } from '@/modules/auth/callback';
 import { PREMIUM_GATING_ENABLED } from '@/modules/billing/featureFlags';
 import { getPremiumAccess } from '@/modules/billing/entitlements';
+import { getPublicQuestion } from '@/shared/lib/catalogCache';
 import PracticeWorkspace from '@/modules/practice/PracticeWorkspace';
 import HintsPanel from '@/modules/practice/HintsPanel';
 import SolutionPanel from '@/modules/practice/SolutionPanel';
@@ -27,22 +28,7 @@ interface Props {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { questionId } = await params;
   try {
-    const q = await prisma.question.findUnique({
-      where: { id: questionId },
-      select: {
-        title: true,
-        description: true,
-        difficulty: true,
-        topic: true,
-        tags: true,
-        year: true,
-        session: true,
-        variant: true,
-        questionNumber: true,
-        part: true,
-        paper: true,
-      },
-    });
+    const q = await getPublicQuestion(questionId);
 
     if (!q) {
       return {
@@ -110,16 +96,7 @@ export default async function QuestionPage({ params }: Props) {
 
   let question;
   try {
-    question = await prisma.question.findUnique({
-      where: { id: questionId },
-      include: {
-        testCases: {
-          where: { isHidden: false },
-          orderBy: { sortOrder: 'asc' },
-          select: { id: true, inputs: true, expectedOutput: true, description: true, initialFiles: true },
-        },
-      },
-    });
+    question = await getPublicQuestion(questionId);
   } catch {
     notFound();
   }

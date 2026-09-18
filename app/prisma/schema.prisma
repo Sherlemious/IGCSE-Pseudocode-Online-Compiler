@@ -68,6 +68,7 @@ model User {
 
   @@index([paddleCustomerId])
   @@index([paddleSubscriptionId])
+  @@index([plan, planExpiresAt])
 }
 
 model CustomTheme {
@@ -141,7 +142,7 @@ model Example {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@index([category])
+  @@index([category, sortOrder])
 }
 
 // ── Practice Questions (Phase 3) ────────────────────────────
@@ -185,6 +186,8 @@ model Question {
   updatedAt DateTime @updatedAt
 
   @@index([topic])
+  @@index([difficulty, isPremium])
+  @@index([year, title])
 }
 
 model TestCase {
@@ -198,7 +201,7 @@ model TestCase {
   sortOrder      Int      @default(0)
   initialFiles   String?  @db.Text // JSON: Record<string, string> of filename → content
 
-  @@index([questionId])
+  @@index([questionId, sortOrder])
 }
 
 // ── Progress Tracking ───────────────────────────────────────
@@ -227,6 +230,7 @@ model Progress {
   @@unique([userId, questionId])
   @@index([userId])
   @@index([questionId])
+  @@index([userId, updatedAt])
 }
 
 enum LearnLessonStatus {
@@ -297,6 +301,8 @@ model ExamAttempt {
 
   @@index([userId])
   @@index([userId, status])
+  @@index([userId, startedAt])
+  @@index([userId, examId, status])
   @@index([examId])
   @@index([assignmentId])
 }
@@ -352,7 +358,7 @@ model Class {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@index([ownerId])
+  @@index([ownerId, archived])
 }
 
 model ClassMembership {

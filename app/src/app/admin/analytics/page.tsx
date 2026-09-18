@@ -1,4 +1,5 @@
 import { prisma } from '@/shared/db';
+import { getQuestionCatalog } from '@/shared/lib/catalogCache';
 import {
   SectionHeading,
   Panel,
@@ -68,7 +69,7 @@ export default async function AdminAnalyticsPage() {
     prisma.progress.findMany({ where: { updatedAt: { gte: d30 } }, select: { updatedAt: true, userId: true } }),
     prisma.progress.groupBy({ by: ['questionId'], _count: { _all: true } }),
     prisma.progress.groupBy({ by: ['questionId'], where: { status: 'SOLVED' }, _count: { _all: true } }),
-    prisma.question.findMany({ select: { id: true, title: true, difficulty: true } }),
+    getQuestionCatalog(),
     prisma.examAttempt.findMany({ where: { status: 'COMPLETED', totalTests: { gt: 0 } }, select: { score: true, totalTests: true } }),
     prisma.examAttempt.findMany({
       where: { status: 'COMPLETED' },

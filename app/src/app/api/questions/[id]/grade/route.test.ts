@@ -2,16 +2,17 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { NextRequest } from 'next/server';
 import type { GradeResult } from '@/modules/practice/autograder';
 
-const { findUnique, upsert, updateMany, auth, grade } = vi.hoisted(() => ({
-  findUnique: vi.fn(),
+const { getQuestionForGrade, upsert, updateMany, auth, grade } = vi.hoisted(() => ({
+  getQuestionForGrade: vi.fn(),
   upsert: vi.fn(),
   updateMany: vi.fn(),
   auth: vi.fn(),
   grade: vi.fn(),
 }));
 vi.mock('@/shared/db', () => ({
-  prisma: { question: { findUnique }, progress: { upsert, updateMany } },
+  prisma: { progress: { upsert, updateMany } },
 }));
+vi.mock('@/shared/lib/catalogCache', () => ({ getQuestionForGrade }));
 vi.mock('@/modules/auth/auth', () => ({ auth }));
 vi.mock('@/modules/practice/autograder', () => ({ gradeSubmission: grade }));
 
@@ -51,7 +52,7 @@ describe('grade route access control', () => {
 
   it('grades an EASY question for an anonymous user (200)', async () => {
     auth.mockResolvedValue(null);
-    findUnique.mockResolvedValue(questionWith('EASY'));
+    getQuestionForGrade.mockResolvedValue(questionWith('EASY'));
 
     const response = await gradeRequest();
     expect(response.status).toBe(200);
@@ -67,7 +68,7 @@ describe('grade route access control', () => {
     'blocks a %s question for an anonymous user (401 + AUTH_REQUIRED)',
     async (difficulty) => {
       auth.mockResolvedValue(null);
-      findUnique.mockResolvedValue(questionWith(difficulty));
+      getQuestionForGrade.mockResolvedValue(questionWith(difficulty));
 
       const response = await gradeRequest();
       expect(response.status).toBe(401);
@@ -80,7 +81,7 @@ describe('grade route access control', () => {
 
   it('grades a MEDIUM question for a signed-in user (200)', async () => {
     auth.mockResolvedValue({ user: { id: 'student1' } });
-    findUnique.mockResolvedValue(questionWith('MEDIUM'));
+    getQuestionForGrade.mockResolvedValue(questionWith('MEDIUM'));
 
     const response = await gradeRequest();
     expect(response.status).toBe(200);

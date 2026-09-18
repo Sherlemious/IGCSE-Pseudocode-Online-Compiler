@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { redirect, notFound } from 'next/navigation';
 import { auth } from '@/modules/auth/auth';
 import { prisma } from '@/shared/db';
+import { getPublicQuestion } from '@/shared/lib/catalogCache';
 import ExamWorkspace from '@/modules/exams/ExamWorkspace';
 
 export const metadata: Metadata = {
@@ -27,21 +28,13 @@ export default async function ExamActivePage({ params }: Props) {
     include: {
       answers: {
         orderBy: { sortOrder: 'asc' },
-        include: {
-          question: {
-            select: {
-              id: true,
-              title: true,
-              description: true,
-              difficulty: true,
-              starterCode: true,
-              testCases: {
-                where: { isHidden: false },
-                orderBy: { sortOrder: 'asc' },
-                select: { id: true, inputs: true, expectedOutput: true, description: true },
-              },
-            },
-          },
+        select: {
+          id: true,
+          questionId: true,
+          code: true,
+          graded: true,
+          passCount: true,
+          totalTests: true,
         },
       },
     },
@@ -54,19 +47,32 @@ export default async function ExamActivePage({ params }: Props) {
     redirect(`/exam/${examId}/results`);
   }
 
-  const questions = exam.answers.map((a) => ({
-    answerId: a.id,
-    questionId: a.question.id,
-    title: a.question.title,
-    description: a.question.description,
-    difficulty: a.question.difficulty,
-    starterCode: a.question.starterCode ?? '',
-    savedCode: a.code,
-    graded: a.graded,
-    passCount: a.passCount,
-    totalTests: a.totalTests,
-    testCases: a.question.testCases,
-  }));
+  const questions = (
+    await Promise.all(
+      exam.answers.map(async (a) => {
+        const question = await getPublicQuestion(a.questionId);
+        if (!question) return null;
+        return {
+          answerId: a.id,
+          questionId: question.id,
+          title: question.title,
+          description: question.description,
+          difficulty: question.difficulty,
+          starterCode: question.starterCode ?? '',
+          savedCode: a.code,
+          graded: a.graded,
+          passCount: a.passCount,
+          totalTests: a.totalTests,
+          testCases: question.testCases.map((tc) => ({
+            id: tc.id,
+            inputs: tc.inputs,
+            expectedOutput: tc.expectedOutput,
+            description: tc.description,
+          })),
+        };
+      }),
+    )
+  ).filter((q): q is NonNullable<typeof q> => q !== null);
 
   return (
     <ExamWorkspace

@@ -7,6 +7,7 @@ import { auth } from '@/modules/auth/auth';
 import { authHref } from '@/modules/auth/callback';
 import { PREMIUM_GATING_ENABLED } from '@/modules/billing/featureFlags';
 import { getPremiumAccess } from '@/modules/billing/entitlements';
+import { getQuestionCatalog } from '@/shared/lib/catalogCache';
 import { PracticeFilters } from '@/modules/practice/PracticeFilters';
 import { PracticeToolbar } from '@/modules/practice/PracticeToolbar';
 import {
@@ -83,11 +84,11 @@ export default async function PracticePage({ searchParams }: PageProps) {
   const hasFullAccess = !PREMIUM_GATING_ENABLED || premiumAccess;
   const showStatus = !!session;
 
-  let questions: Awaited<ReturnType<typeof fetchQuestions>> = [];
+  let questions: Awaited<ReturnType<typeof getQuestionCatalog>> = [];
   let progressMap: Map<string, { status: string; bestScore: number; totalTests: number; updatedAt: Date }> = new Map();
 
   try {
-    questions = await fetchQuestions();
+    questions = await getQuestionCatalog();
 
     if (session?.user?.id) {
       const progress = await prisma.progress.findMany({
@@ -614,15 +615,4 @@ function EmptyState({ title, body }: { title: string; body: string }) {
       <p className="text-sm text-dark-text max-w-xs">{body}</p>
     </div>
   );
-}
-
-async function fetchQuestions() {
-  return prisma.question.findMany({
-    select: {
-      id: true, title: true, difficulty: true, topic: true, tags: true,
-      year: true, session: true, variant: true, paper: true,
-      questionNumber: true, part: true, marks: true, isPremium: true,
-    },
-    orderBy: [{ year: 'desc' }, { title: 'asc' }],
-  });
 }

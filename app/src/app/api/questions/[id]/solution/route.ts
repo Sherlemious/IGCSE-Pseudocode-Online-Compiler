@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/shared/db';
 import { auth } from '@/modules/auth/auth';
+import { getQuestionSolution } from '@/shared/lib/catalogCache';
 
 export async function GET(
   request: NextRequest,
@@ -16,10 +17,7 @@ export async function GET(
   const giveUp = request.nextUrl.searchParams.get('giveUp') === 'true';
 
   try {
-    const question = await prisma.question.findUnique({
-      where: { id },
-      select: { solution: true, solutionExplanation: true },
-    });
+    const question = await getQuestionSolution(id);
 
     if (!question) {
       return NextResponse.json({ error: 'Question not found' }, { status: 404 });

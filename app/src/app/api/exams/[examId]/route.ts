@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/modules/auth/auth';
 import { prisma } from '@/shared/db';
+import { existingCatalogQuestionIds } from '@/shared/lib/catalogCache';
 
 interface Context {
   params: Promise<{ examId: string }>;
@@ -63,12 +64,7 @@ export async function PATCH(req: Request, { params }: Context) {
     if (questionIds.length === 0) {
       return NextResponse.json({ error: 'Add at least one question.' }, { status: 400 });
     }
-    const found = await prisma.question.findMany({
-      where: { id: { in: questionIds } },
-      select: { id: true },
-    });
-    const foundIds = new Set(found.map((q) => q.id));
-    questionIds = questionIds.filter((id) => foundIds.has(id));
+    questionIds = await existingCatalogQuestionIds(questionIds);
     if (questionIds.length === 0) {
       return NextResponse.json({ error: 'None of the selected questions could be found.' }, { status: 400 });
     }

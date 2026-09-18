@@ -6,6 +6,7 @@ import { PREMIUM_GATING_ENABLED } from '@/modules/billing/featureFlags';
 import { getPremiumAccess } from '@/modules/billing/entitlements';
 import { rateLimit, clientIp } from '@/shared/lib/rateLimit';
 import { logger } from '@/shared/lib/logger';
+import { getQuestionForGrade } from '@/shared/lib/catalogCache';
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -54,12 +55,7 @@ export async function POST(request: NextRequest, { params }: Props) {
 
   let question;
   try {
-    question = await prisma.question.findUnique({
-      where: { id },
-      include: {
-        testCases: { orderBy: { sortOrder: 'asc' } },
-      },
-    });
+    question = await getQuestionForGrade(id);
   } catch (e) {
     logger.error('Grade: question fetch failed', { question_id: id, error: String(e) });
     return NextResponse.json({ error: 'Database error' }, { status: 500 });

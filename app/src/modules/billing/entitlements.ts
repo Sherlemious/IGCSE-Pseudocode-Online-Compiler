@@ -1,3 +1,8 @@
+import { revalidateTag, unstable_cache } from 'next/cache';
+import { prisma } from '@/shared/db';
+import type { Plan, Prisma } from '@prisma/client';
+import { LEGACY_STARTER_LIMITS, LIMITS, type Tier, type TierLimits } from './limits';
+
 /**
  * Teacher-tier entitlements — the single source of truth for what a user's plan
  * allows. API routes, the classes UI, and the Paddle billing webhook all read
@@ -18,9 +23,6 @@
  *   campus     — unlimited (contact-only; was "Advanced").
  *   pro        — unlimited; grandfathered Pro subscribers only.
  */
-import { prisma } from '@/shared/db';
-import type { Plan, Prisma } from '@prisma/client';
-import { LEGACY_STARTER_LIMITS, LIMITS, type Tier, type TierLimits } from './limits';
 
 export type { Tier, TierLimits } from './limits';
 export { LEGACY_STARTER_LIMITS, LIMITS, teacherBandForStudents } from './limits';
@@ -146,9 +148,17 @@ export function hasPremiumAccess(input: PlanHolder & { classOwners: PlanHolder[]
   return input.classOwners.some((owner) => resolveTier(owner) !== 'free');
 }
 
-export async function getPremiumAccess(
+export function premiumAccessTag(userId: string): string {
+  return `premium-access:${userId}`;
+}
+
+export function revalidatePremiumAccess(userId: string): void {
+  revalidateTag(premiumAccessTag(userId), 'max');
+}
+
+async function loadPremiumAccess(
   userId: string,
-  db: Pick<Prisma.TransactionClient, 'user'> = prisma,
+  db: Pick<Prisma.TransactionClient, 'user'>,
 ): Promise<boolean> {
   const user = await db.user.findUnique({
     where: { id: userId },
@@ -171,4 +181,16 @@ export async function getPremiumAccess(
     planExpiresAt: user.planExpiresAt,
     classOwners: user.classEnrollments.map((m) => m.class.owner),
   });
+}
+
+export async function getPremiumAccess(
+  userId: string,
+  db: Pick<Prisma.TransactionClient, 'user'> = prisma,
+): Promise<boolean> {
+  if (db !== prisma) return loadPremiumAccess(userId, db);
+  return unstable_cache(
+    () => loadPremiumAccess(userId, prisma),
+    ['premium-access', userId],
+    { revalidate: 120, tags: [premiumAccessTag(userId)] },
+  )();
 }

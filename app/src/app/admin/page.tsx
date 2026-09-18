@@ -2,6 +2,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { prisma } from '@/shared/db';
 import { auth } from '@/modules/auth/auth';
+import { getQuestionCount } from '@/shared/lib/catalogCache';
 import {
   Users, MessageSquare, BookOpen, BookOpenCheck,
   BarChart3, ArrowUpRight, ArrowRight, Mail, Route,
@@ -21,7 +22,7 @@ export default async function AdminOverviewPage() {
       prisma.user.count(),
       prisma.feedbackSubmission.count(),
       prisma.examAttempt.count(),
-      prisma.question.count(),
+      getQuestionCount(),
       prisma.user.count({ where: { learnProgress: { some: {} } } }),
       prisma.feedbackSubmission.aggregate({ _avg: { rating: true } }),
       prisma.feedbackSubmission.findMany({

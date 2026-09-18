@@ -165,9 +165,10 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       }
       // Re-read plan/role/planTier from the DB on an explicit update() OR when the
       // cached copy is older than the refresh window, so a billing/admin/onboarding
-      // change surfaces on the next page load without forcing a re-login. Capped to
-      // at most once per window per session, so it's not a per-request DB hit.
-      const REFRESH_MS = 30_000;
+      // change surfaces on the next page load without forcing a re-login.
+      // 10 min is long enough that a signed-in tab does not keep Neon compute
+      // awake (scale-to-zero after 5 min idle). session.update() still refreshes now.
+      const REFRESH_MS = 10 * 60 * 1000;
       const refreshedAt = typeof token.refreshedAt === 'number' ? token.refreshedAt : 0;
       const stale = Date.now() - refreshedAt > REFRESH_MS;
       if ((trigger === 'update' || stale) && token.id) {

@@ -1,46 +1,55 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { NextRequest } from 'next/server';
 
-const { findUnique } = vi.hoisted(() => ({ findUnique: vi.fn() }));
-vi.mock('@/shared/db', () => ({ prisma: { question: { findUnique } } }));
+const { getPublicQuestion } = vi.hoisted(() => ({ getPublicQuestion: vi.fn() }));
+vi.mock('@/shared/lib/catalogCache', () => ({
+  getPublicQuestion,
+  CATALOG_CACHE_CONTROL: 'public, s-maxage=3600, stale-while-revalidate=86400',
+}));
 import { GET } from './route';
 
 describe('public question response', () => {
   beforeEach(() => { vi.resetAllMocks(); });
 
   it('returns public metadata and examples without solutions or hidden tests', async () => {
-    const record = {
-      id: 'q1', title: 'Read a file', description: 'Print each line', starterCode: 'DECLARE line : STRING',
-      solution: 'MODEL ANSWER', solutionExplanation: 'PRIVATE EXPLANATION', futurePrivateField: 'SECRET',
+    getPublicQuestion.mockResolvedValue({
+      id: 'q1',
+      title: 'Read a file',
+      description: 'Print each line',
+      starterCode: 'DECLARE line : STRING',
+      difficulty: 'EASY',
+      year: 2024,
+      session: null,
+      variant: null,
+      paper: null,
+      questionNumber: null,
+      part: null,
+      marks: null,
+      topic: 'Files',
+      tags: [],
+      isPremium: false,
+      hints: [],
+      createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-01T00:00:00.000Z',
       testCases: [
-        { id: 'public', isHidden: false, inputs: ['Ada'], expectedOutput: 'Ada', description: 'Example', sortOrder: 0 },
-        { id: 'hidden', isHidden: true, inputs: ['secret input'], expectedOutput: 'secret answer' },
+        { id: 'public', inputs: ['Ada'], expectedOutput: 'Ada', description: 'Example', sortOrder: 0, initialFiles: null },
       ],
-    };
-    // Honor the query's projection and filtering, as the database does.
-    findUnique.mockImplementation(({ select, include }) => {
-      const result: Record<string, unknown> = select
-        ? Object.fromEntries(Object.keys(select).filter((key) => key in record).map((key) => [key, record[key as keyof typeof record]]))
-        : { ...record };
-      const relation = (select ?? include).testCases;
-      result.testCases = record.testCases
-        .filter((test) => test.isHidden === relation.where.isHidden)
-        .map((test) => Object.fromEntries(Object.keys(relation.select).map((key) => [key, test[key as keyof typeof test]])));
-      return result;
     });
 
     const response = await GET(new NextRequest('http://localhost/api/questions/q1'), { params: Promise.resolve({ id: 'q1' }) });
     expect(response.status).toBe(200);
     const { question } = await response.json();
-    expect(question).toMatchObject({ id: 'q1', title: 'Read a file', starterCode: record.starterCode });
-    expect(question.testCases).toEqual([{ id: 'public', inputs: ['Ada'], expectedOutput: 'Ada', description: 'Example', sortOrder: 0 }]);
+    expect(question).toMatchObject({ id: 'q1', title: 'Read a file', starterCode: 'DECLARE line : STRING' });
+    expect(question.testCases).toEqual([
+      { id: 'public', inputs: ['Ada'], expectedOutput: 'Ada', description: 'Example', sortOrder: 0, initialFiles: null },
+    ]);
     expect(question).not.toHaveProperty('solution');
     expect(question).not.toHaveProperty('solutionExplanation');
     expect(question).not.toHaveProperty('futurePrivateField');
   });
 
   it('returns 404 for a missing question', async () => {
-    findUnique.mockResolvedValue(null);
+    getPublicQuestion.mockResolvedValue(null);
     const response = await GET(new NextRequest('http://localhost/api/questions/missing'), { params: Promise.resolve({ id: 'missing' }) });
     expect(response.status).toBe(404);
   });

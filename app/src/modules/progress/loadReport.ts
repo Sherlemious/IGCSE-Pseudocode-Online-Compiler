@@ -1,5 +1,6 @@
 import type { Prisma } from '@prisma/client';
 import { prisma } from '@/shared/db';
+import { getQuestionCatalog, getQuestionCount } from '@/shared/lib/catalogCache';
 import { buildProgressReport, type ProgressReportData, type ProgressVoice } from './report';
 
 export async function loadProgressReport(
@@ -13,7 +14,7 @@ export async function loadProgressReport(
     ? { AND: [{ userId }, options.examFilter] }
     : { userId };
 
-  const [progressData, examData, totalQuestions] = await Promise.all([
+  const [progressRows, examData, catalog, totalQuestions] = await Promise.all([
     prisma.progress.findMany({
       where: { userId },
       select: {
@@ -22,7 +23,7 @@ export async function loadProgressReport(
         totalTests: true,
         attempts: true,
         updatedAt: true,
-        question: { select: { difficulty: true, topic: true, title: true } },
+        questionId: true,
       },
       orderBy: { updatedAt: 'desc' },
     }),
@@ -42,8 +43,23 @@ export async function loadProgressReport(
         completedAt: true,
       },
     }),
-    prisma.question.count(),
+    getQuestionCatalog(),
+    getQuestionCount(),
   ]);
+
+  const catalogById = new Map(catalog.map((question) => [question.id, question]));
+  const progressData = progressRows.flatMap((row) => {
+    const question = catalogById.get(row.questionId);
+    if (!question) return [];
+    return [{
+      status: row.status,
+      bestScore: row.bestScore,
+      totalTests: row.totalTests,
+      attempts: row.attempts,
+      updatedAt: row.updatedAt,
+      question: { difficulty: question.difficulty, topic: question.topic, title: question.title },
+    }];
+  });
 
   return buildProgressReport(progressData, examData, totalQuestions, { voice: options?.voice });
 }

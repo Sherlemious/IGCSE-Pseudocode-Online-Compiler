@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/modules/auth/auth';
 import { prisma } from '@/shared/db';
 import { isAdmin } from '@/modules/admin/isAdmin';
+import { revalidatePremiumAccess } from '@/modules/billing/entitlements';
 import type { Plan } from '@prisma/client';
 
 const VALID_PLANS: Plan[] = ['FREE', 'STUDENT', 'STARTER', 'PRO', 'SCHOOL'];
@@ -38,6 +39,8 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     },
     select: { id: true, plan: true, planTier: true, trialEndsAt: true, planUpdatedAt: true },
   });
+
+  revalidatePremiumAccess(id);
 
   return NextResponse.json({ user: updated });
 }

@@ -5,6 +5,7 @@ import { auth } from '@/modules/auth/auth';
 import { prisma } from '@/shared/db';
 import { PREMIUM_GATING_ENABLED } from '@/modules/billing/featureFlags';
 import { getPremiumAccess } from '@/modules/billing/entitlements';
+import { getQuestionTopics } from '@/shared/lib/catalogCache';
 import { Clock, Trophy, ArrowRight, Hourglass, FileStack, KeyRound } from 'lucide-react';
 import ExamConfigForm from '@/modules/exams/ExamConfigForm';
 import JoinExamForm from '@/modules/exams/JoinExamForm';
@@ -25,12 +26,7 @@ export default async function ExamPage() {
 
   const hasFullAccess = !PREMIUM_GATING_ENABLED || (await getPremiumAccess(session.user.id));
 
-  const topics = await prisma.question.findMany({
-    where: hasFullAccess ? {} : { isPremium: false },
-    select: { topic: true },
-    distinct: ['topic'],
-  });
-  const topicList = topics.map((t) => t.topic).filter(Boolean) as string[];
+  const topicList = await getQuestionTopics(hasFullAccess);
 
   const recentAttempts = await prisma.examAttempt.findMany({
     where: { userId: session.user.id },

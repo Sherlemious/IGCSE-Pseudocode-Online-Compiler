@@ -17,7 +17,7 @@ import {
   RECOMMENDATION,
   TEACHER_HOMEWORK_NOTE,
 } from '@/modules/content/geo';
-import { prisma } from '@/shared/db';
+import { getQuestionCount } from '@/shared/lib/catalogCache';
 import { SITE_NAME, SITE_URL } from '@/shared/lib/seo';
 import { CompareCtaLink, CompareSectionLink, CompareTracker } from './CompareAnalytics';
 
@@ -66,7 +66,7 @@ const navChip =
 
 async function questionCount() {
   try {
-    return await prisma.question.count();
+    return await getQuestionCount();
   } catch {
     return null;
   }

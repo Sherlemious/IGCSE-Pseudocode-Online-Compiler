@@ -2,18 +2,18 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ExamAnswer, ExamAttempt, TestCase } from '@prisma/client';
 import type { GradeResult } from '@/modules/practice/autograder';
 
-const { db, grade, auth } = vi.hoisted(() => ({
+const { db, grade, auth, getQuestionForGrade } = vi.hoisted(() => ({
   db: {
     $transaction: vi.fn(), $queryRaw: vi.fn(),
     examAttempt: { findUniqueOrThrow: vi.fn(), update: vi.fn() },
     examAnswer: { findUnique: vi.fn(), findMany: vi.fn(), update: vi.fn() },
-    testCase: { findMany: vi.fn() },
   },
-  grade: vi.fn(), auth: vi.fn(),
+  grade: vi.fn(), auth: vi.fn(), getQuestionForGrade: vi.fn(),
 }));
 vi.mock('@/shared/db', () => ({ prisma: db }));
 vi.mock('@/modules/practice/autograder', () => ({ gradeSubmission: grade }));
 vi.mock('@/modules/auth/auth', () => ({ auth }));
+vi.mock('@/shared/lib/catalogCache', () => ({ getQuestionForGrade }));
 
 import { gradeExamAnswer, saveExamAnswer, submitExamAttempt } from './attempts';
 import { POST as saveRoute } from '@/app/api/exam/[examId]/save/route';
@@ -82,7 +82,11 @@ beforeEach(() => {
   db.examAnswer.update.mockImplementation(async ({ data }: { data: Partial<ExamAnswer> }) => {
     answer = { ...answer, ...data }; return structuredClone(answer);
   });
-  db.testCase.findMany.mockImplementation(async () => structuredClone(testCases));
+  getQuestionForGrade.mockImplementation(async (id: string) =>
+    id === 'q1'
+      ? { id, difficulty: 'EASY' as const, isPremium: false, testCases: structuredClone(testCases) }
+      : null,
+  );
 });
 
 afterEach(() => { vi.useRealTimers(); vi.restoreAllMocks(); });
@@ -110,7 +114,7 @@ describe('exam answer integrity', () => {
   it.each([saveExamAnswer, gradeExamAnswer])('rejects another student and nonmember questions', async (write) => {
     await expect(write(exam.id, 'other-user', submission)).rejects.toMatchObject({ status: 404 });
     await expect(write(exam.id, exam.userId, { ...submission, questionId: 'not-in-exam' })).rejects.toMatchObject({ code: 'QUESTION_NOT_IN_EXAM' });
-    expect(db.testCase.findMany).not.toHaveBeenCalled();
+    expect(getQuestionForGrade).not.toHaveBeenCalled();
     expect(db.examAnswer.update).not.toHaveBeenCalled();
   });
 

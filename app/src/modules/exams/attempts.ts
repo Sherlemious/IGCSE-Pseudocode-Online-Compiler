@@ -1,6 +1,7 @@
 import { Prisma, type ExamAttempt } from '@prisma/client';
 import { prisma } from '@/shared/db';
 import { gradeSubmission } from '@/modules/practice/autograder';
+import { getQuestionForGrade } from '@/shared/lib/catalogCache';
 
 export class ExamRequestError extends Error {
   constructor(public readonly status: number, public readonly code: string, message: string) {
@@ -96,10 +97,11 @@ export async function gradeExamAnswer(examId: string, userId: string, submission
       where: { id: answer.id },
       data: { graded: false, passCount: 0, totalTests: 0, updatedAt: revision },
     });
-    const testCases = await tx.testCase.findMany({
-      where: { questionId: submission.questionId }, orderBy: { sortOrder: 'asc' },
-    });
-    return { revision, testCases };
+    const question = await getQuestionForGrade(submission.questionId);
+    if (!question) {
+      throw new ExamRequestError(404, 'QUESTION_NOT_IN_EXAM', 'This question is not part of the exam.');
+    }
+    return { revision, testCases: question.testCases };
   });
 
   const results = await Promise.allSettled(prepared.testCases.map((test) =>

@@ -3,6 +3,7 @@ import { redirect, notFound } from 'next/navigation';
 import Link from 'next/link';
 import { auth } from '@/modules/auth/auth';
 import { prisma } from '@/shared/db';
+import { getQuestionCatalog } from '@/shared/lib/catalogCache';
 import { Clock, ArrowLeft, CheckCircle, XCircle, RotateCcw, Minus } from 'lucide-react';
 import ExamShareButton from '@/modules/share/ExamShareButton';
 
@@ -29,8 +30,12 @@ export default async function ExamResultsPage({ params }: Props) {
     include: {
       answers: {
         orderBy: { sortOrder: 'asc' },
-        include: {
-          question: { select: { id: true, title: true, difficulty: true } },
+        select: {
+          id: true,
+          graded: true,
+          passCount: true,
+          totalTests: true,
+          questionId: true,
         },
       },
     },
@@ -39,8 +44,21 @@ export default async function ExamResultsPage({ params }: Props) {
   if (!exam) notFound();
   if (exam.status === 'IN_PROGRESS') redirect(`/exam/${examId}`);
 
-  const passedQuestions = exam.answers.filter((a) => a.graded && a.totalTests > 0 && a.passCount === a.totalTests).length;
-  const totalQuestions = exam.answers.length;
+  const catalogById = new Map((await getQuestionCatalog()).map((question) => [question.id, question]));
+  const answers = exam.answers.flatMap((a) => {
+    const question = catalogById.get(a.questionId);
+    if (!question) return [];
+    return [{
+      id: a.id,
+      graded: a.graded,
+      passCount: a.passCount,
+      totalTests: a.totalTests,
+      question: { id: question.id, title: question.title, difficulty: question.difficulty },
+    }];
+  });
+
+  const passedQuestions = answers.filter((a) => a.graded && a.totalTests > 0 && a.passCount === a.totalTests).length;
+  const totalQuestions = answers.length;
   const percentage = totalQuestions > 0 ? Math.round((passedQuestions / totalQuestions) * 100) : 0;
 
   const durationMs = exam.completedAt
@@ -159,7 +177,7 @@ export default async function ExamResultsPage({ params }: Props) {
         <div className="animate-fade-in-up" style={{ animationDelay: '150ms' }}>
           <h2 className="display-serif text-lg font-semibold text-light-text mb-3 px-1">Marking Summary</h2>
           <div className="space-y-2 stagger-children mb-6">
-            {exam.answers.map((a, i) => {
+            {answers.map((a, i) => {
               const allPassed = a.totalTests > 0 && a.passCount === a.totalTests;
               const pct = a.totalTests > 0 ? Math.round((a.passCount / a.totalTests) * 100) : 0;
               return (

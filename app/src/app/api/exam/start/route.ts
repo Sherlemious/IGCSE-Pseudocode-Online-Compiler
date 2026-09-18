@@ -3,6 +3,7 @@ import { auth } from '@/modules/auth/auth';
 import { prisma } from '@/shared/db';
 import { PREMIUM_GATING_ENABLED } from '@/modules/billing/featureFlags';
 import { getPremiumAccess } from '@/modules/billing/entitlements';
+import { getExamQuestionPool } from '@/shared/lib/catalogCache';
 import type { Difficulty } from '@prisma/client';
 
 export async function POST(req: Request) {
@@ -16,21 +17,13 @@ export async function POST(req: Request) {
   const count = Math.min(Math.max(questionCount || 5, 1), 20);
   const timeLimit = Math.min(Math.max(timeLimitMin || 60, 10), 180);
 
-  // Build where clause for question selection
-  const where: Record<string, unknown> = {};
-  if (topic) where.topic = topic;
-  if (difficulty) where.difficulty = difficulty as Difficulty;
+  const includePremium =
+    !PREMIUM_GATING_ENABLED || (await getPremiumAccess(session.user.id));
 
-  // Keep premium-flagged questions out of a non-entitled student's exam pool when
-  // gating is enabled. Entitlement = own paid plan or a paid teacher's class.
-  if (PREMIUM_GATING_ENABLED && !(await getPremiumAccess(session.user.id))) {
-    where.isPremium = false;
-  }
-
-  // Get random questions
-  const allQuestions = await prisma.question.findMany({
-    where,
-    select: { id: true },
+  const allQuestions = await getExamQuestionPool({
+    topic: topic || null,
+    difficulty: difficulty || null,
+    includePremium,
   });
 
   if (allQuestions.length === 0) {

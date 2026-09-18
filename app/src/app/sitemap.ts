@@ -1,5 +1,5 @@
 import type { MetadataRoute } from 'next';
-import { prisma } from '@/shared/db';
+import { getQuestionCatalog } from '@/shared/lib/catalogCache';
 import { SITE_URL } from '@/shared/lib/seo';
 
 export const revalidate = 3600;
@@ -9,11 +9,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   let questionUrls: MetadataRoute.Sitemap = [];
 
   try {
-    const questions = await prisma.question.findMany({
-      select: { id: true, updatedAt: true },
-      orderBy: { updatedAt: 'desc' },
-      take: 1000,
-    });
+    const questions = await getQuestionCatalog();
 
     questionUrls = questions.map((question) => ({
       url: `${SITE_URL}/practice/${question.id}`,

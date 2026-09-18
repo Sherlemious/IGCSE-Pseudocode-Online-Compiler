@@ -3,6 +3,7 @@ import { redirect, notFound } from 'next/navigation';
 import Link from 'next/link';
 import { auth } from '@/modules/auth/auth';
 import { prisma } from '@/shared/db';
+import { getQuestionCatalog } from '@/shared/lib/catalogCache';
 import { ArrowLeft, Clock, ListChecks, Users, Check } from 'lucide-react';
 import ExamShareCard from '@/modules/exams/ExamShareCard';
 import ExamManageActions from '@/modules/exams/ExamManageActions';
@@ -43,12 +44,19 @@ export default async function ManageExamPage({ params, searchParams }: Props) {
       _count: { select: { attempts: true } },
       questions: {
         orderBy: { sortOrder: 'asc' },
-        select: { question: { select: { id: true, title: true, difficulty: true, topic: true } } },
+        select: { questionId: true },
       },
     },
   });
 
   if (!exam) notFound();
+
+  const catalogById = new Map((await getQuestionCatalog()).map((question) => [question.id, question]));
+  const questions = exam.questions.flatMap((link) => {
+    const question = catalogById.get(link.questionId);
+    if (!question) return [];
+    return [{ question }];
+  });
 
   return (
     <div className="flex-1 overflow-y-auto bg-background bg-dot-grid p-6 scrollbar-pretty">
@@ -66,7 +74,7 @@ export default async function ManageExamPage({ params, searchParams }: Props) {
           <h1 className="display-serif text-2xl font-semibold text-light-text">{exam.title}</h1>
           {exam.description && <p className="text-sm text-dark-text mt-1.5">{exam.description}</p>}
           <div className="flex items-center gap-4 mt-3 text-[11px] text-dark-text font-mono">
-            <span className="flex items-center gap-1.5"><ListChecks size={12} />{exam.questions.length} questions</span>
+            <span className="flex items-center gap-1.5"><ListChecks size={12} />{questions.length} questions</span>
             <span className="flex items-center gap-1.5"><Clock size={12} />{exam.timeLimitMin} min</span>
             <span className="flex items-center gap-1.5"><Users size={12} />{exam._count.attempts} taken</span>
           </div>
@@ -97,7 +105,7 @@ export default async function ManageExamPage({ params, searchParams }: Props) {
         {/* Question list */}
         <h2 className="mono-label text-dark-text mb-3 px-1">Questions</h2>
         <ol className="space-y-1.5">
-          {exam.questions.map((q, i) => (
+          {questions.map((q, i) => (
             <li
               key={q.question.id}
               className="flex items-center gap-3 bg-surface border border-border rounded-lg px-4 py-3"

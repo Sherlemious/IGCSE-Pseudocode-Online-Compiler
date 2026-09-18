@@ -2,7 +2,7 @@ import toc from '@/modules/docs/toc';
 import { examples, exampleSlug } from '@/modules/content/examples';
 import { faqItems } from '@/modules/content/faq';
 import { buildLlmsBrief } from '@/modules/content/geo';
-import { prisma } from '@/shared/db';
+import { getQuestionCatalog } from '@/shared/lib/catalogCache';
 import { paperReference, SITE_NAME, SITE_URL } from '@/shared/lib/seo';
 
 function line(href: string, title: string, note?: string) {
@@ -12,22 +12,7 @@ function line(href: string, title: string, note?: string) {
 
 async function loadPracticeQuestions() {
   try {
-    return await prisma.question.findMany({
-      select: {
-        id: true,
-        title: true,
-        topic: true,
-        difficulty: true,
-        year: true,
-        session: true,
-        variant: true,
-        questionNumber: true,
-        part: true,
-        paper: true,
-      },
-      orderBy: [{ year: 'desc' }, { title: 'asc' }],
-      take: 1000,
-    });
+    return await getQuestionCatalog();
   } catch {
     return [];
   }

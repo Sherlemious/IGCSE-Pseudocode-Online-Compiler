@@ -1,5 +1,13 @@
-/** Debounce for editor autosave (ms). */
+/** Debounce for local editor autosave (ms). */
 export const AUTOSAVE_DELAY = 500;
+
+/**
+ * Debounce for signed-in playground snapshots on Neon.
+ * LocalStorage stays on AUTOSAVE_DELAY; the cloud copy is coalesced so
+ * typing does not keep compute awake (Neon bills CU-hours while the
+ * endpoint is not scaled to zero).
+ */
+export const CLOUD_AUTOSAVE_DELAY = 30_000;
 
 /**
  * Read a persisted split-pane percentage, clamped to [min, max].

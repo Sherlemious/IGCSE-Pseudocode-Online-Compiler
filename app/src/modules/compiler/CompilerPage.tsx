@@ -31,7 +31,7 @@ import {
   SPLIT_COMPILER_COLLAPSED_KEY,
 } from './constants';
 import { FILE_PREFIX, FILES_CHANGED_EVENT } from '@/modules/interpreter/storage';
-import { AUTOSAVE_DELAY, loadSplitPercent } from '@/shared/lib/persist';
+import { AUTOSAVE_DELAY, CLOUD_AUTOSAVE_DELAY, loadSplitPercent } from '@/shared/lib/persist';
 import { ONBOARDING_KEY } from '@/modules/onboarding/constants';
 import { formatOutputEntries } from '@/modules/compiler/formatOutputEntries';
 import { SAVE_PROGRAM_PROMPT_FLAG } from '@/modules/telemetry/experiments';
@@ -294,6 +294,7 @@ const CompilerPage: React.FC = () => {
   // virtual filesystem are persisted immediately in handleCodeChange so a
   // stale open tab cannot overwrite fresh WRITEFILE output on this timer.
   const saveTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const cloudSaveTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const mainTabContent = tabs.find((tab) => tab.id === 'main')?.content ?? '';
   useEffect(() => {
     clearTimeout(saveTimer.current);
@@ -303,11 +304,34 @@ const CompilerPage: React.FC = () => {
       } catch {
         toast.error('Autosave failed: Storage full?');
       }
+    }, AUTOSAVE_DELAY);
+    return () => clearTimeout(saveTimer.current);
+  }, [mainTabContent]);
+
+  useEffect(() => {
+    clearTimeout(cloudSaveTimer.current);
+    if (!hydratedRef.current || !isSignedInRef.current) return;
+    cloudSaveTimer.current = setTimeout(() => {
+      void putPlaygroundSnapshot(mainTabContent);
+    }, CLOUD_AUTOSAVE_DELAY);
+    return () => clearTimeout(cloudSaveTimer.current);
+  }, [mainTabContent]);
+
+  useEffect(() => {
+    const flushCloud = () => {
       if (hydratedRef.current && isSignedInRef.current) {
         void putPlaygroundSnapshot(mainTabContent);
       }
-    }, AUTOSAVE_DELAY);
-    return () => clearTimeout(saveTimer.current);
+    };
+    const onVisibility = () => {
+      if (document.visibilityState === 'hidden') flushCloud();
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+    window.addEventListener('pagehide', flushCloud);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibility);
+      window.removeEventListener('pagehide', flushCloud);
+    };
   }, [mainTabContent]);
 
   // Keep file editor tabs in sync with WRITEFILE/PUTRECORD and editor saves.

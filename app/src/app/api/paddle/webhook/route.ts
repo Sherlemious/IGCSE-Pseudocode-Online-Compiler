@@ -7,6 +7,7 @@ import { getPaddleServer } from '@/modules/billing/paddle/server';
 import { BAND_SLUGS, TIER_TO_PLAN, tierSlugForPriceId } from '@/modules/billing/paddle/plan';
 import { expiryForPurchase, isTeacherPlan, passForPriceId } from '@/modules/billing/paddle/passes';
 import { captureServerEvent } from '@/modules/telemetry/serverCapture';
+import { revalidatePremiumAccess } from '@/modules/billing/entitlements';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -266,6 +267,7 @@ async function setPlan(
       ...(opts.legacyCapacity !== undefined ? { legacyCapacity: opts.legacyCapacity } : {}),
     },
   });
+  revalidatePremiumAccess(userId);
 }
 
 async function linkPaddleIds(userId: string, data: SubscriptionData) {

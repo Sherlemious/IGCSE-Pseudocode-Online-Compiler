@@ -3,6 +3,7 @@ import { Prisma } from '@prisma/client';
 import { auth } from '@/modules/auth/auth';
 import { prisma } from '@/shared/db';
 import { generateShareCode } from '@/shared/lib/shareCode';
+import { existingCatalogQuestionIds } from '@/shared/lib/catalogCache';
 
 interface CreateBody {
   title?: unknown;
@@ -32,13 +33,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Add at least one question.' }, { status: 400 });
   }
 
-  // Verify all referenced questions exist.
-  const found = await prisma.question.findMany({
-    where: { id: { in: questionIds } },
-    select: { id: true },
-  });
-  const foundIds = new Set(found.map((q) => q.id));
-  const validIds = questionIds.filter((id) => foundIds.has(id));
+  const validIds = await existingCatalogQuestionIds(questionIds);
   if (validIds.length === 0) {
     return NextResponse.json({ error: 'None of the selected questions could be found.' }, { status: 400 });
   }
