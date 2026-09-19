@@ -1,10 +1,10 @@
 import type { Metadata } from 'next';
 import { PREMIUM_GATING_ENABLED } from '@/modules/billing/featureFlags';
 import PracticeIndex from '@/modules/practice/PracticeIndex';
-import { CATALOG_REVALIDATE_SECONDS, getQuestionCatalog } from '@/shared/lib/catalogCache';
+import { getQuestionCatalog } from '@/shared/lib/catalogCache';
 import { SITE_URL } from '@/shared/lib/seo';
 
-export const revalidate = CATALOG_REVALIDATE_SECONDS;
+export const revalidate = 3600;
 
 export const metadata: Metadata = {
   title: {

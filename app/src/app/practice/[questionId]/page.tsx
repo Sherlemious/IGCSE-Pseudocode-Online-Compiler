@@ -5,7 +5,7 @@ import { ChevronLeft, FileText } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { PREMIUM_GATING_ENABLED } from '@/modules/billing/featureFlags';
-import { CATALOG_REVALIDATE_SECONDS, getPublicQuestion, getQuestionCatalog } from '@/shared/lib/catalogCache';
+import { getPublicQuestion, getQuestionCatalog } from '@/shared/lib/catalogCache';
 import PracticeQuestionPane from '@/modules/practice/PracticeQuestionPane';
 import HintsPanel from '@/modules/practice/HintsPanel';
 import SolutionPanel from '@/modules/practice/SolutionPanel';
@@ -17,7 +17,7 @@ import {
   truncateDescription,
 } from '@/shared/lib/seo';
 
-export const revalidate = CATALOG_REVALIDATE_SECONDS;
+export const revalidate = 3600;
 
 export async function generateStaticParams() {
   try {
