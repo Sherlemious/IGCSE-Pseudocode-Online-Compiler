@@ -1,9 +1,6 @@
 'use client';
 
 import { SessionProvider } from 'next-auth/react';
-import { installAnonymousSessionShortCircuit } from './sessionCookie';
-
-installAnonymousSessionShortCircuit();
 
 export default function SessionWrapper({ children }: { children: React.ReactNode }) {
   return (
