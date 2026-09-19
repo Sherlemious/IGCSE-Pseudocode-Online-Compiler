@@ -1,5 +1,4 @@
 import type { Metadata } from 'next';
-import { auth } from '@/modules/auth/auth';
 import IndexLinks from '@/shared/layout/IndexLinks';
 import ContactForm from './_components/ContactForm';
 
@@ -12,9 +11,7 @@ export const metadata: Metadata = {
   },
 };
 
-export default async function ContactPage() {
-  const session = await auth();
-
+export default function ContactPage() {
   return (
     <div className="flex-1 overflow-y-auto bg-background bg-dot-grid">
       <div
@@ -35,11 +32,7 @@ export default async function ContactPage() {
           </p>
 
           <div className="mt-8">
-            <ContactForm
-              defaultName={session?.user?.name ?? ''}
-              defaultEmail={session?.user?.email ?? ''}
-              signedIn={!!session?.user}
-            />
+            <ContactForm />
           </div>
 
           <IndexLinks current="/contact" />

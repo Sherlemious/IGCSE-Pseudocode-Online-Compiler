@@ -1,20 +1,21 @@
 'use client';
 
-import { useRouter, useSearchParams } from 'next/navigation';
 import { X, ArrowDownNarrowWide } from 'lucide-react';
 import {
-  buildPracticeUrl,
   SORT_KEYS,
   SORT_META,
   DIFF_META,
   STATUS_META,
   type ActiveFilters,
+  type PracticeNavigate,
 } from './filterUtils';
 
 interface Props {
   filteredCount: number;
   totalCount: number;
   active: ActiveFilters;
+  onNavigate: PracticeNavigate;
+  onClearAll: () => void;
 }
 
 /**
@@ -22,12 +23,7 @@ interface Props {
  * left, a sort control on the right, and a row of removable filter chips that
  * mirror whatever facets are currently narrowing the set.
  */
-export function PracticeToolbar({ filteredCount, totalCount, active }: Props) {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-
-  const go = (overrides: Record<string, string | undefined>) =>
-    router.push(buildPracticeUrl(searchParams.toString(), overrides));
+export function PracticeToolbar({ filteredCount, totalCount, active, onNavigate: go, onClearAll }: Props) {
 
   const pct = totalCount > 0 ? Math.round((filteredCount / totalCount) * 100) : 0;
 
@@ -150,7 +146,7 @@ export function PracticeToolbar({ filteredCount, totalCount, active }: Props) {
             );
           })}
           <button
-            onClick={() => router.push('/practice')}
+            onClick={onClearAll}
             className="ml-1 text-[11px] text-dark-text hover:text-error transition-colors cursor-pointer underline underline-offset-2"
           >
             Clear all

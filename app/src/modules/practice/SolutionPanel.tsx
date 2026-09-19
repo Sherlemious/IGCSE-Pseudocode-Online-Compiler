@@ -5,8 +5,8 @@ import { BookOpen, ChevronDown, ChevronRight, Lock, Eye, Lightbulb, X, Copy, Che
 
 interface Props {
   questionId: string;
-  isSolved: boolean;
-  attemptCount: number;
+  isSolved?: boolean;
+  attemptCount?: number;
 }
 
 interface SolutionData {
@@ -18,7 +18,7 @@ interface SolutionData {
 
 const REVEALED_KEY = (id: string) => `solution_revealed:${id}`;
 
-export default function SolutionPanel({ questionId, isSolved, attemptCount }: Props) {
+export default function SolutionPanel({ questionId, isSolved = false, attemptCount = 0 }: Props) {
   const [isOpen, setIsOpen] = useState(false);
   const [data, setData] = useState<SolutionData | null>(null);
   const [loading, setLoading] = useState(false);
@@ -36,6 +36,17 @@ export default function SolutionPanel({ questionId, isSolved, attemptCount }: Pr
 
   const isOpenRef = useRef(isOpen);
   isOpenRef.current = isOpen;
+
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent<{ questionId: string; isSolved: boolean; attemptCount: number }>).detail;
+      if (detail.questionId !== questionId) return;
+      if (detail.isSolved) setLocalIsSolved(true);
+      setLocalAttemptCount(detail.attemptCount);
+    };
+    window.addEventListener('practice:progress', handler);
+    return () => window.removeEventListener('practice:progress', handler);
+  }, [questionId]);
 
   const fetchSolution = useCallback(async (giveUp = false) => {
     setLoading(true);

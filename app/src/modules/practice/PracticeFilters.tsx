@@ -1,15 +1,14 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
 import { X, SlidersHorizontal, FileText, Search, ChevronDown } from 'lucide-react';
 import {
-  buildPracticeUrl,
   DIFF_META,
   STATUS_META,
   type ActiveFilters,
   type DiffFacet,
   type NamedFacet,
+  type PracticeNavigate,
   type StatusFacet,
   type YearFacet,
 } from './filterUtils';
@@ -24,17 +23,13 @@ interface Props {
   statusAllCount: number;
   active: ActiveFilters;
   showStatus: boolean;
+  onNavigate: PracticeNavigate;
 }
 
 const TAG_COLLAPSED_LIMIT = 14;
 
 export function PracticeFilters(props: Props) {
-  const { variant, active } = props;
-  const router = useRouter();
-  const searchParams = useSearchParams();
-
-  const go = (overrides: Record<string, string | undefined>) =>
-    router.push(buildPracticeUrl(searchParams.toString(), overrides));
+  const { variant, active, onNavigate: go } = props;
 
   // ── Local-first search with debounced navigation ──────────────────────────
   const [query, setQuery] = useState(active.q ?? '');
@@ -52,7 +47,7 @@ export function PracticeFilters(props: Props) {
     }
     const id = setTimeout(() => {
       if ((query || undefined) !== (active.q || undefined)) {
-        router.replace(buildPracticeUrl(searchParams.toString(), { q: query || undefined }));
+        go({ q: query || undefined }, 'replace');
       }
     }, 250);
     return () => clearTimeout(id);

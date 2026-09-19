@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { auth } from '@/modules/auth/auth';
-import { resolveLearnPremiumAccess } from '@/modules/learn/access';
+import { PREMIUM_GATING_ENABLED } from '@/modules/billing/featureFlags';
 import LearnPlayer from '@/modules/learn/LearnPlayer';
 import { IGCSE_PAPER_2 } from '@/modules/learn/curriculum';
 import { findLesson, flattenLessons } from '@/modules/learn/path';
@@ -36,7 +35,5 @@ export default async function LearnLessonPage({ params }: Props) {
   const { level: levelSlug, lesson: lessonSlug } = await params;
   const found = findLesson(IGCSE_PAPER_2, levelSlug, lessonSlug);
   if (!found) notFound();
-  const session = await auth();
-  const premiumAccess = await resolveLearnPremiumAccess(session?.user);
-  return <LearnPlayer level={found.level} lesson={found.lesson} premiumAccess={premiumAccess} />;
+  return <LearnPlayer level={found.level} lesson={found.lesson} premiumAccess={!PREMIUM_GATING_ENABLED} />;
 }

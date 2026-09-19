@@ -33,6 +33,15 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+  // Client router cache: reuse static RSC payloads (practice/learn/docs) for a
+  // few minutes, and keep dynamic pages warm for 30s of back/forward navigation
+  // so filter-adjacent clicks don't each become a Vercel invocation.
+  experimental: {
+    staleTimes: {
+      dynamic: 30,
+      static: 180,
+    },
+  },
 };
 
 export default nextConfig;

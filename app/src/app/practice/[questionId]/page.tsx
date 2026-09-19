@@ -1,16 +1,12 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { ChevronLeft, Crown, Lock, FileText } from 'lucide-react';
+import { ChevronLeft, FileText } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { prisma } from '@/shared/db';
-import { auth } from '@/modules/auth/auth';
-import { authHref } from '@/modules/auth/callback';
 import { PREMIUM_GATING_ENABLED } from '@/modules/billing/featureFlags';
-import { getPremiumAccess } from '@/modules/billing/entitlements';
-import { getPublicQuestion } from '@/shared/lib/catalogCache';
-import PracticeWorkspace from '@/modules/practice/PracticeWorkspace';
+import { CATALOG_REVALIDATE_SECONDS, getPublicQuestion, getQuestionCatalog } from '@/shared/lib/catalogCache';
+import PracticeQuestionPane from '@/modules/practice/PracticeQuestionPane';
 import HintsPanel from '@/modules/practice/HintsPanel';
 import SolutionPanel from '@/modules/practice/SolutionPanel';
 import {
@@ -20,6 +16,17 @@ import {
   stripMarkdown,
   truncateDescription,
 } from '@/shared/lib/seo';
+
+export const revalidate = CATALOG_REVALIDATE_SECONDS;
+
+export async function generateStaticParams() {
+  try {
+    const catalog = await getQuestionCatalog();
+    return catalog.map((q) => ({ questionId: q.id }));
+  } catch {
+    return [];
+  }
+}
 
 interface Props {
   params: Promise<{ questionId: string }>;
@@ -90,9 +97,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function QuestionPage({ params }: Props) {
   const { questionId } = await params;
-  const session = await auth();
-  const hasFullAccess =
-    !PREMIUM_GATING_ENABLED || (session?.user?.id ? await getPremiumAccess(session.user.id) : false);
 
   let question;
   try {
@@ -103,9 +107,7 @@ export default async function QuestionPage({ params }: Props) {
 
   if (!question) notFound();
 
-  // Access control applies only when premium gating is enabled, and only to
-  // questions flagged premium.
-  const isLocked = question.isPremium && !hasFullAccess;
+  const isLockedForCrawlers = question.isPremium && PREMIUM_GATING_ENABLED;
   const ref = paperReference(question);
   const questionJsonLd = {
     '@context': 'https://schema.org',
@@ -114,7 +116,7 @@ export default async function QuestionPage({ params }: Props) {
     description: truncateDescription(stripMarkdown(question.description), 280),
     url: absoluteUrl(`/practice/${question.id}`),
     inLanguage: 'en',
-    isAccessibleForFree: !isLocked,
+    isAccessibleForFree: !isLockedForCrawlers,
     learningResourceType: 'practice problem',
     educationalUse: ['practice', 'revision', 'exam preparation'],
     educationalLevel: question.tags.includes('AS & A Level') ? 'AS & A Level' : 'IGCSE/O Level',
@@ -131,24 +133,6 @@ export default async function QuestionPage({ params }: Props) {
       url: absoluteUrl('/'),
     },
   };
-
-  // Load saved code for authenticated users
-  let savedCode: string | null = null;
-  let progressStatus: string | null = null;
-  let progressAttempts = 0;
-  if (session?.user?.id) {
-    try {
-      const progress = await prisma.progress.findUnique({
-        where: { userId_questionId: { userId: session.user.id, questionId } },
-        select: { lastCode: true, status: true, attempts: true },
-      });
-      savedCode = progress?.lastCode ?? null;
-      progressStatus = progress?.status ?? null;
-      progressAttempts = progress?.attempts ?? 0;
-    } catch {
-      /* ignore */
-    }
-  }
 
   const anyPreloadedFiles = question.testCases.some((tc) => tc.initialFiles);
   const preloadedFileNames = anyPreloadedFiles
@@ -322,54 +306,17 @@ export default async function QuestionPage({ params }: Props) {
 
         {/* Hints & Solution panels */}
         <HintsPanel questionId={question.id} />
-        <SolutionPanel
-          questionId={question.id}
-          isSolved={progressStatus === 'SOLVED'}
-          attemptCount={progressAttempts}
-        />
+        <SolutionPanel questionId={question.id} />
       </div>
 
-      {/* Right: Workspace or locked state */}
-      {isLocked ? (
-        <div className="flex-1 flex items-center justify-center p-8">
-          <div className="text-center max-w-sm">
-            <div className="w-16 h-16 rounded-full bg-warning/10 border border-warning/30 flex items-center justify-center mx-auto mb-4">
-              <Lock className="h-7 w-7 text-warning" />
-            </div>
-            <h2 className="text-lg font-bold text-light-text mb-2">Premium Question</h2>
-            <p className="text-sm text-dark-text mb-6">
-              This question needs a paid plan — upgrade, or join a class from a teacher who has one. You can read the
-              description and sample tests, but grading is locked.
-            </p>
-            {!session ? (
-              <Link
-                href={authHref('signin', `/practice/${question.id}`)}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary/15 text-primary
-                  font-medium text-sm hover:bg-primary/25 transition-colors"
-              >
-                Sign in to get started
-              </Link>
-            ) : (
-              <Link
-                href="/pricing"
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-warning/15 text-warning
-                  font-medium text-sm hover:bg-warning/25 transition-colors"
-              >
-                <Crown size={15} />
-                See plans
-              </Link>
-            )}
-          </div>
-        </div>
-      ) : (
-        <PracticeWorkspace
-          questionId={question.id}
-          starterCode={question.starterCode ?? ''}
-          savedCode={savedCode}
-          preloadedFileNames={preloadedFileNames.length > 0 ? preloadedFileNames : undefined}
-          difficulty={question.difficulty}
-        />
-      )}
+      <PracticeQuestionPane
+        questionId={question.id}
+        starterCode={question.starterCode ?? ''}
+        difficulty={question.difficulty}
+        isPremium={question.isPremium}
+        gatingEnabled={PREMIUM_GATING_ENABLED}
+        preloadedFileNames={preloadedFileNames.length > 0 ? preloadedFileNames : undefined}
+      />
     </div>
   );
 }

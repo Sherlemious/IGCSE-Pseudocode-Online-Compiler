@@ -1,22 +1,25 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Check, Send } from 'lucide-react';
+import { useSession } from 'next-auth/react';
 import { usePostHog } from 'posthog-js/react';
 import { toast } from 'sonner';
 
 interface Props {
-  defaultName: string;
-  defaultEmail: string;
-  signedIn: boolean;
+  defaultName?: string;
+  defaultEmail?: string;
+  signedIn?: boolean;
 }
 
 const inputClass =
   'w-full px-3 py-2 rounded-lg bg-background border border-border text-light-text text-sm ' +
   'placeholder:text-dark-text/40 focus:outline-none focus:border-primary/50 transition-colors';
 
-export default function ContactForm({ defaultName, defaultEmail, signedIn }: Props) {
+export default function ContactForm({ defaultName = '', defaultEmail = '', signedIn: signedInProp }: Props) {
   const ph = usePostHog();
+  const { data: session, status } = useSession();
+  const signedIn = signedInProp ?? status === 'authenticated';
 
   const [name, setName] = useState(defaultName);
   const [email, setEmail] = useState(defaultEmail);
@@ -24,6 +27,12 @@ export default function ContactForm({ defaultName, defaultEmail, signedIn }: Pro
   const [message, setMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
+
+  useEffect(() => {
+    if (!session?.user) return;
+    if (session.user.name) setName((current) => current || session.user.name || '');
+    if (session.user.email) setEmail((current) => current || session.user.email || '');
+  }, [session]);
 
   const emailOk = signedIn || email.trim().length > 0;
   const canSubmit = message.trim().length > 0 && emailOk && !submitting;
