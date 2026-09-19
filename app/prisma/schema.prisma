@@ -44,7 +44,7 @@ model User {
   paddleSubscriptionId String?   // sub_… (the current/last subscription)
   planTier             String?   // marketing slug: student|starter|pro|classroom|department|school|campus|student-*
   planUpdatedAt        DateTime? // last time the billing webhook changed plan
-  planExpiresAt        DateTime? // student session/month passes expire; null = no expiry (subs / free)
+  planExpiresAt        DateTime? // session passes + subs scheduled to cancel; null = no expiry
   // Paid teachers at cutover keep pre-band limits (Starter 3×30/class, Pro unlimited).
   // New checkouts of the capacity bands get false. Never set for student passes.
   legacyCapacity       Boolean   @default(false)

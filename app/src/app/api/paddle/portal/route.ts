@@ -2,6 +2,12 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/modules/auth/auth';
 import { prisma } from '@/shared/db';
 import { getPaddleServer } from '@/modules/billing/paddle/server';
+import {
+  isPaddleForbidden,
+  paddleErrorAttrs,
+  safeCustomerPortalFallbackUrl,
+} from '@/modules/billing/paddle/portal';
+import { logger } from '@/shared/lib/logger';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -10,6 +16,10 @@ export const dynamic = 'force-dynamic';
  * Redirects the signed-in customer to their Paddle customer portal — where they
  * can update their payment method, view invoices, and cancel. Requires a linked
  * paddleCustomerId (set by the subscription webhook); otherwise sends them to /pricing.
+ *
+ * Creating a session needs `customer_portal_session.write` on PADDLE_API_KEY.
+ * If Paddle forbids that, we fall back to PADDLE_CUSTOMER_PORTAL_URL (magic-link
+ * sign-in) when set, otherwise /pricing?portal=error.
  */
 export async function GET(req: Request) {
   const session = await auth();
@@ -37,21 +47,14 @@ export async function GET(req: Request) {
     return portal?.urls?.general?.overview ?? null;
   };
 
-  // TEMP DIAGNOSTIC — surface the underlying Paddle error into the redirect so we
-  // can confirm the production PADDLE_API_KEY situation from the browser without
-  // digging through Vercel logs. Remove once the key is fixed. Paddle's ApiError
-  // carries code/detail/type; fall back to message for anything else.
-  const describeError = (err: unknown): string => {
-    const e = err as
-      | { code?: string; detail?: string; type?: string; message?: string }
-      | undefined;
-    const parts = [e?.code, e?.detail || e?.message, e?.type].filter(Boolean);
-    return (parts.join(' | ') || 'unknown').slice(0, 300);
-  };
-  const errorRedirect = (reason: string) => {
+  const fail = (err?: unknown) => {
+    if (err) {
+      logger.error('[paddle/portal] failed to create portal session', paddleErrorAttrs(err));
+    }
+    const fallback = safeCustomerPortalFallbackUrl(process.env.PADDLE_CUSTOMER_PORTAL_URL);
+    if (fallback) return NextResponse.redirect(fallback);
     const dest = new URL('/pricing', req.url);
     dest.searchParams.set('portal', 'error');
-    dest.searchParams.set('reason', reason);
     return NextResponse.redirect(dest);
   };
 
@@ -62,21 +65,23 @@ export async function GET(req: Request) {
     // rejects this with a generic "Invalid request." even for valid, active,
     // correctly-owned subscriptions, so treat it as best-effort and fall back to
     // a plain overview session (which reliably works) rather than erroring out.
+    // Skip the retry when the key is missing customer_portal_session.write —
+    // the empty-array call fails the same way.
     if (subscriptionId) {
       try {
         url = await overviewUrl([subscriptionId]);
       } catch (err) {
-        console.warn(
-          '[paddle/portal] subscription deep-link session failed, falling back to overview',
-          err,
-        );
+        if (isPaddleForbidden(err)) return fail(err);
+        logger.warn('[paddle/portal] subscription deep-link session failed, falling back to overview', {
+          ...paddleErrorAttrs(err),
+        });
       }
     }
     if (!url) url = await overviewUrl([]);
     if (url) return NextResponse.redirect(url);
-    return errorRedirect('no-portal-url'); // call succeeded but returned no overview URL
+    logger.error('[paddle/portal] session created but returned no overview URL');
+    return fail();
   } catch (err) {
-    console.error('[paddle/portal] failed to create portal session', err);
-    return errorRedirect(describeError(err));
+    return fail(err);
   }
 }

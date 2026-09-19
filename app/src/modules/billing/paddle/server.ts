@@ -9,6 +9,10 @@ import { getPaddleEnv } from './env';
  *
  * Returns null when the key isn't configured so callers can respond gracefully
  * instead of throwing at module load.
+ *
+ * The live key needs `customer.read` (webhook email lookup) and
+ * `customer_portal_session.write` (GET /api/paddle/portal). Missing the latter
+ * is a 403: "not authorized to create customer-portal-session".
  */
 export function getPaddleServer(): Paddle | null {
   const apiKey = process.env.PADDLE_API_KEY;

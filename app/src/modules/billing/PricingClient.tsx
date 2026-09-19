@@ -478,7 +478,7 @@ export default function PricingClient({
             <span className="font-semibold text-primary">{currentPlanLabel}</span>
             {passActiveUntil ? <> until {formatUntil(passActiveUntil)}.</> : '.'}
           </span>
-          {canManageBilling && !passActiveUntil && (
+          {canManageBilling && (
             <a
               href="/api/paddle/portal"
               className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:text-primary-hover transition-colors"

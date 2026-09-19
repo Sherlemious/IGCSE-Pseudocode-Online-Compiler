@@ -6,13 +6,14 @@ import { getPaddleEnv } from '@/modules/billing/paddle/env';
 import { getPaddleServer } from '@/modules/billing/paddle/server';
 import { BAND_SLUGS, TIER_TO_PLAN, tierSlugForPriceId } from '@/modules/billing/paddle/plan';
 import { expiryForPurchase, isTeacherPlan, passForPriceId } from '@/modules/billing/paddle/passes';
+import { planUpdateFromPaddle, type PaddleSubscriptionLike } from '@/modules/billing/paddle/subscriptionState';
 import { captureServerEvent } from '@/modules/telemetry/serverCapture';
 import { revalidatePremiumAccess } from '@/modules/billing/entitlements';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-interface SubscriptionData {
+interface SubscriptionData extends PaddleSubscriptionLike {
   id: string;
   status: string;
   customerId: string;
@@ -27,8 +28,6 @@ interface TransactionData {
   customData?: Record<string, unknown> | null;
   items?: Array<{ price?: { id?: string | null } | null }>;
 }
-
-const ENTITLED_STATUSES = new Set(['active', 'trialing']);
 
 export async function POST(req: Request) {
   const signature = req.headers.get('paddle-signature');
@@ -92,7 +91,12 @@ async function applySubscription(data: SubscriptionData, paddle: Paddle) {
     return;
   }
 
-  if (!ENTITLED_STATUSES.has(data.status)) {
+  const priceId = data.items?.[0]?.price?.id ?? '';
+  const slug = await tierSlugForPriceId(priceId, getPaddleEnv());
+  const mapped = slug ? TIER_TO_PLAN[slug] : undefined;
+  const update = planUpdateFromPaddle(data, mapped);
+
+  if (update.outcome === 'revoke') {
     await setPlan(user.id, {
       plan: 'FREE',
       planTier: null,
@@ -107,30 +111,40 @@ async function applySubscription(data: SubscriptionData, paddle: Paddle) {
     return;
   }
 
-  const priceId = data.items?.[0]?.price?.id ?? '';
-  const slug = await tierSlugForPriceId(priceId, getPaddleEnv());
-  const mapped = slug ? TIER_TO_PLAN[slug] : undefined;
-  if (!mapped) {
+  if (update.outcome === 'unmapped') {
     console.warn(`[paddle/webhook] unmapped price ${priceId} on subscription ${data.id}`);
     await linkPaddleIds(user.id, data);
     return;
   }
 
   await setPlan(user.id, {
-    plan: mapped.plan,
-    planTier: mapped.tier,
-    planExpiresAt: null,
+    plan: update.plan,
+    planTier: update.planTier,
+    planExpiresAt: update.planExpiresAt,
     subscriptionId: data.id,
     customerId: data.customerId,
     // New band SKUs drop grandfathered unlimited/3×30 limits. Renewals of the
     // existing Starter/Pro prices omit this so `legacyCapacity` stays put.
-    ...(BAND_SLUGS.has(mapped.tier) ? { legacyCapacity: false } : {}),
+    ...(BAND_SLUGS.has(update.planTier) ? { legacyCapacity: false } : {}),
   });
+  const env = getPaddleEnv();
+  if (update.outcome === 'scheduled_cancel' && update.planExpiresAt) {
+    await captureServerEvent(user.id, 'subscription_cancel_scheduled', {
+      plan: update.plan,
+      plan_tier: update.planTier,
+      price_id: priceId,
+      paddle_env: env,
+      subscription_id: data.id,
+      status: data.status,
+      effective_at: update.planExpiresAt.toISOString(),
+    });
+    return;
+  }
   await captureServerEvent(user.id, 'subscription_plan_granted', {
-    plan: mapped.plan,
-    plan_tier: mapped.tier,
+    plan: update.plan,
+    plan_tier: update.planTier,
     price_id: priceId,
-    paddle_env: getPaddleEnv(),
+    paddle_env: env,
     subscription_id: data.id,
     status: data.status,
   });

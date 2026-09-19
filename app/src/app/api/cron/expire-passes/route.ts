@@ -5,8 +5,10 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 /**
- * Daily sweep: student passes whose planExpiresAt has passed drop to Free.
- * Teacher subscriptions are never touched.
+ * Daily sweep: paid plans whose planExpiresAt has passed drop to Free.
+ * Covers student session passes and subscriptions scheduled to cancel at
+ * period end (Paddle keeps status `active` until then). Live cancels still
+ * go through the subscription.canceled webhook; this is the safety net.
  *
  * Auth: Authorization: Bearer $CRON_SECRET (Vercel Cron sends this when the
  * env var is set).
@@ -24,7 +26,7 @@ export async function GET(req: Request) {
   const now = new Date();
   const result = await prisma.user.updateMany({
     where: {
-      plan: 'STUDENT',
+      plan: { not: 'FREE' },
       planExpiresAt: { lte: now },
     },
     data: {

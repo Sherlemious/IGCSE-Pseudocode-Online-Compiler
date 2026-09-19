@@ -15,6 +15,8 @@ declare module 'next-auth' {
       planExpiresAt?: string | null;
       ownsClass?: boolean;
       roleChosen?: boolean;
+      hasPaddleCustomer?: boolean;
+      hasPaddleSubscription?: boolean;
     };
   }
 
@@ -37,5 +39,7 @@ declare module 'next-auth/jwt' {
     ownsClass?: boolean;
     roleChosen?: boolean;
     refreshedAt?: number; // epoch ms of the last DB re-read of plan/role/planTier
+    hasPaddleCustomer?: boolean;
+    hasPaddleSubscription?: boolean;
   }
 }

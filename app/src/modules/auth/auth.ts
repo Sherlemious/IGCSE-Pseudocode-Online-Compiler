@@ -108,6 +108,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             createdAt: true,
             legacyCapacity: true,
             planExpiresAt: true,
+            paddleCustomerId: true,
+            paddleSubscriptionId: true,
             _count: { select: { taughtClasses: true } },
           },
         });
@@ -118,6 +120,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         token.legacyCapacity = fresh.legacyCapacity;
         token.planExpiresAt = fresh.planExpiresAt ? fresh.planExpiresAt.toISOString() : null;
         token.ownsClass = fresh._count.taughtClasses > 0;
+        token.hasPaddleCustomer = Boolean(fresh.paddleCustomerId);
+        token.hasPaddleSubscription = Boolean(fresh.paddleSubscriptionId);
         // Existing Google accounts predate the picker — don't trap them on
         // /onboarding. Only brand-new signups (30 min) still get the gate.
         const accountAgeMs = Date.now() - fresh.createdAt.getTime();
@@ -187,6 +191,9 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         typeof token.planExpiresAt === 'string' ? token.planExpiresAt : null;
       session.user.ownsClass = Boolean(token.ownsClass);
       session.user.roleChosen = Boolean(token.roleChosen);
+      session.user.hasPaddleCustomer = Boolean(token.hasPaddleCustomer);
+      session.user.hasPaddleSubscription =
+        typeof token.hasPaddleSubscription === 'boolean' ? token.hasPaddleSubscription : undefined;
       return session;
     },
   },
