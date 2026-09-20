@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
+import { useSession } from 'next-auth/react';
 import { usePostHog } from 'posthog-js/react';
 
 /**
@@ -10,7 +11,9 @@ import { usePostHog } from 'posthog-js/react';
  */
 export default function WelcomeTracker() {
   const ph = usePostHog();
+  const { update: updateSession } = useSession();
   const firedRef = useRef(false);
+  const refreshedRef = useRef(false);
 
   useEffect(() => {
     if (!ph || firedRef.current) return;
@@ -21,6 +24,15 @@ export default function WelcomeTracker() {
         : null;
     ph.capture('checkout_success_viewed', { transaction: transaction ?? null });
   }, [ph]);
+
+  // The plan the student just paid for lives in the JWT, which otherwise only
+  // re-reads the database once an hour. Pull it forward so the new tier shows
+  // up on this page rather than whenever the token happens to go stale.
+  useEffect(() => {
+    if (refreshedRef.current) return;
+    refreshedRef.current = true;
+    void updateSession();
+  }, [updateSession]);
 
   return null;
 }

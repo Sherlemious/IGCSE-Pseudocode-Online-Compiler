@@ -170,9 +170,15 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       // Re-read plan/role/planTier from the DB on an explicit update() OR when the
       // cached copy is older than the refresh window, so a billing/admin/onboarding
       // change surfaces on the next page load without forcing a re-login.
-      // 10 min is long enough that a signed-in tab does not keep Neon compute
-      // awake (scale-to-zero after 5 min idle). session.update() still refreshes now.
-      const REFRESH_MS = 10 * 60 * 1000;
+      //
+      // This interval sets a floor on Neon compute usage: the endpoint stays up
+      // for 5 min after any query, so a refresh every N minutes costs 5/N of the
+      // time a tab is open. At 10 min that was 50% — one signed-in tab kept the
+      // compute awake half the day. Every path that actually changes an
+      // entitlement (checkout, admin plan edit, onboarding, class join) calls
+      // session.update() or revalidatePremiumAccess and refreshes immediately,
+      // so the window only bounds changes made directly in the database.
+      const REFRESH_MS = 60 * 60 * 1000;
       const refreshedAt = typeof token.refreshedAt === 'number' ? token.refreshedAt : 0;
       const stale = Date.now() - refreshedAt > REFRESH_MS;
       if ((trigger === 'update' || stale) && token.id) {

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/modules/auth/auth';
+import { revalidatePremiumAccess } from '@/modules/billing/entitlements';
 import { ClassRequestError, joinClass } from '@/modules/classes/service';
 
 export async function POST(req: Request) {
@@ -11,7 +12,11 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Enter a class code.' }, { status: 400 });
   }
   try {
-    return NextResponse.json(await joinClass(session.user.id, body.joinCode, 'assignmentId' in body ? body.assignmentId as string : undefined));
+    const result = await joinClass(session.user.id, body.joinCode, 'assignmentId' in body ? body.assignmentId as string : undefined);
+    // Joining a premium teacher's class grants entitlement; drop the cached
+    // answer now rather than letting the student wait out the TTL.
+    if (!result.alreadyMember) revalidatePremiumAccess(session.user.id);
+    return NextResponse.json(result);
   } catch (error) {
     if (error instanceof ClassRequestError) return NextResponse.json({ error: error.message, code: error.code }, { status: error.status });
     throw error;

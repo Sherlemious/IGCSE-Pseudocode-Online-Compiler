@@ -1,3 +1,4 @@
+import { unstable_cache } from 'next/cache';
 import { prisma } from '@/shared/db';
 import { getQuestionCatalog } from '@/shared/lib/catalogCache';
 import {
@@ -36,41 +37,78 @@ function scoreClass(score: number) {
   return 'text-error bg-error/10';
 }
 
-export default async function AdminAnalyticsPage() {
+/**
+ * Every read this page needs, in one cached unit.
+ *
+ * The page is `force-dynamic` because the admin gate is per-request, but the
+ * numbers do not need to be. Neon keeps the compute billable for 5 minutes
+ * after any query, so an uncached dashboard turns each refresh into another
+ * 5-minute charge — expensive while iterating on the layout. The window is
+ * short enough that the figures still read as current.
+ */
+const ANALYTICS_REVALIDATE_SECONDS = 300;
+
+async function loadAnalytics() {
   const now = new Date();
   const d7 = new Date(now.getTime() - 7 * DAY);
   const d14 = new Date(now.getTime() - 14 * DAY);
   const d30 = new Date(now.getTime() - 30 * DAY);
 
   const [
-    totalUsers,
-    totalAttempts,
-    totalSolved,
+    userTotals,
+    progressTotals,
+    examTotals,
     usersByRole,
     usersByPlan,
-    examsByStatus,
     feedbackAgg,
-    signups30,
-    activity30,
-    attemptsByQ,
-    solvesByQ,
+    signupRows,
+    activityRows,
+    questionRows,
     questionsMeta,
-    completedExams,
     recentExams,
   ] = await Promise.all([
-    prisma.user.count(),
-    prisma.progress.count(),
-    prisma.progress.count({ where: { status: 'SOLVED' } }),
+    prisma.$queryRaw<[{ total: number; new7: number; prev7: number }]>`
+      SELECT count(*)::int AS total,
+             count(*) FILTER (WHERE "createdAt" >= ${d7})::int AS new7,
+             count(*) FILTER (WHERE "createdAt" >= ${d14} AND "createdAt" < ${d7})::int AS prev7
+      FROM "User"
+    `,
+    prisma.$queryRaw<[{ attempts: number; solved: number; active7: number }]>`
+      SELECT count(*)::int AS attempts,
+             count(*) FILTER (WHERE status = 'SOLVED')::int AS solved,
+             count(DISTINCT "userId") FILTER (WHERE "updatedAt" >= ${d7})::int AS active7
+      FROM "Progress"
+    `,
+    prisma.$queryRaw<[{ completed: number; inProgress: number; timedOut: number; avgScore: number | null }]>`
+      SELECT count(*) FILTER (WHERE status = 'COMPLETED')::int AS "completed",
+             count(*) FILTER (WHERE status = 'IN_PROGRESS')::int AS "inProgress",
+             count(*) FILTER (WHERE status = 'TIMED_OUT')::int AS "timedOut",
+             (avg(COALESCE("score", 0)::float8 / "totalTests" * 100)
+                FILTER (WHERE status = 'COMPLETED' AND "totalTests" > 0))::float8 AS "avgScore"
+      FROM "ExamAttempt"
+    `,
     prisma.user.groupBy({ by: ['role'], _count: { _all: true } }),
     prisma.user.groupBy({ by: ['plan'], _count: { _all: true } }),
-    prisma.examAttempt.groupBy({ by: ['status'], _count: { _all: true } }),
     prisma.feedbackSubmission.aggregate({ _avg: { rating: true }, _count: { _all: true } }),
-    prisma.user.findMany({ where: { createdAt: { gte: d30 } }, select: { createdAt: true } }),
-    prisma.progress.findMany({ where: { updatedAt: { gte: d30 } }, select: { updatedAt: true, userId: true } }),
-    prisma.progress.groupBy({ by: ['questionId'], _count: { _all: true } }),
-    prisma.progress.groupBy({ by: ['questionId'], where: { status: 'SOLVED' }, _count: { _all: true } }),
+    // Day buckets are computed in Postgres so the page never ships one row per
+    // signup / attempt over the wire. Prisma stores DateTime as UTC `timestamp`,
+    // which matches the UTC keys `dayKey` builds below.
+    prisma.$queryRaw<Array<{ day: string; n: number }>>`
+      SELECT to_char(date_trunc('day', "createdAt"), 'YYYY-MM-DD') AS day, count(*)::int AS n
+      FROM "User" WHERE "createdAt" >= ${d30} GROUP BY 1
+    `,
+    prisma.$queryRaw<Array<{ day: string; n: number }>>`
+      SELECT to_char(date_trunc('day', "updatedAt"), 'YYYY-MM-DD') AS day,
+             count(DISTINCT "userId")::int AS n
+      FROM "Progress" WHERE "updatedAt" >= ${d30} GROUP BY 1
+    `,
+    prisma.$queryRaw<Array<{ questionId: string; attempts: number; solves: number }>>`
+      SELECT "questionId",
+             count(*)::int AS attempts,
+             count(*) FILTER (WHERE status = 'SOLVED')::int AS solves
+      FROM "Progress" GROUP BY "questionId"
+    `,
     getQuestionCatalog(),
-    prisma.examAttempt.findMany({ where: { status: 'COMPLETED', totalTests: { gt: 0 } }, select: { score: true, totalTests: true } }),
     prisma.examAttempt.findMany({
       where: { status: 'COMPLETED' },
       orderBy: { completedAt: 'desc' },
@@ -79,47 +117,92 @@ export default async function AdminAnalyticsPage() {
     }),
   ]);
 
+  // Flattened to plain JSON so the value survives the cache round-trip.
+  return {
+    generatedAt: now.toISOString(),
+    userTotals: userTotals[0],
+    progressTotals: progressTotals[0],
+    examTotals: examTotals[0],
+    usersByRole: usersByRole.map((r) => ({ role: r.role as string, count: r._count._all })),
+    usersByPlan: usersByPlan.map((p) => ({ plan: p.plan as string, count: p._count._all })),
+    feedback: { avg: feedbackAgg._avg.rating ?? 0, count: feedbackAgg._count._all },
+    signupRows,
+    activityRows,
+    questionRows,
+    questions: questionsMeta.map((q) => ({
+      id: q.id,
+      title: q.title,
+      difficulty: q.difficulty as string,
+    })),
+    recentExams: recentExams.map((e) => ({
+      id: e.id,
+      score: e.score,
+      totalTests: e.totalTests,
+      completedAt: e.completedAt ? e.completedAt.toISOString() : null,
+      name: e.user?.name ?? null,
+      email: e.user?.email ?? null,
+    })),
+  };
+}
+
+const getAnalytics = unstable_cache(loadAnalytics, ['admin-analytics'], {
+  revalidate: ANALYTICS_REVALIDATE_SECONDS,
+});
+
+export default async function AdminAnalyticsPage() {
+  const {
+    generatedAt,
+    userTotals,
+    progressTotals,
+    examTotals,
+    usersByRole,
+    usersByPlan,
+    feedback,
+    signupRows,
+    activityRows,
+    questionRows,
+    questions,
+    recentExams,
+  } = await getAnalytics();
+
+  const now = new Date(generatedAt);
+  const totalUsers = userTotals.total;
+  const totalAttempts = progressTotals.attempts;
+  const totalSolved = progressTotals.solved;
+  const active7 = progressTotals.active7;
+
   // ── 30-day daily buckets ──────────────────────────────────
   const days: string[] = [];
   for (let i = 29; i >= 0; i--) days.push(dayKey(new Date(now.getTime() - i * DAY)));
   const dayIndex = new Map(days.map((k, i) => [k, i]));
 
-  const signupSeries = new Array(30).fill(0);
-  for (const u of signups30) {
-    const idx = dayIndex.get(dayKey(new Date(u.createdAt)));
-    if (idx !== undefined) signupSeries[idx]++;
-  }
+  const toSeries = (rows: Array<{ day: string; n: number }>) => {
+    const series = new Array<number>(30).fill(0);
+    for (const row of rows) {
+      const idx = dayIndex.get(row.day);
+      if (idx !== undefined) series[idx] = row.n;
+    }
+    return series;
+  };
 
-  // Distinct active users per day
-  const activeSets: Array<Set<string>> = days.map(() => new Set());
-  for (const p of activity30) {
-    const idx = dayIndex.get(dayKey(new Date(p.updatedAt)));
-    if (idx !== undefined) activeSets[idx].add(p.userId);
-  }
-  const activitySeries = activeSets.map((s) => s.size);
+  const signupSeries = toSeries(signupRows);
+  const activitySeries = toSeries(activityRows);
 
   // Cumulative signups (for the total-users sparkline shape)
   const cumulativeSeries = cumulative(signupSeries);
 
-  // Weekly deltas derived from buckets
-  const newUsers7 = signups30.filter((u) => new Date(u.createdAt) >= d7).length;
-  const newUsersPrev7 = signups30.filter((u) => {
-    const t = new Date(u.createdAt);
-    return t >= d14 && t < d7;
-  }).length;
+  // Weekly deltas
+  const newUsers7 = userTotals.new7;
+  const newUsersPrev7 = userTotals.prev7;
   const usersDelta = newUsersPrev7 > 0
     ? Math.round(((newUsers7 - newUsersPrev7) / newUsersPrev7) * 100)
     : newUsers7 > 0 ? 100 : 0;
 
-  // Active learners in last 7 days (distinct)
-  const active7 = new Set(activity30.filter((p) => new Date(p.updatedAt) >= d7).map((p) => p.userId)).size;
-
   const solveRate = totalAttempts > 0 ? Math.round((totalSolved / totalAttempts) * 100) : 0;
 
   // ── Role / plan maps ──────────────────────────────────────
-  const roleMap = Object.fromEntries(usersByRole.map((r) => [r.role, r._count._all])) as Record<string, number>;
-  const planMap = Object.fromEntries(usersByPlan.map((p) => [p.plan, p._count._all])) as Record<string, number>;
-  const statusMap = Object.fromEntries(examsByStatus.map((e) => [e.status, e._count._all])) as Record<string, number>;
+  const roleMap = Object.fromEntries(usersByRole.map((r) => [r.role, r.count])) as Record<string, number>;
+  const planMap = Object.fromEntries(usersByPlan.map((p) => [p.plan, p.count])) as Record<string, number>;
 
   const roleTotal = (roleMap.STUDENT ?? 0) + (roleMap.TEACHER ?? 0) + (roleMap.ADMIN ?? 0);
   const paidCount =
@@ -128,12 +211,12 @@ export default async function AdminAnalyticsPage() {
   const paidPct = planTotal > 0 ? Math.round((paidCount / planTotal) * 100) : 0;
 
   // ── Question join ─────────────────────────────────────────
-  const attemptMap = new Map(attemptsByQ.map((a) => [a.questionId, a._count._all]));
-  const solveMap = new Map(solvesByQ.map((s) => [s.questionId, s._count._all]));
+  const questionStats = new Map(questionRows.map((r) => [r.questionId, r]));
 
-  const qStats = questionsMeta.map((q) => {
-    const attempts = attemptMap.get(q.id) ?? 0;
-    const solves = solveMap.get(q.id) ?? 0;
+  const qStats = questions.map((q) => {
+    const row = questionStats.get(q.id);
+    const attempts = row?.attempts ?? 0;
+    const solves = row?.solves ?? 0;
     return {
       id: q.id,
       title: q.title,
@@ -163,13 +246,12 @@ export default async function AdminAnalyticsPage() {
   }
 
   // ── Exam metrics ──────────────────────────────────────────
-  const examsTotal = (statusMap.COMPLETED ?? 0) + (statusMap.IN_PROGRESS ?? 0) + (statusMap.TIMED_OUT ?? 0);
-  const examCompletionPct = examsTotal > 0 ? (statusMap.COMPLETED ?? 0) / examsTotal : 0;
-  const avgExamScore = completedExams.length > 0
-    ? Math.round(completedExams.reduce((s, e) => s + ((e.score ?? 0) / (e.totalTests || 1)) * 100, 0) / completedExams.length)
-    : 0;
+  const { completed: examsCompleted, inProgress: examsInProgress, timedOut: examsTimedOut } = examTotals;
+  const examsTotal = examsCompleted + examsInProgress + examsTimedOut;
+  const examCompletionPct = examsTotal > 0 ? examsCompleted / examsTotal : 0;
+  const avgExamScore = Math.round(examTotals.avgScore ?? 0);
 
-  const avgRating = feedbackAgg._avg.rating ?? 0;
+  const avgRating = feedback.avg;
   const ratingPct = avgRating / 5;
 
   return (
@@ -235,7 +317,7 @@ export default async function AdminAnalyticsPage() {
               </span>
             }
           />
-          {signups30.length === 0 && activity30.length === 0 ? (
+          {signupRows.length === 0 && activityRows.length === 0 ? (
             <p className="text-sm text-dark-text py-10 text-center">No activity in the last 30 days.</p>
           ) : (
             <AreaChart primary={signupSeries} secondary={activitySeries} labels={days.map((d) => d.slice(5))} />
@@ -256,7 +338,7 @@ export default async function AdminAnalyticsPage() {
             <RingChart
               pct={ratingPct}
               centerValue={avgRating > 0 ? avgRating.toFixed(1) : '—'}
-              centerSub={`${feedbackAgg._count._all} reviews`}
+              centerSub={`${feedback.count} reviews`}
               label="Avg feedback rating"
               color="var(--color-warning)"
             />
@@ -367,9 +449,9 @@ export default async function AdminAnalyticsPage() {
             ) : (
               <SegmentBar
                 segments={[
-                  { label: 'Completed', value: statusMap.COMPLETED ?? 0, color: 'bg-success', text: 'text-success' },
-                  { label: 'In progress', value: statusMap.IN_PROGRESS ?? 0, color: 'bg-primary', text: 'text-primary' },
-                  { label: 'Timed out', value: statusMap.TIMED_OUT ?? 0, color: 'bg-error', text: 'text-error' },
+                  { label: 'Completed', value: examsCompleted, color: 'bg-success', text: 'text-success' },
+                  { label: 'In progress', value: examsInProgress, color: 'bg-primary', text: 'text-primary' },
+                  { label: 'Timed out', value: examsTimedOut, color: 'bg-error', text: 'text-error' },
                 ]}
               />
             )}
@@ -391,8 +473,8 @@ export default async function AdminAnalyticsPage() {
                 return (
                   <div key={exam.id} className="px-5 py-2.5 flex items-center gap-3 text-xs">
                     <div className="min-w-0 flex-1">
-                      <p className="text-light-text truncate">{exam.user?.name ?? exam.user?.email ?? 'Unknown'}</p>
-                      {exam.user?.name && <p className="text-dark-text/60 truncate">{exam.user?.email}</p>}
+                      <p className="text-light-text truncate">{exam.name ?? exam.email ?? 'Unknown'}</p>
+                      {exam.name && <p className="text-dark-text/60 truncate">{exam.email}</p>}
                     </div>
                     {score !== null && (
                       <span className={`font-mono tabular-nums font-semibold px-1.5 py-0.5 rounded ${scoreClass(score)}`}>

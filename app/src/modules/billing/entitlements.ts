@@ -191,6 +191,11 @@ export async function getPremiumAccess(
   return unstable_cache(
     () => loadPremiumAccess(userId, prisma),
     ['premium-access', userId],
-    { revalidate: 120, tags: [premiumAccessTag(userId)] },
+    // Every grant/revoke path calls revalidatePremiumAccess, so this TTL only
+    // bounds the two time-based edges (trialEndsAt / planExpiresAt elapsing and
+    // the nightly expire-passes sweep). It is deliberately longer than the
+    // 5-min Neon scale-to-zero window: at the previous 120s a single active
+    // student held the compute awake continuously.
+    { revalidate: 1800, tags: [premiumAccessTag(userId)] },
   )();
 }
