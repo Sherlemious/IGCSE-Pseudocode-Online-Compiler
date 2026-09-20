@@ -4,7 +4,7 @@ export const level8: LearnLevel = {
   number: 8,
   slug: '8',
   name: 'Routines',
-  hours: '2',
+  hours: '2.5',
   leaveWith: 'PROCEDURE vs FUNCTION, ≤3 params, ROUND/RANDOM',
   syllabus: '8.1 procedures/functions/library',
   free: false,
@@ -37,6 +37,43 @@ CALL Greet()`,
       playable: true,
     },
     {
+      id: '8.6',
+      slug: 'proc-params',
+      title: 'PROCEDURE with a parameter',
+      type: 'grade',
+      minutes: 8,
+      why: 'The caller passes a value in. The procedure uses the parameter name — it does not INPUT again.',
+      docsAnchor: 'procedures',
+      body: `Write **PROCEDURE Square(N : INTEGER)** that outputs **N * N**.
+
+The main program reads an integer and **CALL**s Square.
+
+Example: input \`6\` → \`36\`.`,
+      trap: 'CALL Square(X) — the argument is in brackets. Do not INPUT inside the procedure.',
+      starterCode: `// PROCEDURE Square(N : INTEGER)
+//     ...
+// ENDPROCEDURE
+
+DECLARE X : INTEGER
+INPUT X
+// CALL Square(X)`,
+      solutionCode: `PROCEDURE Square(N : INTEGER)
+    OUTPUT N * N
+ENDPROCEDURE
+
+DECLARE X : INTEGER
+INPUT X
+CALL Square(X)`,
+      tests: [
+        { inputs: ['6'], expectedOutput: '36' },
+        { inputs: ['0'], expectedOutput: '0' },
+        { inputs: ['-3'], expectedOutput: '9' },
+        { inputs: ['10'], expectedOutput: '100' },
+      ],
+      mustContain: ['PROCEDURE', 'CALL'],
+      playable: true,
+    },
+    {
       id: '8.2',
       slug: 'function',
       title: 'FUNCTION and RETURN',
@@ -59,6 +96,43 @@ ENDFUNCTION
 
 OUTPUT Double(5)`,
       expectedOutput: '10',
+      mustContain: ['FUNCTION', 'RETURN'],
+      playable: true,
+    },
+    {
+      id: '8.7',
+      slug: 'function-call',
+      title: 'Use a FUNCTION in OUTPUT',
+      type: 'grade',
+      minutes: 8,
+      why: 'Functions return a value you use in an expression. No CALL — OUTPUT Triple(X).',
+      docsAnchor: 'functions',
+      body: `Write **FUNCTION Triple(N : INTEGER) RETURNS INTEGER** that returns **N * 3**.
+
+The main program reads an integer and outputs **Triple(X)**.
+
+Example: input \`5\` → \`15\`.`,
+      trap: '`CALL Triple(5)` is for a PROCEDURE. A FUNCTION is `OUTPUT Triple(5)`.',
+      starterCode: `// FUNCTION Triple(N : INTEGER) RETURNS INTEGER
+//     RETURN ...
+// ENDFUNCTION
+
+DECLARE X : INTEGER
+INPUT X
+// OUTPUT Triple(X)`,
+      solutionCode: `FUNCTION Triple(N : INTEGER) RETURNS INTEGER
+    RETURN N * 3
+ENDFUNCTION
+
+DECLARE X : INTEGER
+INPUT X
+OUTPUT Triple(X)`,
+      tests: [
+        { inputs: ['5'], expectedOutput: '15' },
+        { inputs: ['0'], expectedOutput: '0' },
+        { inputs: ['-2'], expectedOutput: '-6' },
+        { inputs: ['10'], expectedOutput: '30' },
+      ],
       mustContain: ['FUNCTION', 'RETURN'],
       playable: true,
     },
@@ -177,6 +251,8 @@ CALL Banner(Name)`,
         { inputs: ['IGCSE'], expectedOutput: '***\nIGCSE\n***' },
         { inputs: ['Hi'], expectedOutput: '***\nHi\n***' },
         { inputs: ['Paper 2'], expectedOutput: '***\nPaper 2\n***' },
+        { inputs: ['A'], expectedOutput: '***\nA\n***' },
+        { inputs: ['Ready'], expectedOutput: '***\nReady\n***' },
       ],
       mustContain: ['PROCEDURE', 'CALL'],
       playable: true,

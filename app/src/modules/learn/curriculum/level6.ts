@@ -4,7 +4,7 @@ export const level6: LearnLevel = {
   number: 6,
   slug: '6',
   name: 'Text',
-  hours: '2',
+  hours: '2.5',
   leaveWith: 'LENGTH / SUBSTRING with 1-based index',
   syllabus: '8.1.4e',
   free: false,
@@ -104,6 +104,45 @@ OUTPUT SUBSTRING(Word, 1, 3)`,
       playable: true,
     },
     {
+      id: '6.6',
+      slug: 'char-loop',
+      title: 'One character at a time',
+      type: 'grade',
+      minutes: 8,
+      why: 'The 15-mark string method: FOR i <- 1 TO LENGTH, SUBSTRING(..., i, 1).',
+      docsAnchor: 'string-functions',
+      body: `Read a word. Output **each character** on its own line.
+
+Example: input \`CAT\` →
+
+\`C\`
+\`A\`
+\`T\``,
+      trap: 'Start the loop at 1, not 0. The last index is LENGTH(word), not LENGTH − 1.',
+      starterCode: `DECLARE Word : STRING
+DECLARE i : INTEGER
+
+INPUT Word
+
+// FOR i <- 1 TO LENGTH(Word) — OUTPUT each character`,
+      solutionCode: `DECLARE Word : STRING
+DECLARE i : INTEGER
+
+INPUT Word
+
+FOR i <- 1 TO LENGTH(Word)
+    OUTPUT SUBSTRING(Word, i, 1)
+NEXT i`,
+      tests: [
+        { inputs: ['CAT'], expectedOutput: 'C\nA\nT' },
+        { inputs: ['A'], expectedOutput: 'A' },
+        { inputs: ['Hi'], expectedOutput: 'H\ni' },
+        { inputs: ['IGCSE'], expectedOutput: 'I\nG\nC\nS\nE' },
+      ],
+      mustContain: ['LENGTH', 'SUBSTRING'],
+      playable: true,
+    },
+    {
       id: '6.4',
       slug: 'concat',
       title: 'Join with &',
@@ -128,6 +167,41 @@ OUTPUT First & " " & Last`,
       expectedOutput: 'Ada Lovelace',
       mustContain: ['&'],
       mustNotContain: ['+'],
+      playable: true,
+    },
+    {
+      id: '6.7',
+      slug: 'initials',
+      title: 'Build initials with &',
+      type: 'grade',
+      minutes: 6,
+      why: 'SUBSTRING one character from each name, then join with &. A tiny Paper 2 string item.',
+      docsAnchor: 'concatenation',
+      body: `Read **First** then **Last**. Output the two initials joined, no space.
+
+Example: input \`Ada\` then \`Lovelace\` → \`AL\`.`,
+      trap: 'First character is position 1: `SUBSTRING(First, 1, 1)`. Join with `&`, not `+`.',
+      starterCode: `DECLARE First : STRING
+DECLARE Last : STRING
+
+INPUT First
+INPUT Last
+
+// OUTPUT the two initials joined`,
+      solutionCode: `DECLARE First : STRING
+DECLARE Last : STRING
+
+INPUT First
+INPUT Last
+
+OUTPUT SUBSTRING(First, 1, 1) & SUBSTRING(Last, 1, 1)`,
+      tests: [
+        { inputs: ['Ada', 'Lovelace'], expectedOutput: 'AL' },
+        { inputs: ['Bob', 'Smith'], expectedOutput: 'BS' },
+        { inputs: ['i', 'g'], expectedOutput: 'ig' },
+        { inputs: ['Paper', 'Two'], expectedOutput: 'PT' },
+      ],
+      mustContain: ['SUBSTRING', '&'],
       playable: true,
     },
     {

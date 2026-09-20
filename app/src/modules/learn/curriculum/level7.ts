@@ -4,7 +4,7 @@ export const level7: LearnLevel = {
   number: 7,
   slug: '7',
   name: 'Arrays',
-  hours: '4',
+  hours: '4.5',
   leaveWith: 'ARRAY[1:n], fill loop, linear search, 2D [row, col]',
   syllabus: '8.2, 7.4',
   free: false,
@@ -120,6 +120,54 @@ OUTPUT Count`,
         { inputs: ['-2', '-3', '0', '0'], expectedOutput: '-5\n0' },
         { inputs: ['10', '20', '-5', '0'], expectedOutput: '25\n2' },
       ],
+      playable: true,
+    },
+    {
+      id: '7.8',
+      slug: 'count-value',
+      title: 'Count how many match',
+      type: 'grade',
+      minutes: 8,
+      why: 'Occurrence counting: one pass, increment when the slot equals the target.',
+      docsAnchor: 'arrays-1d',
+      body: `Read **4** integers into an array, then a **Target**. Output how many slots equal Target.
+
+Example: input \`8\`, \`2\`, \`8\`, \`8\`, then target \`8\` → \`3\`.`,
+      starterCode: `DECLARE Num : ARRAY[1:4] OF INTEGER
+DECLARE i : INTEGER
+DECLARE Target : INTEGER
+DECLARE Count : INTEGER
+
+FOR i <- 1 TO 4
+    INPUT Num[i]
+NEXT i
+INPUT Target
+Count <- 0
+
+// count matches, OUTPUT Count`,
+      solutionCode: `DECLARE Num : ARRAY[1:4] OF INTEGER
+DECLARE i : INTEGER
+DECLARE Target : INTEGER
+DECLARE Count : INTEGER
+
+FOR i <- 1 TO 4
+    INPUT Num[i]
+NEXT i
+INPUT Target
+Count <- 0
+FOR i <- 1 TO 4
+    IF Num[i] = Target THEN
+        Count <- Count + 1
+    ENDIF
+NEXT i
+OUTPUT Count`,
+      tests: [
+        { inputs: ['8', '2', '8', '8', '8'], expectedOutput: '3' },
+        { inputs: ['1', '2', '3', '4', '9'], expectedOutput: '0' },
+        { inputs: ['5', '5', '5', '5', '5'], expectedOutput: '4' },
+        { inputs: ['0', '1', '0', '1', '0'], expectedOutput: '2' },
+      ],
+      mustContain: ['Count <- Count + 1'],
       playable: true,
     },
     {
@@ -280,6 +328,53 @@ OUTPUT Total`,
         { inputs: ['10', '20', '30', '40'], expectedOutput: '100' },
       ],
       mustContain: ['ARRAY[1:2, 1:2]'],
+      playable: true,
+    },
+    {
+      id: '7.9',
+      slug: 'row-total',
+      title: 'Sum each row of a 2D array',
+      type: 'grade',
+      minutes: 10,
+      why: 'Row totals: inner loop walks columns, outer loop walks rows. Output one total per row.',
+      docsAnchor: 'arrays-2d',
+      body: `Read six integers into a 2×3 grid (row by row). Output the **sum of row 1**, then the **sum of row 2**.
+
+Example: input \`1\`, \`2\`, \`3\`, \`4\`, \`5\`, \`6\` →
+
+\`6\`
+\`15\``,
+      trap: '`Grid[Row, Col]` with a comma. Total the inner loop, OUTPUT after each row, then reset Total.',
+      starterCode: `DECLARE Grid : ARRAY[1:2, 1:3] OF INTEGER
+DECLARE Row : INTEGER
+DECLARE Col : INTEGER
+DECLARE Total : INTEGER
+
+// fill, then OUTPUT each row sum`,
+      solutionCode: `DECLARE Grid : ARRAY[1:2, 1:3] OF INTEGER
+DECLARE Row : INTEGER
+DECLARE Col : INTEGER
+DECLARE Total : INTEGER
+
+FOR Row <- 1 TO 2
+    FOR Col <- 1 TO 3
+        INPUT Grid[Row, Col]
+    NEXT Col
+NEXT Row
+FOR Row <- 1 TO 2
+    Total <- 0
+    FOR Col <- 1 TO 3
+        Total <- Total + Grid[Row, Col]
+    NEXT Col
+    OUTPUT Total
+NEXT Row`,
+      tests: [
+        { inputs: ['1', '2', '3', '4', '5', '6'], expectedOutput: '6\n15' },
+        { inputs: ['0', '0', '0', '0', '0', '0'], expectedOutput: '0\n0' },
+        { inputs: ['10', '10', '10', '1', '2', '3'], expectedOutput: '30\n6' },
+        { inputs: ['-1', '0', '1', '2', '2', '2'], expectedOutput: '0\n6' },
+      ],
+      mustContain: ['ARRAY[1:2, 1:3]'],
       playable: true,
     },
     {

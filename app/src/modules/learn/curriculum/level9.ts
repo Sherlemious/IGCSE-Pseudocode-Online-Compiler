@@ -4,7 +4,7 @@ export const level9: LearnLevel = {
   number: 9,
   slug: '9',
   name: 'Files',
-  hours: '1.5',
+  hours: '2.5',
   leaveWith: 'OPEN → USE → CLOSE, read until EOF',
   syllabus: '8.3',
   free: false,
@@ -127,8 +127,177 @@ CLOSEFILE "names.txt"`,
           expectedOutput: 'Ann\nBea\nCal\nDee',
           initialFiles: { 'names.txt': 'Ann\nBea\nCal\nDee' },
         },
+        {
+          inputs: [],
+          expectedOutput: 'Pat\nQ\nR\nS\nT',
+          initialFiles: { 'names.txt': 'Pat\nQ\nR\nS\nT' },
+        },
       ],
       mustContain: ['EOF'],
+      playable: true,
+    },
+    {
+      id: '9.5',
+      slug: 'count-lines',
+      title: 'Count records until EOF',
+      type: 'grade',
+      minutes: 8,
+      why: 'A totaller over a file: Count <- 0, then Count <- Count + 1 on every READFILE until EOF.',
+      docsAnchor: 'file-read',
+      body: `\`names.txt\` is already there. Open it for READ. Count the lines (do not assume how many). Output the count, then close.
+
+Example: a file with Ada, Bob, Cyd → \`3\`.`,
+      trap: 'Increment after each READFILE, not before. An empty-looking FOR TO 3 will fail the next test.',
+      starterCode: `DECLARE Line : STRING
+DECLARE Count : INTEGER
+
+Count <- 0
+OPENFILE "names.txt" FOR READ
+// WHILE NOT EOF("names.txt") — count lines
+CLOSEFILE "names.txt"
+// OUTPUT Count`,
+      solutionCode: `DECLARE Line : STRING
+DECLARE Count : INTEGER
+
+Count <- 0
+OPENFILE "names.txt" FOR READ
+WHILE NOT EOF("names.txt") DO
+    READFILE "names.txt", Line
+    Count <- Count + 1
+ENDWHILE
+CLOSEFILE "names.txt"
+OUTPUT Count`,
+      tests: [
+        {
+          inputs: [],
+          expectedOutput: '3',
+          initialFiles: { 'names.txt': 'Ada\nBob\nCyd' },
+        },
+        {
+          inputs: [],
+          expectedOutput: '1',
+          initialFiles: { 'names.txt': 'Sam' },
+        },
+        {
+          inputs: [],
+          expectedOutput: '4',
+          initialFiles: { 'names.txt': 'Ann\nBea\nCal\nDee' },
+        },
+        {
+          inputs: [],
+          expectedOutput: '2',
+          initialFiles: { 'names.txt': 'Pat\nQ' },
+        },
+      ],
+      mustContain: ['EOF', 'Count'],
+      playable: true,
+    },
+    {
+      id: '9.6',
+      slug: 'filter-file',
+      title: 'Output matching lines',
+      type: 'grade',
+      minutes: 8,
+      why: 'Read every record, OUTPUT only those that match a target — a file plus a counter/filter.',
+      docsAnchor: 'file-read',
+      body: `\`names.txt\` is seeded. Read a **Target** string. Open the file for READ and output every line that **equals** Target, then close.
+
+Example: file Ada / Bob / Ada, input \`Ada\` →
+
+\`Ada\`
+\`Ada\``,
+      starterCode: `DECLARE Line : STRING
+DECLARE Target : STRING
+
+INPUT Target
+OPENFILE "names.txt" FOR READ
+// output lines that equal Target
+CLOSEFILE "names.txt"`,
+      solutionCode: `DECLARE Line : STRING
+DECLARE Target : STRING
+
+INPUT Target
+OPENFILE "names.txt" FOR READ
+WHILE NOT EOF("names.txt") DO
+    READFILE "names.txt", Line
+    IF Line = Target THEN
+        OUTPUT Line
+    ENDIF
+ENDWHILE
+CLOSEFILE "names.txt"`,
+      tests: [
+        {
+          inputs: ['Ada'],
+          expectedOutput: 'Ada\nAda',
+          initialFiles: { 'names.txt': 'Ada\nBob\nAda' },
+        },
+        {
+          inputs: ['Bob'],
+          expectedOutput: 'Bob',
+          initialFiles: { 'names.txt': 'Ada\nBob\nAda' },
+        },
+        {
+          inputs: ['Zed'],
+          expectedOutput: 'Zed',
+          initialFiles: { 'names.txt': 'Zed' },
+        },
+        {
+          inputs: ['Cal'],
+          expectedOutput: 'Cal\nCal\nCal',
+          initialFiles: { 'names.txt': 'Cal\nCal\nCal' },
+        },
+      ],
+      mustContain: ['EOF'],
+      playable: true,
+    },
+    {
+      id: '9.7',
+      slug: 'append',
+      title: 'OPENFILE FOR APPEND',
+      type: 'grade',
+      minutes: 8,
+      why: 'WRITE truncates. APPEND adds to the end. Missing CLOSEFILE is still an exam error.',
+      docsAnchor: 'file-write',
+      body: `\`log.txt\` already contains **Start**. Open it **FOR APPEND**, write **Go**, close, then open for READ and output every line.
+
+The two lines should be:
+
+\`Start\`
+\`Go\``,
+      trap: '`FOR WRITE` would wipe Start. This task needs **APPEND**.',
+      starterCode: `DECLARE Line : STRING
+
+// OPENFILE "log.txt" FOR APPEND, write "Go", close, read back`,
+      solutionCode: `DECLARE Line : STRING
+
+OPENFILE "log.txt" FOR APPEND
+WRITEFILE "log.txt", "Go"
+CLOSEFILE "log.txt"
+
+OPENFILE "log.txt" FOR READ
+WHILE NOT EOF("log.txt") DO
+    READFILE "log.txt", Line
+    OUTPUT Line
+ENDWHILE
+CLOSEFILE "log.txt"`,
+      tests: [
+        {
+          inputs: [],
+          expectedOutput: 'Start\nGo',
+          initialFiles: { 'log.txt': 'Start' },
+        },
+        {
+          inputs: [],
+          expectedOutput: 'A\nB\nGo',
+          initialFiles: { 'log.txt': 'A\nB' },
+        },
+        {
+          inputs: [],
+          expectedOutput: 'Hi\nGo',
+          initialFiles: { 'log.txt': 'Hi' },
+        },
+      ],
+      mustContain: ['APPEND', 'WRITEFILE', 'CLOSEFILE'],
       playable: true,
     },
     {
@@ -173,6 +342,8 @@ CLOSEFILE "class.txt"`,
         { inputs: ['2', 'Ada', 'Bob'], expectedOutput: 'Ada\nBob' },
         { inputs: ['1', 'Zed'], expectedOutput: 'Zed' },
         { inputs: ['3', 'Ann', 'Bea', 'Cal'], expectedOutput: 'Ann\nBea\nCal' },
+        { inputs: ['4', 'A', 'B', 'C', 'D'], expectedOutput: 'A\nB\nC\nD' },
+        { inputs: ['5', 'V', 'W', 'X', 'Y', 'Z'], expectedOutput: 'V\nW\nX\nY\nZ' },
       ],
       mustContain: ['WRITEFILE', 'EOF', 'CLOSEFILE'],
       playable: true,

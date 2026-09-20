@@ -8,11 +8,64 @@ import {
   progressHasLocalExtras,
   type ProgressMap,
 } from './progress';
+import { COURSE_ID, type LearnCourse, type LearnLesson, type LearnLevel } from './types';
 
 function lesson(level: string, slug: string) {
   const found = findLesson(IGCSE_PAPER_2, level, slug);
   if (!found) throw new Error(`missing ${level}/${slug}`);
   return found.lesson;
+}
+
+function stubLesson(id: string, slug: string): LearnLesson {
+  return {
+    id,
+    slug,
+    title: slug,
+    type: 'run',
+    minutes: 1,
+    why: 'fixture',
+    body: 'fixture',
+    playable: true,
+  };
+}
+
+function stubLevel(number: number, free: boolean, lessons: LearnLesson[]): LearnLevel {
+  return {
+    number,
+    slug: String(number),
+    name: `L${number}`,
+    hours: '1',
+    leaveWith: '',
+    syllabus: '',
+    free,
+    playable: true,
+    lessons,
+  };
+}
+
+/** Tiny path: free a.1 → a.2 (insert) → a.3, then paid b.1. */
+const FIXTURE: LearnCourse = {
+  id: COURSE_ID,
+  title: 'fixture',
+  subtitle: '',
+  levels: [
+    stubLevel(1, true, [stubLesson('a.1', 'first'), stubLesson('a.2', 'inserted'), stubLesson('a.3', 'later')]),
+    stubLevel(2, false, [stubLesson('b.1', 'paid')]),
+  ],
+};
+
+function fixtureLesson(id: string): LearnLesson {
+  const found = FIXTURE.levels.flatMap((level) => level.lessons).find((item) => item.id === id);
+  if (!found) throw new Error(`missing fixture ${id}`);
+  return found;
+}
+
+function done(ids: string[]): ProgressMap {
+  const map: ProgressMap = {};
+  for (const id of ids) {
+    map[id] = { completedAt: '2026-09-16T00:00:00.000Z', attempts: 1 };
+  }
+  return map;
 }
 
 describe('learn sequential unlock', () => {
@@ -42,6 +95,40 @@ describe('learn sequential unlock', () => {
     expect(isLessonUnlocked(IGCSE_PAPER_2, lesson('4', 'if'), afterFree)).toBe(false);
     expect(isLessonUnlocked(IGCSE_PAPER_2, lesson('4', 'if'), afterFree, { premium: true })).toBe(true);
     expect(isLessonUnlocked(IGCSE_PAPER_2, lesson('10', 'scenario'), afterFree, { premium: true })).toBe(false);
+  });
+});
+
+describe('reached-index unlock', () => {
+  it('opens only the first lesson with empty progress', () => {
+    const empty: ProgressMap = {};
+    expect(isLessonUnlocked(FIXTURE, fixtureLesson('a.1'), empty)).toBe(true);
+    expect(isLessonUnlocked(FIXTURE, fixtureLesson('a.2'), empty)).toBe(false);
+    expect(isLessonUnlocked(FIXTURE, fixtureLesson('a.3'), empty)).toBe(false);
+  });
+
+  it('does not skip ahead after completing the first lesson', () => {
+    const afterFirst = done(['a.1']);
+    expect(isLessonUnlocked(FIXTURE, fixtureLesson('a.2'), afterFirst)).toBe(true);
+    expect(isLessonUnlocked(FIXTURE, fixtureLesson('a.3'), afterFirst)).toBe(false);
+  });
+
+  it('keeps a later lesson and a new earlier insert open once that later lesson is complete', () => {
+    const reachedLater = done(['a.3']);
+    expect(isLessonUnlocked(FIXTURE, fixtureLesson('a.3'), reachedLater)).toBe(true);
+    expect(isLessonUnlocked(FIXTURE, fixtureLesson('a.2'), reachedLater)).toBe(true);
+    expect(isLessonUnlocked(FIXTURE, fixtureLesson('a.1'), reachedLater)).toBe(true);
+  });
+
+  it('keeps a lesson after the frontier locked until sequential or a later complete', () => {
+    const reachedLater = done(['a.3']);
+    expect(isLessonUnlocked(FIXTURE, fixtureLesson('b.1'), reachedLater, { premium: true })).toBe(false);
+  });
+
+  it('still requires premium for paid lessons even when the frontier is past them', () => {
+    const reachedPaid = done(['a.1', 'a.2', 'a.3', 'b.1']);
+    expect(isLessonUnlocked(FIXTURE, fixtureLesson('b.1'), reachedPaid)).toBe(false);
+    expect(isLessonUnlocked(FIXTURE, fixtureLesson('b.1'), reachedPaid, { premium: true })).toBe(true);
+    expect(isLessonUnlocked(FIXTURE, fixtureLesson('a.2'), reachedPaid)).toBe(true);
   });
 });
 

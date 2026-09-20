@@ -18,7 +18,6 @@ import { TRACK, formatMinutes, lessonTypeMeta, levelHue, levelMinutes, pad2 } fr
 import {
   isComplete,
   isLessonUnlocked,
-  isSequentiallyOpen,
   levelCompletedCount,
   playableCount,
   type ProgressMap,
@@ -170,8 +169,7 @@ function nodeState(
   premiumAccess: boolean,
 ): NodeState {
   if (isComplete(progress, lesson.id)) return 'complete';
-  const sequential = isSequentiallyOpen(IGCSE_PAPER_2, lesson, progress);
-  if (sequential && !level.free && !premiumAccess) return 'paywall';
+  if (!level.free && !premiumAccess) return 'paywall';
   if (lesson.id === nextLessonId) return 'current';
   if (isLessonUnlocked(IGCSE_PAPER_2, lesson, progress, { premium: premiumAccess })) return 'open';
   return 'gated';

@@ -4,7 +4,7 @@ export const level4: LearnLevel = {
   number: 4,
   slug: '4',
   name: 'Branch',
-  hours: '2.5',
+  hours: '3',
   leaveWith: 'IF / CASE with both branches closed',
   syllabus: '8.1.4b, 8.1.5',
   free: false,
@@ -81,6 +81,55 @@ ENDIF`,
       playable: true,
     },
     {
+      id: '4.7',
+      slug: 'nested-if',
+      title: 'Nested IF',
+      type: 'grade',
+      minutes: 8,
+      why: 'An IF inside an IF is allowed. Indent so the marker sees which ENDIF closes which THEN.',
+      docsAnchor: 'if',
+      body: `Read an integer **Age**, then a STRING **Member** (\`Y\` or \`N\`).
+
+- If Age is **18 or more**:
+  - Member \`Y\` → \`Adult member\`
+  - otherwise → \`Adult guest\`
+- Otherwise → \`Junior\`
+
+Example: input \`20\` then \`Y\` → \`Adult member\`.`,
+      trap: 'Close the inner IF with ENDIF before the outer ENDIF. Two IFs, two ENDIFs.',
+      starterCode: `DECLARE Age : INTEGER
+DECLARE Member : STRING
+
+INPUT Age
+INPUT Member
+
+// nested IF — Adult member / Adult guest / Junior`,
+      solutionCode: `DECLARE Age : INTEGER
+DECLARE Member : STRING
+
+INPUT Age
+INPUT Member
+
+IF Age >= 18 THEN
+    IF Member = "Y" THEN
+        OUTPUT "Adult member"
+    ELSE
+        OUTPUT "Adult guest"
+    ENDIF
+ELSE
+    OUTPUT "Junior"
+ENDIF`,
+      tests: [
+        { inputs: ['20', 'Y'], expectedOutput: 'Adult member' },
+        { inputs: ['20', 'N'], expectedOutput: 'Adult guest' },
+        { inputs: ['18', 'Y'], expectedOutput: 'Adult member' },
+        { inputs: ['17', 'Y'], expectedOutput: 'Junior' },
+        { inputs: ['0', 'N'], expectedOutput: 'Junior' },
+      ],
+      mustContain: ['IF', 'ENDIF'],
+      playable: true,
+    },
+    {
       id: '4.3',
       slug: 'relational',
       title: 'Relational operators',
@@ -151,6 +200,38 @@ ELSE
 ENDIF`,
       expectedOutput: 'Standard',
       mustContain: ['AND'],
+      playable: true,
+    },
+    {
+      id: '4.8',
+      slug: 'flag-if',
+      title: 'IF a BOOLEAN flag',
+      type: 'run',
+      minutes: 5,
+      why: 'Search and validation use a BOOLEAN flag. Test it with IF Flag = TRUE — not IF Flag = "TRUE".',
+      docsAnchor: 'if',
+      body: `A **BOOLEAN** is already TRUE or FALSE. Compare it to **TRUE** / **FALSE**, or use it as the condition.
+
+This program should print **Open**.`,
+      trap: '`IF Flag = "TRUE"` compares a BOOLEAN to a STRING. Write `IF Flag = TRUE THEN`.',
+      starterCode: `DECLARE Flag : BOOLEAN
+Flag <- TRUE
+
+IF Flag = TRUE THEN
+    OUTPUT "Open"
+ELSE
+    OUTPUT "Closed"
+ENDIF`,
+      solutionCode: `DECLARE Flag : BOOLEAN
+Flag <- TRUE
+
+IF Flag = TRUE THEN
+    OUTPUT "Open"
+ELSE
+    OUTPUT "Closed"
+ENDIF`,
+      expectedOutput: 'Open',
+      mustContain: ['TRUE'],
       playable: true,
     },
     {

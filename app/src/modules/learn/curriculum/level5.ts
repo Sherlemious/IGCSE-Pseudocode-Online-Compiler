@@ -4,7 +4,7 @@ export const level5: LearnLevel = {
   number: 5,
   slug: '5',
   name: 'Repeat',
-  hours: '4',
+  hours: '4.5',
   leaveWith: 'Totaller, counter, flag; pick FOR / WHILE / REPEAT',
   syllabus: '8.1.4c–d, 8.1.5',
   free: false,
@@ -34,6 +34,32 @@ FOR i <- 1 TO 5
 NEXT i`,
       expectedOutput: '1\n2\n3\n4\n5',
       mustContain: ['FOR', 'NEXT'],
+      playable: true,
+    },
+    {
+      id: '5.9',
+      slug: 'for-step',
+      title: 'FOR … STEP',
+      type: 'run',
+      minutes: 5,
+      why: 'STEP changes the counter by more than 1. Default STEP is +1 when you omit it.',
+      docsAnchor: 'for',
+      body: `**FOR** counter **<-** start **TO** end **STEP** size.
+
+Output the even numbers **2, 4, 6, 8, 10**, each on its own line.`,
+      trap: 'STEP sits on the FOR line, not on NEXT. `FOR i <- 2 TO 10 STEP 2`.',
+      starterCode: `DECLARE i : INTEGER
+
+FOR i <- 2 TO 10 STEP 2
+    OUTPUT i
+NEXT i`,
+      solutionCode: `DECLARE i : INTEGER
+
+FOR i <- 2 TO 10 STEP 2
+    OUTPUT i
+NEXT i`,
+      expectedOutput: '2\n4\n6\n8\n10',
+      mustContain: ['STEP'],
       playable: true,
     },
     {
@@ -146,6 +172,46 @@ ENDWHILE
 OUTPUT "Done"`,
       expectedOutput: 'Done',
       mustContain: ['WHILE', 'ENDWHILE'],
+      playable: true,
+    },
+    {
+      id: '5.10',
+      slug: 'sentinel',
+      title: 'Sentinel WHILE',
+      type: 'grade',
+      minutes: 8,
+      why: 'Read until a stopper value. Prime INPUT before the WHILE, and do not process the sentinel.',
+      docsAnchor: 'while',
+      body: `Read names until the user types **END**. Output each name except END.
+
+Prime: INPUT once **before** the loop. WHILE the name is not END, OUTPUT it, then INPUT the next.
+
+Example: input \`Ada\`, \`Bob\`, \`END\` →
+
+\`Ada\`
+\`Bob\``,
+      trap: 'Do not OUTPUT the sentinel. If END is first, the body must not run.',
+      starterCode: `DECLARE Name : STRING
+
+INPUT Name
+// WHILE Name <> "END" DO
+//     OUTPUT Name
+//     INPUT Name
+// ENDWHILE`,
+      solutionCode: `DECLARE Name : STRING
+
+INPUT Name
+WHILE Name <> "END" DO
+    OUTPUT Name
+    INPUT Name
+ENDWHILE`,
+      tests: [
+        { inputs: ['Ada', 'Bob', 'END'], expectedOutput: 'Ada\nBob' },
+        { inputs: ['Sam', 'END'], expectedOutput: 'Sam' },
+        { inputs: ['Ann', 'Bea', 'Cal', 'END'], expectedOutput: 'Ann\nBea\nCal' },
+        { inputs: ['Zed', 'END'], expectedOutput: 'Zed' },
+      ],
+      mustContain: ['WHILE', '"END"'],
       playable: true,
     },
     {

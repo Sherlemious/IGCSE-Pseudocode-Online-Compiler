@@ -33,9 +33,9 @@ describe('IGCSE Paper 2 curriculum', () => {
 
   it('accepts solutionCode for every playable non-quiz lesson', async () => {
     const playable = flattenLessons(IGCSE_PAPER_2).filter(({ lesson }) => lesson.playable);
-    expect(playable.length).toBe(56);
+    expect(playable.length).toBe(78);
     expect(IGCSE_PAPER_2.levels.map((level) => level.lessons.length)).toEqual([
-      4, 5, 4, 6, 8, 5, 7, 5, 4, 8,
+      6, 8, 6, 8, 10, 7, 9, 7, 7, 10,
     ]);
 
     for (const { lesson } of playable) {
@@ -65,6 +65,14 @@ describe('IGCSE Paper 2 curriculum', () => {
 
   it('fails 10.3 starter until the four errors are fixed', async () => {
     const lesson = findLesson(IGCSE_PAPER_2, '10', 'errors')!.lesson;
+    const starter = await checkLessonCode(lesson, lesson.starterCode ?? '');
+    expect(starter.ok).toBe(false);
+    const fixed = await checkLessonCode(lesson, lesson.solutionCode ?? '');
+    expect(fixed.ok, fixed.message).toBe(true);
+  });
+
+  it('fails 10.10 starter until the four errors are fixed', async () => {
+    const lesson = findLesson(IGCSE_PAPER_2, '10', 'more-errors')!.lesson;
     const starter = await checkLessonCode(lesson, lesson.starterCode ?? '');
     expect(starter.ok).toBe(false);
     const fixed = await checkLessonCode(lesson, lesson.solutionCode ?? '');

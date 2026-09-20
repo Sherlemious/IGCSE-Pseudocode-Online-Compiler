@@ -1,6 +1,6 @@
 import { COURSE_ID } from './types';
 import type { LearnCourse, LearnLesson } from './types';
-import { findLevelForLesson, playableLessonsBefore } from './path';
+import { findLevelForLesson, flattenLessons, playableLessonsBefore } from './path';
 
 const storageKey = (courseId: string) => `learn_progress:${courseId}`;
 
@@ -103,16 +103,34 @@ export function isSequentiallyOpen(
   return prior.every((item) => isComplete(map, item.lesson.id));
 }
 
+export function playableLessonIndex(course: LearnCourse, lessonId: string): number {
+  return flattenLessons(course)
+    .filter((item) => item.lesson.playable)
+    .findIndex((item) => item.lesson.id === lessonId);
+}
+
+/** Highest playable-lesson index the student has already completed, or -1. */
+export function highestReachedPlayableIndex(course: LearnCourse, map: ProgressMap): number {
+  const playable = flattenLessons(course).filter((item) => item.lesson.playable);
+  let max = -1;
+  for (let i = 0; i < playable.length; i++) {
+    if (isComplete(map, playable[i]!.lesson.id)) max = i;
+  }
+  return max;
+}
+
 export function isLessonUnlocked(
   course: LearnCourse,
   lesson: LearnLesson,
   map: ProgressMap,
   access: LearnAccess = {},
 ): boolean {
-  if (!isSequentiallyOpen(course, lesson, map)) return false;
+  if (!lesson.playable) return false;
   const level = findLevelForLesson(course, lesson.id);
   if (level && !level.free && !access.premium) return false;
-  return true;
+  if (isSequentiallyOpen(course, lesson, map)) return true;
+  const index = playableLessonIndex(course, lesson.id);
+  return index >= 0 && index <= highestReachedPlayableIndex(course, map);
 }
 
 export function nextIncomplete(

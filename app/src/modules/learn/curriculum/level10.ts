@@ -4,7 +4,7 @@ export const level10: LearnLevel = {
   number: 10,
   slug: '10',
   name: 'Paper',
-  hours: '5',
+  hours: '5.5',
   leaveWith: 'Validation, traces, bubble sort, SQL, gates, 15-mark skeleton',
   syllabus: '7.4–7.9, 9, 10',
   free: false,
@@ -41,6 +41,39 @@ OUTPUT Age`,
         { inputs: ['121', '0'], expectedOutput: '0' },
       ],
       mustContain: ['REPEAT', 'UNTIL'],
+      playable: true,
+    },
+    {
+      id: '10.9',
+      slug: 'presence',
+      title: 'Presence check',
+      type: 'grade',
+      minutes: 8,
+      why: 'Presence means “not empty”. REPEAT UNTIL LENGTH(Name) > 0 is the usual wrapper.',
+      docsAnchor: 'repeat',
+      body: `Keep reading a **STRING** Name until it is not empty (a **presence check**). Then output the name.
+
+An empty INPUT is a zero-length string. Reject it and read again.
+
+Example: input (empty), then \`Ada\` → \`Ada\`.`,
+      trap: 'Empty is LENGTH 0, not the letters "empty". Do not compare Name to a space unless the question says so.',
+      starterCode: `DECLARE Name : STRING
+
+// REPEAT INPUT Name UNTIL it is not empty, then OUTPUT Name`,
+      solutionCode: `DECLARE Name : STRING
+
+REPEAT
+    INPUT Name
+UNTIL LENGTH(Name) > 0
+OUTPUT Name`,
+      tests: [
+        { inputs: ['Ada'], expectedOutput: 'Ada' },
+        { inputs: ['', 'Ada'], expectedOutput: 'Ada' },
+        { inputs: ['', '', 'Bob'], expectedOutput: 'Bob' },
+        { inputs: ['X'], expectedOutput: 'X' },
+        { inputs: ['', 'Paper'], expectedOutput: 'Paper' },
+      ],
+      mustContain: ['REPEAT', 'UNTIL', 'LENGTH'],
       playable: true,
     },
     {
@@ -120,6 +153,43 @@ IF Total > 0 THEN
 ENDIF`,
       expectedOutput: '15',
       mustContain: ['Total <- 0', 'TO 5', 'OUTPUT Total', 'ENDIF'],
+      playable: true,
+    },
+    {
+      id: '10.10',
+      slug: 'more-errors',
+      title: 'Find more errors',
+      type: 'mutate',
+      minutes: 10,
+      why: 'A second error hunt: comparison, assignment, case of identifiers, missing ENDIF.',
+      body: `This program should output the **larger** of 7 and 12, which is **12**. It has four errors:
+
+1. Assignment uses **=** instead of **<-**
+2. The IF is missing **THEN**
+3. **OUTPUT a** uses the wrong identifier
+4. The IF is missing **ENDIF**
+
+Fix all four. Output must be \`12\`.`,
+      trap: 'Identifiers are case-sensitive here. `a` is not `A`.',
+      starterCode: `DECLARE A : INTEGER
+DECLARE B : INTEGER
+A <- 7
+B = 12
+IF A > B
+    OUTPUT A
+ELSE
+    OUTPUT a`,
+      solutionCode: `DECLARE A : INTEGER
+DECLARE B : INTEGER
+A <- 7
+B <- 12
+IF A > B THEN
+    OUTPUT A
+ELSE
+    OUTPUT B
+ENDIF`,
+      expectedOutput: '12',
+      mustContain: ['B <- 12', 'THEN', 'OUTPUT B', 'ENDIF'],
       playable: true,
     },
     {

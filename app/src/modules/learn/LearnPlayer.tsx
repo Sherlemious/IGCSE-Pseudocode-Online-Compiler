@@ -14,7 +14,6 @@ import { flattenLessons, lessonHref, nextLesson, previousLesson } from './path';
 import {
   isComplete,
   isLessonUnlocked,
-  isSequentiallyOpen,
   loadProgress,
   markAttempt,
   markComplete,
@@ -63,8 +62,8 @@ export default function LearnPlayer({ level, lesson, premiumAccess: initialPremi
         premium: hydrated?.premiumAccess ?? initialPremium,
       });
       if (!lesson.playable || !open) {
-        const sequential = isSequentiallyOpen(IGCSE_PAPER_2, lesson, map);
-        const paywalled = sequential && lesson.playable;
+        const entitled = hydrated?.premiumAccess ?? initialPremium;
+        const paywalled = lesson.playable && !level.free && !entitled;
         captureLearn(
           'learn_gate_viewed',
           learnLessonProps(level, lesson, {
@@ -90,7 +89,6 @@ export default function LearnPlayer({ level, lesson, premiumAccess: initialPremi
     };
   }, [level, lesson, status, initialPremium]);
 
-  const sequential = isSequentiallyOpen(IGCSE_PAPER_2, lesson, progress);
   const unlocked = isLessonUnlocked(IGCSE_PAPER_2, lesson, progress, access);
   const done = isComplete(progress, lesson.id);
   const prev = previousLesson(IGCSE_PAPER_2, lesson.id);
@@ -146,7 +144,7 @@ export default function LearnPlayer({ level, lesson, premiumAccess: initialPremi
   );
 
   if (!lesson.playable || !unlocked) {
-    const paywalled = lesson.playable && sequential && !premiumAccess && !level.free;
+    const paywalled = lesson.playable && !premiumAccess && !level.free;
     const lessonPath = lessonHref(level, lesson);
     return (
       <div className="flex-1 min-h-0 overflow-y-auto bg-background bg-dot-grid px-4 py-8 sm:py-10">

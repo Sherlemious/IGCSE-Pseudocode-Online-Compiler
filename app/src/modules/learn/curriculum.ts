@@ -17,7 +17,7 @@ export const IGCSE_PAPER_2: LearnCourse = {
       number: 1,
       slug: '1',
       name: 'Run',
-      hours: '0.5',
+      hours: '1',
       leaveWith: 'OUTPUT, comments, and <- not =',
       syllabus: '8.1.3',
       free: true,
@@ -83,6 +83,55 @@ OUTPUT "Your score is ", Score`,
           playable: true,
         },
         {
+          id: '1.5',
+          slug: 'output-values',
+          title: 'OUTPUT a number and text',
+          type: 'run',
+          minutes: 4,
+          why: 'Paper 2 prints identifiers as well as strings. A comma separates OUTPUT items on the same line.',
+          docsAnchor: 'first-program',
+          body: `OUTPUT can print a number, a string, or several items separated by commas.
+
+This program should print two lines:
+
+\`42\`
+\`Score: 42\``,
+          trap: 'The comma does not insert a space. Put the space inside the string: `"Score: "`.',
+          starterCode: `DECLARE Score : INTEGER
+Score <- 42
+OUTPUT Score
+OUTPUT "Score: ", Score`,
+          solutionCode: `DECLARE Score : INTEGER
+Score <- 42
+OUTPUT Score
+OUTPUT "Score: ", Score`,
+          expectedOutput: '42\nScore: 42',
+          playable: true,
+        },
+        {
+          id: '1.6',
+          slug: 'output-fix',
+          title: 'Fix the OUTPUT order',
+          type: 'mutate',
+          minutes: 4,
+          why: 'Sequence is top to bottom. Swap two OUTPUT lines and the examiner sees a different algorithm.',
+          body: `This program prints the three words in the wrong order. Rearrange the **OUTPUT** lines so it prints:
+
+\`Ready\`
+\`Set\`
+\`Go\`
+
+Do not add extra lines.`,
+          starterCode: `OUTPUT "Go"
+OUTPUT "Ready"
+OUTPUT "Set"`,
+          solutionCode: `OUTPUT "Ready"
+OUTPUT "Set"
+OUTPUT "Go"`,
+          expectedOutput: 'Ready\nSet\nGo',
+          playable: true,
+        },
+        {
           id: '1.4',
           slug: 'boss',
           title: 'Boss: three OUTPUT lines',
@@ -109,8 +158,8 @@ OUTPUT "Paper 2"`,
       number: 2,
       slug: '2',
       name: 'Values',
-      hours: '1.5',
-      leaveWith: 'DECLARE, types, CONSTANT, DIV and MOD',
+      hours: '2',
+      leaveWith: 'DECLARE, types, BOOLEAN, arithmetic, DIV and MOD',
       syllabus: '8.1.1–8.1.2, 8.1.4f',
       free: true,
       playable: true,
@@ -182,6 +231,102 @@ OUTPUT Counter`,
               explanation: 'Flags and Found/Swapped markers are BOOLEAN. Do not store "TRUE" as a STRING.',
             },
           ],
+          playable: true,
+        },
+        {
+          id: '2.7',
+          slug: 'real-integer',
+          title: 'INTEGER vs REAL',
+          type: 'quiz',
+          minutes: 4,
+          why: 'A count is INTEGER. A measurement that may have a decimal part is REAL. Mixing them is a type mark loss.',
+          docsAnchor: 'data-types',
+          body: `**INTEGER** is a whole number (including negatives and zero). **REAL** can have a fractional part.
+
+\`DIV\` and \`MOD\` are for INTEGER. \`/\` is real division.`,
+          quiz: [
+            {
+              prompt: 'A temperature stored as 36.6 should be declared as:',
+              options: [
+                { id: 'int', label: 'INTEGER' },
+                { id: 'real', label: 'REAL' },
+                { id: 'str', label: 'STRING' },
+              ],
+              correctId: 'real',
+              explanation: '36.6 has a decimal part, so REAL. INTEGER would drop the .6.',
+            },
+            {
+              prompt: 'How many students are in a class? That count should be:',
+              options: [
+                { id: 'int', label: 'INTEGER' },
+                { id: 'real', label: 'REAL' },
+                { id: 'char', label: 'CHAR' },
+              ],
+              correctId: 'int',
+              explanation: 'You cannot have 0.5 of a student. Counts use INTEGER.',
+            },
+            {
+              prompt: '`10 / 4` in IGCSE is real division. The INTEGER version of “how many whole groups of 4” is:',
+              options: [
+                { id: 'div', label: '10 DIV 4  →  2' },
+                { id: 'mod', label: '10 MOD 4  →  2' },
+                { id: 'same', label: '10 / 4 is already INTEGER' },
+              ],
+              correctId: 'div',
+              explanation: 'DIV is integer division (2). MOD is the remainder (2 as well, coincidentally). / is 2.5.',
+            },
+          ],
+          playable: true,
+        },
+        {
+          id: '2.6',
+          slug: 'arithmetic',
+          title: 'Arithmetic and brackets',
+          type: 'run',
+          minutes: 5,
+          why: '* and / bind tighter than + and -. Brackets are how you force the paper’s order.',
+          docsAnchor: 'arithmetic',
+          body: `\`3 + 4 * 2\` is **11**, not 14 — multiply first.
+
+Output two lines:
+
+1. \`3 + 4 * 2\`  (should be 11)
+2. \`(3 + 4) * 2\`  (should be 14)`,
+          trap: 'Do not write `**` for powers. IGCSE uses `^` for exponent, and * for multiply.',
+          starterCode: `OUTPUT 3 + 4 * 2
+OUTPUT (3 + 4) * 2`,
+          solutionCode: `OUTPUT 3 + 4 * 2
+OUTPUT (3 + 4) * 2`,
+          expectedOutput: '11\n14',
+          playable: true,
+        },
+        {
+          id: '2.8',
+          slug: 'boolean',
+          title: 'BOOLEAN is TRUE or FALSE',
+          type: 'run',
+          minutes: 4,
+          why: 'Found, Swapped and Flag are BOOLEAN. OUTPUT prints TRUE or FALSE — not the strings "TRUE" / "FALSE".',
+          docsAnchor: 'data-types',
+          body: `Declare a **BOOLEAN**, assign **TRUE** or **FALSE**, then OUTPUT it.
+
+This program should print:
+
+\`TRUE\`
+\`FALSE\``,
+          trap: 'Do not store `"TRUE"` as a STRING. BOOLEAN uses the keywords TRUE and FALSE with no quotes.',
+          starterCode: `DECLARE Flag : BOOLEAN
+Flag <- TRUE
+OUTPUT Flag
+Flag <- FALSE
+OUTPUT Flag`,
+          solutionCode: `DECLARE Flag : BOOLEAN
+Flag <- TRUE
+OUTPUT Flag
+Flag <- FALSE
+OUTPUT Flag`,
+          expectedOutput: 'TRUE\nFALSE',
+          mustContain: ['BOOLEAN'],
           playable: true,
         },
         {
@@ -264,7 +409,7 @@ OUTPUT Fahrenheit`,
       number: 3,
       slug: '3',
       name: 'Input',
-      hours: '1.5',
+      hours: '2',
       leaveWith: 'IPO: INPUT → process → OUTPUT',
       syllabus: '8.1.3, 7.2',
       free: true,
@@ -362,6 +507,71 @@ OUTPUT Length * Width
               correctId: 'prod',
               explanation: 'OUTPUT Length * Width displays the product — the area, if Length and Width are sides of a rectangle.',
             },
+          ],
+          playable: true,
+        },
+        {
+          id: '3.5',
+          slug: 'double-it',
+          title: 'INPUT, process, OUTPUT',
+          type: 'grade',
+          minutes: 6,
+          why: 'The IPO skeleton: read a value, change it, print the result. Most Easy algorithms are this shape.',
+          docsAnchor: 'first-input',
+          body: `Read an integer. Output **twice** that integer.
+
+Example: input \`7\` → output \`14\`.`,
+          starterCode: `DECLARE N : INTEGER
+
+INPUT N
+
+// OUTPUT twice N`,
+          solutionCode: `DECLARE N : INTEGER
+
+INPUT N
+
+OUTPUT N * 2`,
+          tests: [
+            { inputs: ['7'], expectedOutput: '14' },
+            { inputs: ['0'], expectedOutput: '0' },
+            { inputs: ['-3'], expectedOutput: '-6' },
+            { inputs: ['50'], expectedOutput: '100' },
+          ],
+          playable: true,
+        },
+        {
+          id: '3.6',
+          slug: 'name-age',
+          title: 'Two INPUTs, one sentence',
+          type: 'grade',
+          minutes: 6,
+          why: 'Each INPUT reads one value. Two pieces of data means two INPUT lines, then one OUTPUT.',
+          docsAnchor: 'io',
+          body: `Read a **STRING** name, then an **INTEGER** age. Output one line:
+
+\`Name is Age\`
+
+Example: input \`Ada\` then \`36\` → \`Ada is 36\`.`,
+          trap: 'Put spaces inside the strings: `" is "`. The comma between OUTPUT items does not add a space.',
+          starterCode: `DECLARE Name : STRING
+DECLARE Age : INTEGER
+
+INPUT Name
+INPUT Age
+
+// OUTPUT Name is Age`,
+          solutionCode: `DECLARE Name : STRING
+DECLARE Age : INTEGER
+
+INPUT Name
+INPUT Age
+
+OUTPUT Name, " is ", Age`,
+          tests: [
+            { inputs: ['Ada', '36'], expectedOutput: 'Ada is 36' },
+            { inputs: ['Bob', '15'], expectedOutput: 'Bob is 15' },
+            { inputs: ['Cyd', '0'], expectedOutput: 'Cyd is 0' },
+            { inputs: ['Jo', '100'], expectedOutput: 'Jo is 100' },
           ],
           playable: true,
         },
