@@ -104,12 +104,18 @@ export default function StudentLearning({
   const next = learn.lessons.find((lesson) => lesson.state !== 'completed');
   const groups = groupLevels(learn.lessons);
   const hasPath = learn.completedCount + learn.attemptedCount > 0;
+  const pathComplete = hasPath && next == null;
+  const currentGroup = groups.find((group) => !levelComplete(group));
+  const completedGroups = groups.filter(levelComplete);
+  const upcomingGroups = groups.filter(
+    (group) => group !== currentGroup && !levelComplete(group),
+  );
 
   return (
     <div className="space-y-5">
-      <section className="space-y-3">
+      <section className="space-y-2">
         <p className="mono-label text-dark-text">Paper 2 Path</p>
-        <div className="rounded-xl border border-border bg-background/50 p-3 space-y-3">
+        <div className="rounded-xl border border-border bg-background/50 p-3 space-y-2.5">
           <div className="flex items-end justify-between gap-3">
             <div>
               <p className="font-mono tabular-nums text-lg font-semibold text-light-text leading-none">
@@ -117,8 +123,12 @@ export default function StudentLearning({
               </p>
               <p className="text-[11px] text-dark-text mt-1">lessons done · {pct}%</p>
             </div>
-            <div className="text-right text-[11px] text-dark-text font-mono tabular-nums">
-              <p className="text-warning">{learn.attemptedCount} tried</p>
+            <div className="text-right text-[11px] font-mono tabular-nums">
+              {pathComplete ? (
+                <p className="text-success">Path complete</p>
+              ) : (
+                <p className="text-warning">{learn.attemptedCount} tried</p>
+              )}
               {learn.lastActivityAt && (
                 <p className="text-dark-text/70">{formatRelative(learn.lastActivityAt)}</p>
               )}
@@ -138,48 +148,20 @@ export default function StudentLearning({
           )}
         </div>
 
-        {hasPath && (
-          <div className="space-y-2">
-            {groups.map((group) => {
-              const done = group.lessons.filter((l) => l.state === 'completed').length;
-              const current = group.lessons.some((l) => l.state !== 'completed')
-                && (done > 0 || group.lessons.some((l) => l.state === 'attempted'));
-              return (
-                <details
-                  key={group.slug}
-                  open={current}
-                  className="rounded-xl border border-border bg-background/40 px-3 py-2"
-                >
-                  <summary className="cursor-pointer list-none flex items-center justify-between gap-2 [&::-webkit-details-marker]:hidden">
-                    <span className="text-xs font-medium text-light-text truncate">
-                      L{group.number} · {group.name}
-                    </span>
-                    <span className="text-[11px] font-mono tabular-nums text-dark-text shrink-0">
-                      {done}/{group.lessons.length}
-                    </span>
-                  </summary>
-                  <ul className="mt-2 space-y-1 border-t border-border/50 pt-2">
-                    {group.lessons.map((lesson) => (
-                      <li key={lesson.lessonId} className="flex items-center justify-between gap-2 text-xs">
-                        <span className="text-light-text/90 truncate">{lesson.title}</span>
-                        <span className="shrink-0 inline-flex items-center gap-1 font-mono text-[10px]">
-                          {lesson.state === 'completed' ? (
-                            <CheckCircle2 size={12} className="text-success" />
-                          ) : lesson.state === 'attempted' ? (
-                            <Clock size={12} className="text-warning" />
-                          ) : (
-                            <Circle size={12} className="text-dark-text/35" />
-                          )}
-                          {lesson.attempts > 0 && (
-                            <span className="text-dark-text/50">{lesson.attempts}</span>
-                          )}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                </details>
-              );
-            })}
+        {hasPath && pathComplete && (
+          <LevelBundle label={`${groups.length} levels`} groups={groups} />
+        )}
+        {hasPath && !pathComplete && (
+          <div className="space-y-1.5">
+            {currentGroup && <LevelGroup group={currentGroup} defaultOpen />}
+            <LevelBundle
+              label={`Completed · ${completedGroups.length} level${completedGroups.length === 1 ? '' : 's'}`}
+              groups={completedGroups}
+            />
+            <LevelBundle
+              label={`Upcoming · ${upcomingGroups.length} level${upcomingGroups.length === 1 ? '' : 's'}`}
+              groups={upcomingGroups}
+            />
           </div>
         )}
       </section>
@@ -245,6 +227,98 @@ export default function StudentLearning({
         )}
       </section>
     </div>
+  );
+}
+
+type LevelGroupData = ReturnType<typeof groupLevels>[number];
+
+function levelComplete(group: LevelGroupData) {
+  return group.lessons.every((lesson) => lesson.state === 'completed');
+}
+
+function LevelBundle({
+  label,
+  groups,
+}: {
+  label: string;
+  groups: LevelGroupData[];
+}) {
+  if (groups.length === 0) return null;
+  const done = groups.reduce(
+    (sum, group) => sum + group.lessons.filter((lesson) => lesson.state === 'completed').length,
+    0,
+  );
+  const total = groups.reduce((sum, group) => sum + group.lessons.length, 0);
+
+  return (
+    <details className="rounded-xl border border-border bg-background/40 px-3 py-2">
+      <summary className="cursor-pointer list-none flex items-center justify-between gap-2 [&::-webkit-details-marker]:hidden">
+        <span className="text-xs font-medium text-light-text truncate">{label}</span>
+        <span className="text-[11px] font-mono tabular-nums text-dark-text shrink-0">
+          {done}/{total}
+        </span>
+      </summary>
+      <div className="mt-2 space-y-1.5 border-t border-border/50 pt-2">
+        {groups.map((group) => (
+          <LevelGroup key={group.slug} group={group} nested />
+        ))}
+      </div>
+    </details>
+  );
+}
+
+function LevelGroup({
+  group,
+  defaultOpen = false,
+  nested = false,
+}: {
+  group: LevelGroupData;
+  defaultOpen?: boolean;
+  nested?: boolean;
+}) {
+  const done = group.lessons.filter((lesson) => lesson.state === 'completed').length;
+
+  return (
+    <details
+      open={defaultOpen}
+      className={nested
+        ? 'px-1 py-0.5'
+        : 'rounded-xl border border-border bg-background/40 px-3 py-2'}
+    >
+      <summary className="cursor-pointer list-none flex items-center justify-between gap-2 [&::-webkit-details-marker]:hidden">
+        <span className="text-xs font-medium text-light-text truncate">
+          L{group.number} · {group.name}
+        </span>
+        <span className="text-[11px] font-mono tabular-nums text-dark-text shrink-0">
+          {done}/{group.lessons.length}
+        </span>
+      </summary>
+      <LessonList lessons={group.lessons} />
+    </details>
+  );
+}
+
+function LessonList({ lessons }: { lessons: StudentLearning['learn']['lessons'] }) {
+  return (
+    <ul className="mt-2 space-y-1 border-t border-border/50 pt-2">
+      {lessons.map((lesson) => (
+        <li key={lesson.lessonId} className="flex items-center justify-between gap-2 text-xs">
+          <span className="text-light-text/90 truncate">{lesson.title}</span>
+          <span className="shrink-0 inline-flex items-center gap-1 font-mono text-[10px]">
+            {lesson.state === 'completed' ? (
+              <CheckCircle2 size={12} className="text-success" />
+            ) : lesson.state === 'attempted' ? (
+              <Clock size={12} className="text-warning" />
+            ) : (
+              <Circle size={12} className="text-dark-text/35" />
+            )}
+            {lesson.attempts > 0 && (
+              <span className="text-dark-text/50">{lesson.attempts}</span>
+            )}
+          </span>
+        </li>
+      ))}
+    </ul>
   );
 }
 
