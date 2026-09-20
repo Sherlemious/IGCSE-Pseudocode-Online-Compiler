@@ -8,6 +8,8 @@ import { authHref } from '@/modules/auth/callback';
 import { PracticeFilters } from './PracticeFilters';
 import { PracticeToolbar } from './PracticeToolbar';
 import { useShallowPracticeUrl } from './useShallowPracticeUrl';
+import SolveCountChip from './SolveCountChip';
+import { useQuestionSocialStats } from './usePracticeSocialProof';
 import {
   DIFFICULTIES,
   DIFF_META,
@@ -43,6 +45,7 @@ export default function PracticeIndex({
 
   const [progressMap, setProgressMap] = useState<Map<string, PracticeProgress>>(new Map());
   const [premiumAccess, setPremiumAccess] = useState(!gatingEnabled);
+  const socialStats = useQuestionSocialStats();
 
   useEffect(() => {
     if (authStatus !== 'authenticated') {
@@ -318,6 +321,7 @@ export default function PracticeIndex({
                               const progress = progressMap.get(q.id);
                               const solved = progress?.status === 'SOLVED';
                               const isLocked = q.isPremium && !hasFullAccess;
+                              const social = socialStats.get(q.id);
                               const attemptPct =
                                 progress && progress.totalTests > 0
                                   ? Math.round((progress.bestScore / progress.totalTests) * 100)
@@ -394,6 +398,7 @@ export default function PracticeIndex({
                                         Premium
                                       </span>
                                     )}
+                                    {social && <SolveCountChip stat={social} compact />}
                                     {q.marks != null && (
                                       <span className="hidden sm:inline text-[10px] text-warning/80 font-mono tabular-nums">
                                         {q.marks}m

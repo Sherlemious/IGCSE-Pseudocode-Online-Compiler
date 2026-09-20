@@ -23,6 +23,10 @@ interface ShareButtonProps {
   shareText?: string;
   /** Compact single-icon variant — no card, just a button */
   compact?: boolean;
+  /** Link copied / attached to native share. Defaults to the site home. */
+  url?: string;
+  /** `share_clicked.context`. Defaults to the headline, then `generic`. */
+  context?: string;
 }
 
 function buildWhatsApp(text: string) {
@@ -33,25 +37,29 @@ export default function ShareButton({
   headline,
   shareText,
   compact = false,
+  url,
+  context,
 }: ShareButtonProps) {
   const [copied, setCopied] = useState(false);
   const ph = usePostHog();
+  const shareUrl = url ?? SITE_URL;
+  const shareContext = context ?? headline ?? 'generic';
 
   const studentText =
     shareText ??
-    `If you're studying Cambridge IGCSE or AS & A Level Computer Science, this free pseudocode compiler is worth checking out.\n${SITE_URL}`;
+    `If you're studying Cambridge IGCSE or AS & A Level Computer Science, this free pseudocode compiler is worth checking out.\n${shareUrl}`;
 
   const teacherText =
-    `Free tool for Cambridge IGCSE and AS & A Level Computer Science students — write and run Cambridge pseudocode right in the browser, with practice questions and timed exams:\n${SITE_URL}`;
+    `Free tool for Cambridge IGCSE and AS & A Level Computer Science students — write and run Cambridge pseudocode right in the browser, with practice questions and timed exams:\n${shareUrl}`;
 
   function track(method: string) {
-    ph?.capture('share_clicked', { method, context: headline ?? 'generic' });
+    ph?.capture('share_clicked', { method, context: shareContext });
   }
 
   async function handleNativeShare() {
     track('native');
     try {
-      await navigator.share({ title: 'IGCSE & AS/A Level Pseudocode Compiler', text: studentText, url: SITE_URL });
+      await navigator.share({ title: 'IGCSE & AS/A Level Pseudocode Compiler', text: studentText, url: shareUrl });
       ph?.capture('share_completed', { method: 'native' });
     } catch {
       // user cancelled or not supported — fall through silently
@@ -60,7 +68,7 @@ export default function ShareButton({
 
   async function handleCopy() {
     track('copy');
-    await navigator.clipboard.writeText(SITE_URL);
+    await navigator.clipboard.writeText(shareUrl);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   }

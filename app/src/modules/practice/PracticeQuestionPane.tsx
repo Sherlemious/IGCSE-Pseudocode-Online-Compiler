@@ -6,6 +6,7 @@ import { useSession } from 'next-auth/react';
 import { Crown, Lock } from 'lucide-react';
 import { authHref } from '@/modules/auth/callback';
 import PracticeWorkspace from './PracticeWorkspace';
+import FirstSolveShare from './FirstSolveShare';
 
 type Difficulty = 'EASY' | 'MEDIUM' | 'HARD';
 
@@ -16,6 +17,8 @@ export default function PracticeQuestionPane({
   isPremium,
   gatingEnabled,
   preloadedFileNames,
+  title,
+  paperRef,
 }: {
   questionId: string;
   starterCode: string;
@@ -23,10 +26,13 @@ export default function PracticeQuestionPane({
   isPremium: boolean;
   gatingEnabled: boolean;
   preloadedFileNames?: string[];
+  title: string;
+  paperRef: string | null;
 }) {
   const { status } = useSession();
   const [premiumAccess, setPremiumAccess] = useState(!gatingEnabled);
   const [savedCode, setSavedCode] = useState<string | null>(null);
+  const [initiallySolved, setInitiallySolved] = useState(false);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
@@ -34,6 +40,7 @@ export default function PracticeQuestionPane({
     if (status !== 'authenticated') {
       setPremiumAccess(!gatingEnabled);
       setSavedCode(null);
+      setInitiallySolved(false);
       setReady(true);
       return;
     }
@@ -44,6 +51,7 @@ export default function PracticeQuestionPane({
         if (cancelled) return;
         setPremiumAccess(Boolean(data?.premiumAccess) || !gatingEnabled);
         setSavedCode(typeof data?.lastCode === 'string' ? data.lastCode : null);
+        setInitiallySolved(data?.status === 'SOLVED');
         window.dispatchEvent(
           new CustomEvent('practice:progress', {
             detail: {
@@ -105,12 +113,20 @@ export default function PracticeQuestionPane({
   }
 
   return (
-    <PracticeWorkspace
-      questionId={questionId}
-      starterCode={starterCode}
-      savedCode={savedCode}
-      preloadedFileNames={preloadedFileNames}
-      difficulty={difficulty}
-    />
+    <div className="flex-1 min-h-0 flex flex-col">
+      <PracticeWorkspace
+        questionId={questionId}
+        starterCode={starterCode}
+        savedCode={savedCode}
+        preloadedFileNames={preloadedFileNames}
+        difficulty={difficulty}
+      />
+      <FirstSolveShare
+        questionId={questionId}
+        title={title}
+        paperRef={paperRef}
+        initiallySolved={initiallySolved}
+      />
+    </div>
   );
 }

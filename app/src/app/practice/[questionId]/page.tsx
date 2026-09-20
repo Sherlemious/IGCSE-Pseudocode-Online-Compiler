@@ -9,6 +9,7 @@ import { getPublicQuestion, getQuestionCatalog } from '@/shared/lib/catalogCache
 import PracticeQuestionPane from '@/modules/practice/PracticeQuestionPane';
 import HintsPanel from '@/modules/practice/HintsPanel';
 import SolutionPanel from '@/modules/practice/SolutionPanel';
+import QuestionSolveCount from '@/modules/practice/QuestionSolveCount';
 import {
   absoluteUrl,
   paperReference,
@@ -192,6 +193,7 @@ export default async function QuestionPage({ params }: Props) {
             <span className="bg-surface px-2 py-0.5 rounded border border-border text-dark-text">{question.marks} marks</span>
           )}
         </div>
+        <QuestionSolveCount questionId={question.id} />
         {anyPreloadedFiles && (
           <div className="flex items-start gap-2 px-3 py-2 rounded-lg border border-info/25 bg-info/5 text-xs text-info mb-4">
             <FileText size={13} className="shrink-0 mt-0.5" />
@@ -316,6 +318,8 @@ export default async function QuestionPage({ params }: Props) {
         isPremium={question.isPremium}
         gatingEnabled={PREMIUM_GATING_ENABLED}
         preloadedFileNames={preloadedFileNames.length > 0 ? preloadedFileNames : undefined}
+        title={question.title}
+        paperRef={ref}
       />
     </div>
   );
