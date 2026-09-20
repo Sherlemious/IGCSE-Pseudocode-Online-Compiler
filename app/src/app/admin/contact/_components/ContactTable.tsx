@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import type { ContactMessage, ContactStatus } from '@prisma/client';
 import { ChevronRight } from 'lucide-react';
-import AdminDrawer from '../../_components/AdminDrawer';
+import AdminDrawer, { useHeld } from '../../_components/AdminDrawer';
 import { AdminSearch, Chip, ChipRow, EmptyState, formatAdminDate, formatRelative, MetaField } from '../../_components/adminUi';
 
 interface Props {
@@ -40,6 +40,7 @@ export default function ContactTable({ messages }: Props) {
   });
 
   const selected = filtered.find((m) => m.id === selectedId) ?? rows.find((m) => m.id === selectedId) ?? null;
+  const shown = useHeld(selected);
 
   async function updateStatus(id: string, status: ContactStatus) {
     setBusyId(id);
@@ -153,27 +154,27 @@ export default function ContactTable({ messages }: Props) {
         </>
       )}
 
-      {selected && (
+      {shown && (
         <AdminDrawer
-          open
+          open={selected != null}
           onClose={() => setSelectedId(null)}
-          title={selected.subject ?? 'Contact message'}
-          subtitle={selected.name ?? selected.email ?? 'Anonymous'}
+          title={shown.subject ?? 'Contact message'}
+          subtitle={shown.name ?? shown.email ?? 'Anonymous'}
         >
           <div className="space-y-4">
             <StatusSelect
-              status={selected.status}
-              disabled={busyId === selected.id}
-              onChange={(status) => updateStatus(selected.id, status)}
+              status={shown.status}
+              disabled={busyId === shown.id}
+              onChange={(status) => updateStatus(shown.id, status)}
               size="lg"
             />
             <dl className="grid gap-3">
-              <MetaField label="From" value={selected.name ?? 'Anonymous'} />
-              <MetaField label="Email" value={selected.email ?? '—'} />
-              <MetaField label="Received" value={formatAdminDate(selected.createdAt)} />
-              <MetaField label="Page" value={selected.pageUrl ?? '—'} mono />
+              <MetaField label="From" value={shown.name ?? 'Anonymous'} />
+              <MetaField label="Email" value={shown.email ?? '—'} />
+              <MetaField label="Received" value={formatAdminDate(shown.createdAt)} />
+              <MetaField label="Page" value={shown.pageUrl ?? '—'} mono />
             </dl>
-            <p className="text-sm text-light-text whitespace-pre-wrap break-words leading-relaxed">{selected.message}</p>
+            <p className="text-sm text-light-text whitespace-pre-wrap break-words leading-relaxed">{shown.message}</p>
           </div>
         </AdminDrawer>
       )}

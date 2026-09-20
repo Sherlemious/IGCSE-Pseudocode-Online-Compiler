@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import type { FeedbackSubmission } from '@prisma/client';
 import { ChevronRight } from 'lucide-react';
-import AdminDrawer from '../../_components/AdminDrawer';
+import AdminDrawer, { useHeld } from '../../_components/AdminDrawer';
 import { Chip, ChipRow, EmptyState, formatAdminDate, formatRelative } from '../../_components/adminUi';
 
 interface Props {
@@ -22,6 +22,7 @@ export default function FeedbackTable({ submissions }: Props) {
   });
 
   const selected = filtered.find((s) => s.id === selectedId) ?? null;
+  const shown = useHeld(selected);
 
   return (
     <div className="space-y-4">
@@ -146,30 +147,30 @@ export default function FeedbackTable({ submissions }: Props) {
         </>
       )}
 
-      {selected && (
+      {shown && (
         <AdminDrawer
-          open
+          open={selected != null}
           onClose={() => setSelectedId(null)}
-          title={`Rating ${selected.rating}/5`}
-          subtitle={selected.email ?? 'Anonymous'}
+          title={`Rating ${shown.rating}/5`}
+          subtitle={shown.email ?? 'Anonymous'}
         >
           <div className="space-y-4">
             <div className="flex flex-wrap items-center gap-1.5">
-              <span className={`px-1.5 py-0.5 rounded border text-[10px] font-bold ${ratingColor(selected.rating)}`}>
-                {selected.rating}
+              <span className={`px-1.5 py-0.5 rounded border text-[10px] font-bold ${ratingColor(shown.rating)}`}>
+                {shown.rating}
               </span>
-              <span className={`px-1.5 py-0.5 rounded border text-[10px] font-medium capitalize ${tierColor(selected.tier)}`}>
-                {selected.tier}
+              <span className={`px-1.5 py-0.5 rounded border text-[10px] font-medium capitalize ${tierColor(shown.tier)}`}>
+                {shown.tier}
               </span>
-              {selected.tags.map((tag) => (
+              {shown.tags.map((tag) => (
                 <span key={tag} className="px-1.5 py-0.5 rounded-full text-[10px] bg-border/30 text-dark-text border border-border">
                   {tag}
                 </span>
               ))}
             </div>
-            <p className="text-xs text-dark-text">{formatAdminDate(selected.createdAt)}</p>
-            {selected.comment ? (
-              <p className="text-sm text-light-text whitespace-pre-wrap break-words leading-relaxed">{selected.comment}</p>
+            <p className="text-xs text-dark-text">{formatAdminDate(shown.createdAt)}</p>
+            {shown.comment ? (
+              <p className="text-sm text-light-text whitespace-pre-wrap break-words leading-relaxed">{shown.comment}</p>
             ) : (
               <p className="text-sm italic text-dark-text/50">No comment</p>
             )}

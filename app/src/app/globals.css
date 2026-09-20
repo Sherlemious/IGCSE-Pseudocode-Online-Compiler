@@ -725,36 +725,97 @@ button:active > .learn-node {
   to { opacity: 1; }
 }
 
+@keyframes admin-fade-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
 @keyframes admin-nav-in {
-  from { transform: translateX(-100%); }
-  to { transform: translateX(0); }
+  from { transform: translate3d(-100%, 0, 0); }
+  to { transform: translate3d(0, 0, 0); }
+}
+
+@keyframes admin-nav-out {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(-100%, 0, 0); }
 }
 
 @keyframes admin-panel-in {
-  from { transform: translateX(100%); }
-  to { transform: translateX(0); }
+  0% { transform: translate3d(100%, 0, 0); }
+  72% { transform: translate3d(-14px, 0, 0); }
+  100% { transform: translate3d(0, 0, 0); }
+}
+
+@keyframes admin-panel-out {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(100%, 0, 0); }
 }
 
 @keyframes admin-sheet-in {
-  from { transform: translateY(100%); }
-  to { transform: translateY(0); }
+  0% {
+    transform: translate3d(0, 110%, 0);
+    opacity: 0.88;
+  }
+  68% {
+    transform: translate3d(0, -14px, 0);
+    opacity: 1;
+  }
+  100% {
+    transform: translate3d(0, 0, 0);
+    opacity: 1;
+  }
+}
+
+@keyframes admin-sheet-out {
+  from {
+    transform: translate3d(0, 0, 0);
+    opacity: 1;
+  }
+  to {
+    transform: translate3d(0, 108%, 0);
+    opacity: 0.75;
+  }
 }
 
 .admin-overlay {
-  animation: admin-fade-in 0.2s ease-out both;
+  animation: admin-fade-in 0.32s ease-out both;
+}
+
+.admin-overlay.is-leaving {
+  animation: admin-fade-out 0.28s ease-in both;
 }
 
 .admin-nav-panel {
-  animation: admin-nav-in 0.28s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: admin-nav-in 0.34s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.admin-nav-panel.is-leaving {
+  animation: admin-nav-out 0.28s cubic-bezier(0.4, 0, 1, 1) both;
 }
 
 .admin-drawer-panel {
-  animation: admin-sheet-in 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: admin-sheet-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+  will-change: transform;
+}
+
+.admin-drawer-panel.is-leaving {
+  animation: admin-sheet-out 0.34s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+.admin-drawer-panel.is-dragging,
+.admin-overlay.is-dragging {
+  animation: none !important;
 }
 
 @media (min-width: 768px) {
   .admin-drawer-panel {
     animation-name: admin-panel-in;
+    animation-duration: 0.46s;
+  }
+
+  .admin-drawer-panel.is-leaving {
+    animation-name: admin-panel-out;
+    animation-duration: 0.3s;
   }
 }
 

@@ -26,7 +26,7 @@ export default async function AdminUsersPage() {
         paddleSubscriptionId: true,
         role: true,
         createdAt: true,
-        _count: { select: { progress: true, examAttempts: true } },
+        _count: { select: { progress: true, examAttempts: true, learnProgress: true } },
       },
       take: 500,
     }),

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
+import { planBadge } from '@/modules/billing/planDisplay';
 import { AdminSearch, Chip, ChipRow, EmptyState, formatRelative, nice } from '../../_components/adminUi';
 import UserDrawer, {
   PlanSelect,
@@ -20,6 +21,7 @@ interface Props {
 
 export default function UsersTable({ users, currentAdminRole }: Props) {
   const [search, setSearch] = useState('');
+  const [accessFilter, setAccessFilter] = useState<'all' | 'free' | 'paid' | 'trial'>('all');
   const [planFilter, setPlanFilter] = useState<string>('all');
   const [roleFilter, setRoleFilter] = useState<string>('all');
   const [roleOverrides, setRoleOverrides] = useState<Record<string, string>>({});
@@ -31,6 +33,16 @@ export default function UsersTable({ users, currentAdminRole }: Props) {
   const filtered = users.filter((u) => {
     const effectiveRole = roleOverrides[u.id] ?? u.role;
     const effectivePlan = planOverrides[u.id] ?? u.plan;
+    const paid = planBadge({
+      plan: effectivePlan,
+      planTier: u.planTier,
+      legacyCapacity: u.legacyCapacity,
+      planExpiresAt: u.planExpiresAt,
+    }).paid;
+    const trial = isTrialActive(u.trialEndsAt);
+    if (accessFilter === 'free' && paid) return false;
+    if (accessFilter === 'paid' && !paid) return false;
+    if (accessFilter === 'trial' && !trial) return false;
     if (planFilter !== 'all' && effectivePlan !== planFilter) return false;
     if (roleFilter !== 'all' && effectiveRole !== roleFilter) return false;
     if (search) {
@@ -39,6 +51,23 @@ export default function UsersTable({ users, currentAdminRole }: Props) {
     }
     return true;
   });
+
+  const accessCounts = users.reduce(
+    (acc, u) => {
+      const effectivePlan = planOverrides[u.id] ?? u.plan;
+      const paid = planBadge({
+        plan: effectivePlan,
+        planTier: u.planTier,
+        legacyCapacity: u.legacyCapacity,
+        planExpiresAt: u.planExpiresAt,
+      }).paid;
+      if (paid) acc.paid += 1;
+      else acc.free += 1;
+      if (isTrialActive(u.trialEndsAt)) acc.trial += 1;
+      return acc;
+    },
+    { free: 0, paid: 0, trial: 0 },
+  );
 
   const selected = filtered.find((u) => u.id === selectedId) ?? users.find((u) => u.id === selectedId) ?? null;
 
@@ -86,6 +115,18 @@ export default function UsersTable({ users, currentAdminRole }: Props) {
     <div className="space-y-4">
       <div className="flex flex-col gap-3">
         <AdminSearch value={search} onChange={setSearch} placeholder="Search name or email…" />
+        <ChipRow label="Access">
+          {([
+            { id: 'all', label: 'All' },
+            { id: 'free', label: `Free · ${accessCounts.free}` },
+            { id: 'paid', label: `Paid · ${accessCounts.paid}` },
+            { id: 'trial', label: `Trial · ${accessCounts.trial}` },
+          ] as const).map((opt) => (
+            <Chip key={opt.id} active={accessFilter === opt.id} onClick={() => setAccessFilter(opt.id)}>
+              {opt.label}
+            </Chip>
+          ))}
+        </ChipRow>
         <ChipRow label="Plan">
           {['all', ...PLANS].map((p) => (
             <Chip key={p} active={planFilter === p} onClick={() => setPlanFilter(p)}>
@@ -148,7 +189,7 @@ export default function UsersTable({ users, currentAdminRole }: Props) {
                         onChange={(id, role) => void handleRoleChange(id, role)}
                       />
                       <span className="ml-auto text-[10px] text-dark-text/70 font-mono">
-                        {u._count.progress}q · {u._count.examAttempts}e · {formatRelative(u.createdAt)}
+                        {u._count.learnProgress}p · {u._count.progress}q · {u._count.examAttempts}e · {formatRelative(u.createdAt)}
                       </span>
                     </div>
                   </article>
@@ -167,7 +208,8 @@ export default function UsersTable({ users, currentAdminRole }: Props) {
                     <th className="text-left px-4 py-3 text-dark-text font-medium">Email</th>
                     <th className="text-left px-4 py-3 text-dark-text font-medium w-36">Plan</th>
                     <th className="text-left px-4 py-3 text-dark-text font-medium w-24">Role</th>
-                    <th className="text-left px-4 py-3 text-dark-text font-medium w-20">Questions</th>
+                    <th className="text-left px-4 py-3 text-dark-text font-medium w-16">Path</th>
+                    <th className="text-left px-4 py-3 text-dark-text font-medium w-20">Practice</th>
                     <th className="text-left px-4 py-3 text-dark-text font-medium w-16">Exams</th>
                     <th className="text-left px-4 py-3 text-dark-text font-medium w-28">Joined</th>
                     <th className="w-8" />
@@ -216,6 +258,7 @@ export default function UsersTable({ users, currentAdminRole }: Props) {
                             onChange={(id, role) => void handleRoleChange(id, role)}
                           />
                         </td>
+                        <td className="px-4 py-3 text-dark-text">{u._count.learnProgress}</td>
                         <td className="px-4 py-3 text-dark-text">{u._count.progress}</td>
                         <td className="px-4 py-3 text-dark-text">{u._count.examAttempts}</td>
                         <td className="px-4 py-3 text-dark-text whitespace-nowrap">

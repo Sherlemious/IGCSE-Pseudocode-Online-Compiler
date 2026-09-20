@@ -2,10 +2,11 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
-import { BookOpen, BookOpenCheck, Calendar, Check, Copy } from 'lucide-react';
+import { BookOpen, BookOpenCheck, Check, Copy, Route } from 'lucide-react';
 import { planBadge } from '@/modules/billing/planDisplay';
-import AdminDrawer from '../../_components/AdminDrawer';
+import AdminDrawer, { useHeld } from '../../_components/AdminDrawer';
 import { CopyValue, MetaField, formatAdminDate, nice } from '../../_components/adminUi';
+import StudentLearning, { useStudentLearning } from './StudentLearning';
 
 export interface UserRow {
   id: string;
@@ -22,7 +23,7 @@ export interface UserRow {
   paddleSubscriptionId: string | null;
   role: string;
   createdAt: Date;
-  _count: { progress: number; examAttempts: number };
+  _count: { progress: number; examAttempts: number; learnProgress: number };
 }
 
 const ROLE_COLOURS: Record<string, string> = {
@@ -181,38 +182,51 @@ export default function UserDrawer({
   onRoleChange,
   onPlanChange,
 }: DrawerProps) {
-  if (!user) return null;
+  const open = user != null;
+  const view = useHeld(user ? { user, role: effectiveRole, plan: effectivePlan } : null);
+  const { data: learning, loading: learningLoading } = useStudentLearning(view?.user.id ?? null, open);
+  if (!view) return null;
 
-  const trial = isTrialActive(user.trialEndsAt);
+  const { user: shown, role, plan } = view;
+  const trial = isTrialActive(shown.trialEndsAt);
   const badge = planBadge({
-    plan: effectivePlan,
-    planTier: user.planTier,
-    legacyCapacity: user.legacyCapacity,
-    planExpiresAt: user.planExpiresAt,
+    plan,
+    planTier: shown.planTier,
+    legacyCapacity: shown.legacyCapacity,
+    planExpiresAt: shown.planExpiresAt,
   });
 
   return (
     <AdminDrawer
-      open
+      open={open}
       onClose={onClose}
-      title={user.name ?? 'Unnamed user'}
-      subtitle={<EmailLine email={user.email} />}
-      lead={<UserAvatar name={user.name} image={user.image} size={40} />}
+      title={shown.name ?? 'Unnamed user'}
+      subtitle={<EmailLine email={shown.email} />}
+      lead={<UserAvatar name={shown.name} image={shown.image} size={40} />}
     >
-      <div className="space-y-5">
-        <div className="grid grid-cols-3 gap-2">
-          <StatChip icon={BookOpenCheck} label="Questions" value={user._count.progress} />
-          <StatChip icon={BookOpen} label="Exams" value={user._count.examAttempts} />
-          <StatChip icon={Calendar} label="Joined" value={formatAdminDate(user.createdAt, true)} />
+      <div className="space-y-5 md:space-y-6">
+        <div className="grid grid-cols-3 gap-2 md:gap-3">
+          <StatChip
+            icon={Route}
+            label="Path"
+            value={learning ? `${learning.learn.completedCount}/${learning.learn.playableCount}` : shown._count.learnProgress}
+          />
+          <StatChip icon={BookOpenCheck} label="Practice" value={learning ? learning.practice.solved : shown._count.progress} />
+          <StatChip icon={BookOpen} label="Exams" value={shown._count.examAttempts} />
         </div>
+        <p className="text-[11px] text-dark-text font-mono -mt-2">
+          Joined {formatAdminDate(shown.createdAt, true)}
+        </p>
+
+        <StudentLearning data={learning} loading={learningLoading} />
 
         <section className="space-y-3">
           <p className="mono-label text-dark-text">Account</p>
           <label className="block space-y-1.5">
             <span className="text-xs text-dark-text">Role</span>
             <RoleSelect
-              userId={user.id}
-              currentRole={effectiveRole}
+              userId={shown.id}
+              currentRole={role}
               currentAdminRole={currentAdminRole}
               isUpdating={updatingRole}
               onChange={onRoleChange}
@@ -222,15 +236,15 @@ export default function UserDrawer({
           <label className="block space-y-1.5">
             <span className="text-xs text-dark-text">Plan</span>
             <PlanSelect
-              userId={user.id}
-              currentPlan={effectivePlan}
+              userId={shown.id}
+              currentPlan={plan}
               isUpdating={updatingPlan}
               onChange={onPlanChange}
               size="lg"
             />
           </label>
           <div className="flex flex-wrap items-center gap-1.5">
-            <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full border ${planColour(effectivePlan)}`}>
+            <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full border ${planColour(plan)}`}>
               {badge.label}
             </span>
             {trial && (
@@ -245,21 +259,21 @@ export default function UserDrawer({
           <p className="mono-label text-dark-text">Billing</p>
           <div className="grid grid-cols-1 gap-3 rounded-xl border border-border bg-background/50 p-3">
             <MetaField label="Display label" value={badge.label} />
-            <MetaField label="Marketing tier" value={user.planTier ?? '—'} mono />
+            <MetaField label="Marketing tier" value={shown.planTier ?? '—'} mono />
             <MetaField
               label="Trial ends"
-              value={user.trialEndsAt ? formatAdminDate(user.trialEndsAt) : '—'}
+              value={shown.trialEndsAt ? formatAdminDate(shown.trialEndsAt) : '—'}
             />
             <MetaField
               label="Plan expires"
-              value={user.planExpiresAt ? formatAdminDate(user.planExpiresAt) : '—'}
+              value={shown.planExpiresAt ? formatAdminDate(shown.planExpiresAt) : '—'}
             />
             <MetaField
               label="Plan updated"
-              value={user.planUpdatedAt ? formatAdminDate(user.planUpdatedAt) : '—'}
+              value={shown.planUpdatedAt ? formatAdminDate(shown.planUpdatedAt) : '—'}
             />
-            <CopyValue label="Paddle customer" value={user.paddleCustomerId} mono />
-            <CopyValue label="Paddle subscription" value={user.paddleSubscriptionId} mono />
+            <CopyValue label="Paddle customer" value={shown.paddleCustomerId} mono />
+            <CopyValue label="Paddle subscription" value={shown.paddleSubscriptionId} mono />
           </div>
         </section>
       </div>

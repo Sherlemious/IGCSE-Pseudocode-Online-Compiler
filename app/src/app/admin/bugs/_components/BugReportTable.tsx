@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import type { BugReport, BugStatus } from '@prisma/client';
 import { ChevronRight } from 'lucide-react';
-import AdminDrawer from '../../_components/AdminDrawer';
+import AdminDrawer, { useHeld } from '../../_components/AdminDrawer';
 import { Chip, ChipRow, EmptyState, formatAdminDate, formatRelative, MetaField } from '../../_components/adminUi';
 
 interface Props {
@@ -34,6 +34,7 @@ export default function BugReportTable({ reports }: Props) {
   );
 
   const selected = filtered.find((r) => r.id === selectedId) ?? rows.find((r) => r.id === selectedId) ?? null;
+  const shown = useHeld(selected);
 
   async function updateStatus(id: string, status: BugStatus) {
     setBusyId(id);
@@ -156,41 +157,41 @@ export default function BugReportTable({ reports }: Props) {
         </>
       )}
 
-      {selected && (
+      {shown && (
         <AdminDrawer
-          open
+          open={selected != null}
           onClose={() => setSelectedId(null)}
-          title={selected.category.charAt(0).toUpperCase() + selected.category.slice(1)}
-          subtitle={selected.email ?? 'Anonymous'}
+          title={shown.category.charAt(0).toUpperCase() + shown.category.slice(1)}
+          subtitle={shown.email ?? 'Anonymous'}
         >
           <div className="space-y-4">
             <div className="flex flex-wrap items-center gap-2">
               <StatusSelect
-                status={selected.status}
-                disabled={busyId === selected.id}
-                onChange={(status) => updateStatus(selected.id, status)}
+                status={shown.status}
+                disabled={busyId === shown.id}
+                onChange={(status) => updateStatus(shown.id, status)}
                 size="lg"
               />
-              <span className="text-xs text-dark-text">{formatAdminDate(selected.createdAt)}</span>
+              <span className="text-xs text-dark-text">{formatAdminDate(shown.createdAt)}</span>
             </div>
-            <p className="text-sm text-light-text whitespace-pre-wrap break-words leading-relaxed">{selected.description}</p>
+            <p className="text-sm text-light-text whitespace-pre-wrap break-words leading-relaxed">{shown.description}</p>
             <dl className="grid gap-3">
-              <MetaField label="Page" value={selected.pageUrl ?? '—'} mono />
-              {selected.userAgent && <MetaField label="User agent" value={selected.userAgent} />}
+              <MetaField label="Page" value={shown.pageUrl ?? '—'} mono />
+              {shown.userAgent && <MetaField label="User agent" value={shown.userAgent} />}
             </dl>
-            {selected.code && (
+            {shown.code && (
               <div>
                 <p className="mb-1.5 text-[10px] font-medium uppercase tracking-wider text-dark-text">Code</p>
                 <pre className="text-[11px] leading-relaxed font-mono text-light-text bg-background border border-border rounded-lg p-3 overflow-x-auto scrollbar-pretty whitespace-pre">
-                  {selected.code}
+                  {shown.code}
                 </pre>
               </div>
             )}
-            {selected.output && (
+            {shown.output && (
               <div>
                 <p className="mb-1.5 text-[10px] font-medium uppercase tracking-wider text-dark-text">Output</p>
                 <pre className="text-[11px] leading-relaxed font-mono text-light-text bg-background border border-border rounded-lg p-3 overflow-x-auto scrollbar-pretty whitespace-pre-wrap break-words">
-                  {selected.output}
+                  {shown.output}
                 </pre>
               </div>
             )}
