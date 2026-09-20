@@ -719,6 +719,45 @@ button:active > .learn-node {
   animation: learn-start-bob 1.6s ease-in-out infinite;
 }
 
+/* ── Admin overlays ─────────────────────────────────────── */
+@keyframes admin-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes admin-nav-in {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(0); }
+}
+
+@keyframes admin-panel-in {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+@keyframes admin-sheet-in {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+.admin-overlay {
+  animation: admin-fade-in 0.2s ease-out both;
+}
+
+.admin-nav-panel {
+  animation: admin-nav-in 0.28s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.admin-drawer-panel {
+  animation: admin-sheet-in 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@media (min-width: 768px) {
+  .admin-drawer-panel {
+    animation-name: admin-panel-in;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .terminal-line,
   .trace-row-in,
@@ -726,7 +765,10 @@ button:active > .learn-node {
   .run-pulse-error,
   .exec-dot,
   .learn-node-current,
-  .learn-start-bubble {
+  .learn-start-bubble,
+  .admin-overlay,
+  .admin-nav-panel,
+  .admin-drawer-panel {
     animation: none;
   }
 }

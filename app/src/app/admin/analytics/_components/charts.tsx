@@ -20,12 +20,12 @@ export function SectionHeading({
   meta?: React.ReactNode;
 }) {
   return (
-    <div className="flex items-end justify-between gap-4 mb-3">
-      <div>
+    <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-1.5 sm:gap-4 mb-3">
+      <div className="min-w-0">
         <p className="mono-label text-primary/70">{eyebrow}</p>
         <h2 className="text-sm font-semibold text-light-text mt-0.5">{title}</h2>
       </div>
-      {meta && <div className="text-[11px] text-dark-text shrink-0">{meta}</div>}
+      {meta && <div className="text-[11px] text-dark-text sm:shrink-0">{meta}</div>}
     </div>
   );
 }
@@ -129,19 +129,21 @@ export function StatTile({
   sparkColor?: string;
 }) {
   return (
-    <div className="card-glow rounded-2xl bg-surface p-4 flex flex-col justify-between min-h-[124px]">
+    <div className="card-glow rounded-2xl bg-surface p-3.5 sm:p-4 flex flex-col justify-between min-h-[108px] sm:min-h-[124px]">
       <div className="flex items-start justify-between gap-2">
         <p className="mono-label text-dark-text">{label}</p>
         {typeof delta === 'number' && <DeltaChip pct={delta} />}
       </div>
       <div className="mt-2">
-        <p className="font-mono tabular-nums tracking-tight text-3xl font-semibold text-light-text leading-none">
+        <p className="font-mono tabular-nums tracking-tight text-2xl sm:text-3xl font-semibold text-light-text leading-none">
           {typeof value === 'number' ? value.toLocaleString() : value}
         </p>
-        <div className="flex items-end justify-between gap-2 mt-1.5 h-8">
+        <div className="flex items-end justify-between gap-2 mt-1.5 sm:h-8">
           <span className="text-[11px] text-dark-text leading-tight">{sub ?? ' '}</span>
           {spark && spark.length > 1 && (
-            <Sparkline data={spark} color={sparkColor ?? 'var(--color-primary)'} width={84} height={28} />
+            <span className="hidden sm:block">
+              <Sparkline data={spark} color={sparkColor ?? 'var(--color-primary)'} width={84} height={28} />
+            </span>
           )}
         </div>
       </div>

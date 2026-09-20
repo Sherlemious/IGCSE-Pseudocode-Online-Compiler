@@ -17,9 +17,9 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   if (!isAdmin(session.user.email, session.user.role)) redirect('/');
 
   return (
-    <div className="flex h-screen overflow-hidden bg-background text-light-text">
+    <div className="flex h-dvh flex-col md:flex-row overflow-hidden bg-background text-light-text">
       <AdminSidebar user={{ name: session.user.name, email: session.user.email, image: session.user.image }} />
-      <main className="flex-1 overflow-y-auto p-4 md:p-8 pb-20 md:pb-8 scrollbar-pretty">
+      <main className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-3 py-4 sm:px-4 md:p-8 scrollbar-pretty">
         {children}
       </main>
     </div>

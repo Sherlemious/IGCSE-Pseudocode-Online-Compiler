@@ -1,4 +1,5 @@
 import { prisma } from '@/shared/db';
+import { AdminPageHeader } from '../_components/adminUi';
 import ContactTable from './_components/ContactTable';
 
 export const dynamic = 'force-dynamic';
@@ -11,13 +12,11 @@ export default async function AdminContactPage() {
   });
 
   return (
-    <div className="space-y-6 max-w-6xl">
-      <div>
-        <h1 className="text-2xl font-bold text-light-text">Contact</h1>
-        <p className="text-sm text-dark-text mt-1">
-          {messages.length} message{messages.length !== 1 ? 's' : ''} from the site-wide Contact form
-        </p>
-      </div>
+    <div className="space-y-5 max-w-6xl">
+      <AdminPageHeader
+        title="Contact"
+        description={`${messages.length} message${messages.length !== 1 ? 's' : ''} from the site-wide Contact form`}
+      />
 
       <ContactTable messages={messages} />
     </div>

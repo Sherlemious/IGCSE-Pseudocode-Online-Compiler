@@ -3,6 +3,7 @@ import { COURSE_ID } from '@/modules/learn/types';
 import LearnProgressChecklist from '@/modules/learn/LearnProgressChecklist';
 import { buildLearnProgressView } from '@/modules/learn/progressView';
 import type { LearnProgressRecord } from '@/modules/learn/progress';
+import { AdminPageHeader } from '../_components/adminUi';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Admin — Paper 2 Path' };
@@ -55,14 +56,11 @@ export default async function AdminLearnPage() {
     .sort((a, b) => (b.view.lastActivityAt ?? '').localeCompare(a.view.lastActivityAt ?? ''));
 
   return (
-    <div className="space-y-6 max-w-4xl">
-      <div>
-        <h1 className="text-2xl font-bold text-light-text">Paper 2 Path</h1>
-        <p className="text-sm text-dark-text mt-1">
-          {learners.length} signed-in learner{learners.length !== 1 ? 's' : ''} with saved progress.
-          Unsigned traffic still only lives in the browser.
-        </p>
-      </div>
+    <div className="space-y-5 max-w-4xl">
+      <AdminPageHeader
+        title="Paper 2 Path"
+        description={`${learners.length} signed-in learner${learners.length !== 1 ? 's' : ''} with saved progress. Unsigned traffic still only lives in the browser.`}
+      />
 
       {learners.length === 0 ? (
         <p className="text-sm text-dark-text">No saved path progress yet.</p>
@@ -71,21 +69,24 @@ export default async function AdminLearnPage() {
           {learners.map((learner) => (
             <details
               key={learner.userId}
-              className="rounded-2xl border border-border bg-surface px-4 py-3"
+              className="group rounded-2xl border border-border bg-surface px-4 py-3"
             >
-              <summary className="cursor-pointer list-none flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
-                <span className="text-sm font-medium text-light-text truncate">
-                  {learner.name || learner.email || 'Student'}
+              <summary className="cursor-pointer list-none flex items-start gap-3">
+                <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-primary shrink-0 group-open:bg-success" />
+                <span className="min-w-0 flex-1 flex flex-col gap-0.5">
+                  <span className="text-sm font-medium text-light-text truncate">
+                    {learner.name || learner.email || 'Student'}
+                  </span>
                   {learner.name && learner.email && (
-                    <span className="ml-2 text-xs font-normal text-dark-text">{learner.email}</span>
+                    <span className="text-xs text-dark-text truncate">{learner.email}</span>
                   )}
-                </span>
-                <span className="text-[11px] font-mono text-dark-text tabular-nums">
-                  {learner.view.completedCount}/{learner.view.playableCount} done
-                  {learner.view.attemptedCount > 0 ? ` · ${learner.view.attemptedCount} tried` : ''}
-                  {learner.view.lastActivityAt
-                    ? ` · ${new Date(learner.view.lastActivityAt).toLocaleString()}`
-                    : ''}
+                  <span className="text-[11px] font-mono text-dark-text tabular-nums">
+                    {learner.view.completedCount}/{learner.view.playableCount} done
+                    {learner.view.attemptedCount > 0 ? ` · ${learner.view.attemptedCount} tried` : ''}
+                    {learner.view.lastActivityAt
+                      ? ` · ${new Date(learner.view.lastActivityAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`
+                      : ''}
+                  </span>
                 </span>
               </summary>
               <div className="mt-4 pt-3 border-t border-border/60">

@@ -175,15 +175,15 @@ export default async function AdminAnalyticsPage() {
   return (
     <div className="max-w-6xl stagger-children space-y-6">
       {/* ── Hero ── */}
-      <header className="card-glow bg-dot-grid rounded-2xl bg-surface px-6 py-7 flex items-start justify-between gap-4 overflow-hidden relative">
+      <header className="card-glow bg-dot-grid rounded-2xl bg-surface px-4 py-5 sm:px-6 sm:py-7 flex flex-col sm:flex-row sm:items-start justify-between gap-3 overflow-hidden relative">
         <div>
           <p className="mono-label text-primary">Platform Analytics</p>
-          <h1 className="text-3xl font-bold text-light-text tracking-tight mt-1">Analytics</h1>
+          <h1 className="hidden md:block text-2xl sm:text-3xl font-bold text-light-text tracking-tight mt-1">Analytics</h1>
           <p className="text-sm text-dark-text mt-1.5">
             Real-time view of growth, engagement &amp; learning outcomes
           </p>
         </div>
-        <div className="flex items-center gap-2 shrink-0 bg-background/60 border border-border rounded-full px-3 py-1.5">
+        <div className="flex items-center gap-2 self-start shrink-0 bg-background/60 border border-border rounded-full px-3 py-1.5">
           <span className="relative flex h-2 w-2">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success opacity-60" />
             <span className="relative inline-flex rounded-full h-2 w-2 bg-success" />

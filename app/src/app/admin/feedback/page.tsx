@@ -1,4 +1,5 @@
 import { prisma } from '@/shared/db';
+import { AdminPageHeader } from '../_components/adminUi';
 import FeedbackTable from './_components/FeedbackTable';
 
 export const dynamic = 'force-dynamic';
@@ -15,13 +16,11 @@ export default async function AdminFeedbackPage() {
     : '—';
 
   return (
-    <div className="space-y-6 max-w-6xl">
-      <div className="flex items-end gap-6">
-        <div>
-          <h1 className="text-2xl font-bold text-light-text">Feedback</h1>
-          <p className="text-sm text-dark-text mt-1">{submissions.length} submission{submissions.length !== 1 ? 's' : ''} · avg rating {avgRating}</p>
-        </div>
-      </div>
+    <div className="space-y-5 max-w-6xl">
+      <AdminPageHeader
+        title="Feedback"
+        description={`${submissions.length} submission${submissions.length !== 1 ? 's' : ''} · avg rating ${avgRating}`}
+      />
 
       <FeedbackTable submissions={submissions} />
     </div>

@@ -63,17 +63,17 @@ export default async function AdminOverviewPage() {
   ];
 
   return (
-    <div className="max-w-6xl stagger-children space-y-6">
+    <div className="max-w-6xl stagger-children space-y-5 sm:space-y-6">
       {/* ── Hero ── */}
-      <header className="card-glow bg-dot-grid rounded-2xl bg-surface px-6 py-7 flex flex-col sm:flex-row sm:items-center justify-between gap-4 overflow-hidden">
+      <header className="card-glow bg-dot-grid rounded-2xl bg-surface px-4 py-5 sm:px-6 sm:py-7 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 overflow-hidden">
         <div>
           <p className="mono-label text-primary">Admin · Command Center</p>
-          <h1 className="text-3xl font-bold text-light-text tracking-tight mt-1">Welcome back, {firstName}</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-light-text tracking-tight mt-1">Welcome back, {firstName}</h1>
           <p className="text-sm text-dark-text mt-1.5">Everything happening across the platform, in one place.</p>
         </div>
         <Link
           href="/admin/analytics"
-          className="shrink-0 inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-on-primary text-sm font-semibold hover:bg-primary-hover transition-colors group"
+          className="shrink-0 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-on-primary text-sm font-semibold hover:bg-primary-hover transition-colors group w-full sm:w-auto"
         >
           <BarChart3 size={15} />
           Open full analytics
@@ -82,26 +82,26 @@ export default async function AdminOverviewPage() {
       </header>
 
       {/* ── Clickable stat cards ── */}
-      <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3 sm:gap-4">
         {stats.map(({ label, value, icon: Icon, color, tint, href, cta }) => (
           <Link
             key={label}
             href={href}
-            className="card-glow group rounded-2xl bg-surface p-4 flex flex-col justify-between min-h-[132px] transition-all hover:-translate-y-0.5"
+            className="card-glow group rounded-2xl bg-surface p-3.5 sm:p-4 flex flex-col justify-between min-h-[118px] sm:min-h-[132px] transition-all hover:-translate-y-0.5"
           >
             <div className="flex items-start justify-between">
-              <span className={`inline-flex items-center justify-center w-9 h-9 rounded-xl ${tint} ${color}`}>
-                <Icon size={17} />
+              <span className={`inline-flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 rounded-xl ${tint} ${color}`}>
+                <Icon size={16} />
               </span>
               <ArrowRight size={14} className="text-dark-text/30 group-hover:text-primary group-hover:translate-x-0.5 transition-all" />
             </div>
             <div className="mt-3">
-              <p className="font-mono tabular-nums tracking-tight text-3xl font-semibold text-light-text leading-none">
+              <p className="font-mono tabular-nums tracking-tight text-2xl sm:text-3xl font-semibold text-light-text leading-none">
                 {value.toLocaleString()}
               </p>
               <div className="flex items-center justify-between gap-2 mt-1.5">
                 <p className="text-xs text-dark-text">{label}</p>
-                <span className="text-[10px] text-dark-text/0 group-hover:text-primary transition-colors whitespace-nowrap">{cta}</span>
+                <span className="hidden sm:inline text-[10px] text-dark-text/0 group-hover:text-primary transition-colors whitespace-nowrap">{cta}</span>
               </div>
             </div>
           </Link>
@@ -132,7 +132,7 @@ export default async function AdminOverviewPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Recent feedback */}
         <Panel pad={false}>
-          <div className="px-5 pt-5">
+          <div className="px-4 sm:px-5 pt-5">
             <SectionHeading
               eyebrow="Latest"
               title="Recent feedback"
@@ -147,20 +147,20 @@ export default async function AdminOverviewPage() {
             />
           </div>
           {recentFeedback.length === 0 ? (
-            <p className="px-5 pb-5 text-sm text-dark-text">No feedback yet.</p>
+            <p className="px-4 sm:px-5 pb-5 text-sm text-dark-text">No feedback yet.</p>
           ) : (
             <div className="divide-y divide-border border-t border-border">
               {recentFeedback.map((f) => (
-                <div key={f.id} className="px-5 py-3 flex items-start gap-3">
+                <div key={f.id} className="px-4 sm:px-5 py-3 flex items-start gap-3">
                   <span className={`mt-0.5 text-xs font-bold font-mono px-1.5 py-0.5 rounded border ${ratingColor(f.rating)}`}>
                     {f.rating}
                   </span>
                   <div className="min-w-0 flex-1">
                     <p className="text-xs text-dark-text truncate">{f.email ?? 'Anonymous'}</p>
-                    {f.comment && <p className="text-xs text-light-text/70 truncate mt-0.5">{f.comment}</p>}
+                    {f.comment && <p className="text-xs text-light-text/70 line-clamp-2 mt-0.5">{f.comment}</p>}
                   </div>
                   <span className="text-[10px] text-dark-text/60 shrink-0 whitespace-nowrap">
-                    {new Date(f.createdAt).toLocaleDateString()}
+                    {new Date(f.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
                   </span>
                 </div>
               ))}
@@ -170,7 +170,7 @@ export default async function AdminOverviewPage() {
 
         {/* Recent signups */}
         <Panel pad={false}>
-          <div className="px-5 pt-5">
+          <div className="px-4 sm:px-5 pt-5">
             <SectionHeading
               eyebrow="Newest"
               title="Recent signups"
@@ -178,22 +178,24 @@ export default async function AdminOverviewPage() {
             />
           </div>
           {recentUsers.length === 0 ? (
-            <p className="px-5 pb-5 text-sm text-dark-text">No users yet.</p>
+            <p className="px-4 sm:px-5 pb-5 text-sm text-dark-text">No users yet.</p>
           ) : (
             <div className="divide-y divide-border border-t border-border">
               {recentUsers.map((u) => (
-                <div key={u.id} className="px-5 py-3 flex items-center gap-3">
+                <div key={u.id} className="px-4 sm:px-5 py-3 flex items-center gap-3">
                   <Avatar name={u.name} image={u.image} />
                   <div className="min-w-0 flex-1">
                     <p className="text-xs text-light-text truncate">{u.name ?? 'Unnamed'}</p>
                     <p className="text-[10px] text-dark-text/60 truncate">{u.email}</p>
                   </div>
-                  <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded border shrink-0 ${roleColor(u.role)}`}>
-                    {u.role.charAt(0) + u.role.slice(1).toLowerCase()}
-                  </span>
-                  <span className="text-[10px] text-dark-text/50 shrink-0 whitespace-nowrap font-mono">
-                    {new Date(u.createdAt).toLocaleDateString()}
-                  </span>
+                  <div className="flex flex-col items-end gap-1 shrink-0">
+                    <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded border ${roleColor(u.role)}`}>
+                      {u.role.charAt(0) + u.role.slice(1).toLowerCase()}
+                    </span>
+                    <span className="text-[10px] text-dark-text/50 font-mono">
+                      {new Date(u.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                    </span>
+                  </div>
                 </div>
               ))}
             </div>
@@ -202,7 +204,7 @@ export default async function AdminOverviewPage() {
 
         {/* Recent contact messages */}
         <Panel pad={false}>
-          <div className="px-5 pt-5">
+          <div className="px-4 sm:px-5 pt-5">
             <SectionHeading
               eyebrow="Inbox"
               title="Recent contact"
@@ -219,20 +221,20 @@ export default async function AdminOverviewPage() {
             />
           </div>
           {recentContact.length === 0 ? (
-            <p className="px-5 pb-5 text-sm text-dark-text">No messages yet.</p>
+            <p className="px-4 sm:px-5 pb-5 text-sm text-dark-text">No messages yet.</p>
           ) : (
             <div className="divide-y divide-border border-t border-border">
               {recentContact.map((m) => (
-                <div key={m.id} className="px-5 py-3 flex items-start gap-3">
+                <div key={m.id} className="px-4 sm:px-5 py-3 flex items-start gap-3">
                   <span className={`mt-0.5 text-[10px] font-medium px-1.5 py-0.5 rounded border shrink-0 ${contactStatusColor(m.status)}`}>
                     {m.status.charAt(0) + m.status.slice(1).toLowerCase().replace('_', ' ')}
                   </span>
                   <div className="min-w-0 flex-1">
                     <p className="text-xs text-dark-text truncate">{m.name ?? m.email ?? 'Anonymous'}</p>
-                    <p className="text-xs text-light-text/70 truncate mt-0.5">{m.subject ?? m.message}</p>
+                    <p className="text-xs text-light-text/70 line-clamp-2 mt-0.5">{m.subject ?? m.message}</p>
                   </div>
                   <span className="text-[10px] text-dark-text/60 shrink-0 whitespace-nowrap">
-                    {new Date(m.createdAt).toLocaleDateString()}
+                    {new Date(m.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
                   </span>
                 </div>
               ))}

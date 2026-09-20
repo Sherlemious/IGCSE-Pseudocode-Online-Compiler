@@ -1,5 +1,6 @@
 import { prisma } from '@/shared/db';
 import { auth } from '@/modules/auth/auth';
+import { AdminPageHeader } from '../_components/adminUi';
 import UsersTable from './_components/UsersTable';
 
 export const dynamic = 'force-dynamic';
@@ -14,10 +15,13 @@ export default async function AdminUsersPage() {
         id: true,
         name: true,
         email: true,
+        image: true,
         plan: true,
         planTier: true,
         trialEndsAt: true,
         planUpdatedAt: true,
+        planExpiresAt: true,
+        legacyCapacity: true,
         paddleCustomerId: true,
         paddleSubscriptionId: true,
         role: true,
@@ -29,11 +33,11 @@ export default async function AdminUsersPage() {
   ]);
 
   return (
-    <div className="space-y-6 max-w-6xl">
-      <div>
-        <h1 className="text-2xl font-bold text-light-text">Users</h1>
-        <p className="text-sm text-dark-text mt-1">{users.length} registered user{users.length !== 1 ? 's' : ''}</p>
-      </div>
+    <div className="space-y-5 max-w-6xl">
+      <AdminPageHeader
+        title="Users"
+        description={`${users.length} registered user${users.length !== 1 ? 's' : ''}`}
+      />
 
       <UsersTable users={users} currentAdminRole={session?.user?.role ?? 'STUDENT'} />
     </div>
