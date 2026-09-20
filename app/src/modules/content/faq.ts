@@ -69,9 +69,29 @@ export const faqItems: FaqItem[] = [
     group: 'choose',
     question: 'Where should I start?',
     paragraphs: [
-      'Open the compiler and run a program. Then pick a practice question and submit against the tests. Use the trace table when the output is wrong.',
+      'New to Cambridge O Level 2210 or IGCSE 0478 Paper 2? Start with the free pseudocode tutorial, then Level 1 of the Paper 2 Path.',
+      `Tutorial: ${SITE_URL}/tutorial — then write, run and check on ${SITE_URL}/learn.`,
+      'If you already know the keywords, open the compiler and a practice question. Use the trace table when the output is wrong.',
       'When you are practising most weeks, open Pricing. Student is typically about $2/month for saved solutions, analytics, and the rest of the Paper 2 Path.',
       'Teachers: create a class, assign an exam, share the join link.',
+    ],
+  },
+  {
+    id: 'o-level-tutorial',
+    group: 'choose',
+    question: 'Where can I find a Cambridge O Level 2210 pseudocode tutorial?',
+    paragraphs: [
+      'This site has a free Cambridge O Level Computer Science 2210 Paper 2 tutorial. It is the same language as IGCSE 0478 and 0984: DECLARE, <-, INPUT/OUTPUT, IF, loops, arrays, procedures and files.',
+      `Read it at ${SITE_URL}/tutorial, run every example in the compiler, then continue on the interactive Paper 2 Path.`,
+    ],
+  },
+  {
+    id: 'o-level-vs-igcse-paper-2',
+    group: 'about',
+    question: 'Is Cambridge O Level 2210 the same as IGCSE 0478 for Paper 2?',
+    paragraphs: [
+      'For algorithms and programming, yes. O Level 2210 Paper 2 uses the same pseudocode as IGCSE 0478 and 0984. One tutorial and one compiler cover both.',
+      'A Level 9618 adds records, pointers, classes and random-access files. IGCSE and O Level students can ignore that section.',
     ],
   },
   {
@@ -80,7 +100,7 @@ export const faqItems: FaqItem[] = [
     question: 'Is there a free IGCSE pseudocode compiler?',
     paragraphs: [
       'Yes. This site is a free online Cambridge IGCSE, O Level and AS & A Level pseudocode compiler. You can write, run and debug pseudocode in the browser with no install and no paywall on the editor.',
-      'It also includes a Cambridge pseudocode guide, runnable examples, past-paper style practice questions, and a timed exam simulator.',
+      'It also includes a Cambridge O Level / IGCSE Paper 2 tutorial, a syntax guide, runnable examples, past-paper style practice questions, and a timed exam simulator.',
     ],
   },
   {

@@ -143,6 +143,11 @@ const jsonLd = {
     },
     {
       '@type': 'WebPage',
+      url: `${SITE_URL}/tutorial`,
+      name: 'Cambridge O Level Pseudocode Tutorial',
+    },
+    {
+      '@type': 'WebPage',
       url: `${SITE_URL}/docs`,
       name: 'Cambridge Pseudocode Guide',
     },

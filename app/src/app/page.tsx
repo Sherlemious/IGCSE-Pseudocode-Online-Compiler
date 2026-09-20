@@ -2,6 +2,7 @@ import Link from 'next/link';
 import CompilerPage from '@/modules/compiler/CompilerPage';
 
 const FEATURE_LINKS = [
+  { label: 'Cambridge O Level Pseudocode Tutorial', href: '/tutorial' },
   { label: 'Paper 2 Path', href: '/learn' },
   { label: 'Practice Questions', href: '/practice' },
   { label: 'Cambridge Pseudocode Guide', href: '/docs' },
@@ -40,7 +41,9 @@ export default function Home() {
             programming, dyslexia-friendly editor settings, analytics, timed practice exams, and
             Cambridge past-paper questions with hidden test cases. Built as a Paper 2
             practice tool with automatic grading: write Cambridge pseudocode, run it,
-            dry-run with a trace table, then submit against hidden tests.
+            dry-run with a trace table, then submit against hidden tests. Start with the
+            Cambridge O Level 2210 pseudocode tutorial if you are new to Paper 2, then continue on the
+            interactive path.
           </span>
         </div>
 

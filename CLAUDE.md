@@ -247,6 +247,15 @@ Page-side events fire via `captureEvent` from `CompareAnalytics`. `$pageview` st
 | `compare_cta_clicked` | `destination` (`compiler`\|`practice`\|`exam`\|`pricing`\|`teacher_pricing`\|`classes`\|`faq`\|`docs`), `source` (`hero`\|`plans`\|`teachers`\|`pricing`\|`faq`) |
 | `compare_section_clicked` | `section` (`why`\|`plans`\|`teachers`\|`usage`\|`pricing`\|`faq`) |
 
+### Tutorial (`/tutorial`)
+
+Page-side events fire via `captureEvent` from `TutorialAnalytics`. `$pageview` still fires automatically.
+
+| Event | Properties |
+|-------|-----------|
+| `tutorial_viewed` | `signed_in`, `from` (query `from`, internal pathname, or referrer host) |
+| `tutorial_cta_clicked` | `destination` (`learn`\|`compiler`\|`docs`\|`practice`\|`faq`), `source` (`hero`\|`who`\|`first-program`\|`routines`\|`trace`\|`path`\|`path-cta`\|`faq`) |
+
 ## Environment Variables
 
 Copy `app/.env.example` → `app/.env`. Required:

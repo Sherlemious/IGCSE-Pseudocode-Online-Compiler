@@ -1,3 +1,5 @@
+'use client';
+
 import { useState } from 'react';
 import { Copy, Check, Play, Terminal } from 'lucide-react';
 import { usePostHog } from 'posthog-js/react';

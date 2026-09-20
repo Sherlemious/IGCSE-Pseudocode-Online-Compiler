@@ -20,6 +20,8 @@ const PUBLIC_ALLOW = [
   '/',
   '/docs',
   '/docs/',
+  '/tutorial',
+  '/tutorial/',
   '/learn',
   '/learn/',
   '/practice',

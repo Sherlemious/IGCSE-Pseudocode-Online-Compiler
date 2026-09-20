@@ -573,18 +573,69 @@ function outputSeparatorHint(line: string): LineDiagnosis | null {
     return {
       category: 'output_missing_comma',
       message:
-        'Separate OUTPUT items with a comma.\n' +
+        'Separate OUTPUT items with a comma, or join strings with `&`.\n' +
         '  Example:\n    OUTPUT "Total is ", Total\n' +
-        '  (a value right after a "quoted string" needs a comma before it)',
+        '    OUTPUT "Total is " & NUM_TO_STRING(Total)\n' +
+        '  Commas do not insert a space — put any space inside the quotes.\n' +
+        '  (a value right after a "quoted string" needs a comma or `&` before it)',
     };
   return null;
 }
 
-/** DECLARE written without a colon, with `=`, or as a comma-separated list. */
+/** DECLARE written without a colon, with `=`, `AS`, or as a comma-separated list. */
 const DECLARE_TYPE = '(?:INTEGER|REAL|STRING|CHAR|BOOLEAN|DATE|ARRAY)';
+
+function looksLikeDeclarationRest(rest: string): boolean {
+  return (
+    new RegExp(`:\\s*${DECLARE_TYPE}\\b`, 'i').test(rest) ||
+    new RegExp(`\\bAS\\s+${DECLARE_TYPE}\\b`, 'i').test(rest) ||
+    new RegExp(`(?:^|\\s)${DECLARE_TYPE}\\b`, 'i').test(rest)
+  );
+}
+
 function declareHint(line: string): LineDiagnosis | null {
   const t = line.trim();
+  const first = t.match(/^([A-Za-z_]\w*)\b/);
+  if (!first) return null;
+  const word = first[1];
+  const rest = t.slice(word.length);
+
+  // `declear Count : INTEGER` — common misspelling; edit distance can miss it
+  // when ANTLR reports a longer input token than the first word.
+  if (!/^DECLARE$/i.test(word) && nearestKeyword(word) === 'DECLARE') {
+    const restLooks =
+      rest.trim() === '' ||
+      looksLikeDeclarationRest(rest) ||
+      /^\s+[A-Za-z_]\w*(?:\s*,\s*[A-Za-z_]\w*)*\s*$/.test(rest);
+    if (restLooks)
+      return {
+        category: 'declare_syntax',
+        message:
+          `"${word}" is not recognised — did you mean DECLARE?\n` +
+          '  Example:\n    DECLARE Count : INTEGER',
+      };
+  }
+
   if (!/^(?:DECLARE\b|[A-Za-z_]\w*\s*,)/i.test(t)) return null;
+
+  if (/^DECLARE\s*$/i.test(t))
+    return {
+      category: 'declare_syntax',
+      message:
+        'DECLARE needs a name, a colon, and a type.\n' +
+        '  Example:\n    DECLARE Count : INTEGER',
+    };
+
+  // `DECLARE Answer AS INTEGER` — Visual Basic / SQL style.
+  const asType = t.match(new RegExp(`^DECLARE\\s+([A-Za-z_]\\w*)\\s+AS\\s+(${DECLARE_TYPE})\\b`, 'i'));
+  if (asType)
+    return {
+      category: 'declare_syntax',
+      message:
+        'Use a colon `:` between the name and the type — not AS.\n' +
+        `  You wrote "${t}".\n` +
+        `  Example:\n    DECLARE ${asType[1]} : ${asType[2].toUpperCase()}`,
+    };
 
   // `DECLARE Count = 0` — DECLARE states the type; it never assigns a value.
   const eq = t.match(/^DECLARE\s+([A-Za-z_]\w*)\s*=/i);
@@ -609,6 +660,16 @@ function declareHint(line: string): LineDiagnosis | null {
         `  Example:\n    DECLARE ${commaList[1]} : INTEGER\n    DECLARE Count : INTEGER`,
     };
 
+  // `DECLARE N, i, S, P` — comma list with the type left off.
+  const commaNoType = t.match(/^DECLARE\s+([A-Za-z_]\w*)(?:\s*,\s*[A-Za-z_]\w*)+\s*$/i);
+  if (commaNoType)
+    return {
+      category: 'declare_syntax',
+      message:
+        'Declare one variable per line, each with `: <type>`.\n' +
+        `  Example:\n    DECLARE ${commaNoType[1]} : INTEGER\n    DECLARE Count : INTEGER`,
+    };
+
   // `DECLARE Count INTEGER` — missing the colon between name and type.
   const noColon = t.match(new RegExp(`^DECLARE\\s+([A-Za-z_]\\w*)\\s+${DECLARE_TYPE}\\b`, 'i'));
   if (noColon)
@@ -620,7 +681,34 @@ function declareHint(line: string): LineDiagnosis | null {
         `  Example:\n    DECLARE ${noColon[1]} : INTEGER`,
     };
 
+  // `DECLARE Counter` — name only, type forgotten.
+  const incomplete = t.match(/^DECLARE\s+([A-Za-z_]\w*)\s*$/i);
+  if (incomplete)
+    return {
+      category: 'declare_syntax',
+      message:
+        'DECLARE needs a colon and a type.\n' +
+        `  Example:\n    DECLARE ${incomplete[1]} : INTEGER`,
+    };
+
   return null;
+}
+
+/** `FUNCTION Add(a, b)` / `function add() {` — header is missing RETURNS <type>. */
+function functionHeaderHint(line: string): LineDiagnosis | null {
+  const t = line.trim();
+  if (!/^FUNCTION\b/i.test(t)) return null;
+  if (/\bRETURNS\b/i.test(t) || /\bRETURN\b/i.test(t)) return null;
+  if (/^FUNCTION\s*$/i.test(t)) return null;
+  const braces = /[{}]/.test(t);
+  return {
+    category: 'function_header',
+    message:
+      (braces
+        ? 'That looks like JavaScript — Cambridge FUNCTION headers do not use `{ }` and they need `RETURNS <type>`.\n'
+        : 'A FUNCTION header needs `RETURNS <type>` after the parameters. `function` and `FUNCTION` are the same keyword.\n') +
+      '  Example:\n    FUNCTION Add(a : INTEGER, b : INTEGER) RETURNS INTEGER\n      RETURN a + b\n    ENDFUNCTION',
+  };
 }
 
 /** `FOR i <- 1 TO 5 DO` — FOR loops don't take DO (that belongs to WHILE). */
@@ -690,6 +778,7 @@ function sourceLineHint(sourceLine: string | undefined): LineDiagnosis | null {
     basicBlockHint(sourceLine) ??
     strayCloserHint(sourceLine) ??
     declareHint(sourceLine) ??
+    functionHeaderHint(sourceLine) ??
     forLoopHint(sourceLine) ??
     forDoHint(sourceLine) ??
     returnTypeHint(sourceLine) ??
@@ -929,6 +1018,32 @@ function nearestBuiltin(name: string): string | null {
   return best;
 }
 
+/** Names students call that are not Cambridge builtins — explain, don't guess a nearby IGCSE name. */
+const UNKNOWN_FN_HINTS: Record<string, string> = {
+  SQRT:
+    'SQRT is not a Cambridge IGCSE built-in — `Sqrt` and `SQRT` are the same name (capitalisation does not matter).\n' +
+    '  Paper 2 usually gives the square root, or asks you to use the formula in the question.',
+  SQR:
+    'SQR is not a Cambridge IGCSE built-in.\n' +
+    '  Paper 2 usually gives the square root, or asks you to use the formula in the question.',
+  POW:
+    'There is no POW() — use `^` for powers.\n' +
+    '  Example: OUTPUT 2 ^ 3',
+  POWER:
+    'There is no POWER() — use `^` for powers.\n' +
+    '  Example: OUTPUT 2 ^ 3',
+  ORD:
+    'Cambridge uses ASC(char), not ORD.\n' +
+    "  Example: OUTPUT ASC('A')",
+  LEN:
+    'Use LENGTH(str), not LEN.\n' +
+    '  Example: OUTPUT LENGTH(Name)',
+};
+
+function unknownFunctionHint(name: string): string | null {
+  return UNKNOWN_FN_HINTS[name.toUpperCase()] ?? null;
+}
+
 // ── Runtime error humanization ──────────────────────────────────────────────
 
 export function humanizeRuntimeError(rawMessage: string): string {
@@ -1007,6 +1122,8 @@ export function humanizeRuntimeError(rawMessage: string): string {
   const funcUndef = rawMessage.match(/Function '([^']+)' is not defined/);
   if (funcUndef) {
     const name = funcUndef[1];
+    const alias = unknownFunctionHint(name);
+    if (alias) return `Function '${name}' is not defined.\n  ${alias}`;
     const near = nearestBuiltin(name);
     if (near) {
       return (

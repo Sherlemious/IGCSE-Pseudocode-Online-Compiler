@@ -280,9 +280,13 @@ const DocsPage = () => {
               Cambridge Pseudocode Guide
             </h1>
             <p className="text-sm text-dark-text mt-1">
-              Free IGCSE 0478 and A Level 9618 syntax guide — DECLARE, CONSTANT, DIV, ROUND, not equal
+              Free IGCSE 0478, O Level 2210 and A Level 9618 syntax guide — DECLARE, CONSTANT, DIV, ROUND, not equal
               to (<code className="font-mono text-primary">&lt;&gt;</code>) and the rest of Cambridge
-              pseudocode. IGCSE syntax is a subset: everything below works for both courses unless
+              pseudocode. New to Paper 2? Start with the{' '}
+              <Link href="/tutorial" className="text-primary hover:underline">
+                Cambridge O Level pseudocode tutorial
+              </Link>
+              . IGCSE syntax is a subset: everything below works for both courses unless
               marked <span className="text-primary font-medium">AS &amp; A Level</span>. Run any example
               in the{' '}
               <Link href="/" className="text-primary hover:underline">
@@ -744,11 +748,13 @@ ENDIF`}
 
           <H3 id="concatenation">String Concatenation</H3>
           <p className="text-sm text-dark-text mb-2">
-            Use <Kw>&</Kw> to join strings together:
+            Use <Kw>&</Kw> to join strings together. An <Kw>OUTPUT</Kw> list can also use commas, but
+            commas do not insert a space — put any space inside the quotes:
           </p>
           <CodeBlock
             code={`FullName <- FirstName & " " & LastName
-OUTPUT "Hello " & Name & "!"`}
+OUTPUT "Hello " & Name & "!"
+OUTPUT "Hello ", Name`}
           />
 
           {/* ──────────────────────────────────────────────── */}

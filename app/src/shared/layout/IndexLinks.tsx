@@ -1,6 +1,8 @@
 import Link from 'next/link';
 
 const LINKS = [
+  { href: '/tutorial', label: 'O Level tutorial' },
+  { href: '/learn', label: 'Paper 2 Path' },
   { href: '/compare', label: 'Why this compiler' },
   { href: '/faq', label: 'FAQ' },
   { href: '/examples', label: 'Examples' },

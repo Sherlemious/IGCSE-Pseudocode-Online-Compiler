@@ -9,9 +9,9 @@ import { level10 } from './curriculum/level10';
 
 export const IGCSE_PAPER_2: LearnCourse = {
   id: COURSE_ID,
-  title: 'IGCSE Paper 2 Path',
+  title: 'IGCSE & O Level Paper 2 Path',
   subtitle:
-    'Ten levels of Cambridge 0478 / 0984 / 2210 pseudocode. No videos — you write, run, and check in the compiler.',
+    'Ten levels of Cambridge O Level 2210 and IGCSE 0478 / 0984 pseudocode. No videos — you write, run, and check in the compiler.',
   levels: [
     {
       number: 1,

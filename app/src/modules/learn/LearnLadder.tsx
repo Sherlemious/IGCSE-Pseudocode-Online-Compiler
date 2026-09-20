@@ -107,7 +107,11 @@ export default function LearnLadder({ premiumAccess: initialPremium }: { premium
               {IGCSE_PAPER_2.title}
             </h1>
             <p className="text-sm sm:text-[15px] text-dark-text max-w-xl leading-relaxed">
-              {IGCSE_PAPER_2.subtitle}
+              {IGCSE_PAPER_2.subtitle}{' '}
+              <Link href="/tutorial" className="text-primary hover:underline">
+                Written Cambridge O Level tutorial
+              </Link>
+              .
             </p>
           </div>
 

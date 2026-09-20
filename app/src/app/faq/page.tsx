@@ -6,17 +6,17 @@ import { SITE_NAME, SITE_URL } from '@/shared/lib/seo';
 
 export const metadata: Metadata = {
   title: {
-    absolute: 'Pseudocode Compiler FAQ | IGCSE 0478 & A Level 9618',
+    absolute: 'Pseudocode Compiler FAQ | IGCSE 0478, O Level 2210 & A Level 9618',
   },
   description:
-    'FAQ for the free online Cambridge IGCSE and A Level pseudocode compiler: how to DECLARE a constant, what DIV and ROUND do, not equal to (<>), and which plan to use.',
+    'FAQ for the free online Cambridge IGCSE, O Level 2210 and A Level pseudocode compiler: Paper 2 tutorial, how to DECLARE a constant, what DIV and ROUND do, not equal to (<>), and which plan to use.',
   alternates: {
     canonical: '/faq',
   },
   openGraph: {
-    title: 'Pseudocode Compiler FAQ | IGCSE 0478 & A Level 9618',
+    title: 'Pseudocode Compiler FAQ | IGCSE 0478, O Level 2210 & A Level 9618',
     description:
-      'How this free Cambridge compiler works for 0478 Paper 2: DECLARE, exams, plans, and school use.',
+      'How this free Cambridge compiler works for 0478 / 2210 Paper 2: tutorial, DECLARE, exams, plans, and school use.',
     url: `${SITE_URL}/faq`,
     type: 'website',
   },
@@ -80,7 +80,11 @@ export default function FaqPage() {
           <p className="text-sm text-dark-text mt-2 leading-relaxed">
             Free Cambridge IGCSE (0478/0984), O Level (2210) and AS &amp; A Level (9618) online
             pseudocode compiler. How to DECLARE a constant, what DIV and ROUND do, not equal to (
-            <code className="font-mono text-primary">&lt;&gt;</code>), and which plan to use. See{' '}
+            <code className="font-mono text-primary">&lt;&gt;</code>), and which plan to use. See the{' '}
+            <Link href="/tutorial" className="text-primary hover:text-primary-hover">
+              Cambridge O Level pseudocode tutorial
+            </Link>
+            ,{' '}
             <Link href="/compare" className="text-primary hover:text-primary-hover">
               why this compiler
             </Link>

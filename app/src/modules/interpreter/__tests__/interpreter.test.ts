@@ -4,7 +4,7 @@ import { resolve } from 'node:path';
 import { parse } from '../parser';
 import { Interpreter } from '../core/interpreter';
 import { ServerVirtualFileSystem } from '../core/serverFilesystem';
-import { humanizeParseError, categorizeParseError } from '../errorMessages';
+import { humanizeParseError, humanizeRuntimeError, categorizeParseError } from '../errorMessages';
 import { normalizeSource } from '../normalize';
 import type { PseudocodeError } from '../core/types';
 import { examples } from '@/modules/content/examples';
@@ -524,12 +524,57 @@ describe('humanizeParseError — source-line pattern detectors', () => {
     it('OUTPUT "text" value → suggest a comma', () => {
       const msg = humanizeParseError(RAW, 'OUTPUT "Your initial cost is $" Cost');
       expect(msg).toContain('Separate OUTPUT items with a comma');
+      expect(msg).toContain('join strings with `&`');
     });
     it('does not fire when items are comma-separated', () => {
       expect(humanizeParseError(RAW, 'OUTPUT "Total is ", Total')).not.toContain('Separate OUTPUT items');
     });
     it('does not fire on a single quoted string', () => {
       expect(humanizeParseError(RAW, 'OUTPUT "Hello"')).not.toContain('Separate OUTPUT items');
+    });
+  });
+
+  describe('DECLARE misspellings and AS', () => {
+    it('declear Count : INTEGER → DECLARE', () => {
+      const msg = humanizeParseError(RAW, 'declear Count : INTEGER');
+      expect(msg).toContain('did you mean DECLARE?');
+      expect(categorizeParseError(RAW, 'declear Count : INTEGER')).toBe('declare_syntax');
+    });
+    it('DECLARE Answer AS INTEGER → use a colon', () => {
+      const msg = humanizeParseError(RAW, 'DECLARE Answer AS INTEGER');
+      expect(msg).toContain('not AS');
+      expect(msg).toContain('DECLARE Answer : INTEGER');
+      expect(categorizeParseError(RAW, 'DECLARE Answer AS INTEGER')).toBe('declare_syntax');
+    });
+    it('DECLARE Counter with no type asks for : TYPE', () => {
+      const msg = humanizeParseError(RAW, 'DECLARE Counter');
+      expect(msg).toContain('colon and a type');
+      expect(msg).toContain('DECLARE Counter : INTEGER');
+    });
+    it('DECLARE N, i, S, P without types asks for one per line', () => {
+      const msg = humanizeParseError(RAW, 'DECLARE N, i, S, P');
+      expect(msg).toContain('one variable per line');
+      expect(categorizeParseError(RAW, 'DECLARE N, i, S, P')).toBe('declare_syntax');
+    });
+    it('does not treat a real DECLARE line as a misspelling', () => {
+      expect(humanizeParseError(RAW, 'DECLARE Count : INTEGER')).not.toContain('did you mean DECLARE?');
+    });
+  });
+
+  describe('FUNCTION header without RETURNS', () => {
+    it('function add(a, b) explains RETURNS works in any case', () => {
+      const msg = humanizeParseError(RAW, 'function add(a, b)');
+      expect(msg).toContain('RETURNS');
+      expect(msg).toContain('function` and `FUNCTION` are the same keyword');
+      expect(categorizeParseError(RAW, 'function add(a, b)')).toBe('function_header');
+    });
+    it('JS braces on a FUNCTION line are called out', () => {
+      const msg = humanizeParseError(RAW, 'function add(a, b) {');
+      expect(msg).toContain('JavaScript');
+      expect(msg).toContain('RETURNS');
+    });
+    it('does not fire when RETURNS is already present', () => {
+      expect(categorizeParseError(RAW, 'FUNCTION Add(a : INTEGER) RETURNS INTEGER')).not.toBe('function_header');
     });
   });
 
@@ -560,6 +605,7 @@ describe('humanizeParseError — source-line pattern detectors', () => {
       expect(categorizeParseError(RAW, 'ELSE IF age > 12 THEN')).not.toBe('stray_else');
       // RETURNS (with the S) is the correct header keyword.
       expect(categorizeParseError(RAW, 'FUNCTION F(h : INTEGER) RETURNS INTEGER')).not.toBe('return_vs_returns');
+      expect(categorizeParseError(RAW, 'FUNCTION F(h : INTEGER) RETURNS INTEGER')).not.toBe('function_header');
       // A well-formed AND condition (variable repeated) must not be flagged.
       expect(categorizeParseError(RAW, 'IF Age > 12 AND Age < 65 THEN')).not.toBe('missing_operand');
     });
@@ -572,6 +618,23 @@ describe('humanizeParseError — source-line pattern detectors', () => {
       expect(r.code).toBe('\nDECLARE X : INTEGER\n');
       expect(r.code.split('\n').length).toBe(3);
     });
+  });
+});
+
+describe('humanizeRuntimeError — unknown function aliases', () => {
+  it('Sqrt / SQRT explain that Cambridge has no square-root builtin', () => {
+    const msg = humanizeRuntimeError("Function 'Sqrt' is not defined");
+    expect(msg).toContain('not a Cambridge IGCSE built-in');
+    expect(msg).toContain('capitalisation does not matter');
+    expect(humanizeRuntimeError("Function 'SQRT' is not defined")).toContain('not a Cambridge IGCSE built-in');
+  });
+  it('ORD points at ASC', () => {
+    expect(humanizeRuntimeError("Function 'ORD' is not defined")).toContain('ASC');
+  });
+  it('LEN points at LENGTH, not LEFT', () => {
+    const msg = humanizeRuntimeError("Function 'LEN' is not defined");
+    expect(msg).toContain('LENGTH(str)');
+    expect(msg).not.toContain('LEFT');
   });
 });
 

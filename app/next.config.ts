@@ -18,6 +18,21 @@ const nextConfig: NextConfig = {
         destination: 'https://pseudocode-compiler.sherlemious.com/:path*',
         permanent: true,
       },
+      {
+        source: '/cambridge-o-level-pseudocode',
+        destination: '/tutorial',
+        permanent: true,
+      },
+      {
+        source: '/o-level-pseudocode-tutorial',
+        destination: '/tutorial',
+        permanent: true,
+      },
+      {
+        source: '/igcse-pseudocode-tutorial',
+        destination: '/tutorial',
+        permanent: true,
+      },
     ];
   },
   async headers() {
