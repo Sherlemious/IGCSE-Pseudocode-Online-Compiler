@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { getQuestionSocialStats, SOCIAL_STATS_REVALIDATE_SECONDS } from '@/modules/practice/loadSocialStats';
 
-export const revalidate = SOCIAL_STATS_REVALIDATE_SECONDS;
+// Must be a numeric literal — Next.js rejects imported segment config at build.
+export const revalidate = 300;
 
 export async function GET() {
   try {
