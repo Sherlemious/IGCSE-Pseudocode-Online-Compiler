@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import IndexLinks from '@/shared/layout/IndexLinks';
 import { faqByGroup, faqItems } from '@/modules/content/faq';
-import { SITE_NAME, SITE_URL } from '@/shared/lib/seo';
+import { SHARE_IMAGE, SITE_NAME, SITE_URL } from '@/shared/lib/seo';
 
 export const metadata: Metadata = {
   title: {
@@ -19,6 +19,7 @@ export const metadata: Metadata = {
       'How this free Cambridge compiler works for 0478 / 2210 Paper 2: tutorial, DECLARE, exams, plans, and school use.',
     url: `${SITE_URL}/faq`,
     type: 'website',
+    images: [SHARE_IMAGE],
   },
 };
 

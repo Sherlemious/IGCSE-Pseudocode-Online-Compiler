@@ -13,6 +13,7 @@ import QuestionSolveCount from '@/modules/practice/QuestionSolveCount';
 import {
   absoluteUrl,
   paperReference,
+  SHARE_IMAGE,
   SITE_NAME,
   stripMarkdown,
   truncateDescription,
@@ -78,11 +79,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         description,
         url: absoluteUrl(url),
         siteName: SITE_NAME,
+        images: [SHARE_IMAGE],
       },
       twitter: {
-        card: 'summary',
+        card: 'summary_large_image',
         title,
         description,
+        images: [SHARE_IMAGE],
       },
     };
   } catch {

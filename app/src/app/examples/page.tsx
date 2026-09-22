@@ -3,7 +3,7 @@ import Link from 'next/link';
 import IndexLinks from '@/shared/layout/IndexLinks';
 import { examples, exampleSlug, examplesByCategory } from '@/modules/content/examples';
 import { editorCodeHref } from '@/modules/compiler/editorShare';
-import { SITE_NAME, SITE_URL } from '@/shared/lib/seo';
+import { SHARE_IMAGE, SITE_NAME, SITE_URL } from '@/shared/lib/seo';
 
 export const metadata: Metadata = {
   title: {
@@ -20,6 +20,7 @@ export const metadata: Metadata = {
       'Browse and run Cambridge IGCSE and A Level pseudocode examples in the browser compiler.',
     url: `${SITE_URL}/examples`,
     type: 'website',
+    images: [SHARE_IMAGE],
   },
 };
 

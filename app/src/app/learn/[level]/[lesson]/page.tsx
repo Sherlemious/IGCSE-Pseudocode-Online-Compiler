@@ -4,7 +4,7 @@ import { PREMIUM_GATING_ENABLED } from '@/modules/billing/featureFlags';
 import LearnPlayer from '@/modules/learn/LearnPlayer';
 import { IGCSE_PAPER_2 } from '@/modules/learn/curriculum';
 import { findLesson, flattenLessons } from '@/modules/learn/path';
-import { SITE_URL, truncateDescription } from '@/shared/lib/seo';
+import { SHARE_IMAGE, SITE_URL, truncateDescription } from '@/shared/lib/seo';
 
 interface Props {
   params: Promise<{ level: string; lesson: string }>;
@@ -38,6 +38,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       description,
       url: path,
       type: 'article',
+      images: [SHARE_IMAGE],
     },
   };
 }

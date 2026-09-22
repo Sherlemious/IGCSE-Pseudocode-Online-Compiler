@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { PREMIUM_GATING_ENABLED } from '@/modules/billing/featureFlags';
 import PracticeIndex from '@/modules/practice/PracticeIndex';
 import { getQuestionCatalog } from '@/shared/lib/catalogCache';
-import { SITE_URL } from '@/shared/lib/seo';
+import { SHARE_IMAGE, SITE_URL } from '@/shared/lib/seo';
 
 export const revalidate = 3600;
 
@@ -21,6 +21,7 @@ export const metadata: Metadata = {
       'Free Cambridge IGCSE and A Level pseudocode practice questions from past papers. Run algorithms in the online compiler with hidden tests, hints and trace tables.',
     url: `${SITE_URL}/practice`,
     type: 'website',
+    images: [SHARE_IMAGE],
   },
 };
 

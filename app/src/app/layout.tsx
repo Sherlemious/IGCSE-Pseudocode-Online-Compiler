@@ -21,6 +21,7 @@ import {
   DEFAULT_DESCRIPTION,
   DEFAULT_TITLE,
   SEO_KEYWORDS,
+  SHARE_IMAGE,
   SITE_NAME,
   SITE_URL,
 } from '@/shared/lib/seo';
@@ -53,11 +54,13 @@ export const metadata: Metadata = {
     title: DEFAULT_TITLE,
     description: DEFAULT_DESCRIPTION,
     locale: 'en_US',
+    images: [SHARE_IMAGE],
   },
   twitter: {
     card: 'summary_large_image',
     title: DEFAULT_TITLE,
     description: DEFAULT_DESCRIPTION,
+    images: [SHARE_IMAGE],
   },
 };
 

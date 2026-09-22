@@ -32,6 +32,10 @@ function buildWhatsApp(text: string) {
   return `https://wa.me/?text=${encodeURIComponent(text)}`;
 }
 
+function buildTeams(pageUrl: string) {
+  return `https://teams.microsoft.com/share?${new URLSearchParams({ href: pageUrl, preview: 'true' })}`;
+}
+
 export default function ShareButton({
   headline,
   shareText,
@@ -124,6 +128,21 @@ export default function ShareButton({
         >
           <GraduationCap size={15} className="shrink-0 text-primary" />
           Send to my teacher
+        </a>
+
+        <a
+          href={buildTeams(shareUrl)}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={() => track('microsoft_teams')}
+          className="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg
+            bg-[#6264A7]/10 border border-[#6264A7]/30 text-[#A6A7F0]
+            hover:bg-[#6264A7]/20 transition-all duration-200 text-sm font-medium"
+        >
+          <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M20.6 8.5h-3.3V7.2c0-1.1.9-2 2-2h.3c1.1 0 2 .9 2 2v1.3h-1zM9.4 9.2c1.7 0 3.1-1.4 3.1-3.1S11.1 3 9.4 3 6.3 4.4 6.3 6.1s1.4 3.1 3.1 3.1zM12.7 10H6.2C4.4 10 3 11.4 3 13.1v5.6c0 .7.6 1.3 1.3 1.3h10.1c.7 0 1.3-.6 1.3-1.3v-5.6c0-1.7-1.4-3.1-3.3-3.1zm8.2.6h-3.6c-.8 0-1.5.7-1.5 1.5v5.2c0 .8.7 1.5 1.5 1.5h2.5c1.4 0 2.6-1.2 2.6-2.6v-4.1c0-.8-.7-1.5-1.5-1.5z" />
+          </svg>
+          Post to Microsoft Teams
         </a>
 
         {/* Copy link */}

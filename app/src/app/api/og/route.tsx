@@ -2,11 +2,10 @@ import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { ImageResponse } from 'next/og';
 import { OpenGraphCard } from '@/shared/brand/OpenGraphCard';
-import { SITE_NAME } from '@/shared/lib/seo';
 
-export const alt = SITE_NAME;
-export const size = { width: 1200, height: 630 };
-export const contentType = 'image/png';
+export const runtime = 'nodejs';
+
+const size = { width: 1200, height: 630 };
 
 async function ogFonts() {
   const dir = join(process.cwd(), 'src/shared/brand/fonts');
@@ -20,7 +19,8 @@ async function ogFonts() {
   ];
 }
 
-export default async function Image() {
+/** Dev/render helper. Share previews use the static file at /og.png. */
+export async function GET() {
   return new ImageResponse(<OpenGraphCard />, {
     ...size,
     fonts: await ogFonts(),

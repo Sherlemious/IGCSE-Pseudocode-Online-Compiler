@@ -18,7 +18,7 @@ import {
   TEACHER_HOMEWORK_NOTE,
 } from '@/modules/content/geo';
 import { getQuestionCount } from '@/shared/lib/catalogCache';
-import { SITE_NAME, SITE_URL } from '@/shared/lib/seo';
+import { SHARE_IMAGE, SITE_NAME, SITE_URL } from '@/shared/lib/seo';
 import { CompareCtaLink, CompareSectionLink, CompareTracker } from './CompareAnalytics';
 
 export const revalidate = 3600;
@@ -49,6 +49,7 @@ export const metadata: Metadata = {
       'Write Cambridge pseudocode, run it in the browser, dry-run with a trace table, then submit against hidden tests. Free editor; Student typically about $2/month.',
     url: `${SITE_URL}/compare`,
     type: 'website',
+    images: [SHARE_IMAGE],
   },
 };
 

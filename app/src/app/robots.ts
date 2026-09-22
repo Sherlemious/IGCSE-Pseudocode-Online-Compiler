@@ -32,6 +32,8 @@ const PUBLIC_ALLOW = [
   '/llms-full.txt',
   '/compare',
   '/faq',
+  '/og.png',
+  '/favicon.png',
 ];
 const PRIVATE_DISALLOW = ['/api/', '/auth/', '/admin/', '/profile/', '/analytics/', '/exam$', '/exam/'];
 

@@ -7,6 +7,7 @@ import { isAtStudentCap, limitsForUser } from '@/modules/billing/entitlements';
 import { prisma } from '@/shared/db';
 import { getAssignmentInvitation } from '@/modules/classes/service';
 import { assignmentStudentPath } from '@/modules/classes/assignmentLinks';
+import { SHARE_IMAGE } from '@/shared/lib/seo';
 import AssignmentLinkTracker from '@/modules/classes/AssignmentLinkTracker';
 import JoinClassButton from '@/modules/classes/JoinClassButton';
 import StartAssignmentButton from '@/modules/classes/StartAssignmentButton';
@@ -16,6 +17,11 @@ export const metadata: Metadata = {
   description: 'Open your pseudocode class assignment.',
   robots: { index: false, follow: false },
   referrer: 'no-referrer',
+  openGraph: {
+    title: 'Class assignment',
+    description: 'Open your pseudocode class assignment.',
+    images: [SHARE_IMAGE],
+  },
 };
 
 function Shell({ children }: { children: React.ReactNode }) {
@@ -34,8 +40,11 @@ export default async function AssignmentLandingPage({ params, searchParams }: {
   searchParams: Promise<{ utm_source?: string }>;
 }) {
   const [{ code, assignmentId }, search, session] = await Promise.all([params, searchParams, auth()]);
-  const source = search.utm_source === 'google_classroom' ? 'google_classroom' : 'direct';
-  const returnTo = assignmentStudentPath(code, assignmentId, source === 'google_classroom');
+  const source =
+    search.utm_source === 'google_classroom' || search.utm_source === 'microsoft_teams'
+      ? search.utm_source
+      : 'direct';
+  const returnTo = assignmentStudentPath(code, assignmentId, source === 'direct' ? false : source);
   if (!session?.user?.id) {
     // Keep class details private until sign-in; the destination survives either auth path.
     return <Shell>

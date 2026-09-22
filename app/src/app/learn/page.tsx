@@ -4,7 +4,7 @@ import { PREMIUM_GATING_ENABLED } from '@/modules/billing/featureFlags';
 import LearnLadder from '@/modules/learn/LearnLadder';
 import { IGCSE_PAPER_2 } from '@/modules/learn/curriculum';
 import { flattenLessons, lessonHref } from '@/modules/learn/path';
-import { SITE_NAME, SITE_URL } from '@/shared/lib/seo';
+import { SHARE_IMAGE, SITE_NAME, SITE_URL } from '@/shared/lib/seo';
 
 export const metadata: Metadata = {
   title: {
@@ -21,6 +21,7 @@ export const metadata: Metadata = {
       'Ten levels of Cambridge O Level 2210 and IGCSE 0478 pseudocode. Write, run, and check in the browser. First three levels free.',
     url: `${SITE_URL}/learn`,
     type: 'website',
+    images: [SHARE_IMAGE],
   },
 };
 

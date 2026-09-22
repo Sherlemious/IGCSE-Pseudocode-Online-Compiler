@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { unstable_cache } from 'next/cache';
 import { prisma } from '@/shared/db';
 import { getPaddleEnv } from '@/modules/billing/paddle/env';
-import { SITE_URL } from '@/shared/lib/seo';
+import { SHARE_IMAGE, SITE_URL } from '@/shared/lib/seo';
 import PricingPageClient from '@/modules/billing/PricingPageClient';
 import { type PricingTierView, type StudentMonthlyView, type StudentPassView } from '@/modules/billing/PricingClient';
 import { displayTier, TIER_COPY } from '@/modules/billing/tierCopy';
@@ -43,6 +43,7 @@ export const metadata: Metadata = {
       'Teacher plans priced by student capacity, plus a $2/month student plan and exam-series passes.',
     url: `${SITE_URL}/pricing`,
     type: 'website',
+    images: [SHARE_IMAGE],
   },
 };
 

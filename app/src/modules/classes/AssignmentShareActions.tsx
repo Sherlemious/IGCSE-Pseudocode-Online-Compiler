@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { Check, Copy, GraduationCap } from 'lucide-react';
 import { SITE_URL } from '@/shared/lib/seo';
 import { captureEvent } from '@/modules/interpreter/analytics';
-import { assignmentStudentPath, classroomShareUrl } from './assignmentLinks';
+import { assignmentStudentPath, classroomShareUrl, teamsShareUrl } from './assignmentLinks';
 
 export default function AssignmentShareActions({ classId, assignmentId, joinCode, disabled = false }: {
   classId: string;
@@ -22,7 +22,8 @@ export default function AssignmentShareActions({ classId, assignmentId, joinCode
     return () => clearTimeout(timer);
   }, [copied]);
   const studentUrl = origin + assignmentStudentPath(joinCode, assignmentId);
-  const shareUrl = classroomShareUrl(origin + assignmentStudentPath(joinCode, assignmentId, true));
+  const classroomUrl = classroomShareUrl(origin + assignmentStudentPath(joinCode, assignmentId, 'google_classroom'));
+  const teamsUrl = teamsShareUrl(origin + assignmentStudentPath(joinCode, assignmentId, 'microsoft_teams'));
   const style = 'inline-flex items-center justify-center gap-1.5 rounded-lg border border-border px-3 py-2 text-xs text-light-text hover:border-primary/40 hover:text-primary transition-colors focus-visible:outline-2 focus-visible:outline-primary';
   async function copy() {
     try {
@@ -40,9 +41,19 @@ export default function AssignmentShareActions({ classId, assignmentId, joinCode
             <GraduationCap size={14} aria-hidden="true" />Share to Classroom
           </button>
         ) : (
-          <a href={shareUrl} target="_blank" rel="noopener noreferrer" className={`${style} ph-no-capture`}
+          <a href={classroomUrl} target="_blank" rel="noopener noreferrer" className={`${style} ph-no-capture`}
             onClick={() => captureEvent('share_clicked', { method: 'google_classroom', context: 'assignment', assignment_id: assignmentId, class_id: classId })}>
             <GraduationCap size={14} aria-hidden="true" />Share to Classroom<span className="sr-only"> (opens in a new tab)</span>
+          </a>
+        )}
+        {disabled ? (
+          <button type="button" disabled className={`${style} opacity-50`}>
+            Post to Teams
+          </button>
+        ) : (
+          <a href={teamsUrl} target="_blank" rel="noopener noreferrer" className={`${style} ph-no-capture`}
+            onClick={() => captureEvent('share_clicked', { method: 'microsoft_teams', context: 'assignment', assignment_id: assignmentId, class_id: classId })}>
+            Post to Teams<span className="sr-only"> (opens in a new tab)</span>
           </a>
         )}
         <button type="button" disabled={disabled} onClick={copy} className={`${style} disabled:opacity-50`}>

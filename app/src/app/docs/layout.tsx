@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { SITE_URL } from '@/shared/lib/seo';
+import { SHARE_IMAGE, SITE_URL } from '@/shared/lib/seo';
 
 export const metadata: Metadata = {
   title: {
@@ -16,6 +16,7 @@ export const metadata: Metadata = {
       'Official-style Cambridge pseudocode syntax: DECLARE, CONSTANT, DIV, ROUND, loops, arrays, procedures and A Level OOP. Run examples in the browser.',
     url: `${SITE_URL}/docs`,
     type: 'article',
+    images: [SHARE_IMAGE],
   },
   keywords: [
     'cambridge pseudocode guide',

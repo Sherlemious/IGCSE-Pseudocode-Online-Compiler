@@ -5,7 +5,7 @@ export interface AssignmentContext {
   classId: string;
 }
 
-export type AssignmentSource = 'google_classroom' | 'direct';
+export type AssignmentSource = 'google_classroom' | 'microsoft_teams' | 'direct';
 const sources = new Map<string, AssignmentSource>();
 
 /** Attribution only: never used for identity, enrollment, or paid access. */
@@ -17,7 +17,7 @@ export function rememberAssignmentSource(assignmentId: string, source: Assignmen
 export function assignmentSource(assignmentId: string): AssignmentSource {
   try {
     const stored = sessionStorage.getItem(`assignment_source:${assignmentId}`);
-    if (stored === 'google_classroom' || stored === 'direct') return stored;
+    if (stored === 'google_classroom' || stored === 'microsoft_teams' || stored === 'direct') return stored;
   } catch { /* storage is optional */ }
   return sources.get(assignmentId) ?? 'direct';
 }

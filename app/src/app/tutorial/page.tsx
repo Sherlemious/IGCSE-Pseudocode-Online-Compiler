@@ -12,7 +12,7 @@ import {
   TUTORIAL_SNIPPETS,
   TUTORIAL_TITLE,
 } from '@/modules/content/tutorial';
-import { SITE_NAME, SITE_URL } from '@/shared/lib/seo';
+import { SHARE_IMAGE, SITE_NAME, SITE_URL } from '@/shared/lib/seo';
 import { TutorialCtaLink, TutorialTracker } from './TutorialAnalytics';
 import { AnswerLines, LogoMark, PaperGrain } from '@/shared/brand';
 
@@ -30,6 +30,7 @@ export const metadata: Metadata = {
     description: TUTORIAL_DESCRIPTION,
     url: `${SITE_URL}${TUTORIAL_PATH}`,
     type: 'article',
+    images: [SHARE_IMAGE],
   },
 };
 
