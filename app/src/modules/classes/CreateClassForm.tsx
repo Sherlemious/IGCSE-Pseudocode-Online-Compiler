@@ -79,7 +79,9 @@ export default function CreateClassForm({ canCreate, maxClasses, tier }: Props) 
         setLoading(false);
         return;
       }
-      await update?.();
+      // An argument makes update() POST, which fires the jwt `update` trigger;
+      // a bare update() is a plain GET and leaves the cached token stale.
+      await update?.({});
       router.push(`/classes/${data.id}`);
     } catch {
       setError('Something went wrong.');

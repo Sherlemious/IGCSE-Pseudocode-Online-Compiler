@@ -46,7 +46,9 @@ export default function RolePicker({ callbackUrl }: { callbackUrl?: string }) {
         return;
       }
       // Refresh the JWT so the new role is live everywhere without a re-login.
-      await update?.();
+      // An argument makes update() POST, which fires the jwt `update` trigger;
+      // a bare update() is a plain GET and leaves the cached token stale.
+      await update?.({});
       const fallback = role === 'TEACHER' ? '/classes' : '/practice';
       router.push(safeCallback(callbackUrl, fallback));
       router.refresh();

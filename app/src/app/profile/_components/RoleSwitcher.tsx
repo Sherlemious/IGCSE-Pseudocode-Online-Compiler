@@ -35,7 +35,7 @@ export default function RoleSwitcher({ currentRole }: { currentRole: Role }) {
         return;
       }
       setRole(next);
-      await update?.(); // refresh the session token so the new role is live
+      await update?.({}); // POST (not bare GET) so the jwt re-reads the new role
       router.refresh();
     } catch {
       setError('Something went wrong. Please try again.');

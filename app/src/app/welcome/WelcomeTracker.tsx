@@ -31,7 +31,7 @@ export default function WelcomeTracker() {
   useEffect(() => {
     if (refreshedRef.current) return;
     refreshedRef.current = true;
-    void updateSession();
+    void updateSession({}); // an argument makes this a POST, firing the jwt `update` trigger
   }, [updateSession]);
 
   return null;
