@@ -536,3 +536,15 @@ model PricingTier {
   @@unique([slug, paddleEnv])
   @@index([paddleEnv, active])
 }
+
+// A browser that loaded this app from somewhere other than the official site
+// calls home with that hostname. One row per host.
+model HostSighting {
+  id        String   @id @default(cuid())
+  host      String   @unique
+  hits      Int      @default(1)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([updatedAt])
+}

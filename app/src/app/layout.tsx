@@ -8,6 +8,7 @@ import SiteFooter from '@/shared/layout/siteFooter';
 import { Toaster } from 'sonner';
 import PostHogProvider from '@/modules/telemetry/PostHogProvider';
 import SessionIdentifier from '@/modules/telemetry/SessionIdentifier';
+import DeploymentNotice from '@/modules/telemetry/DeploymentNotice';
 import OnboardingNudges from '@/modules/onboarding/OnboardingNudges';
 import OnboardingGate from '@/modules/onboarding/OnboardingGate';
 import { CommandProvider } from '@/shared/ui/CommandPalette';
@@ -217,6 +218,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <PostHogProvider>
           <SessionWrapper>
             <SessionIdentifier />
+            <DeploymentNotice />
             <OnboardingGate />
             <OnboardingNudges />
             <ThemeProvider>
