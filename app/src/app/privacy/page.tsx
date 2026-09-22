@@ -1,11 +1,11 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import IndexLinks from '@/shared/layout/IndexLinks';
-import { SUPPORT_EMAIL } from '@/shared/lib/seo';
+import { SITE_NAME, SUPPORT_EMAIL } from '@/shared/lib/seo';
 
 export const metadata: Metadata = {
   title: 'Privacy Policy',
-  description: 'How IGCSE Pseudocode Compiler collects, uses, and protects personal data.',
+  description: `How ${SITE_NAME} collects, uses, and protects personal data.`,
   alternates: {
     canonical: '/privacy',
   },
@@ -78,7 +78,7 @@ export default function PrivacyPolicyPage() {
           <p className="mono-label text-primary mb-3">Legal</p>
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-light-text">Privacy Policy</h1>
           <p className="text-sm text-dark-text mt-2">
-            Effective date: March 21, 2026. This policy explains how IGCSE Pseudocode Compiler handles your data.
+            Effective date: March 21, 2026. This policy explains how {SITE_NAME} handles your data.
           </p>
 
           <div className="mt-8 space-y-7">

@@ -8,6 +8,7 @@ import { prisma } from '@/shared/db';
 import { getResend, FROM_ADDRESS } from './resend';
 import { welcomeEmailHtml, welcomeEmailText } from '@/modules/auth/emails/welcome';
 import { parseSignupRole, SIGNUP_ROLE_COOKIE } from './signupRole';
+import { SITE_NAME } from '@/shared/lib/seo';
 
 const authSecret =
   process.env.AUTH_SECRET ??
@@ -89,7 +90,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       await resend.emails.send({
         from: FROM_ADDRESS,
         to: user.email,
-        subject: 'Welcome to the IGCSE Pseudocode Compiler',
+        subject: `Welcome to the ${SITE_NAME}`,
         html: welcomeEmailHtml(name),
         text: welcomeEmailText(name),
       }).catch(() => {}); // non-critical — don't break sign-in if email fails

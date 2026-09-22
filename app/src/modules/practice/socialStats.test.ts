@@ -50,7 +50,7 @@ describe('firstSolveShareText', () => {
         url: 'https://example.com/practice/q',
       }),
     ).toBe(
-      'I just solved 2024 May/June Q3 on the IGCSE Pseudocode Compiler — 847 students have done it. Can you?\nhttps://example.com/practice/q',
+      'I just solved 2024 May/June Q3 on the Pseudocode Compiler — 847 students have done it. Can you?\nhttps://example.com/practice/q',
     );
   });
 
@@ -63,7 +63,7 @@ describe('firstSolveShareText', () => {
         url: 'https://example.com/practice/q',
       }),
     ).toBe(
-      'I just solved Linear search on the IGCSE Pseudocode Compiler. Can you?\nhttps://example.com/practice/q',
+      'I just solved Linear search on the Pseudocode Compiler. Can you?\nhttps://example.com/practice/q',
     );
   });
 });

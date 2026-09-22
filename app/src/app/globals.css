@@ -171,6 +171,11 @@
   --color-success: var(--color-success);
   --color-code-bg: var(--color-code-bg);
   --color-code-text: var(--color-code-text);
+  --color-brand-ink: #111726;
+  --color-brand-paper: #F3EEE3;
+  --color-brand-red: #E5533D;
+  --color-brand-highlight: #F2C94C;
+  --color-brand-rule: #9FB3D1;
 }
 
 /* ── Base styles ─────────────────────────────────────────── */
@@ -204,6 +209,13 @@ html[data-editor-ligatures="on"] .cm-tooltip-autocomplete ul {
   background: var(--color-primary);
   color: var(--color-on-primary);
   opacity: 0.35;
+}
+
+.bg-brand-paper ::selection,
+.bg-brand-paper *::selection {
+  background: var(--color-brand-highlight);
+  color: var(--color-brand-ink);
+  opacity: 1;
 }
 
 textarea::selection {
@@ -426,6 +438,123 @@ textarea:focus-visible {
 
 .stagger-children>*:nth-child(8) {
   animation-delay: 420ms;
+}
+
+/* ── Brand mark motion (Examiner Owl) ───────────────────
+   Entrance plays once on `.logo-anim`; hover replays inside `.group/logo`. */
+.logo-mark .mk-owl-eyes,
+.logo-mark .mk-owl-beak {
+  transform-box: fill-box;
+}
+
+.logo-mark .mk-owl-eyes { transform-origin: 50% 55%; }
+.logo-mark .mk-owl-beak { transform-origin: 50% 0; }
+
+.logo-anim .mk-owl-beak { animation: mk-beak 0.36s cubic-bezier(0.3, 1.6, 0.5, 1) 0.2s both; }
+.logo-anim .mk-owl-eyes { animation: mk-blink 0.34s ease-in-out 0.55s; }
+.group\/logo:hover .mk-owl-eyes { animation: mk-blink 0.3s ease-in-out; }
+
+@keyframes mk-blink {
+  0%, 100% { transform: scaleY(1); }
+  45%, 55% { transform: scaleY(0.08); }
+}
+
+@keyframes mk-beak {
+  from { transform: scaleY(0); }
+  to { transform: scaleY(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .logo-anim .mk-owl-eyes,
+  .logo-anim .mk-owl-beak,
+  .group\/logo:hover .mk-owl-eyes {
+    animation: none;
+  }
+}
+
+/* ── Marked-script surfaces (404, marketing) ────────────── */
+.exam-sheet-stack {
+  filter: drop-shadow(0 22px 28px rgba(0, 0, 0, 0.42)) drop-shadow(0 2px 3px rgba(0, 0, 0, 0.25));
+  transform: rotate(-1deg);
+  animation: exam-sheet-drop 0.56s cubic-bezier(0.2, 0.9, 0.25, 1) both;
+}
+
+.exam-sheet-under {
+  transform: translate(10px, 8px) rotate(2.6deg);
+  animation: exam-sheet-fan 0.62s cubic-bezier(0.2, 0.9, 0.25, 1) 0.06s both;
+}
+
+.exam-sheet {
+  --fold: 34px;
+  clip-path: polygon(0 0, calc(100% - var(--fold)) 0, 100% var(--fold), 100% 100%, 0 100%);
+}
+
+.exam-sheet-fold {
+  width: var(--fold);
+  height: var(--fold);
+  background: linear-gradient(to bottom left, transparent 50%, #dcd3bf 50%, #e9e2d2 100%);
+  filter: drop-shadow(-2px 2px 1.5px rgba(17, 23, 38, 0.18));
+}
+
+.ink-draw {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: ink-draw var(--ink-duration, 0.4s) cubic-bezier(0.55, 0.1, 0.3, 1) var(--ink-delay, 0s) forwards;
+}
+
+.ink-in {
+  opacity: 0;
+  animation: ink-in 0.45s ease-out var(--ink-delay, 0s) forwards;
+}
+
+@keyframes exam-sheet-drop {
+  from {
+    opacity: 0;
+    transform: translateY(-18px) rotate(-3.5deg);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) rotate(-1deg);
+  }
+}
+
+@keyframes exam-sheet-fan {
+  from {
+    transform: translate(0, 0) rotate(-1deg);
+  }
+  to {
+    transform: translate(10px, 8px) rotate(2.6deg);
+  }
+}
+
+@keyframes ink-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes ink-in {
+  from {
+    opacity: 0;
+    transform: translateY(3px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .exam-sheet-stack,
+  .exam-sheet-under,
+  .ink-in {
+    animation: none;
+    opacity: 1;
+  }
+  .ink-draw {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
 }
 
 /* ── Dot grid background ────────────────────────────────── */

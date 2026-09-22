@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Marked Script</title>
+  <style>
+    @font-face {
+      font-family: "Fraunces";
+      font-style: italic;
+      font-weight: 600;
+      src: url("../../app/public/fonts/fraunces/fraunces-latin-wght-italic.woff2") format("woff2-variations");
+    }
+    @font-face {
+      font-family: "Fira Code";
+      font-style: normal;
+      font-weight: 400;
+      src: url("../../app/public/fonts/fira-code/fira-code-latin-wght-normal.woff2") format("woff2-variations");
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      width: 1400px;
+      height: 1800px;
+      background: #111726;
+      overflow: hidden;
+      font-variant-ligatures: none;
+      font-feature-settings: "liga" 0, "calt" 0;
+    }
+    body { position: relative; }
+    .sheet {
+      position: absolute;
+      inset: 72px 64px 72px 64px;
+      background: #F3EEE3;
+      overflow: hidden;
+    }
+    .margin {
+      position: absolute;
+      top: 0; left: 0; bottom: 0;
+      width: 8px;
+      background: #E5533D;
+    }
+    .lines {
+      position: absolute;
+      inset: 0 0 0 0;
+      background-image: repeating-linear-gradient(
+        to bottom,
+        transparent 0 55px,
+        rgba(159, 179, 209, 0.38) 55px 56px
+      );
+      background-position: 0 160px;
+    }
+    .grain {
+      position: absolute;
+      inset: 0;
+      opacity: 0.18;
+      mix-blend-mode: multiply;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    }
+    .mark {
+      position: absolute;
+      top: 88px;
+      left: 88px;
+    }
+    h1 {
+      position: absolute;
+      top: 92px;
+      left: 200px;
+      font-family: Fraunces, Georgia, serif;
+      font-style: italic;
+      font-weight: 600;
+      font-size: 92px;
+      color: #111726;
+      letter-spacing: -2px;
+      line-height: 0.9;
+    }
+    .meta {
+      position: absolute;
+      top: 276px;
+      left: 204px;
+      font-family: "Fira Code", monospace;
+      font-size: 16px;
+      letter-spacing: 0.28em;
+      color: rgba(17, 23, 38, 0.48);
+    }
+    .code {
+      position: absolute;
+      top: 520px;
+      left: 88px;
+      font-family: "Fira Code", monospace;
+      font-size: 28px;
+      color: #111726;
+      line-height: 56px;
+    }
+    .hl {
+      background: #F2C94C;
+      padding: 4px 8px;
+      margin-left: -8px;
+    }
+    .tick {
+      position: absolute;
+      top: 610px;
+      left: 760px;
+      transform: rotate(7deg);
+    }
+    .note {
+      position: absolute;
+      top: 280px;
+      left: 40px;
+      width: 120px;
+      font-family: Fraunces, Georgia, serif;
+      font-style: italic;
+      font-size: 18px;
+      line-height: 1.35;
+      color: #E5533D;
+    }
+    .table {
+      position: absolute;
+      right: -40px;
+      top: 980px;
+      width: 420px;
+      border: 1px solid #9FB3D1;
+      transform: rotate(3deg);
+      background: #F3EEE3;
+      font-family: "Fira Code", monospace;
+      color: #111726;
+    }
+    .row { display: flex; border-bottom: 1px solid #9FB3D1; }
+    .row:last-child { border-bottom: 0; background: rgba(242, 201, 76, 0.35); }
+    .cell { width: 50%; padding: 16px 18px; font-size: 22px; }
+    .cell + .cell { border-left: 1px solid #9FB3D1; }
+    .head .cell { font-size: 13px; letter-spacing: 0.16em; }
+    .foot {
+      position: absolute;
+      bottom: 48px;
+      left: 88px;
+      font-family: "Fira Code", monospace;
+      font-size: 14px;
+      letter-spacing: 0.18em;
+      color: rgba(17, 23, 38, 0.4);
+    }
+    .strike {
+      position: absolute;
+      top: 148px;
+      left: 196px;
+      width: 520px;
+      height: 3px;
+      background: #E5533D;
+      transform: rotate(-7deg);
+      opacity: 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="sheet">
+    <div class="margin"></div>
+    <div class="lines"></div>
+    <div class="grain"></div>
+    <svg class="mark" width="92" height="92" viewBox="0 0 48 48" fill="none">
+      <g stroke="#111726" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M13.6 8.6C9.6 8.6 8.3 10.9 8.3 14.8V19.1C8.3 21.5 6.8 23 4.5 24C6.8 25 8.3 26.5 8.3 28.9V33.2C8.3 37.1 9.6 39.4 13.6 39.4"/>
+        <path d="M34.4 8.6C38.4 8.6 39.7 10.9 39.7 14.8V19.1C39.7 21.5 41.2 23 43.5 24C41.2 25 39.7 26.5 39.7 28.9V33.2C39.7 37.1 38.4 39.4 34.4 39.4"/>
+      </g>
+      <path fill-rule="evenodd" fill="#111726" d="M12.1 21a6.2 6.2 0 1 0 12.4 0a6.2 6.2 0 1 0 -12.4 0ZM16.9 20.1a2.6 2.6 0 1 0 5.2 0a2.6 2.6 0 1 0 -5.2 0Z"/>
+      <path fill-rule="evenodd" fill="#111726" d="M23.5 21a6.2 6.2 0 1 0 12.4 0a6.2 6.2 0 1 0 -12.4 0ZM28.3 20.1a2.6 2.6 0 1 0 5.2 0a2.6 2.6 0 1 0 -5.2 0Z"/>
+      <path d="M21 29.2H27L24 34.4Z" fill="#E5533D" stroke="#E5533D" stroke-width="1.6" stroke-linejoin="round"/>
+    </svg>
+    <h1>Marked<br/>Script</h1>
+    <div class="meta">PLATE 01 &nbsp; MS-32</div>
+    <p class="note">one red<br/>per surface</p>
+    <div class="code">
+      DECLARE Total : INTEGER<br/>
+      Total &lt;- 0<br/>
+      <span class="hl">Total &lt;- Total + Mark</span><br/>
+      OUTPUT Total
+    </div>
+    <svg class="tick" width="96" height="96" viewBox="0 0 48 48" fill="none">
+      <path d="M9 26.5L19 36L40 10" stroke="#E5533D" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    <div class="table">
+      <div class="row head"><div class="cell">TOTAL</div><div class="cell">MARK</div></div>
+      <div class="row"><div class="cell">0</div><div class="cell"></div></div>
+      <div class="row"><div class="cell">0</div><div class="cell">7</div></div>
+      <div class="row"><div class="cell">7</div><div class="cell">7</div></div>
+    </div>
+    <div class="foot">INK · PAPER · RED · RULE</div>
+  </div>
+</body>
+</html>

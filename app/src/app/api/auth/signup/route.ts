@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import { prisma } from '@/shared/db';
 import { getResend, FROM_ADDRESS } from '@/modules/auth/resend';
 import { welcomeEmailHtml, welcomeEmailText } from '@/modules/auth/emails/welcome';
+import { SITE_NAME } from '@/shared/lib/seo';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -66,7 +67,7 @@ export async function POST(req: Request) {
       .send({
         from: FROM_ADDRESS,
         to: user.email,
-        subject: 'Welcome to the IGCSE Pseudocode Compiler',
+        subject: `Welcome to the ${SITE_NAME}`,
         html: welcomeEmailHtml(displayName),
         text: welcomeEmailText(displayName),
       })

@@ -8,7 +8,6 @@ import { siGithub } from 'simple-icons/icons';
 import {
   Menu,
   X,
-  Braces,
   BookOpen,
   ExternalLink,
   GraduationCap,
@@ -20,6 +19,7 @@ import {
   Tag,
   Users,
 } from 'lucide-react';
+import { LogoMark, LogoWordmark } from '@/shared/brand';
 import SettingsPanel from './settingsPanel';
 import UserMenu from '@/modules/auth/UserMenu';
 import { useCommands } from '@/shared/ui/CommandPalette';
@@ -90,24 +90,22 @@ const Header: React.FC = () => {
           <div className="flex items-center gap-2 min-w-0">
             <Link
               href="/"
-              className={`group flex items-center gap-2 rounded-sm transition duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/70 ${
+              className={`group/logo flex items-center gap-2 rounded-sm transition duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/70 ${
                 isCompilerPage ? 'text-header-text' : 'text-header-text hover:text-primary'
               }`}
               title="Pseudocode Compiler"
               aria-label={isCompilerPage ? 'Pseudocode Compiler home' : 'Open Pseudocode Compiler'}
             >
               {isCompilerPage ? (
-                <Braces className="h-4 w-4 text-header-text" strokeWidth={2.5} aria-hidden="true" />
+                <LogoMark size={22} animate className="text-header-text shrink-0" />
               ) : (
                 <ArrowLeft
-                  className="h-4 w-4 text-header-text/60 transition-transform duration-200 group-hover:-translate-x-0.5 group-hover:text-primary"
+                  className="h-4 w-4 text-header-text/60 transition-transform duration-200 group-hover/logo:-translate-x-0.5 group-hover/logo:text-primary"
                   strokeWidth={2.25}
                   aria-hidden="true"
                 />
               )}
-              <span className="text-sm font-bold tracking-tight text-header-text whitespace-nowrap truncate max-w-[42vw] sm:max-w-none">
-                Pseudocode <span className="font-normal text-header-text/60">Compiler</span>
-              </span>
+              <LogoWordmark className="text-header-text whitespace-nowrap truncate max-w-[42vw] sm:max-w-none" />
             </Link>
             <span className="hidden lg:inline text-header-text/20 select-none" aria-hidden>
               ·
@@ -116,7 +114,7 @@ const Header: React.FC = () => {
               href={PORTFOLIO_URL}
               target="_blank"
               rel="noopener noreferrer"
-              className="hidden lg:inline text-[11px] text-header-text/40 hover:text-primary transition-colors whitespace-nowrap"
+              className="hidden lg:inline font-display italic text-[12px] text-header-text/40 hover:text-brand-red transition-colors whitespace-nowrap"
               title="Made by Sherlemious — view portfolio"
             >
               by Sherlemious

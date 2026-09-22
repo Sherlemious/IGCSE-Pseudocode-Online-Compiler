@@ -5,7 +5,7 @@ import { useSession } from 'next-auth/react';
 import { toast } from 'sonner';
 import { useTheme, themes, type PresetThemeId } from '@/theme';
 import { useRegisterCommands, type Command } from './CommandPalette';
-import { SITE_URL } from '@/shared/lib/seo';
+import { SITE_NAME, SITE_URL } from '@/shared/lib/seo';
 import { OPEN_BUG_REPORT_EVENT, OPEN_CHEATSHEET_EVENT } from '@/shared/lib/events';
 import { sessionShowsClasses } from '@/modules/classes/visibility';
 
@@ -18,7 +18,7 @@ const themeOrder: PresetThemeId[] = ['one-dark-pro', 'dracula', 'nord', 'monokai
 async function shareTool() {
   try {
     if (typeof navigator !== 'undefined' && navigator.share) {
-      await navigator.share({ title: 'IGCSE & AS/A Level Pseudocode Compiler', url: SITE_URL });
+      await navigator.share({ title: SITE_NAME, url: SITE_URL });
       return;
     }
   } catch {

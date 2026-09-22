@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import Script from 'next/script';
 import './globals.css';
 import { ThemeProvider } from '@/theme/ThemeContext';
@@ -24,6 +24,7 @@ import {
   SITE_NAME,
   SITE_URL,
 } from '@/shared/lib/seo';
+import { BRAND } from '@/shared/brand/brand';
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -45,12 +46,6 @@ export const metadata: Metadata = {
     index: true,
     follow: true,
   },
-  // Keep one stable crawler-facing favicon. A leftover App Router favicon.ico
-  // previously added a competing Next/Vercel icon to the generated page.
-  icons: {
-    icon: [{ url: '/favicon.png', type: 'image/png', sizes: '512x512' }],
-    apple: [{ url: '/favicon.png', type: 'image/png', sizes: '512x512' }],
-  },
   openGraph: {
     type: 'website',
     siteName: SITE_NAME,
@@ -60,10 +55,14 @@ export const metadata: Metadata = {
     locale: 'en_US',
   },
   twitter: {
-    card: 'summary',
+    card: 'summary_large_image',
     title: DEFAULT_TITLE,
     description: DEFAULT_DESCRIPTION,
   },
+};
+
+export const viewport: Viewport = {
+  themeColor: BRAND.colors.ink,
 };
 
 const jsonLd = {

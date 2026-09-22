@@ -25,6 +25,8 @@ import { authHref } from '@/modules/auth/callback';
 import NudgeCard from './NudgeCard';
 import ExamNudgeCard from './ExamNudgeCard';
 import { SAVE_PROGRAM_PROMPT_FLAG } from '@/modules/telemetry/experiments';
+import { BRAND } from '@/shared/brand';
+import { SITE_URL } from '@/shared/lib/seo';
 
 const LS = {
   usageMs: 'nudge_usage_ms',
@@ -44,8 +46,6 @@ const THRESHOLDS = {
   examSession: 2,
   shareMs: 25 * 60_000,
 } as const;
-
-const SITE_URL = 'https://pseudocode-compiler.sherlemious.com';
 
 function lsGet(key: string) { return localStorage.getItem(key); }
 function lsNum(key: string) { return parseInt(localStorage.getItem(key) ?? '0', 10) || 0; }
@@ -248,7 +248,7 @@ export default function OnboardingNudges() {
           handleCta('share', () => {
             const text = `If you're studying IGCSE Computer Science, this free pseudocode compiler is worth checking out.\n${SITE_URL}`;
             if (navigator.share) {
-              navigator.share({ title: 'IGCSE Pseudocode Compiler', text, url: SITE_URL }).catch(() => {});
+              navigator.share({ title: BRAND.shortName, text, url: SITE_URL }).catch(() => {});
             } else {
               navigator.clipboard.writeText(SITE_URL).catch(() => {});
             }

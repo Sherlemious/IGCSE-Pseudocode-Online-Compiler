@@ -1,12 +1,12 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import IndexLinks from '@/shared/layout/IndexLinks';
-import { SUPPORT_EMAIL } from '@/shared/lib/seo';
+import { SITE_NAME, SUPPORT_EMAIL } from '@/shared/lib/seo';
 
 export const metadata: Metadata = {
   title: 'Refund Policy',
   description:
-    'Refund and cancellation terms for paid IGCSE Pseudocode Compiler subscriptions billed through Paddle.',
+    `Refund and cancellation terms for paid ${SITE_NAME} subscriptions billed through Paddle.`,
   alternates: {
     canonical: '/refund',
   },
@@ -87,7 +87,7 @@ export default function RefundPolicyPage() {
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-light-text">Refund Policy</h1>
           <p className="text-sm text-dark-text mt-2">
             Effective date: September 3, 2026. This policy explains refunds and cancellations for
-            paid IGCSE Pseudocode Compiler plans.
+            paid {SITE_NAME} plans.
           </p>
 
           <div className="mt-8 space-y-7">

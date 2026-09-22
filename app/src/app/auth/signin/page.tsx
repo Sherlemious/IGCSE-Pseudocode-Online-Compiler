@@ -2,9 +2,10 @@ import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { auth, signIn } from '@/modules/auth/auth';
-import { Braces, Terminal } from 'lucide-react';
+import { Terminal } from 'lucide-react';
 import AuthForm from '@/modules/auth/AuthForm';
 import { authHref, safeCallback } from '@/modules/auth/callback';
+import { LogoBadge } from '@/shared/brand';
 
 export const metadata: Metadata = {
   title: 'Sign In',
@@ -51,9 +52,7 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
         <div className="w-full max-w-sm relative animate-fade-in-up">
           {/* Header */}
           <div className="text-center mb-8">
-            <div className="w-14 h-14 rounded-2xl bg-surface border border-border flex items-center justify-center mx-auto mb-4 animate-glow-pulse">
-              <Braces className="h-6 w-6 text-primary" strokeWidth={2} />
-            </div>
+            <LogoBadge size={64} animate className="mx-auto mb-4" />
             <h1 className="text-xl font-bold text-light-text tracking-tight">Welcome back</h1>
             <p className="text-sm text-dark-text mt-1.5">Sign in to track progress and unlock questions</p>
           </div>

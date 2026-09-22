@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import WelcomeTracker from './WelcomeTracker';
+import { LogoBadge } from '@/shared/brand';
 
 export const metadata: Metadata = {
   title: 'Welcome',
@@ -24,6 +25,7 @@ export default function WelcomePage() {
 
       <div className="relative mx-auto flex w-full max-w-lg flex-col items-center px-4 py-16 text-center sm:py-24">
         <div className="rounded-2xl border border-border bg-surface/80 backdrop-blur-sm p-8 shadow-intense">
+          <LogoBadge size={64} animate className="mx-auto mb-4" />
           <p className="mono-label text-primary mb-3">Subscription confirmed</p>
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-light-text">
             You&apos;re all set

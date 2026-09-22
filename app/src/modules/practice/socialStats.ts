@@ -1,3 +1,5 @@
+import { BRAND } from '@/shared/brand';
+
 /** Hide counts until a question has this many solves so new papers do not look dead. */
 export const SOCIAL_STATS_MIN_SOLVES = 5;
 /** First-try % needs a slightly larger sample or it swings on one attempt. */
@@ -42,7 +44,7 @@ export function firstSolveShareText(opts: {
 }): string {
   const label = opts.paperRef ?? opts.title;
   const crowd = opts.solved != null ? ` — ${formatSolveCount(opts.solved)} students have done it` : '';
-  return `I just solved ${label} on the IGCSE Pseudocode Compiler${crowd}. Can you?\n${opts.url}`;
+  return `I just solved ${label} on the ${BRAND.shortName}${crowd}. Can you?\n${opts.url}`;
 }
 
 export function solveCountLabel(stat: QuestionSocialStat): string {

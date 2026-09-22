@@ -1,11 +1,11 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import IndexLinks from '@/shared/layout/IndexLinks';
-import { SUPPORT_EMAIL } from '@/shared/lib/seo';
+import { SITE_NAME, SUPPORT_EMAIL } from '@/shared/lib/seo';
 
 export const metadata: Metadata = {
   title: 'Terms & Conditions',
-  description: 'Terms for using IGCSE Pseudocode Compiler.',
+  description: `Terms for using the ${SITE_NAME}.`,
   alternates: {
     canonical: '/terms',
   },

@@ -3,7 +3,7 @@
 ## Stack
 
 - **Next.js 15** (App Router) + TypeScript
-- **Tailwind CSS** — dark navy theme (`#0D1B2A` bg, `#778DA9` primary, `#EF4444` error)
+- **Tailwind CSS** — editor/UI default is One Dark Pro (`#282C34` bg, `#61AFEF` primary). Brand identity (logo, OG, email, 404) lives in `src/shared/brand/` and uses examiner red `#E5533D` on ink `#111726` / paper `#F3EEE3`. Do not restyle the editor with brand colours.
 - **CodeMirror 6** — editor with custom pseudocode language extension
 - **antlr4ng v3** — ANTLR4 parser for pseudocode
 - **Prisma** + **PostgreSQL** (Neon) — database ORM
@@ -35,7 +35,7 @@ Modular monolith. `src/app/` is a thin routing layer (pages + API route handlers
 | `modules/admin` | Admin gate (`isAdmin`) — pages stay under `app/admin` |
 | `modules/progress` | Student progress dashboard widgets |
 | `modules/telemetry` | PostHog provider / session identify |
-| `shared/` | Layout chrome, UI primitives, Prisma, SEO, rate limit, logger |
+| `shared/` | Layout chrome, UI primitives, Prisma, SEO, brand identity, rate limit, logger |
 | `theme/` | Editor/UI themes + validation |
 
 Dependency rules (enforced by ESLint):
@@ -59,6 +59,16 @@ Dependency rules (enforced by ESLint):
 | `app/src/modules/billing/` | Pricing, Paddle, entitlements |
 | `app/src/modules/learn/` | Paper 2 Path curriculum, player, progress |
 | `app/prisma/schema.prisma` | Database schema |
+| `app/src/shared/brand/` | Mark, palette, OG card, logo — never restyle the editor with these |
+
+## Brand
+
+Canonical names live in `src/shared/brand/brand.ts` and `src/shared/lib/seo.ts`:
+- **Short:** `BRAND.shortName` — "Pseudocode Compiler" (header, manifest, casual share text)
+- **Long:** `SITE_NAME` — "Cambridge IGCSE & A Level Pseudocode Compiler" (SEO, email subject/from, legal)
+- **Maker:** "Sherlemious"
+
+The logo is the **Examiner Owl**: a pair of braces for the face, ringed eyes, and the arrowhead as a red beak. It's drawn once in `mark.ts` and drives the header, favicon (`app/icon.tsx`), Apple icon and OG card. It blinks on first paint of the home header and on hover. After editing the mark, run `node docs/brand/render.cjs` with the dev server up to refresh `public/favicon.png` (manifest + email). One red accent per surface. Paper grain and answer-line patterns are for marketing surfaces (OG, 404, tutorial hero, email) only.
 
 ## ANTLR4 Quirks
 

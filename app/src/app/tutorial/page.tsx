@@ -14,6 +14,7 @@ import {
 } from '@/modules/content/tutorial';
 import { SITE_NAME, SITE_URL } from '@/shared/lib/seo';
 import { TutorialCtaLink, TutorialTracker } from './TutorialAnalytics';
+import { AnswerLines, LogoMark, PaperGrain } from '@/shared/brand';
 
 export const metadata: Metadata = {
   title: {
@@ -178,39 +179,52 @@ export default function TutorialPage() {
       />
 
       <article className="relative mx-auto w-full max-w-4xl px-4 py-8 sm:px-6 sm:py-12">
-        <div className="rounded-2xl border border-border bg-surface/80 backdrop-blur-sm p-6 sm:p-8 shadow-intense">
-          <p className="mono-label text-primary mb-3">Cambridge O Level 2210 · IGCSE 0478 / 0984</p>
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-light-text">{TUTORIAL_TITLE}</h1>
-          <p className={`${p} mt-3`}>
-            A free Paper 2 tutorial for <strong className="text-light-text">Cambridge O Level Computer Science 2210</strong>.
-            The language is the same as IGCSE 0478 and 0984, so one set of keywords covers both courses.
-            Every snippet below runs in this site&apos;s compiler — not a screenshot, not a PDF.
-          </p>
-          <p className={`${p} mt-2`}>
-            Independent learning tool, not an official Cambridge International product. Write the syllabus
-            forms (<Kw>DECLARE</Kw>, <Kw>&lt;-</Kw>, <Kw>ENDIF</Kw>, <Kw>NEXT</Kw>) so a marker can follow
-            the algorithm on paper.
-          </p>
+        <div className="relative overflow-hidden rounded-2xl border border-border bg-surface/80 backdrop-blur-sm p-6 sm:p-8 shadow-intense">
+          <span
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-y-0 left-3 sm:left-4 w-[3px] border-x border-brand-red/45"
+          />
+          <div className="relative -mx-6 -mt-6 sm:-mx-8 sm:-mt-8 mb-8 overflow-hidden px-6 pt-6 pb-6 sm:px-8 sm:pt-8">
+            <PaperGrain className="absolute inset-0 w-full h-full pointer-events-none opacity-30 mix-blend-soft-light" />
+            <AnswerLines className="absolute inset-0 w-full h-full pointer-events-none opacity-40" />
+            <div className="relative">
+              <p className="mono-label text-primary mb-3">Cambridge O Level 2210 · IGCSE 0478 / 0984</p>
+              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-light-text flex items-center gap-2.5">
+                <LogoMark size={30} className="text-light-text shrink-0 hidden sm:block" />
+                {TUTORIAL_TITLE}
+              </h1>
+              <p className={`${p} mt-3`}>
+                A free Paper 2 tutorial for <strong className="text-light-text">Cambridge O Level Computer Science 2210</strong>.
+                The language is the same as IGCSE 0478 and 0984, so one set of keywords covers both courses.
+                Every snippet below runs in this site&apos;s compiler — not a screenshot, not a PDF.
+              </p>
+              <p className={`${p} mt-2`}>
+                Independent learning tool, not an official Cambridge International product. Write the syllabus
+                forms (<Kw>DECLARE</Kw>, <Kw>&lt;-</Kw>, <Kw>ENDIF</Kw>, <Kw>NEXT</Kw>) so a marker can follow
+                the algorithm on paper.
+              </p>
 
-          <div className="mt-6 flex flex-wrap gap-2">
-            <TutorialCtaLink href="/learn/1/output" destination="learn" source="hero" className={ctaPrimary}>
-              Start the interactive path
-            </TutorialCtaLink>
-            <TutorialCtaLink href="/" destination="compiler" source="hero" className={ctaSecondary}>
-              Open the compiler
-            </TutorialCtaLink>
-            <TutorialCtaLink href="/docs" destination="docs" source="hero" className={ctaSecondary}>
-              Full syntax guide
-            </TutorialCtaLink>
+              <div className="mt-6 flex flex-wrap gap-2">
+                <TutorialCtaLink href="/learn/1/output" destination="learn" source="hero" className={ctaPrimary}>
+                  Start the interactive path
+                </TutorialCtaLink>
+                <TutorialCtaLink href="/" destination="compiler" source="hero" className={ctaSecondary}>
+                  Open the compiler
+                </TutorialCtaLink>
+                <TutorialCtaLink href="/docs" destination="docs" source="hero" className={ctaSecondary}>
+                  Full syntax guide
+                </TutorialCtaLink>
+              </div>
+
+              <nav aria-label="On this page" className="mt-6 flex flex-wrap gap-2">
+                {SECTIONS.map((link) => (
+                  <a key={link.href} href={link.href} className={navChip}>
+                    {link.label}
+                  </a>
+                ))}
+              </nav>
+            </div>
           </div>
-
-          <nav aria-label="On this page" className="mt-6 flex flex-wrap gap-2">
-            {SECTIONS.map((link) => (
-              <a key={link.href} href={link.href} className={navChip}>
-                {link.label}
-              </a>
-            ))}
-          </nav>
 
           <section id="who" className="mt-10 scroll-mt-4 space-y-3">
             <h2 className={h2}>Who this Cambridge O Level pseudocode tutorial is for</h2>

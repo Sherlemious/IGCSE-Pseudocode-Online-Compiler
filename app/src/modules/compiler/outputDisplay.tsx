@@ -12,6 +12,7 @@ import SplitDivider from '@/shared/ui/SplitDivider';
 import { SPLIT_VARS_KEY } from './constants';
 import { loadSplitPercent } from '@/shared/lib/persist';
 import { formatOutputEntries } from '@/modules/compiler/formatOutputEntries';
+import { LogoMark, LogoWordmark } from '@/shared/brand';
 
 // React Flow + dagre are heavy and only needed when the Flowchart tab is opened,
 // so the whole view (and its deps) is code-split out of the main bundle.
@@ -48,11 +49,6 @@ interface OutputDisplayProps {
   flowchartStale?: boolean;
   onRefreshFlowchart?: () => void;
 }
-
-const WELCOME_ART = `  ___  ___  ___ _   _ ___   ___
- | _ \\/ __|| __| | | |   \\ / _ \\
- |  _/\\__ \\| _|| |_| | |) | (_) |
- |_|  |___/|___|\\___/|___/ \\___/`;
 
 const OutputDisplay: React.FC<OutputDisplayProps> = ({
   entries,
@@ -343,16 +339,12 @@ const OutputDisplay: React.FC<OutputDisplayProps> = ({
     // Welcome state — no run yet
     if (!isRunning && entries.length === 0) {
       return (
-        <div className="h-full flex flex-col items-center justify-center gap-4 text-dark-text select-none p-4">
-          <pre className="text-primary/30 text-[10px] sm:text-xs leading-tight font-mono hidden sm:block">
-            {WELCOME_ART}
-          </pre>
-          <div className="text-center space-y-1">
-            <div className="text-sm text-dark-text/70">IGCSE Pseudocode Compiler</div>
-            <div className="text-xs text-dark-text/40">
-              <span className="hidden md:inline">Write code on the left, run with <kbd>Ctrl+Enter</kbd></span>
-              <span className="md:hidden">Write code above, tap Run to execute</span>
-            </div>
+        <div className="h-full flex flex-col items-center justify-center gap-3 text-dark-text select-none p-4">
+          <LogoMark size={52} animate className="text-light-text shrink-0" />
+          <LogoWordmark className="text-light-text" />
+          <div className="text-xs text-dark-text/40">
+            <span className="hidden md:inline">Write code on the left, run with <kbd>Ctrl+Enter</kbd></span>
+            <span className="md:hidden">Write code above, tap Run to execute</span>
           </div>
         </div>
       );

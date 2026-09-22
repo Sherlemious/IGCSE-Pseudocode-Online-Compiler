@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { usePostHog } from 'posthog-js/react';
 import { Circle, Loader } from 'lucide-react';
+import { LogoMark } from '@/shared/brand';
 import type { CursorPosition } from './codeInput';
 
 const GITHUB_URL = 'https://github.com/Sherlemious/IGCSE-Pseudocode-Online-Compiler';
@@ -88,7 +89,10 @@ const Footer: React.FC<FooterProps> = ({ isRunning = false, cursor, lineCount })
         >
           Portfolio
         </a>
-        <span className="hidden sm:inline text-header-text/40">&copy; {new Date().getFullYear()} Sherlemious</span>
+        <span className="hidden sm:inline-flex items-center gap-1.5 text-header-text/40">
+          <LogoMark size={14} className="text-header-text/70" />
+          &copy; {new Date().getFullYear()} Sherlemious
+        </span>
       </div>
     </footer>
   );

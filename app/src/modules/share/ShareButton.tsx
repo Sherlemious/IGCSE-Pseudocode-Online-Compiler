@@ -13,8 +13,7 @@
 import { useState } from 'react';
 import { Share2, Link2, Check, GraduationCap } from 'lucide-react';
 import { usePostHog } from 'posthog-js/react';
-
-const SITE_URL = 'https://pseudocode-compiler.sherlemious.com';
+import { SITE_NAME, SITE_URL } from '@/shared/lib/seo';
 
 interface ShareButtonProps {
   /** Shown above the action buttons, e.g. after an exam result */
@@ -59,7 +58,7 @@ export default function ShareButton({
   async function handleNativeShare() {
     track('native');
     try {
-      await navigator.share({ title: 'IGCSE & AS/A Level Pseudocode Compiler', text: studentText, url: shareUrl });
+      await navigator.share({ title: SITE_NAME, text: studentText, url: shareUrl });
       ph?.capture('share_completed', { method: 'native' });
     } catch {
       // user cancelled or not supported — fall through silently
