@@ -4,6 +4,12 @@ A browser-based pseudocode interpreter for **Cambridge IGCSE Computer Science (0
 
 **Live:** [pseudocode-compiler.sherlemious.com](https://pseudocode-compiler.sherlemious.com)
 
+## **Do not host this without written permission**
+
+> [!CAUTION]
+> **The source is public to read. It is not yours to deploy.**
+> **Hosting, deploying, mirroring, or giving this away needs prior written permission.** That includes **free**, **non-commercial**, **a school**, **a class**, **students**, and **only in one country**. The only public copy is the live site above. Full terms: [LICENSE](LICENSE). Email **abd.moh.yousef@gmail.com** to ask. **Silence is not permission.**
+
 ## Features
 
 - **Browser-based Interpreter** — Pseudocode is parsed and executed entirely in the browser via an ANTLR4 grammar and a custom tree-walking interpreter. No transpilation. No server round-trip.
@@ -114,6 +120,8 @@ See [pseudocode.md](pseudocode.md) for the full syntax reference.
 
 ## Local Development
 
+These steps are for running the app on your own machine while reading the code or preparing a change to send back here. **They are not permission to deploy it, or to offer a running copy to anyone else.** See [License](#license).
+
 ### Prerequisites
 
 - Node.js 20+ (required by Next.js 16)
@@ -179,10 +187,20 @@ The generated files in `src/modules/interpreter/generated/` are committed to the
 
 ## Contributing
 
-- Fork the repo and create a branch
+Pull requests back to this repository are welcome.
+
+- Fork the repo and create a branch for the change you want merged here
 - Write clear commit messages
 - Ensure `npm test` and `npm run build` pass before opening a PR
 
+**A fork is for proposing changes to this repository. It is not permission to publish or host a separate copy.** See [License](#license).
+
 ## License
 
-This project may not be redistributed. See [LICENSE](LICENSE) for details.
+Copyright (c) 2026 Abdelrahman Mohammed. All rights reserved.
+
+You may read the source and run it on your own computer for yourself. **You may not host it, deploy it, or offer it to anyone else — including for free, for a school, or in a single country — without prior written permission.**
+
+Use [pseudocode-compiler.sherlemious.com](https://pseudocode-compiler.sherlemious.com). To ask for permission, email abd.moh.yousef@gmail.com.
+
+The full terms are in [LICENSE](LICENSE).

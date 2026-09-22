@@ -3,13 +3,50 @@ Copyright (c) 2026 Abdelrahman Mohammed. All Rights Reserved.
 This software and associated documentation files (the "Software") are the
 proprietary property of Abdelrahman Mohammed.
 
-No part of this Software may be reproduced, distributed, transmitted,
-modified, adapted, sold, sublicensed, or used in any form or by any means,
-whether electronic, mechanical, or otherwise, without the prior written
-permission of the copyright holder.
+The source code is public so it can be read. Publishing it on GitHub is not
+a license to host it, deploy it, or offer it to anyone else.
 
-The Software is provided for personal viewing and reference only. Any
-unauthorized use, reproduction, or distribution of the Software is strictly
-prohibited and may result in legal action.
+Permission
+----------
 
-For licensing inquiries or commercial use, contact the copyright holder.
+Without the prior written permission of the copyright holder, you may:
+
+  1. View and read the source code in this repository.
+  2. Clone the repository and run it on your own computer, for yourself
+     only, in order to study it or to prepare a contribution back to this
+     repository.
+
+You may not do any of the following, for yourself or for anyone else,
+unless the copyright holder has agreed in writing first:
+
+  - Host, deploy, publish, mirror, or operate the Software, or any modified
+    or extended version of it. This includes a public website, a private
+    server, a school or classroom network, a local install offered to
+    students or colleagues, and any other copy made available to another
+    person.
+  - Give the Software away, or offer it for a fee. Free, non-commercial,
+    educational, research, and "only in my country" uses are still hosting
+    and still need permission.
+  - Market, advertise, rebrand, or white-label a copy, or present one as
+    your own product or service.
+  - Redistribute the Software, or a substantial part of it, as a download,
+    image, fork offered to others, or other product.
+
+A pull request, a fork that exists only to propose changes back here, and
+a case-by-case written agreement (for example a named teaching or research
+project) are not a general right to host the Software. Permission, when it
+is granted, covers only what that writing says and no more.
+
+The official service is:
+
+  https://pseudocode-compiler.sherlemious.com
+
+Use that service, and send people there. Do not stand up another shared copy.
+
+To ask for permission, email abd.moh.yousef@gmail.com. Silence is not
+permission.
+
+The Software is provided "as is", without warranty of any kind, express or
+implied, including without limitation the warranties of merchantability,
+fitness for a particular purpose, and noninfringement. Unauthorized hosting,
+reproduction, or distribution is prohibited and may result in legal action.
