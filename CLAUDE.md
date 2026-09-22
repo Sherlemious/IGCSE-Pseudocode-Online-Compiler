@@ -178,6 +178,9 @@ npm run antlr:generate  # regenerate parser from grammar
 | `feedback_submitted` | — |
 | `bug_reported` | `category`, `has_code`, `page` |
 | `paste_cleaned` | `looks_ai`, `stripped_prose`, `blocks` — fired when a pasted AI/Markdown answer is stripped to just its fenced code |
+| `nudge_shown` / `nudge_clicked` / `nudge_dismissed` (Learn path) | `nudge` (`learn_path_playground`\|`learn_path_practice`), `surface` — one-time toast after a successful run / passed question (`learn/learnNudge.tsx`); the link lands on `/learn?from=<nudge>` so `learn_opened.from` attributes it |
+
+Paywall follow-up: PostHog workflow "Nudge if they hit the Learn paywall and don't buy" emails anyone with an email one day after their first `learn_gate_blocked` (`source: paywall`) unless they bought. Open/click tracking is on; links carry `utm_campaign=learn_paywall` (pricing) and `?from=paywall_email` (learn). The "Student conversion & checkout friction" dashboard tracks payment-method failures, school vs personal accounts at checkout, the weekly Learn funnel, and paywall hitters who haven't bought.
 
 ### Classes / teacher progress
 
