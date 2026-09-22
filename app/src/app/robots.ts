@@ -33,6 +33,7 @@ const PUBLIC_ALLOW = [
   '/compare',
   '/faq',
   '/og.png',
+  '/og-mark.png',
   '/og-wide.png',
   '/favicon.png',
 ];

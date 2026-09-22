@@ -6,7 +6,7 @@ const { chromium } = require(path.join(__dirname, '../../app/node_modules/playwr
 (async () => {
   const publicDir = path.join(__dirname, '../../app/public');
   for (const [qs, name] of [
-    ['', 'og.png'],
+    ['', 'og-mark.png'],
     ['?wide=1', 'og-wide.png'],
   ]) {
     const og = await fetch(`http://localhost:3000/api/og${qs}`);

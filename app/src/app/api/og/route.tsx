@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { ImageResponse } from 'next/og';
-import { OG_SQUARE, OG_WIDE, OpenGraphCard } from '@/shared/brand/OpenGraphCard';
+import { OG_SQUARE, OG_WIDE, OpenGraphCard, OpenGraphMark } from '@/shared/brand/OpenGraphCard';
 
 export const runtime = 'nodejs';
 
@@ -17,13 +17,14 @@ async function ogFonts() {
   ];
 }
 
-/** Dev/render helper. Share previews use the static files at /og.png and /og-wide.png. */
+/** Dev/render helper. Share previews use the static files at /og-mark.png and /og-wide.png. */
 export async function GET(request: Request) {
   const wide = new URL(request.url).searchParams.get('wide') === '1';
-  const variant = wide ? 'wide' : 'square';
-  const size = wide ? OG_WIDE : OG_SQUARE;
-  return new ImageResponse(<OpenGraphCard variant={variant} />, {
-    ...size,
-    fonts: await ogFonts(),
-  });
+  if (wide) {
+    return new ImageResponse(<OpenGraphCard />, {
+      ...OG_WIDE,
+      fonts: await ogFonts(),
+    });
+  }
+  return new ImageResponse(<OpenGraphMark />, { ...OG_SQUARE });
 }

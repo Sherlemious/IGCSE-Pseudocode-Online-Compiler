@@ -11,10 +11,10 @@ export const DEFAULT_TITLE = 'Pseudocode Compiler Online | IGCSE 0478 & A Level 
 export const DEFAULT_DESCRIPTION =
   'Free online pseudocode compiler, editor and runner for Cambridge IGCSE 0478 and A Level 9618. Run and check code in the browser, dry-run with trace tables, and practise past-paper questions.';
 
-/** 1:1 card. WhatsApp (and Classroom / Teams) crop anything else into a stamp. */
+/** 1:1 owl. WhatsApp reads this as a stamp — the exam-sheet card does not. */
 export const SHARE_IMAGE = {
-  url: `${SITE_URL}/og.png`,
-  secureUrl: `${SITE_URL}/og.png`,
+  url: `${SITE_URL}/og-mark.png`,
+  secureUrl: `${SITE_URL}/og-mark.png`,
   width: 1200,
   height: 1200,
   alt: SITE_NAME,
