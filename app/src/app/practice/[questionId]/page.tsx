@@ -14,6 +14,7 @@ import {
   absoluteUrl,
   paperReference,
   SHARE_IMAGE,
+  SHARE_IMAGE_WIDE,
   SITE_NAME,
   stripMarkdown,
   truncateDescription,
@@ -85,7 +86,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         card: 'summary_large_image',
         title,
         description,
-        images: [SHARE_IMAGE],
+        images: [SHARE_IMAGE_WIDE],
       },
     };
   } catch {

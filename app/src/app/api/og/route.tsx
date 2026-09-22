@@ -1,11 +1,9 @@
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { ImageResponse } from 'next/og';
-import { OpenGraphCard } from '@/shared/brand/OpenGraphCard';
+import { OG_SQUARE, OG_WIDE, OpenGraphCard } from '@/shared/brand/OpenGraphCard';
 
 export const runtime = 'nodejs';
-
-const size = { width: 1200, height: 630 };
 
 async function ogFonts() {
   const dir = join(process.cwd(), 'src/shared/brand/fonts');
@@ -19,9 +17,12 @@ async function ogFonts() {
   ];
 }
 
-/** Dev/render helper. Share previews use the static file at /og.png. */
-export async function GET() {
-  return new ImageResponse(<OpenGraphCard />, {
+/** Dev/render helper. Share previews use the static files at /og.png and /og-wide.png. */
+export async function GET(request: Request) {
+  const wide = new URL(request.url).searchParams.get('wide') === '1';
+  const variant = wide ? 'wide' : 'square';
+  const size = wide ? OG_WIDE : OG_SQUARE;
+  return new ImageResponse(<OpenGraphCard variant={variant} />, {
     ...size,
     fonts: await ogFonts(),
   });

@@ -5,10 +5,15 @@ const { chromium } = require(path.join(__dirname, '../../app/node_modules/playwr
 
 (async () => {
   const publicDir = path.join(__dirname, '../../app/public');
-  const og = await fetch('http://localhost:3000/api/og');
-  if (!og.ok) throw new Error(`api/og ${og.status}`);
-  fs.writeFileSync(path.join(publicDir, 'og.png'), Buffer.from(await og.arrayBuffer()));
-  console.log('wrote app/public/og.png');
+  for (const [qs, name] of [
+    ['', 'og.png'],
+    ['?wide=1', 'og-wide.png'],
+  ]) {
+    const og = await fetch(`http://localhost:3000/api/og${qs}`);
+    if (!og.ok) throw new Error(`api/og${qs} ${og.status}`);
+    fs.writeFileSync(path.join(publicDir, name), Buffer.from(await og.arrayBuffer()));
+    console.log('wrote app/public/' + name);
+  }
 
   const browser = await chromium.launch({ headless: true });
   const page = await browser.newPage({ viewport: { width: 512, height: 512 } });

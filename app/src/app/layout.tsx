@@ -22,6 +22,7 @@ import {
   DEFAULT_TITLE,
   SEO_KEYWORDS,
   SHARE_IMAGE,
+  SHARE_IMAGE_WIDE,
   SITE_NAME,
   SITE_URL,
 } from '@/shared/lib/seo';
@@ -60,7 +61,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: DEFAULT_TITLE,
     description: DEFAULT_DESCRIPTION,
-    images: [SHARE_IMAGE],
+    images: [SHARE_IMAGE_WIDE],
   },
 };
 

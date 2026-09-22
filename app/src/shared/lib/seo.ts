@@ -11,10 +11,20 @@ export const DEFAULT_TITLE = 'Pseudocode Compiler Online | IGCSE 0478 & A Level 
 export const DEFAULT_DESCRIPTION =
   'Free online pseudocode compiler, editor and runner for Cambridge IGCSE 0478 and A Level 9618. Run and check code in the browser, dry-run with trace tables, and practise past-paper questions.';
 
-/** Static share card. WhatsApp, Facebook, Reddit, Classroom and Teams want a real .png URL. */
+/** 1:1 card. WhatsApp (and Classroom / Teams) crop anything else into a stamp. */
 export const SHARE_IMAGE = {
   url: `${SITE_URL}/og.png`,
   secureUrl: `${SITE_URL}/og.png`,
+  width: 1200,
+  height: 1200,
+  alt: SITE_NAME,
+  type: 'image/png',
+} as const;
+
+/** 1.91:1 card for Twitter / LinkedIn large previews. */
+export const SHARE_IMAGE_WIDE = {
+  url: `${SITE_URL}/og-wide.png`,
+  secureUrl: `${SITE_URL}/og-wide.png`,
   width: 1200,
   height: 630,
   alt: SITE_NAME,

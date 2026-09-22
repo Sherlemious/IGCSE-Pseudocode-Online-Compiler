@@ -33,6 +33,7 @@ const PUBLIC_ALLOW = [
   '/compare',
   '/faq',
   '/og.png',
+  '/og-wide.png',
   '/favicon.png',
 ];
 const PRIVATE_DISALLOW = ['/api/', '/auth/', '/admin/', '/profile/', '/analytics/', '/exam$', '/exam/'];
