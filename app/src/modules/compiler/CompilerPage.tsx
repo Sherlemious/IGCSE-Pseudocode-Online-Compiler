@@ -36,6 +36,7 @@ import { ONBOARDING_KEY } from '@/modules/onboarding/constants';
 import { formatOutputEntries } from '@/modules/compiler/formatOutputEntries';
 import { SAVE_PROGRAM_PROMPT_FLAG } from '@/modules/telemetry/experiments';
 import SaveProgramSheet from './SaveProgramSheet';
+import { suggestLearnPath } from '@/modules/learn/learnNudge';
 import {
   forceSavePromptFromUrl,
   hasShownSavePrompt,
@@ -615,6 +616,8 @@ const CompilerPage: React.FC = () => {
     ) {
       markSavePromptShown();
       setSaveSheetOpen(true);
+    } else if (outcome === 'success') {
+      setTimeout(() => suggestLearnPath('playground'), 1500);
     }
 
     // Track run count and trigger feedback survey after threshold

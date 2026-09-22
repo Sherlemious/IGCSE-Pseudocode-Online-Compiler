@@ -9,6 +9,7 @@ import PracticeStartGate from './PracticeStartGate';
 import GradeAuthSheet, { PENDING_GRADE_KEY } from './GradeAuthSheet';
 import { useInterpreter } from '@/modules/interpreter/useInterpreter';
 import { captureEvent } from '@/modules/interpreter/analytics';
+import { suggestLearnPath } from '@/modules/learn/learnNudge';
 import { authHref } from '@/modules/auth/callback';
 import { AUTOSAVE_DELAY, loadSplitPercent } from '@/shared/lib/persist';
 import { SPLIT_PRACTICE_KEY } from './constants';
@@ -290,7 +291,10 @@ export default function PracticeWorkspace({ questionId, starterCode, savedCode, 
         total_count: data.totalCount,
         solved: allPassed,
       });
-      if (allPassed) captureEvent('practice_solved', { question_id: questionId });
+      if (allPassed) {
+        captureEvent('practice_solved', { question_id: questionId });
+        setTimeout(() => suggestLearnPath('practice'), 1200);
+      }
       window.dispatchEvent(new CustomEvent('practice:graded', {
         detail: {
           isSolved: allPassed,
