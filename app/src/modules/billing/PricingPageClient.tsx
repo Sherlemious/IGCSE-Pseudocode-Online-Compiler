@@ -211,6 +211,8 @@ function PricingViewInner({
               passActiveUntil={passActiveUntil}
               canManageBilling={canManageBilling}
               paddleEnv={paddleEnv}
+              autoCheckout={searchParams.get('checkout')}
+              checkoutSource={searchParams.get('from')}
             />
           </PaddleProvider>
         )}

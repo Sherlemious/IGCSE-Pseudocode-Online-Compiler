@@ -119,6 +119,17 @@ export function highestReachedPlayableIndex(course: LearnCourse, map: ProgressMa
   return max;
 }
 
+/**
+ * Free levels from here on need a (free) account. Progress then syncs across
+ * devices, and by the level-4 paywall the student is already signed in, so
+ * paying is one step instead of sign-in + checkout.
+ */
+export const ACCOUNT_REQUIRED_FROM_LEVEL = 3;
+
+export function levelNeedsAccount(level: { number: number }): boolean {
+  return level.number >= ACCOUNT_REQUIRED_FROM_LEVEL;
+}
+
 export function isLessonUnlocked(
   course: LearnCourse,
   lesson: LearnLesson,

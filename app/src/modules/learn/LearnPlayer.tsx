@@ -6,14 +6,16 @@ import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { ArrowLeft, ArrowRight, BookOpen, Check, Code2, Crown, Lock } from 'lucide-react';
-import { authHref } from '@/modules/auth/callback';
+import { ArrowLeft, ArrowRight, BookOpen, Check, Code2, Crown, Lock, UserPlus } from 'lucide-react';
 import { IGCSE_PAPER_2 } from './curriculum';
 import LearnEditorPane from './LearnEditorPane';
+import { promptLearnUpgrade } from './learnNudge';
+import LearnAccountSheet, { LEARN_PENDING_AUTH_KEY, type LearnAuthGate } from './LearnAccountSheet';
 import { flattenLessons, lessonHref, nextLesson, previousLesson } from './path';
 import {
   isComplete,
   isLessonUnlocked,
+  levelNeedsAccount,
   loadProgress,
   markAttempt,
   markComplete,
@@ -31,11 +33,14 @@ type Props = {
 
 export default function LearnPlayer({ level, lesson, premiumAccess: initialPremium }: Props) {
   const router = useRouter();
-  const { status } = useSession();
+  const { status, update: updateSession } = useSession();
   const [progress, setProgress] = useState<ProgressMap>({});
   const [premiumAccess, setPremiumAccess] = useState(initialPremium);
   const [mobilePane, setMobilePane] = useState<'lesson' | 'editor'>('lesson');
   const startedFor = useRef<string | null>(null);
+  const [authGate, setAuthGate] = useState<LearnAuthGate | null>(null);
+  // Which gate (if any) this tab showed, so a sign-in right after it counts as that gate's conversion.
+  const gateShown = useRef<LearnAuthGate | null>(null);
   const isQuiz = lesson.type === 'quiz';
   const hasEditor = Boolean(lesson.starterCode);
   const access = { premium: premiumAccess };
@@ -48,6 +53,24 @@ export default function LearnPlayer({ level, lesson, premiumAccess: initialPremi
     if (status === 'loading') return;
     let cancelled = false;
     setMobilePane('lesson');
+    if (status === 'authenticated') {
+      let viaGoogle: string | null = null;
+      try {
+        viaGoogle = sessionStorage.getItem(LEARN_PENDING_AUTH_KEY);
+        sessionStorage.removeItem(LEARN_PENDING_AUTH_KEY);
+      } catch {
+        /* unavailable */
+      }
+      const gate = (viaGoogle as LearnAuthGate | null) ?? gateShown.current;
+      if (gate) {
+        captureLearn(
+          'learn_signup_gate_completed',
+          learnLessonProps(level, lesson, { gate, method: viaGoogle ? 'google' : 'email' }),
+        );
+        gateShown.current = null;
+        setAuthGate(null);
+      }
+    }
     void (async () => {
       const local = loadProgress();
       if (!cancelled) setProgress(local);
@@ -57,10 +80,19 @@ export default function LearnPlayer({ level, lesson, premiumAccess: initialPremi
       setProgress(map);
       if (typeof hydrated?.premiumAccess === 'boolean') setPremiumAccess(hydrated.premiumAccess);
       if (startedFor.current === lesson.id) return;
-      startedFor.current = lesson.id;
       const open = isLessonUnlocked(IGCSE_PAPER_2, lesson, map, {
         premium: hydrated?.premiumAccess ?? initialPremium,
       });
+      if (open && level.free && levelNeedsAccount(level) && status !== 'authenticated') {
+        // Not marked started: once they sign in this effect re-runs and starts the lesson.
+        if (gateShown.current !== 'account') {
+          gateShown.current = 'account';
+          captureLearn('learn_signup_gate_shown', learnLessonProps(level, lesson, { gate: 'account' }));
+        }
+        setAuthGate('account');
+        return;
+      }
+      startedFor.current = lesson.id;
       if (!lesson.playable || !open) {
         const entitled = hydrated?.premiumAccess ?? initialPremium;
         const paywalled = lesson.playable && !level.free && !entitled;
@@ -132,6 +164,11 @@ export default function LearnPlayer({ level, lesson, premiumAccess: initialPremi
       const remainingOnLevel = level.lessons.filter((item) => item.playable && !isComplete(map, item.id));
       if (remainingOnLevel.length === 0) {
         captureLearn('learn_level_completed', learnLevelProps(level, course));
+        // Finishing the last free level is the moment to sell the rest.
+        const upcoming = next?.level;
+        if (upcoming && upcoming.number !== level.number && !upcoming.free && !premiumAccess) {
+          promptLearnUpgrade(level.number, upcoming.number);
+        }
       }
       const remainingPlayable = flattenLessons(IGCSE_PAPER_2).filter(
         (item) => item.lesson.playable && !isComplete(map, item.lesson.id),
@@ -140,8 +177,32 @@ export default function LearnPlayer({ level, lesson, premiumAccess: initialPremi
         captureLearn('learn_path_completed', course);
       }
     },
-    [lesson, level],
+    [lesson, level, next, premiumAccess],
   );
+
+  function openAuth(gate: LearnAuthGate) {
+    gateShown.current = gate;
+    captureLearn('learn_signup_gate_opened', learnLessonProps(level, lesson, { gate }));
+    setAuthGate(gate);
+  }
+
+  function authSheet(returnPath: string) {
+    if (!authGate || status === 'authenticated') return null;
+    const gate = authGate;
+    return (
+      <LearnAccountSheet
+        gate={gate}
+        returnPath={returnPath}
+        onClose={() => {
+          captureLearn('learn_signup_gate_dismissed', learnLessonProps(level, lesson, { gate }));
+          setAuthGate(null);
+        }}
+        onAuthenticated={async () => {
+          await updateSession({});
+        }}
+      />
+    );
+  }
 
   if (!lesson.playable || !unlocked) {
     const paywalled = lesson.playable && !premiumAccess && !level.free;
@@ -157,25 +218,40 @@ export default function LearnPlayer({ level, lesson, premiumAccess: initialPremi
           <h1 className="display-serif text-xl font-semibold text-light-text mb-2">{lesson.title}</h1>
           <p className="text-sm text-dark-text mb-4">
             {paywalled
-              ? 'Levels 4–10 are part of the Student and teacher plans. Upgrade, or join a class from a teacher who has one.'
+              ? 'Levels 4–10 are what Paper 2 actually tests: IF and CASE, loops, string handling, arrays, procedures and functions, files, and full exam-style problems. Unlock them with the Student plan, or join a class from a teacher who has one.'
               : 'Complete the previous lesson to unlock this one.'}
           </p>
           {paywalled && (
             <div className="flex flex-wrap items-center gap-3 mb-4">
               {status !== 'authenticated' ? (
-                <Link
-                  href={authHref('signin', lessonPath)}
+                <button
+                  type="button"
+                  onClick={() => openAuth('paywall')}
                   className="inline-flex items-center min-h-10 px-3 rounded-lg bg-primary/15 text-primary text-sm font-medium hover:bg-primary/25"
                 >
                   Sign in to continue
-                </Link>
+                </button>
               ) : (
                 <Link
-                  href="/pricing?view=student"
+                  href="/pricing?view=student&checkout=student&from=learn_paywall"
+                  onClick={() =>
+                    captureLearn('learn_upgrade_clicked', learnLessonProps(level, lesson, { source: 'paywall' }))
+                  }
                   className="inline-flex items-center gap-1.5 min-h-10 px-3 rounded-lg bg-warning/15 text-warning text-sm font-medium hover:bg-warning/25"
                 >
                   <Crown size={14} />
-                  See student plans
+                  Unlock levels 4–10
+                </Link>
+              )}
+              {status === 'authenticated' && (
+                <Link
+                  href="/pricing?view=student&from=learn_paywall"
+                  onClick={() =>
+                    captureLearn('learn_upgrade_clicked', learnLessonProps(level, lesson, { source: 'paywall_compare' }))
+                  }
+                  className="text-sm text-dark-text hover:text-light-text hover:underline"
+                >
+                  Compare plans and passes
                 </Link>
               )}
             </div>
@@ -190,6 +266,43 @@ export default function LearnPlayer({ level, lesson, premiumAccess: initialPremi
             Back to the path
           </Link>
         </div>
+        {authSheet(lessonPath)}
+      </div>
+    );
+  }
+
+  if (level.free && levelNeedsAccount(level) && status === 'unauthenticated') {
+    const lessonPath = lessonHref(level, lesson);
+    return (
+      <div className="flex-1 min-h-0 overflow-y-auto bg-background bg-dot-grid px-4 py-8 sm:py-10">
+        <div className="max-w-lg mx-auto rounded-2xl border border-border bg-surface p-5 sm:p-6">
+          <UserPlus className="h-5 w-5 text-primary mb-3" />
+          <h1 className="display-serif text-xl font-semibold text-light-text mb-2">{lesson.title}</h1>
+          <p className="text-sm text-dark-text mb-4">
+            Levels 1 and 2 are open to everyone. From level 3 you need a free account. It keeps your
+            progress so far, saves it across devices, and gets you ready for the full path.
+          </p>
+          <button
+            type="button"
+            onClick={() => openAuth('account')}
+            className="inline-flex items-center gap-1.5 min-h-10 px-3 mb-4 rounded-lg bg-primary/15 text-primary text-sm font-medium hover:bg-primary/25"
+          >
+            <UserPlus size={14} />
+            Create a free account
+          </button>
+          <div>
+            <Link
+              href="/learn"
+              className="text-sm text-primary hover:underline"
+              onClick={() =>
+                captureLearn('learn_path_clicked', learnLessonProps(level, lesson, { source: 'account_gate' }))
+              }
+            >
+              Back to the path
+            </Link>
+          </div>
+        </div>
+        {authSheet(lessonPath)}
       </div>
     );
   }

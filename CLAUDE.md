@@ -249,6 +249,14 @@ Progress is localStorage; these fire from the path map and the lesson player. In
 | `learn_prev_clicked` | `prev_lesson` |
 | `learn_docs_clicked` | `docs_anchor` |
 | `learn_pane_changed` | mobile `pane` `lesson`\|`editor`, `source` `tab`\|`cta` |
+| `learn_signup_gate_shown` | lesson props + `gate: account` — signed-out student opened a level-3+ free lesson (`ACCOUNT_REQUIRED_FROM_LEVEL` in `learn/progress.ts`); the in-page sheet auto-opens |
+| `learn_signup_gate_opened` | lesson props + `gate` (`account`\|`paywall`) — sheet opened from the gate button |
+| `learn_signup_gate_dismissed` | lesson props + `gate` |
+| `learn_signup_gate_completed` | lesson props + `gate`, `method` (`email`\|`google`; Google is detected on return via sessionStorage `learn_pending_auth`) |
+| `learn_upgrade_clicked` | lesson props + `source` (`paywall` → auto-opens student checkout, `paywall_compare` → plain student pricing) |
+| `nudge_shown` / `nudge_clicked` / `nudge_dismissed` (`nudge: learn_upgrade_level_complete`) | `level` — toast when the last free level is finished; links to the auto-opening student checkout |
+
+Student checkout hand-off: `/pricing?checkout=student&from=<source>` auto-opens the Student monthly Paddle checkout for a signed-in student with no plan. `subscribe_clicked` / `pass_clicked` now carry `source` (the `from` param, default `pricing`) and `auto_opened`.
 
 ### Compare (`/compare`)
 

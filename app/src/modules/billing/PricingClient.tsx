@@ -115,6 +115,8 @@ export default function PricingClient({
   passActiveUntil,
   canManageBilling,
   paddleEnv,
+  autoCheckout,
+  checkoutSource,
 }: {
   teacherTiers: PricingTierView[];
   studentMonthly: StudentMonthlyView | null;
@@ -130,6 +132,10 @@ export default function PricingClient({
   passActiveUntil?: string | null;
   canManageBilling?: boolean;
   paddleEnv: string;
+  /** `?checkout=student`: open the student checkout on load (Learn paywall hand-off). */
+  autoCheckout?: string | null;
+  /** `?from=`: where the buyer came from, attached to subscribe/pass clicks. */
+  checkoutSource?: string | null;
 }) {
   const paddle = usePaddle();
   const ph = usePostHog();
@@ -240,6 +246,7 @@ export default function PricingClient({
     slug: string;
     priceId: string;
     interval: Interval | 'pass';
+    auto?: boolean;
   }) => {
     if (!paddle || !opts.priceId) return;
     ph?.capture(opts.interval === 'pass' ? 'pass_clicked' : 'subscribe_clicked', {
@@ -248,6 +255,8 @@ export default function PricingClient({
       price_id: opts.priceId,
       paddle_env: paddleEnv,
       sku_type: opts.interval === 'pass' ? 'session_pass' : 'subscription',
+      source: checkoutSource ?? 'pricing',
+      auto_opened: Boolean(opts.auto),
     });
     paddle.Checkout.open({
       items: [{ priceId: opts.priceId, quantity: 1 }],
@@ -260,6 +269,17 @@ export default function PricingClient({
       },
     });
   };
+
+  // Learn paywall hand-off: the student is already signed in, so skip the plan
+  // browsing and open the student checkout straight away (once per page load).
+  const autoOpenedRef = useRef(false);
+  const autoPriceId = studentMonthly?.monthPriceId;
+  useEffect(() => {
+    if (autoOpenedRef.current || autoCheckout !== 'student') return;
+    if (!paddle || !appUserId || !autoPriceId || !studentMonthly || currentTier) return;
+    autoOpenedRef.current = true;
+    openCheckout({ slug: studentMonthly.slug, priceId: autoPriceId, interval: 'month', auto: true });
+  });
 
   const intervalLabel = interval === 'month' ? 'mo' : 'yr';
   const regional = hasRegionalPricing(resolvedCountry);
