@@ -10,6 +10,7 @@ import GradeAuthSheet, { PENDING_GRADE_KEY } from './GradeAuthSheet';
 import { useInterpreter } from '@/modules/interpreter/useInterpreter';
 import { captureEvent } from '@/modules/interpreter/analytics';
 import { suggestLearnPath } from '@/modules/learn/learnNudge';
+import { readStreak, recordSolveDay } from './practiceStreak';
 import { authHref } from '@/modules/auth/callback';
 import { AUTOSAVE_DELAY, loadSplitPercent } from '@/shared/lib/persist';
 import { SPLIT_PRACTICE_KEY } from './constants';
@@ -37,6 +38,8 @@ import {
   LayoutTemplate,
   PenLine,
   X,
+  Flame,
+  ArrowRight,
 } from 'lucide-react';
 
 /* ── Types ──────────────────────────────────────────────── */
@@ -188,6 +191,11 @@ export default function PracticeWorkspace({ questionId, starterCode, savedCode, 
   const [gradeResponse, setGradeResponse] = useState<GradeResponse | null>(null);
   const [gradingError, setGradingError] = useState<string | null>(null);
   const [showFailuresOnly, setShowFailuresOnly] = useState(false);
+  // Days in a row with a solve (this browser). Read after mount: localStorage.
+  const [streakDays, setStreakDays] = useState(0);
+  useEffect(() => {
+    setStreakDays(readStreak().streak);
+  }, []);
   // In-page auth prompt for Medium/Hard grading by an anonymous student.
   const [sheetOpen, setSheetOpen] = useState(false);
 
@@ -293,6 +301,11 @@ export default function PracticeWorkspace({ questionId, starterCode, savedCode, 
       });
       if (allPassed) {
         captureEvent('practice_solved', { question_id: questionId });
+        const day = recordSolveDay();
+        setStreakDays(day.streak);
+        if (day.extended) {
+          captureEvent('practice_streak_extended', { question_id: questionId, streak: day.streak });
+        }
         setTimeout(() => suggestLearnPath('practice'), 1200);
       }
       window.dispatchEvent(new CustomEvent('practice:graded', {
@@ -999,6 +1012,24 @@ export default function PracticeWorkspace({ questionId, starterCode, savedCode, 
               <BookOpen size={10} className="text-primary" />
               Compare with the <strong className="text-light-text">Model Solution</strong> in the sidebar.
             </div>
+          )}
+          {allPassed && streakDays > 0 && (
+            <div className="text-[11px] text-warning mt-1.5 flex items-center justify-center gap-1 font-medium">
+              <Flame size={11} aria-hidden="true" />
+              {streakDays}-day streak
+            </div>
+          )}
+          {allPassed && (
+            <Link
+              href="/practice?from=solved"
+              onClick={() =>
+                captureEvent('practice_next_clicked', { question_id: questionId, streak: streakDays })
+              }
+              className="mt-2 inline-flex items-center gap-1 rounded-md border border-success/40 bg-success/10 px-2.5 py-1 text-[11px] font-semibold text-success hover:bg-success/20 transition-colors"
+            >
+              Next question
+              <ArrowRight size={11} aria-hidden="true" />
+            </Link>
           )}
         </div>
 

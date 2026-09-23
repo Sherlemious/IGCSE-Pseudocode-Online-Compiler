@@ -9,6 +9,8 @@ import { PracticeFilters } from './PracticeFilters';
 import { PracticeToolbar } from './PracticeToolbar';
 import { useShallowPracticeUrl } from './useShallowPracticeUrl';
 import SolveCountChip from './SolveCountChip';
+import StartHereCard from './StartHereCard';
+import { recommendNextQuestion } from './practiceNext';
 import { useQuestionSocialStats } from './usePracticeSocialProof';
 import {
   DIFFICULTIES,
@@ -116,6 +118,16 @@ export default function PracticeIndex({
     const [qId] = inProgress[0];
     return questions.find((q) => q.id === qId) ?? null;
   })();
+
+  const nextQuestion = resumeQuestion
+    ? null
+    : recommendNextQuestion({
+        questions,
+        progress: progressMap,
+        stats: socialStats,
+        hasFullAccess,
+        signedIn,
+      });
 
   const filterProps = {
     topics: listing.topics,
@@ -272,6 +284,10 @@ export default function PracticeIndex({
                       <div className="text-sm font-medium text-light-text truncate">{resumeQuestion.title}</div>
                     </div>
                   </Link>
+                )}
+
+                {nextQuestion && (
+                  <StartHereCard question={nextQuestion} kind={totalSolved === 0 ? 'first' : 'next'} />
                 )}
 
                 {listing.filtered.length === 0 ? (

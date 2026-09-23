@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { Lightbulb, ChevronDown, ChevronRight } from 'lucide-react';
+import { captureEvent } from '@/modules/interpreter/analytics';
 
 interface Props {
   questionId: string;
@@ -11,8 +12,12 @@ const HINTS_KEY = (id: string) => `hints_revealed:${id}`;
 const FAILS_KEY = (id: string) => `hints_fails:${id}`;
 const NUDGED_KEY = (id: string) => `hints_nudged:${id}`;
 
-/** Consecutive failed "Check My Answer" runs before we proactively offer a hint. */
-const STUCK_THRESHOLD = 2;
+/**
+ * Failed "Check My Answer" runs before we proactively offer a hint. One: 66 of
+ * the 242 monthly non-solvers submitted and failed, then left, so waiting for a
+ * second failure lost most of them.
+ */
+const STUCK_THRESHOLD = 1;
 
 export default function HintsPanel({ questionId }: Props) {
   const [isOpen, setIsOpen] = useState(false);
@@ -70,10 +75,11 @@ export default function HintsPanel({ questionId }: Props) {
     if (next) fetchHints();
   };
 
-  const revealNext = useCallback(() => {
+  const revealNext = useCallback((source: 'nudge' | 'manual' = 'manual') => {
     setRevealed((prev) => {
       if (hintsLenRef.current > 0 && prev >= hintsLenRef.current) return prev;
       const next = prev + 1;
+      captureEvent('practice_hint_revealed', { question_id: questionId, hint_number: next, source });
       try {
         localStorage.setItem(HINTS_KEY(questionId), String(next));
       } catch {
@@ -90,12 +96,13 @@ export default function HintsPanel({ questionId }: Props) {
     if (list.length === 0) return; // nothing to offer
     setNudged(true);
     setJustNudged(true);
+    captureEvent('practice_hint_nudged', { question_id: questionId, hint_count: list.length });
     try {
       localStorage.setItem(NUDGED_KEY(questionId), 'true');
     } catch {
       /* ignore */
     }
-    revealNext();
+    revealNext('nudge');
   }, [fetchHints, revealNext, questionId]);
 
   // Listen for grade results from PracticeWorkspace.
@@ -184,7 +191,7 @@ export default function HintsPanel({ questionId }: Props) {
 
               {!allRevealed && (
                 <button
-                  onClick={revealNext}
+                  onClick={() => revealNext('manual')}
                   className="flex items-center gap-1.5 text-xs text-warning hover:text-light-text transition-colors px-1 py-0.5"
                 >
                   <Lightbulb size={11} />

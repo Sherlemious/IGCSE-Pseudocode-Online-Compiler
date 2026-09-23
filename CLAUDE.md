@@ -182,6 +182,19 @@ npm run antlr:generate  # regenerate parser from grammar
 
 Paywall follow-up: PostHog workflow "Nudge if they hit the Learn paywall and don't buy" emails anyone with an email one day after their first `learn_gate_blocked` (`source: paywall`) unless they bought. Open/click tracking is on; links carry `utm_campaign=learn_paywall` (pricing) and `?from=paywall_email` (learn). The "Student conversion & checkout friction" dashboard tracks payment-method failures, school vs personal accounts at checkout, the weekly Learn funnel, and paywall hitters who haven't bought.
 
+### Practice retention (first solve + streak)
+
+85% of practice visitors never solve a question (Sept 2026), so the list recommends one and the streak rewards coming back. The streak is per-browser localStorage (`practice/practiceStreak.ts`, key `practice_solve_days`); recommendations come from `practice/practiceNext.ts` (unsolved, unlocked, easiest, most-solved; EASY only when signed out).
+
+| Event | Properties |
+|-------|-----------|
+| `practice_start_here_shown` | `question_id`, `kind` (`first`\|`next`), `difficulty`, `streak`, `solved_today` — card at the top of `/practice` when there's no in-progress question |
+| `practice_start_here_clicked` | `question_id`, `kind`, `difficulty`, `streak` |
+| `practice_streak_extended` | `question_id`, `streak` — first solve of the local day |
+| `practice_next_clicked` | `question_id`, `streak` — "Next question" in the solved banner (→ `/practice?from=solved`) |
+| `practice_hint_nudged` | `question_id`, `hint_count` — hint auto-opened after the first failed check (was the second) |
+| `practice_hint_revealed` | `question_id`, `hint_number`, `source` (`nudge`\|`manual`) |
+
 ### Classes / teacher progress
 
 Page-side events fire via `captureEvent` (same path as `class_joined` / `assignment_link_opened`). Never include student name, email, or `lastCode`.
