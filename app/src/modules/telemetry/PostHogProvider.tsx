@@ -16,6 +16,13 @@ if (typeof window !== 'undefined' && key) {
     person_profiles: 'identified_only',
     capture_pageview: false, // handled manually below
     capture_pageleave: true, // still needed when pageviews are manual (bounce rate / session duration)
+    // Frontend errors → PostHog Error Tracking ($exception). Console errors stay
+    // off: React dev warnings and handled failures would drown the real crashes.
+    capture_exceptions: {
+      capture_unhandled_errors: true,
+      capture_unhandled_rejections: true,
+      capture_console_errors: false,
+    },
     debug: isDev,
     opt_out_capturing_by_default: isDev, // no data collected in dev unless opted in
   });

@@ -171,6 +171,7 @@ npm run antlr:generate  # regenerate parser from grammar
 |-------|-----------|
 | `$pageview` | standard |
 | `interpreter_error` | `error_type` (parse\|runtime), `error_message`, `line`, `code_lines` |
+| `$exception` | PostHog Error Tracking — app crashes, not student code errors. Unhandled errors/rejections are autocaptured (`capture_exceptions` in `PostHogProvider`); `app/error.tsx` + `app/global-error.tsx` add `boundary` (`segment`\|`global`), `digest`, `path`. Filter students with person `role` (set on identify; signed-out visitors have none) |
 | `share_clicked` | `method`, `context` |
 | `share_completed` | `method` |
 | `sign_in_clicked` | `source` |

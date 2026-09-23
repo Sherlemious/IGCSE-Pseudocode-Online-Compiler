@@ -27,6 +27,7 @@ export default function SessionIdentifier() {
         email: session.user.email ?? undefined,
         name: session.user.name ?? undefined,
         plan: session.user.plan,
+        role: session.user.role,
       });
 
       // Fire conversion event once per browser session (not on every page reload)
