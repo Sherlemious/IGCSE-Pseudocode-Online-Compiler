@@ -276,7 +276,7 @@ export default function PricingClient({
   const autoPriceId = studentMonthly?.monthPriceId;
   useEffect(() => {
     if (autoOpenedRef.current || autoCheckout !== 'student') return;
-    if (!paddle || !appUserId || !autoPriceId || !studentMonthly || currentTier) return;
+    if (!paddle || !appUserId || !autoPriceId || !studentMonthly || currentTier || viewerIsTeacher) return;
     autoOpenedRef.current = true;
     openCheckout({ slug: studentMonthly.slug, priceId: autoPriceId, interval: 'month', auto: true });
   });

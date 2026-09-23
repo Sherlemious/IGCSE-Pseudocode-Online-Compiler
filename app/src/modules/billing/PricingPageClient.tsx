@@ -4,6 +4,9 @@ import { Suspense, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
+import { usePostHog } from 'posthog-js/react';
+import { UserPlus } from 'lucide-react';
+import AuthSheet from '@/modules/auth/AuthSheet';
 import { SITE_NAME, SUPPORT_EMAIL } from '@/shared/lib/seo';
 import { planBadge } from './planDisplay';
 import PaddleProvider from './PaddleProvider';
@@ -44,7 +47,26 @@ function PricingViewInner({
 }) {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const { data: session } = useSession();
+  const { data: session, status: sessionStatus, update: updateSession } = useSession();
+  const ph = usePostHog();
+
+  // `?checkout=student` (Learn paywall, upgrade toast, paywall email) auto-opens
+  // the Student checkout, but only for a signed-in student: without an account
+  // the purchase can only be matched by the email typed into Paddle, which
+  // often isn't the account email. Sign them in first, in place.
+  const checkoutFrom = searchParams.get('from');
+  const needsSignInForCheckout =
+    searchParams.get('checkout') === 'student' && sessionStatus === 'unauthenticated';
+  const [checkoutAuthOpen, setCheckoutAuthOpen] = useState(false);
+  useEffect(() => {
+    if (!needsSignInForCheckout) return;
+    setCheckoutAuthOpen(true);
+    ph?.capture('pricing_signin_prompt_shown', { source: checkoutFrom ?? 'unknown', paddle_env: paddleEnv });
+  }, [needsSignInForCheckout, checkoutFrom, ph, paddleEnv]);
+  const checkoutReturnPath =
+    typeof window !== 'undefined'
+      ? `${window.location.pathname}${window.location.search}`
+      : '/pricing?view=student&checkout=student';
   const portalFailed = searchParams.get('portal') === 'error';
 
   useEffect(() => {
@@ -187,6 +209,49 @@ function PricingViewInner({
               </>
             )}
           </div>
+        )}
+
+        {needsSignInForCheckout && (
+          <div className="mb-8 mx-auto max-w-xl rounded-2xl border border-primary/30 bg-primary/[0.06] p-5 text-center">
+            <p className="text-sm font-semibold text-light-text">Sign in first so the plan goes on your account</p>
+            <p className="mt-1 text-xs text-dark-text">
+              Use the account you study with. Checkout opens right after, and levels 4–10 unlock on that account.
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                ph?.capture('pricing_signin_prompt_clicked', { source: checkoutFrom ?? 'unknown', paddle_env: paddleEnv });
+                setCheckoutAuthOpen(true);
+              }}
+              className="mt-3 inline-flex items-center gap-1.5 min-h-10 px-4 rounded-lg bg-primary/15 text-primary text-sm font-medium hover:bg-primary/25"
+            >
+              <UserPlus size={14} />
+              Sign in to continue
+            </button>
+          </div>
+        )}
+
+        {checkoutAuthOpen && needsSignInForCheckout && (
+          <AuthSheet
+            ariaLabel="Sign in to unlock the Student plan"
+            headerLabel="Student plan"
+            headerIcon={UserPlus}
+            title="Sign in, then we'll open checkout."
+            description="The plan attaches to the account you sign in with, so use the one you study with."
+            signInSource="pricing_checkout"
+            role="STUDENT"
+            googleCallbackUrl={checkoutReturnPath}
+            onClose={() => {
+              ph?.capture('pricing_signin_prompt_dismissed', { source: checkoutFrom ?? 'unknown', paddle_env: paddleEnv });
+              setCheckoutAuthOpen(false);
+            }}
+            onFlushBeforeOAuth={() => {}}
+            onAuthenticated={async () => {
+              ph?.capture('pricing_signin_prompt_completed', { source: checkoutFrom ?? 'unknown', paddle_env: paddleEnv });
+              await updateSession({});
+              setCheckoutAuthOpen(false);
+            }}
+          />
         )}
 
         {view === 'choose' ? (

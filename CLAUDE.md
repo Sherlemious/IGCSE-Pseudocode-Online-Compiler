@@ -269,7 +269,7 @@ Progress is localStorage; these fire from the path map and the lesson player. In
 | `learn_upgrade_clicked` | lesson props + `source` (`paywall` → auto-opens student checkout, `paywall_compare` → plain student pricing) |
 | `nudge_shown` / `nudge_clicked` / `nudge_dismissed` (`nudge: learn_upgrade_level_complete`) | `level` — toast when the last free level is finished; links to the auto-opening student checkout |
 
-Student checkout hand-off: `/pricing?checkout=student&from=<source>` auto-opens the Student monthly Paddle checkout for a signed-in student with no plan. `subscribe_clicked` / `pass_clicked` now carry `source` (the `from` param, default `pricing`) and `auto_opened`.
+Student checkout hand-off: `/pricing?checkout=student&from=<source>` auto-opens the Student monthly ($2/mo) Paddle checkout for a signed-in student with no plan (never for teachers). Signed out, it opens the in-page auth sheet first (`pricing_signin_prompt_shown` / `_clicked` / `_dismissed` / `_completed`, all with `source`) so the purchase carries `app_user_id` instead of relying on the Paddle email matching the account email. `subscribe_clicked` / `pass_clicked` now carry `source` (the `from` param, default `pricing`) and `auto_opened`.
 
 ### Compare (`/compare`)
 
