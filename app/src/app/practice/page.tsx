@@ -4,7 +4,7 @@ import PracticeIndex from '@/modules/practice/PracticeIndex';
 import { getQuestionCatalog } from '@/shared/lib/catalogCache';
 import { SHARE_IMAGE, SITE_URL } from '@/shared/lib/seo';
 
-export const revalidate = 3600;
+export const revalidate = 86400;
 
 export const metadata: Metadata = {
   title: {

@@ -20,6 +20,8 @@ Modular monolith. `src/app/` is a thin routing layer (pages + API route handlers
 
 **Next.js backend** — API routes handle auth, practice/exam CRUD, AI grading, and nudge state. Database access goes through Prisma (`src/shared/db.ts`).
 
+**Caching / Vercel limits** — questions, examples and pricing tiers only change on seed, so catalog-derived ISR pages and routes revalidate daily (`revalidate = 86400`), not hourly. `shared/lib/catalogCache.ts` layers instance memory (5 min) → Data Cache (1 day, keyed per deployment) → Postgres, and loads a light list plus per-question entries — never the whole bank for one question. After seeding without a redeploy, `POST /api/admin/revalidate-catalog` (admin session) refreshes. `outputFileTracingExcludes` in `next.config.ts` keeps Prisma's unused wasm runtimes and sharp out of function bundles, since Hobby caps total deployment function storage (10 GB across retained deployments).
+
 ### Module map
 
 | Module | Owns |

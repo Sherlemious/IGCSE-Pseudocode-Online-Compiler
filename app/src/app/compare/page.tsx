@@ -21,7 +21,7 @@ import { getQuestionCount } from '@/shared/lib/catalogCache';
 import { SHARE_IMAGE, SITE_NAME, SITE_URL } from '@/shared/lib/seo';
 import { CompareCtaLink, CompareSectionLink, CompareTracker } from './CompareAnalytics';
 
-export const revalidate = 3600;
+export const revalidate = 86400;
 
 const COMPARE_DESCRIPTION =
   'Free Cambridge IGCSE 0478 / O Level 2210 / A Level 9618 Paper 2 practice: in-browser compiler, hidden tests, timed mocks, trace tables, and teacher homework. Student plan typically about $2/month.';

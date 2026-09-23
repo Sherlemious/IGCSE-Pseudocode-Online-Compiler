@@ -10,6 +10,33 @@ const nextConfig: NextConfig = {
     '@opentelemetry/api-logs',
     '@opentelemetry/resources',
   ],
+  // Vercel stores every retained deployment's function bundle and bills the
+  // total ("deployment function storage"), so keep files the server never
+  // loads out of the trace. Prisma uses the native library engine
+  // (runtime/library.js + the .so.node engine); the ~55 MB of per-database
+  // wasm runtimes are for edge/driver-adapter clients. Vercel serves
+  // /_next/image itself, so sharp is dead weight in the functions too.
+  outputFileTracingExcludes: {
+    '*': [
+      'node_modules/@prisma/client/runtime/*.wasm-base64.*',
+      'node_modules/@prisma/client/runtime/query_compiler_bg.*',
+      'node_modules/@prisma/client/runtime/query_engine_bg.*',
+      'node_modules/@prisma/client/runtime/wasm-*',
+      'node_modules/@prisma/client/runtime/edge*',
+      'node_modules/@prisma/client/runtime/react-native*',
+      'node_modules/@prisma/client/runtime/binary.*',
+      'node_modules/@prisma/client/runtime/index-browser*',
+      'node_modules/.prisma/client/*.wasm',
+      'node_modules/.prisma/client/wasm*',
+      'node_modules/.prisma/client/edge*',
+      'node_modules/.prisma/client/index-browser*',
+      'node_modules/.prisma/client/*.tmp*',
+      'node_modules/@prisma/engines/**',
+      'node_modules/prisma/**',
+      'node_modules/sharp/**',
+      'node_modules/@img/**',
+    ],
+  },
   async redirects() {
     return [
       {

@@ -4,7 +4,7 @@ import { IGCSE_PAPER_2 } from '@/modules/learn/curriculum';
 import { flattenLessons, lessonHref } from '@/modules/learn/path';
 import { SITE_URL } from '@/shared/lib/seo';
 
-export const revalidate = 3600;
+export const revalidate = 86400;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();

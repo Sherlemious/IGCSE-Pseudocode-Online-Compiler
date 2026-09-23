@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { CATALOG_CACHE_CONTROL, getQuestionHints } from '@/shared/lib/catalogCache';
 
-export const revalidate = 3600;
+export const revalidate = 86400;
 
 export async function GET(
   _request: NextRequest,

@@ -1,10 +1,20 @@
-import { cache } from 'react';
 import { unstable_cache } from 'next/cache';
-import type { Difficulty } from '@prisma/client';
+import type { Difficulty, Prisma } from '@prisma/client';
 import { prisma } from '@/shared/db';
 
-/** Practice questions / examples only change on seed. */
-export const CATALOG_REVALIDATE_SECONDS = 6 * 60 * 60;
+/**
+ * Practice questions / examples only change on seed. Three layers keep reads cheap:
+ * - per-instance memory (warm Fluid instances skip the Data Cache entirely),
+ * - the Vercel Data Cache, keyed per deployment because it outlives deploys
+ *   (so a seed + deploy is picked up, including by build-time prerendering),
+ * - Postgres.
+ * A seed without a redeploy shows up within a day, or within MEMORY_TTL_MS via
+ * POST /api/admin/revalidate-catalog (also refreshes the ISR pages tagged below).
+ */
+export const CATALOG_REVALIDATE_SECONDS = 24 * 60 * 60;
+const MEMORY_TTL_MS = 5 * 60 * 1000;
+const CATALOG_GENERATION =
+  process.env.VERCEL_DEPLOYMENT_ID ?? process.env.VERCEL_GIT_COMMIT_SHA ?? 'local';
 
 export const CATALOG_TAGS = {
   questions: 'questions',
@@ -13,7 +23,7 @@ export const CATALOG_TAGS = {
 
 /** CDN / browser cache for public catalog GET routes. */
 export const CATALOG_CACHE_CONTROL =
-  'public, s-maxage=3600, stale-while-revalidate=86400';
+  'public, s-maxage=86400, stale-while-revalidate=604800';
 
 export type BankTestCase = {
   id: string;
@@ -188,13 +198,80 @@ export function listQuestionsApiPayload(
     }));
 }
 
-async function loadQuestionBank(): Promise<BankQuestion[]> {
+/** Caches a loader in instance memory; a rejected load is dropped so the next call retries. */
+function memoize<A extends string, T>(load: (key: A) => Promise<T>): (key: A) => Promise<T> {
+  const entries = new Map<A, { at: number; value: Promise<T> }>();
+  return (key) => {
+    const hit = entries.get(key);
+    if (hit && Date.now() - hit.at < MEMORY_TTL_MS) return hit.value;
+    const value = load(key);
+    entries.set(key, { at: Date.now(), value });
+    value.catch(() => {
+      if (entries.get(key)?.value === value) entries.delete(key);
+    });
+    return value;
+  };
+}
+
+function dataCache<A extends unknown[], T>(
+  load: (...args: A) => Promise<T>,
+  name: string,
+  tag: string,
+): (...args: A) => Promise<T> {
+  return unstable_cache(load, [name, CATALOG_GENERATION], {
+    revalidate: CATALOG_REVALIDATE_SECONDS,
+    tags: [tag],
+  });
+}
+
+const BANK_QUESTION_SELECT = {
+  id: true,
+  title: true,
+  description: true,
+  difficulty: true,
+  year: true,
+  session: true,
+  variant: true,
+  paper: true,
+  questionNumber: true,
+  part: true,
+  marks: true,
+  topic: true,
+  tags: true,
+  isPremium: true,
+  starterCode: true,
+  hints: true,
+  createdAt: true,
+  updatedAt: true,
+  testCases: {
+    orderBy: { sortOrder: 'asc' },
+    select: {
+      id: true,
+      inputs: true,
+      expectedOutput: true,
+      isHidden: true,
+      description: true,
+      sortOrder: true,
+      initialFiles: true,
+    },
+  },
+} satisfies Prisma.QuestionSelect;
+
+const QUESTION_ORDER = [{ year: 'desc' }, { title: 'asc' }] satisfies Prisma.QuestionOrderByWithRelationInput[];
+
+type BankQuestionRow = Prisma.QuestionGetPayload<{ select: typeof BANK_QUESTION_SELECT }>;
+
+function toBankQuestion(row: BankQuestionRow): BankQuestion {
+  return { ...row, createdAt: iso(row.createdAt), updatedAt: iso(row.updatedAt) };
+}
+
+/** List metadata only — no descriptions, starter code, hints or tests. */
+async function loadCatalog(): Promise<QuestionCatalogItem[]> {
   const rows = await prisma.question.findMany({
-    orderBy: [{ year: 'desc' }, { title: 'asc' }],
+    orderBy: QUESTION_ORDER,
     select: {
       id: true,
       title: true,
-      description: true,
       difficulty: true,
       year: true,
       session: true,
@@ -206,36 +283,28 @@ async function loadQuestionBank(): Promise<BankQuestion[]> {
       topic: true,
       tags: true,
       isPremium: true,
-      starterCode: true,
-      hints: true,
-      createdAt: true,
       updatedAt: true,
-      testCases: {
-        orderBy: { sortOrder: 'asc' },
-        select: {
-          id: true,
-          inputs: true,
-          expectedOutput: true,
-          isHidden: true,
-          description: true,
-          sortOrder: true,
-          initialFiles: true,
-        },
-      },
     },
   });
-
-  return rows.map((row) => ({
-    ...row,
-    createdAt: iso(row.createdAt),
-    updatedAt: iso(row.updatedAt),
-  }));
+  return rows.map((row) => ({ ...row, updatedAt: iso(row.updatedAt) }));
 }
 
-async function loadSolutionBank(): Promise<QuestionSolution[]> {
-  return prisma.question.findMany({
+async function loadQuestion(id: string): Promise<BankQuestion | null> {
+  const row = await prisma.question.findUnique({ where: { id }, select: BANK_QUESTION_SELECT });
+  return row ? toBankQuestion(row) : null;
+}
+
+async function loadSolution(id: string): Promise<QuestionSolution | null> {
+  return prisma.question.findUnique({
+    where: { id },
     select: { id: true, solution: true, solutionExplanation: true },
   });
+}
+
+/** `/api/questions` (exam builder): descriptions + visible test counts, still no test data. */
+async function loadQuestionsApiList() {
+  const rows = await prisma.question.findMany({ orderBy: QUESTION_ORDER, select: BANK_QUESTION_SELECT });
+  return listQuestionsApiPayload(rows.map(toBankQuestion), {});
 }
 
 async function loadExampleCategories(): Promise<ExampleCategory[]> {
@@ -254,53 +323,52 @@ async function loadExampleCategories(): Promise<ExampleCategory[]> {
   return Array.from(grouped.entries()).map(([name, list]) => ({ name, examples: list }));
 }
 
-const getQuestionBank = cache(
-  unstable_cache(loadQuestionBank, ['question-bank'], {
-    revalidate: CATALOG_REVALIDATE_SECONDS,
-    tags: [CATALOG_TAGS.questions],
-  }),
+const cachedCatalog = memoize(dataCache(loadCatalog, 'question-catalog', CATALOG_TAGS.questions));
+const cachedQuestion = memoize(dataCache(loadQuestion, 'question', CATALOG_TAGS.questions));
+const cachedSolution = memoize(dataCache(loadSolution, 'question-solution', CATALOG_TAGS.questions));
+const cachedQuestionsApiList = memoize(
+  dataCache(loadQuestionsApiList, 'questions-api-list', CATALOG_TAGS.questions),
 );
-
-const getSolutionBank = cache(
-  unstable_cache(loadSolutionBank, ['question-solutions'], {
-    revalidate: CATALOG_REVALIDATE_SECONDS,
-    tags: [CATALOG_TAGS.questions],
-  }),
-);
-
-export const getExampleCategories = cache(
-  unstable_cache(loadExampleCategories, ['example-categories'], {
-    revalidate: CATALOG_REVALIDATE_SECONDS,
-    tags: [CATALOG_TAGS.examples],
-  }),
+const cachedExampleCategories = memoize(
+  dataCache(loadExampleCategories, 'example-categories', CATALOG_TAGS.examples),
 );
 
 export async function getQuestionCatalog(): Promise<QuestionCatalogItem[]> {
-  const bank = await getQuestionBank();
-  return bank.map(toCatalogItem);
+  return cachedCatalog('all');
 }
 
 export async function getQuestionCount(): Promise<number> {
-  return (await getQuestionBank()).length;
+  return (await getQuestionCatalog()).length;
+}
+
+export async function getExampleCategories(): Promise<ExampleCategory[]> {
+  return cachedExampleCategories('all');
+}
+
+/** Unknown ids are rejected from the catalog so junk URLs never reach the DB or the cache. */
+async function getBankQuestion(id: string): Promise<BankQuestion | null> {
+  const known = (await getQuestionCatalog()).some((question) => question.id === id);
+  return known ? cachedQuestion(id) : null;
 }
 
 export async function getPublicQuestion(id: string): Promise<PublicQuestion | null> {
-  const question = (await getQuestionBank()).find((row) => row.id === id);
+  const question = await getBankQuestion(id);
   return question ? toPublicQuestion(question) : null;
 }
 
 export async function getQuestionForGrade(id: string): Promise<GradeQuestion | null> {
-  const question = (await getQuestionBank()).find((row) => row.id === id);
+  const question = await getBankQuestion(id);
   return question ? toGradeQuestion(question) : null;
 }
 
 export async function getQuestionHints(id: string): Promise<string[] | null> {
-  const question = (await getQuestionBank()).find((row) => row.id === id);
+  const question = await getBankQuestion(id);
   return question ? question.hints : null;
 }
 
 export async function getQuestionSolution(id: string): Promise<QuestionSolution | null> {
-  return (await getSolutionBank()).find((row) => row.id === id) ?? null;
+  const known = (await getQuestionCatalog()).some((question) => question.id === id);
+  return known ? cachedSolution(id) : null;
 }
 
 export async function getExamQuestionPool(opts: {
@@ -323,5 +391,9 @@ export async function getQuestionsApiPayload(filters: {
   topic?: string | null;
   difficulty?: Difficulty | null;
 }) {
-  return listQuestionsApiPayload(await getQuestionBank(), filters);
+  return (await cachedQuestionsApiList('all')).filter((question) => {
+    if (filters.topic && question.topic !== filters.topic) return false;
+    if (filters.difficulty && question.difficulty !== filters.difficulty) return false;
+    return true;
+  });
 }

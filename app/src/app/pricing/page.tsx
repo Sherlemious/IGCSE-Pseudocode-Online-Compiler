@@ -29,7 +29,7 @@ const getPricingTiers = unstable_cache(
       },
     }),
   ['pricing-tiers', 'student-2usd'],
-  { revalidate: 3600, tags: ['pricing-tiers'] },
+  { revalidate: 86400, tags: ['pricing-tiers'] },
 );
 
 export const metadata: Metadata = {
@@ -47,7 +47,7 @@ export const metadata: Metadata = {
   },
 };
 
-export const revalidate = 3600;
+export const revalidate = 86400;
 
 const STUDENT_SLUGS = new Set(['student', 'student-month', 'student-may-june', 'student-oct-nov']);
 

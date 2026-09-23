@@ -2,7 +2,7 @@ import { unstable_cache } from 'next/cache';
 import { prisma } from '@/shared/db';
 import { toPublicSocialStat, type QuestionSocialStat, type SocialStatRow } from './socialStats';
 
-export const SOCIAL_STATS_REVALIDATE_SECONDS = 300;
+export const SOCIAL_STATS_REVALIDATE_SECONDS = 3600;
 
 async function querySocialStats(): Promise<Record<string, QuestionSocialStat>> {
   const rows = await prisma.$queryRaw<SocialStatRow[]>`
