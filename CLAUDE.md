@@ -178,6 +178,8 @@ npm run antlr:generate  # regenerate parser from grammar
 | `user_signed_out` | — |
 | `nudge_shown` | `nudge` |
 | `nudge_clicked` | `nudge` |
+| `nudge_dismissed` | `nudge` — timed corner cards (`onboarding/OnboardingNudges.tsx`): `signup` (90 s, signed out), `learn` (15 min, no Learn progress → `/learn?from=nudge_learn`), `exam` (2nd session). `share` and the 15-min `practice` card were removed Sept 2026 (0.3% clicks / no solves). None show on `/learn`, `/pricing`, `/welcome`, `/onboarding`, `/auth`, `/exam`, `/e/` |
+| `learn_first_start_shown` / `learn_first_start_clicked` | `choice` (`learn`\|`compiler`) on click — experiment `learn-first-start` (PostHog 467173), test arm only: a brand-new playground visitor (no autosave, tour not done, no Learn progress, no `?code`) gets a start card with the Paper 2 Path as the default (→ `/learn?from=first_visit`) instead of the tour. The flag is read only for eligible visitors, so `$feature_flag_called` is the exposure |
 | `nav_clicked` | `destination`, `from` |
 | `feedback_submitted` | — |
 | `bug_reported` | `category`, `has_code`, `page` |

@@ -34,9 +34,11 @@ import { FILE_PREFIX, FILES_CHANGED_EVENT } from '@/modules/interpreter/storage'
 import { AUTOSAVE_DELAY, CLOUD_AUTOSAVE_DELAY, loadSplitPercent } from '@/shared/lib/persist';
 import { ONBOARDING_KEY } from '@/modules/onboarding/constants';
 import { formatOutputEntries } from '@/modules/compiler/formatOutputEntries';
-import { SAVE_PROGRAM_PROMPT_FLAG } from '@/modules/telemetry/experiments';
+import { LEARN_FIRST_START_FLAG, SAVE_PROGRAM_PROMPT_FLAG } from '@/modules/telemetry/experiments';
 import SaveProgramSheet from './SaveProgramSheet';
 import { suggestLearnPath } from '@/modules/learn/learnNudge';
+import LearnFirstStart, { LEARN_FIRST_SEEN_KEY } from '@/modules/learn/LearnFirstStart';
+import { loadProgress } from '@/modules/learn/progress';
 import {
   forceSavePromptFromUrl,
   hasShownSavePrompt,
@@ -92,6 +94,25 @@ function loadInitialCode(): string {
 
 const SAVE_PROMPT_PENDING_TOAST_KEY = 'save_prompt_just_authed';
 
+/** How long to wait for PostHog flags before a first visit falls back to the normal tour. */
+const LEARN_FIRST_FLAG_TIMEOUT_MS = 1500;
+
+/**
+ * Brand-new visitor: nothing typed or saved here, never finished the tour,
+ * no Learn progress, and not arriving on a shared-code link.
+ */
+function isFirstPlaygroundVisit(openedSharedCode: boolean): boolean {
+  if (openedSharedCode) return false;
+  try {
+    if (localStorage.getItem(AUTOSAVE_KEY) !== null) return false;
+    if (localStorage.getItem(ONBOARDING_KEY)) return false;
+    if (localStorage.getItem(LEARN_FIRST_SEEN_KEY)) return false;
+    return Object.keys(loadProgress()).length === 0;
+  } catch {
+    return false;
+  }
+}
+
 const CompilerPage: React.FC = () => {
   const { status: authStatus, update: updateSession } = useSession();
   const ph = usePostHog();
@@ -107,6 +128,9 @@ const CompilerPage: React.FC = () => {
   const [outputTab, setOutputTab] = useState<'terminal' | 'trace' | 'python' | 'flowchart'>('terminal');
   const [saveSheetOpen, setSaveSheetOpen] = useState(false);
   const [savePromptVariant, setSavePromptVariant] = useState<string | null>(null);
+  // `learn-first-start` experiment: `pending` until we know whether this is a
+  // first visit in the test arm; the tour waits so the two never overlap.
+  const [learnFirst, setLearnFirst] = useState<'pending' | 'show' | 'off'>('pending');
   const hadLocalOnMount = useRef(false);
   const skipCloudHydrate = useRef(false);
   const hydratedRef = useRef(false);
@@ -161,6 +185,42 @@ const CompilerPage: React.FC = () => {
       setSaveSheetOpen(true);
     }
   }, []);
+
+  // Bucket only brand-new visitors into `learn-first-start` (the flag is read
+  // once, so exposure is counted only for people who could see the card). If
+  // flags are slow, fall back to the normal tour and never read the flag.
+  // (The load effect above has already stripped `?code` from the URL, so the
+  // shared-link check uses what it recorded.)
+  useEffect(() => {
+    if (!isFirstPlaygroundVisit(skipCloudHydrate.current) || !ph) {
+      setLearnFirst('off');
+      return;
+    }
+    let settled = false;
+    const decide = () => {
+      if (settled) return;
+      let value: unknown = null;
+      try {
+        value = ph.getFeatureFlag(LEARN_FIRST_START_FLAG);
+      } catch {
+        /* PostHog may be uninitialized */
+      }
+      if (value === undefined) return; // flags not loaded yet
+      settled = true;
+      setLearnFirst(value === 'test' ? 'show' : 'off');
+    };
+    const timer = setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      setLearnFirst('off');
+    }, LEARN_FIRST_FLAG_TIMEOUT_MS);
+    decide();
+    const unsubscribe = ph.onFeatureFlags(decide);
+    return () => {
+      clearTimeout(timer);
+      unsubscribe?.();
+    };
+  }, [ph]);
 
   // Assign the save-prompt experiment only for anonymous playground visitors so
   // signed-in users are not counted as exposed.
@@ -771,7 +831,8 @@ const CompilerPage: React.FC = () => {
         )}
       </div>
       <Footer isRunning={isRunning} cursor={cursor} lineCount={lineCount} />
-      <OnboardingTour />
+      {learnFirst === 'off' && <OnboardingTour />}
+      {learnFirst === 'show' && <LearnFirstStart onUseCompiler={() => setLearnFirst('off')} />}
       {showFeedback && <FeedbackSurvey onDismiss={() => setShowFeedback(false)} />}
       {saveSheetOpen && (
         <SaveProgramSheet
