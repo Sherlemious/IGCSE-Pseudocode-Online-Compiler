@@ -1,4 +1,4 @@
-// Generated from src/interpreter/grammar/Pseudocode.g4 by ANTLR 4.13.1
+// Generated from src/modules/interpreter/grammar/Pseudocode.g4 by ANTLR 4.13.1
 
 import { AbstractParseTreeVisitor } from "antlr4ng";
 

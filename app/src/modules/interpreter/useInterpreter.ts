@@ -208,7 +208,7 @@ export function useInterpreter(runContext?: RunContext) {
       const sourceLine = rawOffending?.trim() ? rawOffending : undefined;
       const category =
         errorType === 'parse'
-          ? categorizeParseError(message, sourceLine)
+          ? categorizeParseError(message, sourceLine, { lines: sourceLines, line })
           : categorizeRuntimeError(message);
       const offendingLine = sourceLine?.trim();
       captureInterpreterError(
@@ -308,7 +308,7 @@ export function useInterpreter(runContext?: RunContext) {
             const r = resolved[i];
             return {
               kind: 'error' as const,
-              text: `Line ${r.line ?? e.line ?? '?'} — ${humanizeParseError(e.message, r.text)}`,
+              text: `Line ${r.line ?? e.line ?? '?'} — ${humanizeParseError(e.message, r.text, { lines: sourceLines, line: r.line })}`,
             };
           })
         );

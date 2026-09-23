@@ -1702,3 +1702,164 @@ describe('bundled programs parse with the current grammar', () => {
     expect(msg).toContain('Replace the `...` placeholder');
   });
 });
+
+describe('parameterless PROCEDURE / FUNCTION headers (Cambridge style)', () => {
+  it('runs PROCEDURE and CALL without brackets', async () => {
+    const { outputs, errors } = await runCode('PROCEDURE Greet\n  OUTPUT "Hi"\nENDPROCEDURE\nCALL Greet\nCALL Greet()\n');
+    expect(errors).toEqual([]);
+    expect(outputs).toEqual(['Hi', 'Hi']);
+  });
+
+  it('runs a FUNCTION declared without brackets', async () => {
+    const { outputs, errors } = await runCode('FUNCTION Six RETURNS INTEGER\n  RETURN 6\nENDFUNCTION\nOUTPUT Six()\n');
+    expect(errors).toEqual([]);
+    expect(outputs).toEqual(['6']);
+  });
+});
+
+// Shapes taken from the ErrorSample table (Sept 2026) that used to fall through
+// to the generic "isn't valid IGCSE pseudocode" message.
+describe('parse hints — sampled student mistakes', () => {
+  function diagnose(source: string) {
+    const { errors } = parse(normalizeSource(source).code);
+    expect(errors.length).toBeGreaterThan(0);
+    const lines = source.split('\n');
+    const e = errors[0];
+    const context = { lines, line: e.line };
+    const sourceLine = lines[(e.line ?? 1) - 1];
+    return {
+      category: categorizeParseError(e.message, sourceLine, context),
+      message: humanizeParseError(e.message, sourceLine, context),
+    };
+  }
+
+  it('names the IF that is never closed instead of blaming the last OUTPUT', () => {
+    const d = diagnose('INPUT Age\nIF Age > 18 THEN\n  OUTPUT "Adult"');
+    expect(d.category).toBe('missing_endif');
+    expect(d.message).toContain('The IF on line 2 is never closed');
+    expect(d.message).toContain('ENDIF');
+  });
+
+  it('points out a missing THEN on the unclosed IF too', () => {
+    const d = diagnose('INPUT Mark\nIF Mark < 10\nOUTPUT "Low"');
+    expect(d.category).toBe('missing_endif');
+    expect(d.message).toContain('missing THEN');
+  });
+
+  it('an ENDIF where UNTIL belongs names the open REPEAT', () => {
+    const d = diagnose('REPEAT\n  INPUT P\nENDIF P <> "x"');
+    expect(d.message).toContain('The REPEAT on line 1 is never closed');
+    expect(d.message).toContain('UNTIL');
+  });
+
+  it('INPUT with only a prompt asks for a variable', () => {
+    const d = diagnose('INPUT "Enter your name"');
+    expect(d.category).toBe('input_prompt');
+    expect(d.message).toContain('INPUT Name');
+  });
+
+  it('implicit multiplication asks for *', () => {
+    const d = diagnose('DECLARE F : REAL\nDECLARE C : REAL\nF = (9/5)C + 32');
+    expect(d.category).toBe('implicit_multiply');
+    expect(d.message).toContain('(9 / 5) * C');
+  });
+
+  it('`MOD` after a bracket is not read as implicit multiplication', () => {
+    expect(categorizeParseError("no viable alternative at input 'x'", 'X <- (A + B) MOD 2 3')).not.toBe('implicit_multiply');
+  });
+
+  it('two words with no operator between them are explained', () => {
+    expect(diagnose('DECLARE R : STRING\nR <- FirstName Surname').category).toBe('value_missing_operator');
+  });
+
+  it('a data type used as a value is explained', () => {
+    expect(diagnose('DECLARE N : INTEGER\nN <- INTEGER').category).toBe('type_as_value');
+    const d = diagnose('DECLARE N : REAL\nIF N = INTEGER THEN\n  OUTPUT N\nENDIF');
+    expect(d.category).toBe('type_as_value');
+    expect(d.message).toContain('INT(Number)');
+  });
+
+  it('an assignment with nothing after the arrow asks for a value', () => {
+    expect(diagnose('DECLARE Cost : INTEGER\nCost <-').category).toBe('incomplete_line');
+  });
+
+  it('SET x = 0 is redirected to <-', () => {
+    const d = diagnose('SET Count = 0');
+    expect(d.category).toBe('set_assignment');
+    expect(d.message).toContain('Count <- 0');
+  });
+
+  it('an array DECLARE with round brackets gets the canonical shape', () => {
+    const d = diagnose('DECLARE Value : ARRAY (1:5) OF INTEGER');
+    expect(d.category).toBe('declare_array_syntax');
+    expect(d.message).toContain('DECLARE Value : ARRAY[1:5] OF INTEGER');
+  });
+
+  it('a string glued to a variable in OUTPUT needs a comma', () => {
+    expect(diagnose('DECLARE P : INTEGER\nOUTPUT "Total "P').category).toBe('output_missing_comma');
+  });
+
+  it('two strings separated by a comma are not flagged as glued', () => {
+    const { errors } = parse('OUTPUT "a", "b"\n');
+    expect(errors).toEqual([]);
+    expect(categorizeParseError("no viable alternative at input 'x'", 'OUTPUT "a", "b"')).not.toBe('output_missing_comma');
+  });
+
+  it('a WHILE written like a FOR loop is redirected to FOR', () => {
+    expect(diagnose('WHILE Count <- 1 TO 5\nENDWHILE').category).toBe('while_as_for');
+  });
+
+  it('a PROCEDURE with RETURNS is told to become a FUNCTION', () => {
+    const d = diagnose('PROCEDURE Largest(A : INTEGER, B : INTEGER) RETURNS INTEGER\nENDPROCEDURE');
+    expect(d.category).toBe('procedure_returns');
+    expect(d.message).toContain('FUNCTION Largest(A : INTEGER, B : INTEGER) RETURNS INTEGER');
+  });
+
+  it('untyped parameters are asked for a type', () => {
+    const d = diagnose('PROCEDURE Show(Num1, Num2)\nENDPROCEDURE');
+    expect(d.category).toBe('param_type_missing');
+    expect(d.message).toContain('Num1 : INTEGER, Num2 : INTEGER');
+  });
+
+  it('a procedure run without CALL is told to use CALL', () => {
+    const d = diagnose('PROCEDURE Stars(N : INTEGER)\n  OUTPUT N\nENDPROCEDURE\nStars(5)');
+    expect(d.category).toBe('call_missing');
+    expect(d.message).toContain('CALL Stars(5)');
+  });
+
+  it('a misspelled keyword at the start of a line is named', () => {
+    const d = diagnose('Ouptut "Hello"');
+    expect(d.category).toBe('misspelled_keyword');
+    expect(d.message).toContain('did you mean OUTPUT');
+  });
+
+  it('a four-letter variable is not "corrected" to a keyword', () => {
+    expect(humanizeParseError("no viable alternative at input 'Cost\n'")).not.toContain('did you mean');
+  });
+
+  it('a sentence typed as code offers OUTPUT or a comment', () => {
+    const d = diagnose('Plan your name');
+    expect(d.category).toBe('plain_english');
+    expect(d.message).toContain('OUTPUT "Plan your name"');
+  });
+
+  it('exam-paper line numbers are called out', () => {
+    expect(diagnose('DECLARE Mark : INTEGER\n12   INPUT Mark').category).toBe('line_numbers');
+  });
+
+  it('a comparison CASE label is explained', () => {
+    const d = diagnose('DECLARE M : INTEGER\nCASE OF M\n  >= 80 : OUTPUT "A"\nENDCASE');
+    expect(d.category).toBe('case_comparison');
+  });
+
+  it('ELSE with a condition becomes ELSE IF', () => {
+    const d = diagnose('DECLARE M : INTEGER\nIF M > 75 THEN\n  OUTPUT "A"\nELSE M > 60 THEN\n  OUTPUT "B"\nENDIF');
+    expect(d.category).toBe('else_condition');
+  });
+
+  it('THEN after a WHILE condition is redirected to DO', () => {
+    const d = diagnose('DECLARE N : INTEGER\nWHILE N < 3\nTHEN\n  N <- N + 1\nENDWHILE');
+    expect(d.category).toBe('misplaced_then');
+    expect(d.message).toContain('DO');
+  });
+});

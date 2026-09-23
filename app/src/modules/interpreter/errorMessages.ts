@@ -149,13 +149,15 @@ function nearestKeyword(token: string): string | null {
   // Wrong case of a real keyword (`endfunction` → ENDFUNCTION). An *exact*
   // match is not a typo — the keyword is just in the wrong place (stray closer).
   if (KEYWORDS.includes(upper)) return token === upper ? null : upper;
-  // Near match (distance ≤ 2 for words > 3 chars)
+  // Near match: distance ≤ 2 for words of 5+ chars, ≤ 1 for 4-char words
+  // (at distance 2 a variable like `Cost` would read as a typo of CASE).
   if (token.length > 3) {
+    const maxDist = token.length === 4 ? 1 : 2;
     let best: string | null = null;
     let bestDist = Infinity;
     for (const kw of KEYWORDS) {
       const d = levenshtein(upper, kw);
-      if (d < bestDist && d <= 2) { bestDist = d; best = kw; }
+      if (d < bestDist && d <= maxDist) { bestDist = d; best = kw; }
     }
     return best;
   }
@@ -567,9 +569,12 @@ function forLoopHint(line: string): LineDiagnosis | null {
 function outputSeparatorHint(line: string): LineDiagnosis | null {
   const t = line.trim();
   if (!/^(?:OUTPUT|PRINT)\b/i.test(t)) return null;
-  // A closed string literal directly followed by another value, with no comma or
-  // operator in between (OUTPUT "Total is " Total → OUTPUT "Total is ", Total).
-  if (/"(?:[^"\\]|\\.)*"\s+(?![,&+\-*/=<>.)\]])[A-Za-z0-9_"']/.test(t))
+  // A closed string literal next to another value with no comma or operator in
+  // between, with or without a space: OUTPUT "Total is " Total, OUTPUT "Hi "Name.
+  // Strings are swapped for a marker first (left to right, so quote pairs match
+  // up) — otherwise `", "` between two strings would read as a string itself.
+  const items = t.replace(/^(?:OUTPUT|PRINT)\b/i, '').replace(/"[^"]*"/g, '\u0001');
+  if (/\u0001\s*[A-Za-z0-9_\u0001']|[A-Za-z0-9_)\]]\s*\u0001/.test(items))
     return {
       category: 'output_missing_comma',
       message:
@@ -637,8 +642,8 @@ function declareHint(line: string): LineDiagnosis | null {
         `  Example:\n    DECLARE ${asType[1]} : ${asType[2].toUpperCase()}`,
     };
 
-  // `DECLARE Count = 0` — DECLARE states the type; it never assigns a value.
-  const eq = t.match(/^DECLARE\s+([A-Za-z_]\w*)\s*=/i);
+  // `DECLARE Count = 0` / `DECLARE Count <- 0` — DECLARE states the type; it never assigns a value.
+  const eq = t.match(/^DECLARE\s+([A-Za-z_]\w*)\s*(?:=|<-|←)/i);
   if (eq)
     return {
       category: 'declare_syntax',
@@ -681,8 +686,18 @@ function declareHint(line: string): LineDiagnosis | null {
         `  Example:\n    DECLARE ${noColon[1]} : INTEGER`,
     };
 
-  // `DECLARE Counter` — name only, type forgotten.
-  const incomplete = t.match(/^DECLARE\s+([A-Za-z_]\w*)\s*$/i);
+  // `DECLARE Student Score : INTEGER` — a name with a space in it.
+  const spaced = t.match(/^DECLARE\s+([A-Za-z_]\w*)\s+([A-Za-z_]\w*)\s*:/i);
+  if (spaced && !/^AS$/i.test(spaced[2]))
+    return {
+      category: 'declare_syntax',
+      message:
+        'A variable name cannot contain spaces — join the words into one name.\n' +
+        `  Example:\n    DECLARE ${spaced[1]}${spaced[2][0].toUpperCase()}${spaced[2].slice(1)} : INTEGER`,
+    };
+
+  // `DECLARE Counter` / `DECLARE Counter :` — type forgotten.
+  const incomplete = t.match(/^DECLARE\s+([A-Za-z_]\w*)\s*:?\s*$/i);
   if (incomplete)
     return {
       category: 'declare_syntax',
@@ -714,6 +729,13 @@ function functionHeaderHint(line: string): LineDiagnosis | null {
 /** `FOR i <- 1 TO 5 DO` — FOR loops don't take DO (that belongs to WHILE). */
 function forDoHint(line: string): LineDiagnosis | null {
   const t = line.trim();
+  if (/^FOR\b.*\bTO\b.*:$/i.test(t))
+    return {
+      category: 'for_loop_do',
+      message:
+        "A FOR line doesn't end with a colon — just end the line after the range:\n" +
+        '    FOR i <- 1 TO 5\n      OUTPUT i\n    NEXT i',
+    };
   if (!/^FOR\b.*\bTO\b.*\bDO$/i.test(t)) return null;
   return {
     category: 'for_loop_do',
@@ -769,6 +791,312 @@ function missingOperandHint(line: string): LineDiagnosis | null {
   return null;
 }
 
+// Detectors below were sized from the ErrorSample table (Sept 2026): these shapes
+// were still falling through to the generic "isn't valid IGCSE pseudocode" text.
+
+function clip(s: string, max = 40): string {
+  return s.length > max ? `${s.slice(0, max - 1)}…` : s;
+}
+
+const DATA_TYPES = /\b(INTEGER|REAL|STRING|CHAR|BOOLEAN)\b/i;
+/** Operator words that may follow a value or a closing bracket. */
+const OPERATOR_WORDS = '(?:MOD|DIV|AND|OR|NOT|TO|THEN|DO|STEP|OF|RETURNS?)\\b';
+
+/**
+ * `Total <- …` / `Total = …` where the value on the right is the problem: missing,
+ * a type name, implicit multiplication (`(9/5)C`, `2K`), or two words with no
+ * operator between them. (`=` assignment itself parses, so it isn't the issue.)
+ */
+function assignmentValueHint(line: string): LineDiagnosis | null {
+  const m = line.trim().match(/^([A-Za-z_]\w*(?:\[[^\]]*\])?(?:\.[A-Za-z_]\w*)?)\s*(<-|←|=(?!=))\s*(.*)$/);
+  if (!m || KEYWORDS.includes(m[1].match(/^[A-Za-z_]\w*/)![0].toUpperCase())) return null;
+  const [, target, , rawValue] = m;
+  const value = rawValue.replace(/"[^"]*"/g, '""').trim();
+
+  if (!value)
+    return {
+      category: 'incomplete_line',
+      message: `The line stops before the value. Put what to store after \`<-\`:\n    ${target} <- 0`,
+    };
+  const type = value.match(new RegExp(`^${DATA_TYPES.source}$`, 'i'));
+  if (type)
+    return {
+      category: 'type_as_value',
+      message:
+        `${type[1].toUpperCase()} is a data type, not a value.\n` +
+        `  Set the type:   DECLARE ${target} : ${type[1].toUpperCase()}\n` +
+        `  Store a value:  ${target} <- 0`,
+    };
+  if (
+    /(?:^|[^\w.])\d+(?:\.\d+)?[A-Za-z_(]/.test(value) ||
+    new RegExp(`\\)\\s*(?!${OPERATOR_WORDS})[A-Za-z_\\d(]`, 'i').test(value) ||
+    /\d\s+[xX×]\s+[\w(]/.test(value)
+  )
+    return {
+      category: 'implicit_multiply',
+      message:
+        'Write every multiplication with `*` — values next to each other are not multiplied.\n' +
+        '  Wrong:  F <- (9 / 5)C + 32     Area <- 2K\n' +
+        '  Right:  F <- (9 / 5) * C + 32  Area <- 2 * K',
+    };
+  const words = value.match(/[A-Za-z_]\w*/g) ?? [];
+  if (
+    !words.some((w) => KEYWORDS.includes(w.toUpperCase())) &&
+    /[\w)\]"]\s+[A-Za-z_"]/.test(value)
+  )
+    return {
+      category: 'value_missing_operator',
+      message:
+        'Two values sit side by side with nothing joining them.\n' +
+        '  Join text with &:     FullName <- FirstName & " " & Surname\n' +
+        '  Do maths with + - * /: Total <- Price * Quantity\n' +
+        '  Text needs quotes:     Subject <- "Computer Science"',
+    };
+  return null;
+}
+
+/** `IF Number = INTEGER THEN` — checking "is it a whole number" against a type name. */
+function typeComparisonHint(line: string): LineDiagnosis | null {
+  const t = line.trim();
+  if (!/^(?:IF|WHILE|UNTIL|ELSE\s*IF)\b/i.test(t)) return null;
+  if (!new RegExp(`(?:=|<>|\\bNOT|\\bIS)\\s*(?:AN?\\s+)?${DATA_TYPES.source}`, 'i').test(t)) return null;
+  return {
+    category: 'type_as_value',
+    message:
+      'INTEGER, REAL and STRING are data types — you cannot compare a value with them.\n' +
+      '  To check for a whole number:\n    IF Number = INT(Number) THEN\n      OUTPUT "Whole number"\n    ENDIF',
+  };
+}
+
+/** `SET Count = 0` — other pseudocode dialects; Cambridge just assigns. */
+function setKeywordHint(line: string): LineDiagnosis | null {
+  const m = line.trim().match(/^SET\b\s*[:\-]?\s*([A-Za-z_]\w*)\s*(?:=|<-|←|\bTO\b)\s*([^,]*)/i);
+  if (!m) return null;
+  return {
+    category: 'set_assignment',
+    message:
+      'Cambridge pseudocode has no SET statement — assign with `<-`, one variable per line.\n' +
+      `  Example:\n    ${m[1]} <- ${clip(m[2].trim() || '0', 30)}`,
+  };
+}
+
+/** `INPUT "Enter your name"` — a prompt with no variable to store the answer in. */
+function inputPromptHint(line: string): LineDiagnosis | null {
+  const t = line.trim();
+  if (/^INPUT\s*[=:]?\s*"/i.test(t))
+    return {
+      category: 'input_prompt',
+      message:
+        'INPUT needs a variable to store the answer in. Show the question with OUTPUT first:\n' +
+        '    OUTPUT "Enter your name"\n    INPUT Name\n' +
+        '  Or on one line: INPUT Name, "Enter your name"',
+    };
+  // `INPUT Score, "Mark for student " & i` — the prompt must be one quoted text.
+  if (/^INPUT\b[^"]*,\s*"[^"]*"\s*[&+,]/i.test(t))
+    return {
+      category: 'input_prompt',
+      message:
+        'An INPUT prompt must be a single piece of text in quotes. For a longer message, OUTPUT it first:\n' +
+        '    OUTPUT "Enter the mark for student ", i\n    INPUT Score',
+    };
+  return null;
+}
+
+/** `INPUT`, `INPUT 10`, `INPUT INTEGER` — INPUT reads into a named variable. */
+function inputTargetHint(line: string): LineDiagnosis | null {
+  if (!/^INPUT(?:\s*$|\s+(?:\d|(?:INTEGER|REAL|STRING|CHAR|BOOLEAN)\b))/i.test(line.trim())) return null;
+  return {
+    category: 'input_target',
+    message:
+      'INPUT needs the name of the variable that stores the answer.\n' +
+      '  Example:\n    DECLARE Age : INTEGER\n    INPUT Age',
+  };
+}
+
+/** Exam-paper line numbers pasted in front of the code (`12   INPUT Mark`). */
+function lineNumberHint(line: string): LineDiagnosis | null {
+  const statement =
+    /^\d+\s+(?:[A-Za-z_]\w*(?:\[[^\]]*\])?\s*(?:<-|←)|(?:DECLARE|CONSTANT|INPUT|OUTPUT|PRINT|IF|ELSE|ENDIF|FOR|NEXT|WHILE|ENDWHILE|REPEAT|UNTIL|CASE|ENDCASE|OTHERWISE|PROCEDURE|ENDPROCEDURE|FUNCTION|ENDFUNCTION|RETURN|CALL)\b)/i;
+  if (!statement.test(line.trim())) return null;
+  return {
+    category: 'line_numbers',
+    message:
+      'Remove the line number at the start — numbers printed beside exam code are not part of the program.\n' +
+      '  Write:  INPUT Mark\n  not:    12  INPUT Mark',
+  };
+}
+
+/** `Stars(5)` alone on a line — a procedure is run with CALL. */
+function missingCallHint(line: string): LineDiagnosis | null {
+  const m = line.trim().match(/^([A-Za-z_]\w*)\s*\(.*\)$/);
+  if (!m || KEYWORDS.includes(m[1].toUpperCase())) return null;
+  if (BUILTIN_SIGNATURES[m[1].toUpperCase()])
+    return {
+      category: 'unused_function_result',
+      message:
+        `${m[1].toUpperCase()}(…) gives back a value — store it or output it.\n` +
+        `  Example:\n    Result <- ${clip(line.trim(), 40)}\n    OUTPUT ${clip(line.trim(), 40)}`,
+    };
+  return {
+    category: 'call_missing',
+    message:
+      'Run a procedure with CALL.\n' +
+      `  Example:\n    CALL ${clip(line.trim(), 40)}\n` +
+      '  (A FUNCTION is used inside an expression instead: Total <- Add(A, B))',
+  };
+}
+
+/** `Value <- CALL Power(A, B)` — CALL is only for procedures, on its own line. */
+function callInExpressionHint(line: string): LineDiagnosis | null {
+  if (!/(?:<-|←|=|OUTPUT|PRINT|RETURN)\s*CALL\b/i.test(line)) return null;
+  return {
+    category: 'call_in_expression',
+    message:
+      'Use a FUNCTION straight inside the expression, without CALL (CALL is only for procedures):\n' +
+      '    Value <- Power(A, B)\n    OUTPUT Power(A, B)',
+  };
+}
+
+/** `ELSE Mark > 75 THEN` — a condition after ELSE needs ELSE IF. */
+function elseConditionHint(line: string): LineDiagnosis | null {
+  const t = line.trim();
+  if (!/^ELSE\s+(?!IF\b)\S/i.test(t) || !/<>|<=|>=|<|>|=/.test(t)) return null;
+  return {
+    category: 'else_condition',
+    message:
+      'A condition after ELSE needs ELSE IF, and ends with THEN.\n' +
+      '  Example:\n    IF Mark > 75 THEN\n      OUTPUT "A"\n    ELSE IF Mark > 60 THEN\n      OUTPUT "B"\n    ELSE\n      OUTPUT "C"\n    ENDIF',
+  };
+}
+
+/** `>= 80 :` / `Marks >= 80 :` — a CASE label can't be a comparison. */
+function caseComparisonHint(line: string): LineDiagnosis | null {
+  if (!/^(?:[A-Za-z_]\w*\s*)?(?:<=|>=|<>|<|>)\s*[\w.]+\s*:/.test(line.trim())) return null;
+  return {
+    category: 'case_comparison',
+    message:
+      'A CASE label is a value or a range, not a comparison.\n' +
+      '  Range:  80 TO 100 : OUTPUT "A"\n' +
+      '  Or use IF … ELSE IF … ENDIF for conditions like Mark >= 80.',
+  };
+}
+
+/** `DISPLAY(...)` / `SHOW` / `println` — other languages' output commands. */
+function outputSynonymHint(line: string): LineDiagnosis | null {
+  const m = line.trim().match(/^(DISPLAY|SHOW|PRINTLN|WRITELN|COUT|PUTS)\b/i);
+  if (!m) return null;
+  return {
+    category: 'wrong_language_keyword',
+    message:
+      `Use OUTPUT instead of "${m[1]}" — no brackets needed.\n` +
+      '  Example:\n    OUTPUT "Total: ", Total',
+  };
+}
+
+/** `x ** 2` — powers are written with `^`. */
+function powerOperatorHint(line: string): LineDiagnosis | null {
+  if (!/\*\*/.test(line)) return null;
+  return {
+    category: 'power_operator',
+    message: 'Use `^` for powers, not `**`.\n  Example:\n    Area <- Side ^ 2',
+  };
+}
+
+/** `<-` inside a condition (`WHILE Found <- TRUE DO`), or WHILE written as a FOR. */
+function arrowInConditionHint(line: string): LineDiagnosis | null {
+  const t = line.trim();
+  if (!/^(?:IF|WHILE|UNTIL|ELSE\s*IF|ELSEIF)\b/i.test(t) || !/<-|←/.test(t)) return null;
+  if (/^WHILE\b/i.test(t) && /\bTO\b/i.test(t))
+    return {
+      category: 'while_as_for',
+      message:
+        'That looks like a counting loop — use FOR for that:\n' +
+        '    FOR Count <- 1 TO 5\n      OUTPUT Count\n    NEXT Count\n' +
+        '  WHILE takes a condition instead: WHILE Count <= 5 DO',
+    };
+  return {
+    category: 'compare_with_arrow',
+    message:
+      '`<-` stores a value; inside a condition compare with `=`.\n' +
+      '  Example:\n    WHILE Found = FALSE DO\n    IF Answer = "Y" THEN',
+  };
+}
+
+/** `PROCEDURE Largest(...) RETURNS INTEGER` — only a FUNCTION returns a value. */
+function procedureReturnsHint(line: string): LineDiagnosis | null {
+  const m = line.trim().match(/^PROCEDURE\s+([A-Za-z_]\w*)\s*(\([^)]*\))?.*\bRETURNS?\b\s*([A-Za-z]+)?/i);
+  if (!m) return null;
+  return {
+    category: 'procedure_returns',
+    message:
+      'A PROCEDURE does not return a value. If this sends a value back, make it a FUNCTION:\n' +
+      `    FUNCTION ${m[1]}${m[2] ?? '()'} RETURNS ${(m[3] ?? 'INTEGER').toUpperCase()}\n` +
+      '      ...\n      RETURN First\n    ENDFUNCTION',
+  };
+}
+
+/** `PROCEDURE Show(Num1, Num2)` — every parameter needs `: <type>`. */
+function paramTypeHint(line: string): LineDiagnosis | null {
+  const m = line.trim().match(/^(PROCEDURE|FUNCTION)\s+([A-Za-z_]\w*)\s*\(([^)]*)\)/i);
+  if (!m || !m[3].trim()) return null;
+  const params = m[3].split(',').map((p) => p.trim().replace(/^(?:BYREF|BYVAL)\s+/i, ''));
+  if (params.every((p) => p.includes(':'))) return null;
+  const names = params.map((p) => (/^[A-Za-z_]\w*$/.test(p) ? p : 'Value'));
+  return {
+    category: 'param_type_missing',
+    message:
+      'Give each parameter a type with a colon.\n' +
+      `  Example:\n    ${m[1].toUpperCase()} ${m[2]}(${names.map((n) => `${n} : INTEGER`).join(', ')})`,
+  };
+}
+
+/** Any DECLARE of an array that didn't parse: show the one canonical shape. */
+function arrayDeclareHint(line: string): LineDiagnosis | null {
+  const t = line.trim();
+  if (!/^DECLARE\b/i.test(t) || !/\bARRAY\b|\[/i.test(t)) return null;
+  const name = t.replace(/^DECLARE\s+/i, '').replace(/^ARRAY\s+/i, '').match(/^[A-Za-z_]\w*/)?.[0] ?? 'Scores';
+  const type = t.match(/\b(INTEGER|REAL|STRING|CHAR|BOOLEAN)\b/i)?.[1].toUpperCase() ?? 'INTEGER';
+  const bounds = t.match(/(\d+)\s*(?::|\bTO\b)\s*(\d+)/i);
+  const lo = bounds?.[1] ?? '1';
+  const hi = bounds?.[2] ?? '10';
+  return {
+    category: 'declare_array_syntax',
+    message:
+      'Declare an array as  DECLARE <name> : ARRAY[<first>:<last>] OF <type>\n' +
+      `  Example:\n    DECLARE ${name} : ARRAY[${lo}:${hi}] OF ${type}\n` +
+      '  2D:  DECLARE Grid : ARRAY[1:3, 1:3] OF INTEGER\n' +
+      '  Use square brackets and a colon between the bounds.',
+  };
+}
+
+/**
+ * A sentence typed as code (`Plan your name`, `Inputs Number`). A misspelled
+ * keyword up front gets "did you mean"; plain words get OUTPUT / comment options.
+ * ANTLR glues the words together in its message, so this reads the line itself.
+ */
+function plainWordsHint(line: string): LineDiagnosis | null {
+  const t = line.trim();
+  const first = t.match(/^[A-Za-z]+/)?.[0];
+  if (!first || KEYWORDS.includes(first.toUpperCase())) return null;
+  // `Ouptut "Hi"`, `Inputs Number` — a misspelled keyword starting the line
+  // (not a variable being assigned or indexed).
+  const near = nearestKeyword(first);
+  if (near && /^[A-Za-z]+(?:\s|"|\(|$)/.test(t) &&!/^[A-Za-z]+\s*(?:<-|←|=|\[|\.)/.test(t))
+    return {
+      category: 'misspelled_keyword',
+      message: `"${first}" is not recognised — did you mean ${near}?`,
+    };
+  if (!/^[A-Za-z]+(?:\s+[A-Za-z']+)+[.!?]?$/.test(t)) return null;
+  const shown = clip(t.replace(/"/g, ''), 40);
+  return {
+    category: 'plain_english',
+    message:
+      'This line reads like a sentence, not a pseudocode statement.\n' +
+      `  To show it as text:   OUTPUT "${shown}"\n` +
+      `  To keep it as a note: // ${shown}`,
+  };
+}
+
 /** Shared source-line diagnosis used by both the humanizer and the categorizer. */
 function sourceLineHint(sourceLine: string | undefined): LineDiagnosis | null {
   if (!sourceLine || !sourceLine.trim()) return null;
@@ -777,27 +1105,151 @@ function sourceLineHint(sourceLine: string | undefined): LineDiagnosis | null {
     stringLiteralHint(sourceLine) ??
     basicBlockHint(sourceLine) ??
     strayCloserHint(sourceLine) ??
+    arrayDeclareHint(sourceLine) ??
     declareHint(sourceLine) ??
+    procedureReturnsHint(sourceLine) ??
     functionHeaderHint(sourceLine) ??
+    paramTypeHint(sourceLine) ??
     forLoopHint(sourceLine) ??
     forDoHint(sourceLine) ??
     returnTypeHint(sourceLine) ??
     missingOperandHint(sourceLine) ??
-    outputSeparatorHint(sourceLine)
+    arrowInConditionHint(sourceLine) ??
+    lineNumberHint(sourceLine) ??
+    caseComparisonHint(sourceLine) ??
+    elseConditionHint(sourceLine) ??
+    callInExpressionHint(sourceLine) ??
+    inputTargetHint(sourceLine) ??
+    inputPromptHint(sourceLine) ??
+    setKeywordHint(sourceLine) ??
+    outputSynonymHint(sourceLine) ??
+    powerOperatorHint(sourceLine) ??
+    typeComparisonHint(sourceLine) ??
+    assignmentValueHint(sourceLine) ??
+    outputSeparatorHint(sourceLine) ??
+    plainWordsHint(sourceLine) ??
+    missingCallHint(sourceLine)
   );
+}
+
+/** The rest of the program, for hints that need more than the flagged line. */
+export interface ParseErrorContext {
+  /** Every source line (normalized), 0-indexed. */
+  lines: string[];
+  /** 1-based line the error was reported on (after resolveOffendingLine). */
+  line: number | null | undefined;
+}
+
+const BLOCK_PAIRS: { kind: string; closer: string; category: string }[] = [
+  { kind: 'IF', closer: 'ENDIF', category: 'missing_endif' },
+  { kind: 'FOR', closer: 'NEXT', category: 'missing_next' },
+  { kind: 'WHILE', closer: 'ENDWHILE', category: 'missing_endwhile' },
+  { kind: 'REPEAT', closer: 'UNTIL', category: 'unclosed_block' },
+  { kind: 'CASE', closer: 'ENDCASE', category: 'missing_endcase' },
+  { kind: 'PROCEDURE', closer: 'ENDPROCEDURE', category: 'missing_endprocedure' },
+  { kind: 'FUNCTION', closer: 'ENDFUNCTION', category: 'missing_endfunction' },
+];
+
+function startsWithWord(code: string, word: string): boolean {
+  return new RegExp(`^${word}\\b`, 'i').test(code);
+}
+
+/** Code on a line with string contents and comments removed. */
+function codeOf(line: string): string {
+  return line.replace(/"[^"]*"/g, '""').replace(/\/\/.*$/, '').trim();
+}
+
+/**
+ * An IF / FOR / WHILE … that never gets its closer, reported at the end of the
+ * program. ANTLR usually says "no viable alternative at input '\n'" on the last
+ * (perfectly valid) line instead of naming the missing ENDIF, which left
+ * students staring at an OUTPUT line that has nothing wrong with it.
+ */
+function unclosedBlockHint(ctx: ParseErrorContext): LineDiagnosis | null {
+  const code = ctx.lines.map(codeOf);
+  const lastCode = code.reduce((last, c, i) => (c ? i + 1 : last), 0);
+  if (!ctx.line || ctx.line < lastCode) return null;
+
+  const open: { kind: string; category: string; line: number; text: string }[] = [];
+  code.forEach((c, i) => {
+    for (const p of BLOCK_PAIRS) {
+      // `IF x THEN OUTPUT "a" ENDIF` on one line opens and closes itself.
+      if (startsWithWord(c, p.kind)) {
+        if (!new RegExp(`\\b${p.closer}\\b`, 'i').test(c))
+          open.push({ kind: p.kind, category: p.category, line: i + 1, text: c });
+      } else if (startsWithWord(c, p.closer)) {
+        const idx = open.map((o) => o.kind).lastIndexOf(p.kind);
+        if (idx >= 0) open.splice(idx, 1);
+      }
+    }
+  });
+  const block = open[open.length - 1];
+  if (!block) return null;
+
+  const closer =
+    block.kind === 'FOR'
+      ? `NEXT ${block.text.match(/^FOR\s+([A-Za-z_]\w*)/i)?.[1] ?? 'i'}`
+      : block.kind === 'REPEAT'
+        ? 'UNTIL <condition>'
+        : `END${block.kind}`;
+  const noThen = block.kind === 'IF' && !/\bTHEN\b/i.test(block.text) && !/^THEN\b/i.test(code[block.line] ?? '');
+  const noDo = block.kind === 'WHILE' && !/\bDO\b/i.test(block.text);
+  return {
+    category: block.category,
+    message:
+      `The ${block.kind} on line ${block.line} is never closed — add ${closer} after the last line inside it.\n` +
+      (noThen ? `  That IF line is also missing THEN: IF <condition> THEN\n` : '') +
+      (noDo ? `  That WHILE line is also missing DO: WHILE <condition> DO\n` : '') +
+      `  ${clip(block.text, 50)}\n    ...\n  ${closer}`,
+  };
+}
+
+/** THEN on its own line after a WHILE, or after an IF that already has a statement on it. */
+function misplacedThenHint(ctx: ParseErrorContext, sourceLine: string | undefined): LineDiagnosis | null {
+  if (!sourceLine || !/^THEN\b/i.test(sourceLine.trim()) || !ctx.line) return null;
+  let prev = '';
+  for (let i = ctx.line - 2; i >= 0 && !prev; i--) prev = codeOf(ctx.lines[i] ?? '');
+  if (/^WHILE\b/i.test(prev))
+    return {
+      category: 'misplaced_then',
+      message:
+        'A WHILE loop uses DO, not THEN, at the end of its condition line.\n' +
+        '  Example:\n    WHILE Count < 10 DO\n      Count <- Count + 1\n    ENDWHILE',
+    };
+  if (/^IF\b/i.test(prev) && /\b(?:OUTPUT|PRINT|INPUT)\b|<-|←/i.test(prev))
+    return {
+      category: 'misplaced_then',
+      message:
+        'THEN goes straight after the IF condition, and the statement goes on the next line.\n' +
+        '  Example:\n    IF Mark > 75 THEN\n      OUTPUT "Distinction"\n    ENDIF',
+    };
+  return null;
+}
+
+/** Hints that need the whole program; run after the single-line detectors. */
+function programHint(
+  rawMessage: string,
+  sourceLine: string | undefined,
+  ctx: ParseErrorContext | undefined,
+): LineDiagnosis | null {
+  if (!ctx) return null;
+  if (rawMessage.includes('<EOF>') || rawMessage.includes('token recognition error')) return null;
+  return misplacedThenHint(ctx, sourceLine) ?? unclosedBlockHint(ctx);
 }
 
 export function humanizeParseError(
   rawMessage: string,
   sourceLine?: string,
+  context?: ParseErrorContext,
 ): string {
-  const msg = explainParseError(rawMessage, sourceLine);
+  const msg = explainParseError(rawMessage, sourceLine, context);
   return isAntlrJargon(msg) ? genericParseFallback(sourceLine) : msg;
 }
 
 function explainParseError(
   rawMessage: string,
   sourceLine?: string,
+  context?: ParseErrorContext,
 ): string {
   // Root-cause check: a botched closer (e.g. ENDCLA) is the real error even though
   // ANTLR reports the symptom (a stray newline) — surface it before anything else.
@@ -809,6 +1261,10 @@ function explainParseError(
   // beat ANTLR's generic message for the same mistake.
   const lineHint = sourceLineHint(sourceLine);
   if (lineHint) return lineHint.message;
+
+  // Whole-program checks (unclosed block reported at the end, misplaced THEN).
+  const progHint = programHint(rawMessage, sourceLine, context);
+  if (progHint) return progHint.message;
 
   // ── targeted hints for the two biggest real-world error buckets ──────────
   // `=` used for assignment (the single most common parse error) and any curly
@@ -1167,7 +1623,11 @@ export function humanizeRuntimeError(rawMessage: string): string {
 const FOREIGN_PUNCT = new Set([';', '{', '}', '#', '`']);
 const SMART_QUOTE_CODEPOINTS = new Set([0x201c, 0x201d, 0x2018, 0x2019, 0x201e, 0x201f]);
 
-export function categorizeParseError(rawMessage: string, sourceLine?: string): string {
+export function categorizeParseError(
+  rawMessage: string,
+  sourceLine?: string,
+  context?: ParseErrorContext,
+): string {
   // Root cause: a misspelled block closer masquerading as a stray-newline error.
   if (closerSuggestion(sourceLine)) return 'misspelled_closer';
 
@@ -1175,6 +1635,9 @@ export function categorizeParseError(rawMessage: string, sourceLine?: string): s
   // basic_block_closer, for_loop_assignment, output_missing_comma).
   const lineHint = sourceLineHint(sourceLine);
   if (lineHint) return lineHint.category;
+
+  const progHint = programHint(rawMessage, sourceLine, context);
+  if (progHint) return progHint.category;
 
   const tokenRecog = rawMessage.match(/token recognition error at: '([^']+)'/);
   if (tokenRecog) {

@@ -135,7 +135,11 @@ Source-line pattern detectors (added Sep 2026 from the offending-line telemetry,
 - `python_syntax` — `else:`/`elif …:`, `for … in range(…):`, `int(input(…))`/`input(…)`, `range(…)`, `if/while …:` colon headers → redirect to IGCSE (mirrors the Portugol detector)
 - `basic_block_closer` — `END IF`→ENDIF (one word), `ENDFOR`/`END FOR`→`NEXT <var>`, bare `END`/`BEGIN` wrappers
 - `for_loop_assignment` — `FOR count : 1 TO 3` / `FOR i = 1 TO 10` → counter is set with `<-`
-- `output_missing_comma` — `OUTPUT "text" value` → OUTPUT items need a comma between them
+- `output_missing_comma` — `OUTPUT "text" value` (with or without a space) → OUTPUT items need a comma between them
+
+Second pass (Sept 2026, sized by replaying the `ErrorSample` table through the current rules; cut the unexplained share by about half). More single-line detectors: `input_prompt` (`INPUT "Enter name"`), `input_target` (`INPUT 10`), `set_assignment` (`SET x = 0`), `declare_array_syntax` (any array DECLARE that fails → canonical `ARRAY[1:n] OF T`), `procedure_returns`, `param_type_missing`, `call_missing` (`Stars(5)` without CALL), `call_in_expression` (`x <- CALL F(…)`), `case_comparison` (`>= 80 :`), `else_condition` (`ELSE x > 5 THEN`), `compare_with_arrow` / `while_as_for` (`<-` in a condition), `type_as_value` (`IF N = INTEGER`), `implicit_multiply` (`(9/5)C`), `value_missing_operator`, `power_operator` (`**`), `line_numbers` (pasted exam numbering), `misspelled_keyword` / `plain_english`. `=` assignment parses, so a flagged `x = …` line is about its value, not the operator.
+
+Whole-program hints take a `ParseErrorContext` (`{ lines, line }`, passed from `useInterpreter`): an IF/FOR/WHILE/REPEAT/CASE left open is reported at the end of the program as "no viable alternative at '\n'" on a valid last line, so `unclosedBlockHint` names the opener line instead (reuses `missing_endif`/`missing_next`/… slugs); `misplaced_then` covers THEN after a WHILE or after an IF that already has a statement. Parameterless `PROCEDURE Name`, `FUNCTION Name RETURNS T` and `CALL Name` (no brackets) are valid, as in the Cambridge guide.
 
 ## Database Schema (Prisma)
 

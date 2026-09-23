@@ -191,12 +191,14 @@ repeatStatement
 
 // ─── PROCEDURE / FUNCTION ───────────────────────────────────────────────────
 
+// The Cambridge guides write a parameterless header without brackets
+// (`PROCEDURE Greet`, `FUNCTION Roll RETURNS INTEGER`), so `()` is optional.
 procedureDeclaration
-    : PROCEDURE identifier LPAREN paramList? RPAREN NEWLINE* block NEWLINE* ENDPROCEDURE
+    : PROCEDURE identifier (LPAREN paramList? RPAREN)? NEWLINE* block NEWLINE* ENDPROCEDURE
     ;
 
 functionDeclaration
-    : FUNCTION identifier LPAREN paramList? RPAREN RETURNS dataType NEWLINE* block NEWLINE* ENDFUNCTION
+    : FUNCTION identifier (LPAREN paramList? RPAREN)? RETURNS dataType NEWLINE* block NEWLINE* ENDFUNCTION
     ;
 
 paramList
@@ -208,7 +210,7 @@ param
     ;
 
 callStatement
-    : CALL identifier LPAREN argList? RPAREN
+    : CALL identifier (LPAREN argList? RPAREN)?
     | CALL methodCall
     ;
 
