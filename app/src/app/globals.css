@@ -441,22 +441,38 @@ textarea:focus-visible {
 }
 
 /* ── Brand mark motion (Examiner Owl) ───────────────────
-   Entrance plays once on `.logo-anim`; hover replays inside `.group/logo`. */
-.logo-mark .mk-owl-eyes,
+   Entrance plays once on `.logo-anim`; idle blinks / winks; hover replays. */
+.logo-mark .mk-owl-eye,
 .logo-mark .mk-owl-beak {
   transform-box: fill-box;
 }
 
-.logo-mark .mk-owl-eyes { transform-origin: 50% 55%; }
+.logo-mark .mk-owl-eye { transform-origin: 50% 55%; }
 .logo-mark .mk-owl-beak { transform-origin: 50% 0; }
 
 .logo-anim .mk-owl-beak { animation: mk-beak 0.36s cubic-bezier(0.3, 1.6, 0.5, 1) 0.2s both; }
-.logo-anim .mk-owl-eyes { animation: mk-blink 0.34s ease-in-out 0.55s; }
-.group\/logo:hover .mk-owl-eyes { animation: mk-blink 0.3s ease-in-out; }
+.logo-anim .mk-owl-eye-l {
+  animation: mk-blink 0.34s ease-in-out 0.55s, mk-idle-blink 12s ease-in-out 2.4s infinite;
+}
+.logo-anim .mk-owl-eye-r {
+  animation: mk-blink 0.34s ease-in-out 0.55s, mk-idle-wink 12s ease-in-out 2.4s infinite;
+}
+.group\/logo:hover .mk-owl-eye { animation: mk-blink 0.3s ease-in-out; }
 
 @keyframes mk-blink {
   0%, 100% { transform: scaleY(1); }
   45%, 55% { transform: scaleY(0.08); }
+}
+
+/* One blink mid-cycle; the right eye also winks near the end. */
+@keyframes mk-idle-blink {
+  0%, 31%, 36%, 100% { transform: scaleY(1); }
+  33.5% { transform: scaleY(0.08); }
+}
+
+@keyframes mk-idle-wink {
+  0%, 31%, 36%, 78%, 84%, 100% { transform: scaleY(1); }
+  33.5%, 81% { transform: scaleY(0.08); }
 }
 
 @keyframes mk-beak {
@@ -465,9 +481,9 @@ textarea:focus-visible {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .logo-anim .mk-owl-eyes,
+  .logo-anim .mk-owl-eye,
   .logo-anim .mk-owl-beak,
-  .group\/logo:hover .mk-owl-eyes {
+  .group\/logo:hover .mk-owl-eye {
     animation: none;
   }
 }

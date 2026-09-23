@@ -17,8 +17,8 @@ const BRACE_RIGHT =
 const brace = (d: string, fg: string) =>
   `<path d="${d}" stroke="${fg}" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>`;
 
-const eye = (cx: number, fg: string) =>
-  `<path fill-rule="evenodd" fill="${fg}" d="${disc(cx, 21, 6.2)}${disc(cx + 1.2, 20.1, 2.6)}"/>`;
+const eye = (cx: number, fg: string, side: 'l' | 'r') =>
+  `<path class="mk-owl-eye mk-owl-eye-${side}" fill-rule="evenodd" fill="${fg}" d="${disc(cx, 21, 6.2)}${disc(cx + 1.2, 20.1, 2.6)}"/>`;
 
 /** Inner markup; `fg` paints the braces and eyes (currentColor in the UI). */
 export function markBody(fg: string): string {
@@ -26,7 +26,8 @@ export function markBody(fg: string): string {
   return (
     brace(BRACE_LEFT, fg) +
     brace(BRACE_RIGHT, fg) +
-    `<g class="mk-owl-eyes">${eye(18.3, fg)}${eye(29.7, fg)}</g>` +
+    eye(18.3, fg, 'l') +
+    eye(29.7, fg, 'r') +
     `<path class="mk-owl-beak" d="M21 29.2H27L24 34.4Z" fill="${red}" stroke="${red}" stroke-width="1.6" stroke-linejoin="round"/>`
   );
 }
