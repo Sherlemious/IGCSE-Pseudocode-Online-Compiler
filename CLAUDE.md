@@ -177,6 +177,7 @@ npm run antlr:generate  # regenerate parser from grammar
 | `sign_in_clicked` | `source` |
 | `user_authenticated` | — |
 | `user_signed_out` | — |
+| `teacher_identified` | `plan` — once per browser when the session role is TEACHER (incl. right after the `/onboarding` role pick; `SessionIdentifier`). Triggers the PostHog workflow "Teacher onboarding: what you can do" (email 1 at once; email 2 after 3 days unless `class_progress_viewed`; `utm_campaign=teacher_onboarding`) |
 | `nudge_shown` | `nudge` |
 | `nudge_clicked` | `nudge` |
 | `nudge_dismissed` | `nudge` — timed corner cards (`onboarding/OnboardingNudges.tsx`): `signup` (90 s, signed out), `learn` (15 min, no Learn progress → `/learn?from=nudge_learn`), `exam` (2nd session). `share` and the 15-min `practice` card were removed Sept 2026 (0.3% clicks / no solves). None show on `/learn`, `/pricing`, `/welcome`, `/onboarding`, `/auth`, `/exam`, `/e/` |

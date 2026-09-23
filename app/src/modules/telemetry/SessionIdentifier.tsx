@@ -15,6 +15,7 @@ export default function SessionIdentifier() {
   const { data: session, status } = useSession();
   const ph = usePostHog();
   const prevUserIdRef = useRef<string | undefined>(undefined);
+  const prevRoleRef = useRef<string | undefined>(undefined);
 
   useEffect(() => {
     if (!ph || status === 'loading') return;
@@ -45,6 +46,27 @@ export default function SessionIdentifier() {
       ph.capture('user_signed_out');
       ph.reset();
       prevUserIdRef.current = undefined;
+      prevRoleRef.current = undefined;
+    }
+
+    // Role can change mid-session (the /onboarding role pick), after identify ran.
+    const role = session?.user?.role;
+    if (userId && role && role !== prevRoleRef.current) {
+      if (prevRoleRef.current) ph.setPersonProperties({ role });
+      prevRoleRef.current = role;
+      // Triggers the teacher onboarding email workflow; once per browser, and
+      // the workflow itself only runs once per person.
+      if (role === 'TEACHER') {
+        const teacherKey = `ph_teacher_${userId}`;
+        try {
+          if (!localStorage.getItem(teacherKey)) {
+            ph.capture('teacher_identified', { plan: session.user.plan });
+            localStorage.setItem(teacherKey, '1');
+          }
+        } catch {
+          // storage blocked — skip; the next visit will retry
+        }
+      }
     }
   }, [session, status, ph]);
 
