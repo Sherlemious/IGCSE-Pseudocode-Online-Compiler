@@ -27,8 +27,27 @@ if (typeof window !== 'undefined' && key) {
     opt_out_capturing_by_default: isDev, // no data collected in dev unless opted in
   });
   setInterpreterCapture((event, properties) => {
+    if (event === 'interpreter_error' && !allowInterpreterError()) return;
     posthog.capture(event, properties);
   });
+}
+
+// One typo can cascade into dozens of ANTLR errors, each captured at once. Those
+// bursts trip posthog-js's client rate limit (10/s), which then drops code_run /
+// hint_shown too. The first error of a run drives the hint, so keep a few per second.
+const ERROR_BURST_LIMIT = 3;
+const ERROR_BURST_WINDOW_MS = 1000;
+let errorWindowStart = 0;
+let errorsInWindow = 0;
+
+function allowInterpreterError(): boolean {
+  const now = Date.now();
+  if (now - errorWindowStart >= ERROR_BURST_WINDOW_MS) {
+    errorWindowStart = now;
+    errorsInWindow = 0;
+  }
+  errorsInWindow += 1;
+  return errorsInWindow <= ERROR_BURST_LIMIT;
 }
 
 function PageViewTracker() {
@@ -38,7 +57,8 @@ function PageViewTracker() {
 
   useEffect(() => {
     if (!ph) return;
-    const url = pathname + (searchParams.toString() ? `?${searchParams}` : '');
+    // Absolute URL: heatmap ingestion rejects path-only $current_url (invalid_heatmap_data).
+    const url = window.location.origin + pathname + (searchParams.toString() ? `?${searchParams}` : '');
     ph.capture('$pageview', { $current_url: url });
   }, [pathname, searchParams, ph]);
 
