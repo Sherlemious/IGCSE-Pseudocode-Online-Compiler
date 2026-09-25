@@ -10,6 +10,7 @@ import { ArrowLeft, ArrowRight, BookOpen, Check, Code2, Crown, Lock, UserPlus } 
 import { IGCSE_PAPER_2 } from './curriculum';
 import LearnEditorPane from './LearnEditorPane';
 import { promptLearnUpgrade } from './learnNudge';
+import { paywallPersonProps, rememberPaywallLevel } from './paywallLevel';
 import LearnAccountSheet, { LEARN_PENDING_AUTH_KEY, type LearnAuthGate } from './LearnAccountSheet';
 import { flattenLessons, lessonHref, nextLesson, previousLesson } from './path';
 import {
@@ -104,10 +105,11 @@ export default function LearnPlayer({ level, lesson, premiumAccess: initialPremi
           }),
         );
         if (paywalled) {
-          captureLearn(
-            'learn_gate_blocked',
-            learnLessonProps(level, lesson, { unlocked: false, source: 'paywall' }),
-          );
+          rememberPaywallLevel(level);
+          captureLearn('learn_gate_blocked', {
+            ...learnLessonProps(level, lesson, { unlocked: false, source: 'paywall' }),
+            $set: paywallPersonProps(level),
+          });
         }
         return;
       }

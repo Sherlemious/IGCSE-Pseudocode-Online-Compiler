@@ -1,6 +1,6 @@
 import { COURSE_ID } from './types';
 import type { LearnCourse, LearnLesson } from './types';
-import { findLevelForLesson, flattenLessons, playableLessonsBefore } from './path';
+import { findLevelForLesson, flattenLessons } from './path';
 
 const storageKey = (courseId: string) => `learn_progress:${courseId}`;
 
@@ -93,14 +93,24 @@ export type LearnAccess = {
   premium?: boolean;
 };
 
-export function isSequentiallyOpen(
+/**
+ * Every earlier playable lesson in the same level is complete. A level's first
+ * lesson is therefore always open, so a student can jump straight to the topic
+ * they came for (e.g. loops) instead of clearing every level before it.
+ */
+export function isOpenWithinLevel(
   course: LearnCourse,
   lesson: LearnLesson,
   map: ProgressMap,
 ): boolean {
   if (!lesson.playable) return false;
-  const prior = playableLessonsBefore(course, lesson.id);
-  return prior.every((item) => isComplete(map, item.lesson.id));
+  const level = findLevelForLesson(course, lesson.id);
+  if (!level) return false;
+  const index = level.lessons.findIndex((item) => item.id === lesson.id);
+  return level.lessons
+    .slice(0, index)
+    .filter((item) => item.playable)
+    .every((item) => isComplete(map, item.id));
 }
 
 export function playableLessonIndex(course: LearnCourse, lessonId: string): number {
@@ -139,7 +149,7 @@ export function isLessonUnlocked(
   if (!lesson.playable) return false;
   const level = findLevelForLesson(course, lesson.id);
   if (level && !level.free && !access.premium) return false;
-  if (isSequentiallyOpen(course, lesson, map)) return true;
+  if (isOpenWithinLevel(course, lesson, map)) return true;
   const index = playableLessonIndex(course, lesson.id);
   return index >= 0 && index <= highestReachedPlayableIndex(course, map);
 }

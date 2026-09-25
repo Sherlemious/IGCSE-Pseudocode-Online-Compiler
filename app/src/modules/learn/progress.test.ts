@@ -73,7 +73,22 @@ describe('learn sequential unlock', () => {
     const empty: ProgressMap = {};
     expect(isLessonUnlocked(IGCSE_PAPER_2, lesson('1', 'output'), empty)).toBe(true);
     expect(isLessonUnlocked(IGCSE_PAPER_2, lesson('1', 'comments'), empty)).toBe(false);
-    expect(isLessonUnlocked(IGCSE_PAPER_2, lesson('2', 'declare'), empty)).toBe(false);
+    expect(isLessonUnlocked(IGCSE_PAPER_2, lesson('2', 'types'), empty)).toBe(false);
+  });
+
+  it('opens the first lesson of every level so a student can jump to a topic', () => {
+    const empty: ProgressMap = {};
+    expect(isLessonUnlocked(IGCSE_PAPER_2, lesson('2', 'declare'), empty)).toBe(true);
+    expect(isLessonUnlocked(IGCSE_PAPER_2, lesson('3', 'input'), empty)).toBe(true);
+    expect(isLessonUnlocked(IGCSE_PAPER_2, lesson('5', 'for'), empty, { premium: true })).toBe(true);
+    expect(isLessonUnlocked(IGCSE_PAPER_2, lesson('5', 'for'), empty)).toBe(false);
+  });
+
+  it('keeps order inside a level after jumping in', () => {
+    expect(isLessonUnlocked(IGCSE_PAPER_2, lesson('5', 'for-step'), {}, { premium: true })).toBe(false);
+    const afterFor = done(['5.1']);
+    expect(isLessonUnlocked(IGCSE_PAPER_2, lesson('5', 'for-step'), afterFor, { premium: true })).toBe(true);
+    expect(isLessonUnlocked(IGCSE_PAPER_2, lesson('5', 'totaller'), afterFor, { premium: true })).toBe(false);
   });
 
   it('unlocks the next playable lesson after the previous completes', () => {
@@ -119,9 +134,9 @@ describe('reached-index unlock', () => {
     expect(isLessonUnlocked(FIXTURE, fixtureLesson('a.1'), reachedLater)).toBe(true);
   });
 
-  it('keeps a lesson after the frontier locked until sequential or a later complete', () => {
-    const reachedLater = done(['a.3']);
-    expect(isLessonUnlocked(FIXTURE, fixtureLesson('b.1'), reachedLater, { premium: true })).toBe(false);
+  it('opens a paid level start with premium even before the free levels are done', () => {
+    expect(isLessonUnlocked(FIXTURE, fixtureLesson('b.1'), {}, { premium: true })).toBe(true);
+    expect(isLessonUnlocked(FIXTURE, fixtureLesson('b.1'), {})).toBe(false);
   });
 
   it('still requires premium for paid lessons even when the frontier is past them', () => {

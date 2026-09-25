@@ -4,6 +4,12 @@ export function lessonHref(level: LearnLevel, lesson: LearnLesson): string {
   return `/learn/${level.slug}/${lesson.slug}`;
 }
 
+/** Where a level opens: its first playable lesson (always unlocked for anyone with access). */
+export function levelStartHref(level: LearnLevel): string | null {
+  const first = level.lessons.find((lesson) => lesson.playable);
+  return first ? lessonHref(level, first) : null;
+}
+
 export function flattenLessons(course: LearnCourse): { level: LearnLevel; lesson: LearnLesson }[] {
   return course.levels.flatMap((level) => level.lessons.map((lesson) => ({ level, lesson })));
 }
@@ -46,16 +52,6 @@ export function nextLesson(
   const index = all.findIndex((item) => item.lesson.id === lessonId);
   if (index < 0 || index >= all.length - 1) return null;
   return all[index + 1] ?? null;
-}
-
-export function playableLessonsBefore(
-  course: LearnCourse,
-  lessonId: string,
-): { level: LearnLevel; lesson: LearnLesson }[] {
-  const all = flattenLessons(course);
-  const index = all.findIndex((item) => item.lesson.id === lessonId);
-  if (index <= 0) return [];
-  return all.slice(0, index).filter((item) => item.lesson.playable);
 }
 
 export function firstPlayableLesson(course: LearnCourse): { level: LearnLevel; lesson: LearnLesson } | null {

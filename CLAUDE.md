@@ -259,7 +259,7 @@ Progress is localStorage; these fire from the path map and the lesson player. In
 | `learn_opened` | `course`, `from`, `signed_in`, `completed_count`, `playable_count`, `next_lesson` |
 | `learn_continue_clicked` | lesson props + `source: continue` |
 | `learn_lesson_clicked` | lesson props + `source: node` |
-| `learn_gate_blocked` | lesson/level props + `source` (`node` on a gated map node, `roadmap` on a coming-level row) |
+| `learn_gate_blocked` | lesson/level props + `source` (`node` on a gated map node, `roadmap` on a coming-level row, `paywall` in the player). The player's paywall hit also `$set`s `learn_paywall_level` / `_level_name` / `_topics` / `_path` (level-start URL) and stores the level in localStorage `learn_paywall_level` (`learn/paywallLevel.ts`) |
 | `learn_gate_viewed` | landed on a locked/unplayable lesson URL |
 | `learn_lesson_started` | lesson props + `already_complete` |
 | `learn_check_submitted` | lesson props + `ok`, `reason` (`passed`\|`must_contain`\|`forbidden`\|`runtime`\|`wrong_output`\|…), `attempts`, `message` |
@@ -278,6 +278,14 @@ Progress is localStorage; these fire from the path map and the lesson player. In
 | `learn_signup_gate_completed` | lesson props + `gate`, `method` (`email`\|`google`; Google is detected on return via sessionStorage `learn_pending_auth`) |
 | `learn_upgrade_clicked` | lesson props + `source` (`paywall` → auto-opens student checkout, `paywall_compare` → plain student pricing) |
 | `nudge_shown` / `nudge_clicked` / `nudge_dismissed` (`nudge: learn_upgrade_level_complete`) | `level` — toast when the last free level is finished; links to the auto-opening student checkout |
+
+Unlock rule: a lesson opens once every earlier playable lesson **in its own level** is done, so each level's first lesson is always open (paid levels still need access).
+
+After checkout, `/welcome` shows students (non-TEACHER) every paid level at its first lesson, with the stored `learn_paywall_level` as the main button (`LearnUnlockedLevels`). Teachers keep the classes CTA.
+
+| Event | Properties |
+|-------|-----------|
+| `welcome_cta_clicked` | `destination` (`learn_level`\|`learn_path`\|`editor`), `level`, `recommended` (the level they hit the paywall on) |
 
 Student checkout hand-off: `/pricing?checkout=student&from=<source>` auto-opens the Student monthly ($2/mo) Paddle checkout for a signed-in student with no plan (never for teachers). Signed out, it opens the in-page auth sheet first (`pricing_signin_prompt_shown` / `_clicked` / `_dismissed` / `_completed`, all with `source`) so the purchase carries `app_user_id` instead of relying on the Paddle email matching the account email. `subscribe_clicked` / `pass_clicked` now carry `source` (the `from` param, default `pricing`) and `auto_opened`.
 
