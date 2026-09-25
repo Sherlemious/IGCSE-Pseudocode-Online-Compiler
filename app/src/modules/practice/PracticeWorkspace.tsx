@@ -52,7 +52,7 @@ interface GradeResultItem {
   actualOutput?: string;
   expectedOutput?: string;
   inputs?: string[];
-  error?: { kind: string; message: string; line?: number } | null;
+  error?: { kind: string; message: string; hint?: string; category?: string; line?: number } | null;
   executionMs: number;
 }
 
@@ -91,7 +91,8 @@ function errorLabel(kind: string): string {
 function errorHint(error: NonNullable<GradeResultItem['error']>): string {
   if (error.kind === 'timeout')
     return `${error.message} \u2014 check for infinite loops or missing loop counters.`;
-  return error.line ? `Line ${error.line}: ${error.message}` : error.message;
+  const text = error.hint ?? error.message;
+  return error.line ? `Line ${error.line}: ${text}` : text;
 }
 
 /* ── Component ──────────────────────────────────────────── */
@@ -171,6 +172,7 @@ export default function PracticeWorkspace({ questionId, starterCode, savedCode, 
   const {
     entries, isRunning, waitingForInput,
     isStepping, debugLine, debugVariables, errorLine, errorFocusKey, breakpoints,
+    errorInfo, noteFixApplied, noteErrorHelp, dismissErrorInfo,
     traceRows, maxTraceRows,
     run, debugRun, step, continueExecution, provideInput, stop, clearEntries, toggleBreakpoint,
   } = useInterpreter({ feature: 'practice', questionId });
@@ -293,11 +295,15 @@ export default function PracticeWorkspace({ questionId, starterCode, savedCode, 
       setGradeResponse(data);
       setMobileView('output');
       const allPassed = data.passCount === data.totalCount;
+      // Why the first failing test failed — the Check button's equivalent of hint_shown.
+      const firstFail = data.results.find((r) => !r.passed);
       captureEvent('practice_graded', {
         question_id: questionId,
         pass_count: data.passCount,
         total_count: data.totalCount,
         solved: allPassed,
+        fail_kind: firstFail ? (firstFail.error?.kind ?? 'wrong_output') : null,
+        error_category: firstFail?.error ? (firstFail.error.category ?? firstFail.error.kind) : null,
       });
       if (allPassed) {
         captureEvent('practice_solved', { question_id: questionId });
@@ -621,6 +627,10 @@ export default function PracticeWorkspace({ questionId, starterCode, savedCode, 
             ariaLabel="Practice Code Editor"
             jumpToLine={jumpToLine}
             onJumpToLineConsumed={() => setJumpToLine(null)}
+            inlineError={errorInfo}
+            onFixApplied={noteFixApplied}
+            onErrorExample={() => noteErrorHelp('show_example')}
+            onInlineErrorDismissed={dismissErrorInfo}
           />
         </div>
 

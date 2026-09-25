@@ -125,6 +125,8 @@ const CompilerPage: React.FC = () => {
   const [showFeedback, setShowFeedback] = useState(false);
   const feedbackShownRef = useRef(false);
   const [jumpToLine, setJumpToLine] = useState<number | null>(null);
+  // Bumped by the terminal's Fix button; the editor applies the fix.
+  const [applyFixKey, setApplyFixKey] = useState(0);
   const [outputTab, setOutputTab] = useState<'terminal' | 'trace' | 'python' | 'flowchart'>('terminal');
   const [saveSheetOpen, setSaveSheetOpen] = useState(false);
   const [savePromptVariant, setSavePromptVariant] = useState<string | null>(null);
@@ -150,6 +152,10 @@ const CompilerPage: React.FC = () => {
     debugStepCount,
     errorLine,
     errorFocusKey,
+    errorInfo,
+    noteFixApplied,
+    noteErrorHelp,
+    dismissErrorInfo,
     breakpoints,
     traceRows,
     maxTraceRows,
@@ -769,6 +775,11 @@ const CompilerPage: React.FC = () => {
             entries={entries}
             traceRows={traceRows}
             outputTab={outputTab}
+            inlineError={errorInfo}
+            applyFixKey={applyFixKey}
+            onFixApplied={noteFixApplied}
+            onErrorExample={() => noteErrorHelp('show_example')}
+            onInlineErrorDismissed={dismissErrorInfo}
           />
         </div>
 
@@ -794,7 +805,17 @@ const CompilerPage: React.FC = () => {
             onClear={clearEntries}
             isStepping={isStepping}
             debugVariables={debugVariables}
-            onJumpToLine={(line) => setJumpToLine(line)}
+            onJumpToLine={(line) => {
+              noteErrorHelp('jump_to_line');
+              setJumpToLine(line);
+            }}
+            onShowErrorExample={() => noteErrorHelp('show_example')}
+            quickFix={
+              errorInfo?.fix
+                ? { line: errorInfo.line, label: errorInfo.fix.label, applied: !!errorInfo.fixApplied }
+                : null
+            }
+            onApplyFix={() => setApplyFixKey((k) => k + 1)}
             traceRows={traceRows}
             maxTraceRows={maxTraceRows}
             activeTab={outputTab}

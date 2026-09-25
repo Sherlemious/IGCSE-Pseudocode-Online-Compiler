@@ -144,7 +144,7 @@ const KEYWORDS = [
 ];
 
 /** If `token` looks like a misspelled keyword, return the closest match. */
-function nearestKeyword(token: string): string | null {
+export function nearestKeyword(token: string): string | null {
   const upper = token.toUpperCase();
   // Wrong case of a real keyword (`endfunction` → ENDFUNCTION). An *exact*
   // match is not a typo — the keyword is just in the wrong place (stray closer).
@@ -459,24 +459,27 @@ function basicBlockHint(line: string): LineDiagnosis | null {
   }
 
   // Bare BASIC/Pascal wrappers.
+  // Students who wrap a program in START … END (flowchart habit) kept re-running
+  // after the "not needed" wording — say plainly to delete the line.
   if (upper === 'END' || upper === 'ENDPROGRAM' || upper === 'END PROGRAM')
     return {
       category: 'basic_block_closer',
       message:
-        'Cambridge IGCSE pseudocode has no general END wrapper.\n' +
+        `Delete this ${line.trim()} line — Cambridge IGCSE pseudocode has no general END wrapper.\n` +
         '  Close each block with its own keyword: ENDIF, NEXT i, ENDWHILE, ENDFUNCTION, ENDPROCEDURE.',
     };
   if (upper === 'BEGIN')
     return {
       category: 'basic_block_closer',
-      message: 'No BEGIN is needed in IGCSE pseudocode — write your statements directly.',
+      message: 'Delete this BEGIN line. No BEGIN is needed in IGCSE pseudocode — write your statements directly.',
     };
   if (upper === 'START' || upper === 'STOP')
     return {
       category: 'basic_block_closer',
       message:
-        'Cambridge IGCSE pseudocode does not need START, STOP, BEGIN, or a general END wrapper.\n' +
-        '  Write statements directly, and use specific closers such as ENDIF, NEXT i, ENDWHILE, and ENDFUNCTION.',
+        `Delete this ${line.trim()} line${upper === 'START' ? ' (and any END or STOP at the bottom)' : ''}.\n` +
+        '  Cambridge IGCSE pseudocode does not need START, STOP, BEGIN, or a general END wrapper — ' +
+        'the program starts at its first statement.',
     };
 
   return null;
@@ -569,6 +572,33 @@ function forLoopHint(line: string): LineDiagnosis | null {
 function outputSeparatorHint(line: string): LineDiagnosis | null {
   const t = line.trim();
   if (!/^(?:OUTPUT|PRINT)\b/i.test(t)) return null;
+  // Shapes that used to be read as a missing comma but aren't (Sept 2026):
+  // `OUTPUT "You win!" THEN` — the IF's THEN ended up on the OUTPUT line.
+  if (/\bTHEN\s*$/i.test(t))
+    return {
+      category: 'misplaced_then',
+      message:
+        'THEN belongs at the end of the IF line, not after OUTPUT.\n' +
+        '  Example:\n    IF Guess = Secret THEN\n      OUTPUT "You win!"\n    ENDIF',
+    };
+  // `OUTPUT, "Hi"` / `OUTPUT ,"Hi"` — a comma before the first item.
+  if (/^(?:OUTPUT|PRINT)\s*,/i.test(t))
+    return {
+      category: 'output_leading_comma',
+      message:
+        'Remove the comma straight after OUTPUT — commas go between items, not before the first one.\n' +
+        '  Example:\n    OUTPUT "Total: ", Total',
+    };
+  // `OUTPUT "Wrong" OR "Try again"` — OR / AND join conditions, not text.
+  const words = t.replace(/^(?:OUTPUT|PRINT)\b/i, '').replace(/"[^"]*"/g, '\u0001');
+  if (/\u0001\s*(?:OR|AND)\b/i.test(words))
+    return {
+      category: 'output_logic_word',
+      message:
+        'OR and AND join conditions in an IF — they cannot join OUTPUT text.\n' +
+        '  Print both messages with a comma, or use two OUTPUT lines:\n' +
+        '    OUTPUT "Incorrect password. ", "Try again"',
+    };
   // A closed string literal next to another value with no comma or operator in
   // between, with or without a space: OUTPUT "Total is " Total, OUTPUT "Hi "Name.
   // Strings are swapped for a marker first (left to right, so quote pairs match
@@ -791,6 +821,87 @@ function missingOperandHint(line: string): LineDiagnosis | null {
   return null;
 }
 
+const CONDITION_WORD =
+  /^(?:AND|OR|NOT|THEN|DO|MOD|DIV|TO|STEP|TRUE|FALSE|IF|ELSE|ELSEIF|WHILE|UNTIL|INPUT|OUTPUT|PRINT)$/i;
+
+/**
+ * IF conditions that were being reported as "missing THEN" because ANTLR's
+ * expected-token list happens to include THEN (Sept 2026 telemetry):
+ * `IF password "1234"` (no comparison), `… OR "1234"` (variable not repeated),
+ * `IF Mark = 70 TO 79` (a CASE-style range). Only runs on a flagged line.
+ */
+function ifConditionHint(line: string): LineDiagnosis | null {
+  const m = line.trim().match(/^(?:IF|ELSE\s*IF|ELSEIF|WHILE|UNTIL)\b\s*(.*?)\s*(?:\bTHEN\b|\bDO\b)?\s*$/i);
+  if (!m) return null;
+  const cond = m[1];
+  // Arrows and WHILE … TO belong to arrowInConditionHint (while_as_for / compare_with_arrow).
+  if (/<-|←/.test(cond)) return null;
+  const isIf = /^(?:IF|ELSE\s*IF|ELSEIF)\b/i.test(line.trim());
+
+  // `IF age = 50 , OUTPUT "Young" ENDIF` — a whole IF squeezed onto one line.
+  const statementInside = /\b(?:OUTPUT|PRINT|INPUT)\b/i.test(cond.replace(/"[^"]*"/g, '""'));
+  const inline = statementInside
+    ? cond.match(/^(.*?)[\s,:]*\b(?:THEN\s+)?(OUTPUT|PRINT|INPUT)\b(.*?)(?:\bENDIF\b.*)?$/i)
+    : null;
+  if (inline && inline[1].trim()) {
+    const test = inline[1].replace(/[\s,:]+$/, '').trim();
+    return {
+      category: 'single_line_if',
+      message:
+        'Split this IF over separate lines: the condition and THEN, the statement, then ENDIF.\n' +
+        `  Example:\n    IF ${clip(test, 30)} THEN\n      ${inline[2].toUpperCase()}${clip(inline[3].replace(/\s+$/, ''), 30)}\n    ENDIF`,
+    };
+  }
+
+  // `IF Mark -> 50` — an arrow typed for "greater than or equal".
+  if (/->/.test(cond))
+    return {
+      category: 'compare_operator',
+      message:
+        '-> is not an operator. For "greater than or equal to" use >=, for "greater than" use >.\n' +
+        `  Example:\n    IF ${clip(cond.replace(/\s*->\s*/, ' >= '), 30)} THEN`,
+    };
+
+  const range = cond.match(/\b([A-Za-z_]\w*)\s*(?:>=|<=|=|>|<)?\s*(-?\d+(?:\.\d+)?)\s+TO\s+(-?\d+(?:\.\d+)?)/i);
+  if (isIf && range && !CONDITION_WORD.test(range[1])) {
+    const [, v, lo, hi] = range;
+    return {
+      category: 'if_range',
+      message:
+        'IF cannot test a range with TO — compare both ends and join them with AND.\n' +
+        `  Example:\n    IF ${v} >= ${lo} AND ${v} <= ${hi} THEN\n` +
+        `  (Only CASE branches use TO:  ${lo} TO ${hi} : …)`,
+    };
+  }
+
+  // A variable directly followed by a value, e.g. `password "1234"` or `age 50`.
+  const glued = [...cond.matchAll(/\b([A-Za-z_]\w*)\s+("[^"]*"|-?\d+(?:\.\d+)?)(?![\w.])/g)].find(
+    (hit) => !CONDITION_WORD.test(hit[1]),
+  );
+  if (glued) {
+    const [, v, value] = glued;
+    return {
+      category: 'missing_comparison',
+      message:
+        `Put a comparison between ${v} and ${clip(value, 20)} — for example = (equals) or <> (not equal).\n` +
+        `  Example:\n    IF ${v} = ${clip(value, 20)} THEN`,
+    };
+  }
+
+  // `x = "a" OR "b"`: each side of OR / AND is a full comparison.
+  const bare = cond.match(/^(.*?)\b([A-Za-z_]\w*)\s*(?:<>|<=|>=|=|<|>)\s*("[^"]*"|-?\d+(?:\.\d+)?)\s+(OR|AND)\s+("[^"]*"|-?\d+(?:\.\d+)?)\s*$/i);
+  if (bare && !CONDITION_WORD.test(bare[2])) {
+    const [, , v, first, join, second] = bare;
+    return {
+      category: 'missing_operand',
+      message:
+        `Name the variable again after ${join.toUpperCase()} — each side must be a full comparison.\n` +
+        `  Example:\n    IF ${v} = ${clip(first, 20)} ${join.toUpperCase()} ${v} = ${clip(second, 20)} THEN`,
+    };
+  }
+  return null;
+}
+
 // Detectors below were sized from the ErrorSample table (Sept 2026): these shapes
 // were still falling through to the generic "isn't valid IGCSE pseudocode" text.
 
@@ -881,16 +992,42 @@ function setKeywordHint(line: string): LineDiagnosis | null {
 }
 
 /** `INPUT "Enter your name"` — a prompt with no variable to store the answer in. */
+const NOT_A_NAME = /^(?:today|now|please|here|it|this|that|you|want|is|are|of|the|a|an)$/i;
+
+/** A variable name to suggest for `INPUT "Enter the passcode"` → Passcode. */
+/** A prompt glued into one word, e.g. "Enterthepasscode". */
+const GLUED_PROMPT = /^(?:enter|input|type|please)(?:the|your|a)?(?=[a-z]{3,}$)/i;
+
+function nameFromPrompt(prompt: string): string {
+  const last = prompt.match(/([A-Za-z]+)[^A-Za-z]*$/)?.[1]?.replace(GLUED_PROMPT, '');
+  if (!last || NOT_A_NAME.test(last)) return 'Answer';
+  return last[0].toUpperCase() + last.slice(1).toLowerCase();
+}
+
 function inputPromptHint(line: string): LineDiagnosis | null {
   const t = line.trim();
-  if (/^INPUT\s*[=:]?\s*"/i.test(t))
+  const quoted = t.match(/^INPUT\s*[=:]?\s*"([^"]*)"/i);
+  if (quoted) {
+    const text = quoted[1].trim();
+    // `INPUT "score"` — the quotes turned the variable name into text.
+    if (/^[A-Za-z_]\w*$/.test(text) && !GLUED_PROMPT.test(text))
+      return {
+        category: 'input_prompt',
+        message:
+          `The quotes make "${text}" a piece of text, so there is no variable to store the answer. Drop them:\n` +
+          `    INPUT ${text}\n` +
+          `  To show a question first:  OUTPUT "Enter ${text.toLowerCase()}"  then  INPUT ${text}`,
+      };
+    const name = nameFromPrompt(text || 'your name');
+    const prompt = clip(text || 'Enter your name', 40);
     return {
       category: 'input_prompt',
       message:
         'INPUT needs a variable to store the answer in. Show the question with OUTPUT first:\n' +
-        '    OUTPUT "Enter your name"\n    INPUT Name\n' +
-        '  Or on one line: INPUT Name, "Enter your name"',
+        `    OUTPUT "${prompt}"\n    INPUT ${name}\n` +
+        `  Or on one line: INPUT ${name}, "${prompt}"`,
     };
+  }
   // `INPUT Score, "Mark for student " & i` — the prompt must be one quoted text.
   if (/^INPUT\b[^"]*,\s*"[^"]*"\s*[&+,]/i.test(t))
     return {
@@ -904,7 +1041,28 @@ function inputPromptHint(line: string): LineDiagnosis | null {
 
 /** `INPUT`, `INPUT 10`, `INPUT INTEGER` — INPUT reads into a named variable. */
 function inputTargetHint(line: string): LineDiagnosis | null {
-  if (!/^INPUT(?:\s*$|\s+(?:\d|(?:INTEGER|REAL|STRING|CHAR|BOOLEAN)\b))/i.test(line.trim())) return null;
+  const t = line.trim();
+  if (!/^INPUT(?:\s*$|\s+(?:\d|(?:INTEGER|REAL|STRING|CHAR|BOOLEAN)\b))/i.test(t)) return null;
+  // `INPUT 3score = 65` — test data typed into the code.
+  const pasted = t.match(/^INPUT\s+\d+\s*([A-Za-z_]\w*)\s*=\s*(\S+)/i);
+  if (pasted)
+    return {
+      category: 'input_target',
+      message:
+        'This looks like a test value typed into the code. Write the INPUT line with just the variable:\n' +
+        `    INPUT ${pasted[1]}\n` +
+        `  Then type ${clip(pasted[2], 12)} when the program asks for it.`,
+    };
+  // `INPUT 20` — a value where the variable belongs.
+  const value = t.match(/^INPUT\s+(-?\d+(?:\.\d+)?)\s*$/i);
+  if (value)
+    return {
+      category: 'input_target',
+      message:
+        'INPUT reads what the user types while the program runs, so it needs a variable name, not a number.\n' +
+        '  Example:\n    INPUT Age\n' +
+        `  To store ${value[1]} yourself, assign it instead:  Age <- ${value[1]}`,
+    };
   return {
     category: 'input_target',
     message:
@@ -1005,8 +1163,10 @@ function powerOperatorHint(line: string): LineDiagnosis | null {
 /** `<-` inside a condition (`WHILE Found <- TRUE DO`), or WHILE written as a FOR. */
 function arrowInConditionHint(line: string): LineDiagnosis | null {
   const t = line.trim();
-  if (!/^(?:IF|WHILE|UNTIL|ELSE\s*IF|ELSEIF)\b/i.test(t) || !/<-|←/.test(t)) return null;
-  if (/^WHILE\b/i.test(t) && /\bTO\b/i.test(t))
+  // `WHILE Count <- 1 TO 5` and `WHILE i = 1 TO 25` are both a FOR loop in disguise.
+  const whileRange = /^WHILE\b/i.test(t) && /\bTO\b/i.test(t);
+  if (!/^(?:IF|WHILE|UNTIL|ELSE\s*IF|ELSEIF)\b/i.test(t) || (!/<-|←/.test(t) && !whileRange)) return null;
+  if (whileRange)
     return {
       category: 'while_as_for',
       message:
@@ -1114,6 +1274,7 @@ function sourceLineHint(sourceLine: string | undefined): LineDiagnosis | null {
     forDoHint(sourceLine) ??
     returnTypeHint(sourceLine) ??
     missingOperandHint(sourceLine) ??
+    ifConditionHint(sourceLine) ??
     arrowInConditionHint(sourceLine) ??
     lineNumberHint(sourceLine) ??
     caseComparisonHint(sourceLine) ??

@@ -1,5 +1,12 @@
 import { Interpreter, parse, PseudocodeError } from '@/modules/interpreter';
 import { ServerVirtualFileSystem } from '@/modules/interpreter/core/serverFilesystem';
+import {
+  categorizeParseError,
+  categorizeRuntimeError,
+  humanizeParseError,
+  humanizeRuntimeError,
+  resolveOffendingLine,
+} from '@/modules/interpreter/errorMessages';
 
 export interface GradeResult {
   passed: boolean;
@@ -7,6 +14,10 @@ export interface GradeResult {
   error?: {
     kind: 'timeout' | 'parse' | 'runtime' | 'unknown';
     message: string;
+    /** Student-facing explanation (same wording as the Run button); `message` stays raw for logs. */
+    hint?: string;
+    /** Error category slug (the Run button's `hint_id`), for analytics. */
+    category?: string;
     line?: number;
   };
   executionMs: number;
@@ -34,10 +45,18 @@ export async function gradeSubmission(
   const { tree, errors } = parse(code);
   if (errors.length > 0) {
     const e = errors[0];
+    const lines = code.split('\n');
+    const at = resolveOffendingLine(lines, e.line);
     return {
       passed: false,
       actualOutput: '',
-      error: { kind: 'parse', message: e.message, line: e.line ?? undefined },
+      error: {
+        kind: 'parse',
+        message: e.message,
+        hint: humanizeParseError(e.message, at.text, { lines, line: at.line }),
+        category: categorizeParseError(e.message, at.text, { lines, line: at.line }),
+        line: at.line ?? e.line ?? undefined,
+      },
       executionMs: Date.now() - start,
     };
   }
@@ -118,7 +137,13 @@ export async function gradeSubmission(
       return {
         passed: false,
         actualOutput: outputLines.join('\n'),
-        error: { kind: 'runtime', message: e.message, line: e.line ?? undefined },
+        error: {
+          kind: 'runtime',
+          message: e.message,
+          hint: humanizeRuntimeError(e.message),
+          category: categorizeRuntimeError(e.message),
+          line: e.line ?? undefined,
+        },
         executionMs,
       };
     }

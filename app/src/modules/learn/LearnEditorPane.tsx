@@ -23,8 +23,10 @@ export default function LearnEditorPane({ level, lesson, onPassed }: Props) {
   const [checking, setChecking] = useState(false);
   const [attempts, setAttempts] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
-  const { run, stop, clearEntries, provideInput, entries, isRunning, waitingForInput, errorLine, traceRows, maxTraceRows } =
-    useInterpreter({ feature: 'learn', questionId: lesson.id });
+  const {
+    run, stop, clearEntries, provideInput, entries, isRunning, waitingForInput, errorLine, traceRows, maxTraceRows,
+    errorInfo, noteFixApplied, noteErrorHelp, dismissErrorInfo,
+  } = useInterpreter({ feature: 'learn', questionId: lesson.id });
   const canCheck = lesson.type !== 'quiz';
 
   useEffect(() => {
@@ -61,6 +63,7 @@ export default function LearnEditorPane({ level, lesson, onPassed }: Props) {
         learnLessonProps(level, lesson, {
           ok: result.ok,
           reason: result.reason,
+          error_category: result.errorCategory ?? null,
           attempts: nextAttempts,
           message: result.message.slice(0, 180),
         }),
@@ -128,6 +131,10 @@ export default function LearnEditorPane({ level, lesson, onPassed }: Props) {
           isRunning={isRunning}
           errorLine={errorLine}
           ariaLabel={`${lesson.title} editor`}
+          inlineError={errorInfo}
+          onFixApplied={noteFixApplied}
+          onErrorExample={() => noteErrorHelp('show_example')}
+          onInlineErrorDismissed={dismissErrorInfo}
         />
       </div>
 

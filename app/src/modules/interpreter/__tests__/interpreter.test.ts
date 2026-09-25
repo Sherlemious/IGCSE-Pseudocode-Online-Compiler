@@ -1807,6 +1807,65 @@ describe('parse hints — sampled student mistakes', () => {
 
   it('a WHILE written like a FOR loop is redirected to FOR', () => {
     expect(diagnose('WHILE Count <- 1 TO 5\nENDWHILE').category).toBe('while_as_for');
+    expect(diagnose('WHILE i = 1 TO 25\nENDWHILE').category).toBe('while_as_for');
+  });
+
+  // Shapes from the Sept 2026 stuck-session telemetry that used to get a
+  // misleading hint (missing THEN / missing comma) or a generic one.
+  it('an IF comparing a variable to a value with no operator asks for one', () => {
+    const d = diagnose('DECLARE password : STRING\nIF password "1234" THEN\n  OUTPUT "ok"\nENDIF');
+    expect(d.category).toBe('missing_comparison');
+    expect(d.message).toContain('IF password = "1234" THEN');
+  });
+
+  it('OR followed by a bare value asks for the variable again', () => {
+    expect(categorizeParseError("mismatched input 'x'", 'IF P = "a" OR "b" THEN')).toBe('missing_operand');
+  });
+
+  it('an IF range written with TO is rewritten with AND', () => {
+    const d = diagnose('DECLARE mark : INTEGER\nIF mark = 70 to 79 THEN\n  OUTPUT "B"\nENDIF');
+    expect(d.category).toBe('if_range');
+    expect(d.message).toContain('IF mark >= 70 AND mark <= 79 THEN');
+  });
+
+  it('a whole IF on one line is split onto lines', () => {
+    const d = diagnose('DECLARE age : INTEGER\nIF age=50 , OUTPUT "Young" ENDIF');
+    expect(d.category).toBe('single_line_if');
+    expect(d.message).toContain('IF age=50 THEN');
+  });
+
+  it('-> in a condition is replaced with >=', () => {
+    expect(diagnose('DECLARE M : INTEGER\nIF M -> 50 THEN\n  OUTPUT M\nENDIF').category).toBe('compare_operator');
+  });
+
+  it('THEN at the end of an OUTPUT line is moved to the IF', () => {
+    expect(categorizeParseError("extraneous input 'THEN'", 'OUTPUT "You win!" THEN')).toBe('misplaced_then');
+  });
+
+  it('a comma straight after OUTPUT is flagged, not a missing comma', () => {
+    expect(categorizeParseError("extraneous input ','", 'OUTPUT ,"Hi"')).toBe('output_leading_comma');
+  });
+
+  it('INPUT with a quoted variable name drops the quotes', () => {
+    const d = diagnose('INPUT "score"');
+    expect(d.category).toBe('input_prompt');
+    expect(d.message).toContain('INPUT score');
+  });
+
+  it('INPUT with a glued prompt suggests a variable from its last word', () => {
+    expect(diagnose('INPUT "Enter the passcode"').message).toContain('INPUT Passcode');
+  });
+
+  it('INPUT with a number suggests assigning it instead', () => {
+    expect(diagnose('INPUT 20').message).toContain('Age <- 20');
+  });
+
+  it('test data typed after INPUT is explained', () => {
+    expect(diagnose('INPUT 3score = 65').message).toContain('type 65 when the program asks');
+  });
+
+  it('a quoted keyword in a condition is not read as a one-line IF', () => {
+    expect(categorizeParseError("mismatched input 'x'", 'IF Answer = "input" x THEN')).not.toBe('single_line_if');
   });
 
   it('a PROCEDURE with RETURNS is told to become a FUNCTION', () => {

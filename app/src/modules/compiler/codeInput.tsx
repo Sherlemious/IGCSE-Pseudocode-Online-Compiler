@@ -32,6 +32,7 @@ import { useTheme } from '@/theme/ThemeContext';
 import { useRegisterCommands } from '@/shared/ui/CommandPalette';
 import { editorCodeUrl } from '@/modules/compiler/editorShare';
 import type { OutputEntry, TraceRow } from '@/modules/interpreter/core/types';
+import type { ErrorInfo } from '@/modules/interpreter/useInterpreter';
 
 const SHORTCUT_HINT_KEY = 'pseudocode_seen_shortcut_hint';
 
@@ -76,6 +77,11 @@ interface CodeInputProps {
   entries?: OutputEntry[];
   traceRows?: TraceRow[];
   outputTab?: 'terminal' | 'trace' | 'python' | 'flowchart';
+  inlineError?: ErrorInfo | null;
+  applyFixKey?: number;
+  onFixApplied?: (surface: 'editor' | 'terminal') => void;
+  onErrorExample?: () => void;
+  onInlineErrorDismissed?: () => void;
 }
 
 /** A labelled item inside the Open / Export dropdowns. */
@@ -126,6 +132,11 @@ const CodeInput: React.FC<CodeInputProps> = ({
   entries = [],
   traceRows = [],
   outputTab,
+  inlineError,
+  applyFixKey,
+  onFixApplied,
+  onErrorExample,
+  onInlineErrorDismissed,
 }) => {
   const tabsContainerRef = useRef<HTMLDivElement>(null);
   const [showShortcutHint, setShowShortcutHint] = useState(false);
@@ -489,6 +500,11 @@ const CodeInput: React.FC<CodeInputProps> = ({
           onJumpToLineConsumed={onJumpToLineConsumed}
           errorFocusKey={errorFocusKey}
           onPasteCleaned={handlePasteCleaned}
+          inlineError={inlineError}
+          applyFixKey={applyFixKey}
+          onFixApplied={onFixApplied}
+          onErrorExample={onErrorExample}
+          onInlineErrorDismissed={onInlineErrorDismissed}
         />
 
         {code.length === 0 && !isRunning && (

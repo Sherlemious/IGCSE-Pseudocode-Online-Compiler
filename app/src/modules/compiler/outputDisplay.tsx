@@ -34,6 +34,11 @@ interface OutputDisplayProps {
   isStepping?: boolean;
   debugVariables?: DebugVariable[];
   onJumpToLine?: (line: number) => void;
+  /** The student expanded an error's example. */
+  onShowErrorExample?: () => void;
+  /** A one-click fix for the error on `line` (shown on that error). */
+  quickFix?: { line: number; label: string; applied: boolean } | null;
+  onApplyFix?: () => void;
   traceRows?: TraceRow[];
   maxTraceRows?: number;
   activeTab?: OutputTab;
@@ -59,6 +64,9 @@ const OutputDisplay: React.FC<OutputDisplayProps> = ({
   isStepping = false,
   debugVariables = [],
   onJumpToLine,
+  onShowErrorExample,
+  quickFix = null,
+  onApplyFix,
   traceRows = [],
   maxTraceRows = 1000,
   activeTab = 'terminal',
@@ -351,6 +359,7 @@ const OutputDisplay: React.FC<OutputDisplayProps> = ({
     }
 
     const hadError = entries.some((e) => e.kind === 'error');
+    const firstErrorIdx = entries.findIndex((e) => e.kind === 'error');
 
     return (
       <div
@@ -381,12 +390,14 @@ const OutputDisplay: React.FC<OutputDisplayProps> = ({
             const isExpanded = expandedErrors.has(i);
             const toggleExpand = (e: React.MouseEvent) => {
               e.stopPropagation();
+              if (!expandedErrors.has(i)) onShowErrorExample?.();
               setExpandedErrors(prev => {
                 const next = new Set(prev);
                 if (next.has(i)) next.delete(i); else next.add(i);
                 return next;
               });
             };
+            const showFix = quickFix != null && errLine === quickFix.line && i === firstErrorIdx;
             return (
               <div
                 key={i}
@@ -410,6 +421,25 @@ const OutputDisplay: React.FC<OutputDisplayProps> = ({
                         <pre className="mt-1 whitespace-pre-wrap text-error/80">{detail}</pre>
                       )}
                     </>
+                  )}
+                  {showFix && (
+                    <span className="block mt-1">
+                      {quickFix.applied ? (
+                        <span className="text-success text-xs">✓ Fixed — run again to check</span>
+                      ) : (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onApplyFix?.();
+                          }}
+                          className="text-xs px-2 py-0.5 rounded border border-primary/60 bg-primary/10 text-primary
+                            hover:bg-primary/20 transition-colors max-w-full truncate"
+                          title={quickFix.label}
+                        >
+                          Fix it: {quickFix.label.replace(/^Change to: /, '')}
+                        </button>
+                      )}
+                    </span>
                   )}
                 </span>
               </div>

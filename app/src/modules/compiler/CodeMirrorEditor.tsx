@@ -23,6 +23,9 @@ import { autocompletion, completionKeymap } from '@codemirror/autocomplete';
 import { pseudocodeLanguage } from '@/modules/interpreter/pseudocode-lang';
 import { formatPseudocode } from '@/modules/interpreter/formatter';
 import { cleanPaste, type PasteCleanup } from './pasteCleanup';
+import { inlineErrorField, inlineErrorTheme, quickFixAnnotation, setInlineError } from './errorWidget';
+import { quickFixChange } from '@/modules/interpreter/quickFix';
+import type { ErrorInfo } from '@/modules/interpreter/useInterpreter';
 import { HighlightStyle, syntaxHighlighting } from '@codemirror/language';
 import { tags as t } from '@lezer/highlight';
 
@@ -105,6 +108,16 @@ interface CodeMirrorEditorProps {
   errorFocusKey?: number;
   /** Fires when a pasted AI/Markdown answer was stripped down to just its code. */
   onPasteCleaned?: (info: PasteCleanup) => void;
+  /** The last run's first error, shown under its line (with a quick fix when there is one). */
+  inlineError?: ErrorInfo | null;
+  /** Increment to apply `inlineError.fix` from outside the editor (the terminal's Fix button). */
+  applyFixKey?: number;
+  /** The quick fix was applied to the document. */
+  onFixApplied?: (surface: 'editor' | 'terminal') => void;
+  /** The student opened the inline error's example. */
+  onErrorExample?: () => void;
+  /** The student edited the code, so the inline error no longer applies. */
+  onInlineErrorDismissed?: () => void;
 }
 
 const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
@@ -125,6 +138,11 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
   onJumpToLineConsumed,
   errorFocusKey = 0,
   onPasteCleaned,
+  inlineError = null,
+  applyFixKey = 0,
+  onFixApplied,
+  onErrorExample,
+  onInlineErrorDismissed,
 }) => {
   const { fontSize, dyslexicFont, fontLigatures, autocomplete } = useTheme();
   const editorRef = useRef<HTMLDivElement>(null);
@@ -168,6 +186,37 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
   useEffect(() => {
     onPasteCleanedRef.current = onPasteCleaned;
   }, [onPasteCleaned]);
+
+  const inlineErrorRef = useRef(inlineError);
+  const onFixAppliedRef = useRef(onFixApplied);
+  const onErrorExampleRef = useRef(onErrorExample);
+  const onInlineErrorDismissedRef = useRef(onInlineErrorDismissed);
+  useEffect(() => {
+    onFixAppliedRef.current = onFixApplied;
+    onErrorExampleRef.current = onErrorExample;
+    onInlineErrorDismissedRef.current = onInlineErrorDismissed;
+  }, [onFixApplied, onErrorExample, onInlineErrorDismissed]);
+
+  // Apply the current error's quick fix as one undoable edit. Refuses a stale fix
+  // (the line was edited since the run) rather than guessing.
+  const applyQuickFix = useCallback((surface: 'editor' | 'terminal') => {
+    const view = viewRef.current;
+    const fix = inlineErrorRef.current?.fix;
+    if (!view || !fix || inlineErrorRef.current?.fixApplied) return;
+    const doc = view.state.doc;
+    if (fix.line > doc.lines || doc.line(fix.line).text !== fix.original) return;
+    const change = quickFixChange(doc.toString(), fix);
+    if (!change) return;
+    view.dispatch({
+      changes: change,
+      selection: { anchor: change.from + change.insert.length },
+      annotations: quickFixAnnotation.of(true),
+      userEvent: 'input.quickfix',
+      scrollIntoView: true,
+    });
+    view.focus();
+    onFixAppliedRef.current?.(surface);
+  }, []);
 
   // Helper function to create aria-label attributes
   const createAriaLabelAttributes = useCallback(
@@ -513,12 +562,16 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
         customTheme,
         lineHighlightField,
         breakpointField,
+        inlineErrorField,
+        inlineErrorTheme,
         readOnlyCompartment.of(EditorState.readOnly.of(readOnly)),
         wrapCompartment.of(wordWrap ? EditorView.lineWrapping : []),
         fontSizeCompartment.of(EditorView.theme({ '&': { fontSize: `${fontSize}px` } })),
         EditorView.updateListener.of((update) => {
           if (update.docChanged) {
             onChangeRef.current(update.state.doc.toString());
+            const byFix = update.transactions.some((tr) => tr.annotation(quickFixAnnotation));
+            if (!byFix && inlineErrorRef.current) onInlineErrorDismissedRef.current?.();
           }
           if (update.selectionSet && onCursorChangeRef.current) {
             const pos = update.state.selection.main.head;
@@ -607,6 +660,26 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
       ),
     });
   }, [fontSize, dyslexicFont, fontLigatures]);
+
+  // Show (or clear) the inline error for the last run.
+  useEffect(() => {
+    inlineErrorRef.current = inlineError;
+    viewRef.current?.dispatch({
+      effects: setInlineError.of(
+        inlineError
+          ? {
+              info: inlineError,
+              onFix: () => applyQuickFix('editor'),
+              onShowExample: () => onErrorExampleRef.current?.(),
+            }
+          : null,
+      ),
+    });
+  }, [inlineError, applyQuickFix]);
+
+  useEffect(() => {
+    if (applyFixKey) applyQuickFix('terminal');
+  }, [applyFixKey, applyQuickFix]);
 
   // Scroll debug line into view
   useEffect(() => {

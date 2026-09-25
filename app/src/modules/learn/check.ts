@@ -15,6 +15,8 @@ export type LessonCheckResult = {
   message: string;
   reason: CheckReason;
   actualOutput?: string;
+  /** Error category slug when the code failed to parse or run (`reason: 'runtime'`). */
+  errorCategory?: string;
 };
 
 function containsAll(code: string, needles: string[]): string | null {
@@ -23,6 +25,26 @@ function containsAll(code: string, needles: string[]): string | null {
   }
   return null;
 }
+
+/**
+ * Why a required snippet is "missing". The grammar accepts `=` for assignment
+ * and lowercase keywords, so code that runs fine can still miss the exact
+ * Cambridge form — say which form, instead of claiming it isn't there at all.
+ */
+function mustContainMessage(code: string, needle: string): string {
+  if (needle === '<-' && /[A-Za-z_]\w*(?:\[[^\]]*\])?\s*=(?!=)/.test(code))
+    return 'Assign with `<-`, not `=` — for example `Score <- 42`. In Cambridge pseudocode `=` means "is equal to".';
+  const at = code.toLowerCase().indexOf(needle.toLowerCase());
+  if (at >= 0) {
+    const wrote = code.slice(at, at + needle.length);
+    const keyword = /^[A-Z_]+$/.test(needle) ? ' Keywords are written in capitals on the paper.' : '';
+    return `Write \`${needle}\` exactly like that — you wrote \`${wrote}\`.${keyword}`;
+  }
+  return `Your code must include \`${needle}\`.`;
+}
+
+const oneLine = (text: string) => text.replace(/\n/g, ' / ');
+const sameOutput = (a: string, b: string) => a.trim().replace(/\s+/g, ' ') === b.trim().replace(/\s+/g, ' ');
 
 function containsAny(code: string, needles: string[]): string | null {
   for (const needle of needles) {
@@ -43,7 +65,7 @@ export async function checkLessonCode(lesson: LearnLesson, code: string): Promis
 
   const missing = lesson.mustContain ? containsAll(code, lesson.mustContain) : null;
   if (missing !== null) {
-    return { ok: false, reason: 'must_contain', message: `Your code must include \`${missing}\`.` };
+    return { ok: false, reason: 'must_contain', message: mustContainMessage(code, missing) };
   }
 
   const forbidden = lesson.mustNotContain ? containsAny(code, lesson.mustNotContain) : null;
@@ -70,18 +92,29 @@ export async function checkLessonCode(lesson: LearnLesson, code: string): Promis
       return {
         ok: false,
         reason: 'runtime',
-        message: result.error.message + where,
+        message: (result.error.hint ?? result.error.message) + where,
+        errorCategory: result.error.category ?? result.error.kind,
         actualOutput: result.actualOutput,
       };
     }
     if (!result.passed) {
-      const label = cases.length > 1 ? `Test ${i + 1} failed. ` : '';
-      return {
-        ok: false,
-        reason: 'wrong_output',
-        message: `${label}Expected \`${test.expectedOutput.replace(/\n/g, ' / ')}\`, got \`${result.actualOutput.replace(/\n/g, ' / ') || '(empty)'}\`.`,
-        actualOutput: result.actualOutput,
-      };
+      const inputs = test.inputs.map((v) => `\`${v}\``).join(', ');
+      const label =
+        cases.length > 1 ? `Test ${i + 1}${inputs ? ` (input ${inputs})` : ''} failed. ` : inputs ? `With input ${inputs}: ` : '';
+      const expected = `Expected \`${oneLine(test.expectedOutput)}\``;
+      let message: string;
+      if (!result.actualOutput.trim()) {
+        message = `${label}Your program printed nothing — add an OUTPUT for the answer. ${expected}.`;
+      } else if (cases.slice(0, i).some((earlier) => sameOutput(earlier.expectedOutput, result.actualOutput))) {
+        // Passed an earlier test, then printed that same answer again: the
+        // result is fixed in the code instead of worked out from INPUT.
+        message =
+          `${label}${expected}, got \`${oneLine(result.actualOutput)}\` — the same answer as an earlier test. ` +
+          'Work it out from the value you INPUT, not a fixed number.';
+      } else {
+        message = `${label}${expected}, got \`${oneLine(result.actualOutput)}\`.`;
+      }
+      return { ok: false, reason: 'wrong_output', message, actualOutput: result.actualOutput };
     }
   }
 

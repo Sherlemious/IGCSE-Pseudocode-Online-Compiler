@@ -143,6 +143,12 @@ Second pass (Sept 2026, sized by replaying the `ErrorSample` table through the c
 
 Whole-program hints take a `ParseErrorContext` (`{ lines, line }`, passed from `useInterpreter`): an IF/FOR/WHILE/REPEAT/CASE left open is reported at the end of the program as "no viable alternative at '\n'" on a valid last line, so `unclosedBlockHint` names the opener line instead (reuses `missing_endif`/`missing_next`/… slugs); `misplaced_then` covers THEN after a WHILE or after an IF that already has a statement. Parameterless `PROCEDURE Name`, `FUNCTION Name RETURNS T` and `CALL Name` (no brackets) are valid, as in the Cambridge guide.
 
+Third pass (Sept 2026, from sessions that never reached working code after a hint): some *specific* hints were misfiring. `OUTPUT "x" THEN` → `misplaced_then`; `OUTPUT ,"x"` → `output_leading_comma`; `OUTPUT "a" OR "b"` → `output_logic_word`; IF lines that ANTLR reported as "missing THEN" now get `missing_comparison` (`IF password "1234"`), `missing_operand` (`… OR "b"`), `if_range` (`IF Mark = 70 TO 79` → `>= … AND <= …`), `single_line_if` (`IF x = 1 , OUTPUT … ENDIF`) or `compare_operator` (`->`). `WHILE i = 1 TO 25` → `while_as_for`. INPUT hints reuse the student's own text (`INPUT "score"` → drop the quotes; `INPUT "Enter the passcode"` → `INPUT Passcode`; `INPUT 20` → assign instead). START/END/BEGIN say "Delete this line". Changes to detectors are regression-checked by replaying every `ErrorSample` row through the old and new `errorMessages.ts` and reading each category flip.
+
+The autograder returns `error.hint` (same text as the Run button) and `error.category` alongside the raw `message`, so Learn Check and Practice results never show ANTLR jargon. Learn check messages name the failing test's input, say when the program printed nothing, flag an answer that repeats an earlier test's (a fixed value instead of INPUT), explain `=` vs `<-`, and point out a lowercase keyword instead of claiming it is missing.
+
+**Inline errors + quick fixes (Sept 2026).** Half of re-runs after an error used identical code, so the first error of a run is also shown as a block widget under its line in the editor (`compiler/errorWidget.ts`, fed by `useInterpreter().errorInfo`; hidden as soon as the student edits). `interpreter/quickFix.ts` proposes a mechanical edit for a parse error (`END IF`→`ENDIF`, `FOR i : 1`→`<-`, `!=`→`<>`, missing OUTPUT comma, `SET x = 0`, `CASE x OF`, missing ENDIF/NEXT after an indented body, …) and **only offers it if re-parsing with the edit clears every error up to that line** — a candidate that parses but changes meaning must be excluded in the candidate itself (see the `FOR robot ID = 1` and unindented-PROCEDURE cases in its tests). The "Fix it" button (editor widget + terminal) applies it as one undoable edit and refuses a stale fix. Practice/Learn show it too; exams don't. Before adding a candidate, replay `ErrorSample` rows through `findQuickFix` and eyeball the results.
+
 ## Database Schema (Prisma)
 
 - `User` / `Account` / `Session` — NextAuth tables
@@ -173,6 +179,11 @@ npm run antlr:generate  # regenerate parser from grammar
 |-------|-----------|
 | `$pageview` | standard |
 | `interpreter_error` | `error_type` (parse\|runtime), `error_message`, `line`, `code_lines` |
+| `code_run` | `outcome` (success\|parse_error\|runtime_error\|aborted), `code_lines`, `char_count`, `duration_ms`, `feature_context`, … + `after_error`, `code_changed` (vs the previous run; null on the first), `error_streak` (errored runs in a row before this one) |
+| `hint_shown` | `hint_id` (= error category), `error_type`, `line`, `has_fix`, `fix_id`, `repeat` (same category+line as the last errored run), `unchanged` (re-ran identical code), `error_streak` |
+| `hint_resolved` | `hint_id` (error on the run before the success), `runs_to_fix`, `secs_to_fix`, `used_fix` — once per error episode (first failed run → next success) |
+| `error_fix_applied` | `hint_id`, `fix_id`, `error_type`, `surface` (`editor`\|`terminal`) |
+| `error_help_clicked` | `hint_id`, `action` (`show_example`\|`jump_to_line`) |
 | `$exception` | PostHog Error Tracking — app crashes, not student code errors. Unhandled errors/rejections are autocaptured (`capture_exceptions` in `PostHogProvider`); `app/error.tsx` + `app/global-error.tsx` add `boundary` (`segment`\|`global`), `digest`, `path`. Filter students with person `role` (set on identify; signed-out visitors have none) |
 | `share_clicked` | `method`, `context` |
 | `share_completed` | `method` |
@@ -204,6 +215,7 @@ Paywall follow-up: PostHog workflow "Nudge if they hit the Learn paywall and don
 | `practice_next_clicked` | `question_id`, `streak` — "Next question" in the solved banner (→ `/practice?from=solved`) |
 | `practice_hint_nudged` | `question_id`, `hint_count` — hint auto-opened after the first failed check (was the second) |
 | `practice_hint_revealed` | `question_id`, `hint_number`, `source` (`nudge`\|`manual`) |
+| `practice_graded` | `question_id`, `pass_count`, `total_count`, `solved`, `fail_kind` (`parse`\|`runtime`\|`timeout`\|`wrong_output`, first failing test), `error_category` (error slug of that test) |
 
 ### Classes / teacher progress
 
@@ -262,7 +274,7 @@ Progress is localStorage; these fire from the path map and the lesson player. In
 | `learn_gate_blocked` | lesson/level props + `source` (`node` on a gated map node, `roadmap` on a coming-level row, `paywall` in the player). The player's paywall hit also `$set`s `learn_paywall_level` / `_level_name` / `_topics` / `_path` (level-start URL) and stores the level in localStorage `learn_paywall_level` (`learn/paywallLevel.ts`) |
 | `learn_gate_viewed` | landed on a locked/unplayable lesson URL |
 | `learn_lesson_started` | lesson props + `already_complete` |
-| `learn_check_submitted` | lesson props + `ok`, `reason` (`passed`\|`must_contain`\|`forbidden`\|`runtime`\|`wrong_output`\|…), `attempts`, `message` |
+| `learn_check_submitted` | lesson props + `ok`, `reason` (`passed`\|`must_contain`\|`forbidden`\|`runtime`\|`wrong_output`\|…), `error_category` (error slug when `reason: runtime`), `attempts`, `message` |
 | `learn_quiz_submitted` | lesson props + `ok`, `attempts`, `correct_count`, `total` |
 | `learn_lesson_completed` | lesson props + `attempts`, `$set` `learn_level` / `learn_completed_count` |
 | `learn_level_completed` | `level`, `level_name` |
