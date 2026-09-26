@@ -11,9 +11,11 @@ interface CodeBlockProps {
   output?: string;
   /** Hide the "Try it" button for fragments that aren't worth opening. */
   tryIt?: boolean;
+  /** Analytics for "Try it" (defaults to the docs event). Serializable, so server pages can pass it. */
+  tryItEvent?: { name: string; props?: Record<string, string | number | boolean> };
 }
 
-const CodeBlock = ({ code, output, tryIt = true }: CodeBlockProps) => {
+const CodeBlock = ({ code, output, tryIt = true, tryItEvent }: CodeBlockProps) => {
   const [copied, setCopied] = useState(false);
   const ph = usePostHog();
 
@@ -31,7 +33,7 @@ const CodeBlock = ({ code, output, tryIt = true }: CodeBlockProps) => {
       <div className="relative">
         <pre
           style={{ fontSize: 'var(--editor-font-size)' }}
-          className="p-3 pr-24 font-mono text-light-text overflow-x-auto
+          className="px-3 pb-3 pt-10 sm:pt-3 sm:pr-24 font-mono text-light-text overflow-x-auto
             scrollbar-thin scrollbar-thumb-primary hover:scrollbar-thumb-primary-hover
             scrollbar-track-background scrollbar-thumb-rounded-full leading-relaxed"
         >
@@ -53,7 +55,12 @@ const CodeBlock = ({ code, output, tryIt = true }: CodeBlockProps) => {
               href={tryItHref}
               target="_blank"
               rel="noopener"
-              onClick={() => ph?.capture('docs_try_it_clicked', { snippet_first_line: code.split('\n')[0]?.slice(0, 80) })}
+              onClick={() =>
+                ph?.capture(tryItEvent?.name ?? 'docs_try_it_clicked', {
+                  snippet_first_line: code.split('\n')[0]?.slice(0, 80),
+                  ...tryItEvent?.props,
+                })
+              }
               className="flex items-center gap-1 rounded bg-primary/15 px-2 py-1 text-[11px] font-semibold
                 text-primary hover:bg-primary/30 transition-colors duration-200"
               title="Open this code in the editor"

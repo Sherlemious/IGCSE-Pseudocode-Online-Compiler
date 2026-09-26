@@ -3,6 +3,7 @@ import { getQuestionCatalog } from '@/shared/lib/catalogCache';
 import { IGCSE_PAPER_2 } from '@/modules/learn/curriculum';
 import { flattenLessons, lessonHref } from '@/modules/learn/path';
 import { SITE_URL } from '@/shared/lib/seo';
+import { BLOG_PATH, BLOG_POSTS, blogPageCount, blogPageHref, blogPostHref } from '@/modules/content/blog';
 
 export const revalidate = 86400;
 
@@ -48,6 +49,23 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: 'weekly',
       priority: 1,
     },
+    {
+      url: `${SITE_URL}${BLOG_PATH}`,
+      lastModified: BLOG_POSTS[0] ? new Date(BLOG_POSTS[0].updated ?? BLOG_POSTS[0].published) : now,
+      changeFrequency: 'weekly',
+      priority: 0.8,
+    },
+    ...Array.from({ length: blogPageCount() - 1 }, (_, i) => ({
+      url: `${SITE_URL}${blogPageHref(i + 2)}`,
+      changeFrequency: 'weekly' as const,
+      priority: 0.4,
+    })),
+    ...BLOG_POSTS.map((post) => ({
+      url: `${SITE_URL}${blogPostHref(post)}`,
+      lastModified: new Date(post.updated ?? post.published),
+      changeFrequency: 'monthly' as const,
+      priority: 0.8,
+    })),
     {
       url: `${SITE_URL}/docs`,
       lastModified: now,

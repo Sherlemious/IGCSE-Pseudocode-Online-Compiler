@@ -311,6 +311,16 @@ Page-side events fire via `captureEvent` from `CompareAnalytics`. `$pageview` st
 | `compare_cta_clicked` | `destination` (`compiler`\|`practice`\|`exam`\|`pricing`\|`teacher_pricing`\|`classes`\|`faq`\|`docs`), `source` (`hero`\|`plans`\|`teachers`\|`pricing`\|`faq`) |
 | `compare_section_clicked` | `section` (`why`\|`plans`\|`teachers`\|`usage`\|`pricing`\|`faq`) |
 
+### Blog (`/blog`)
+
+Posts are typed data in `modules/content/blog/posts/` (blocks: p, h2, code, list, stats, callout, table; inline `code`, **bold**, [link](/path)); add one to `BLOG_POSTS` in `content/blog/index.ts` and the index, pagination (`/blog/page/N`, 9 per page), sitemap and JSON-LD follow. `blog.test.ts` runs every example: `variant: 'right'` must parse, run and match `output`; `'wrong'` must fail to parse (or fail at runtime with `failsAtRuntime`); /docs anchors and /learn links must exist. Figures in posts are percentages only, and examples are written for the post, never copied from student code.
+
+| Event | Properties |
+|-------|-----------|
+| `blog_viewed` | `slug` (post, or `index` + `page`), `signed_in`, `from` |
+| `blog_cta_clicked` | `slug`, `destination`, `source` (`inline`\|`footer`\|`more`) |
+| `blog_try_it_clicked` | `slug`, `variant` (`wrong`\|`right`\|`plain`), `snippet_first_line` |
+
 ### Tutorial (`/tutorial`)
 
 Page-side events fire via `captureEvent` from `TutorialAnalytics`. `$pageview` still fires automatically.
