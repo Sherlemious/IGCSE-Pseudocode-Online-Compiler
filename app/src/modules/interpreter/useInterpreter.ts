@@ -660,7 +660,12 @@ export function useInterpreter(runContext?: RunContext) {
   }, []);
 
   const noteErrorHelp = useCallback((action: 'show_example' | 'jump_to_line') => {
-    captureErrorHelp({ hintId: errorInfoRef.current?.category ?? null, action }, runContextRef.current);
+    // The inline error clears as soon as the student edits; the terminal's
+    // example/jump links stay, so fall back to the last run's primary hint.
+    captureErrorHelp(
+      { hintId: errorInfoRef.current?.category ?? lastHintRef.current ?? null, action },
+      runContextRef.current,
+    );
   }, []);
 
   /** Hide the inline error (the student started editing). */
