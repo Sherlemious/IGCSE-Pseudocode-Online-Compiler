@@ -11,6 +11,7 @@ import {
   SegmentBar,
   RankedList,
 } from './_components/charts';
+import { formatAdminDay, formatAdminNumber } from '../_components/adminFormat';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Admin — Analytics' };
@@ -299,7 +300,7 @@ export default async function AdminAnalyticsPage() {
         <StatTile
           label="Questions solved"
           value={totalSolved}
-          sub={`${solveRate}% of ${totalAttempts.toLocaleString()} attempts`}
+          sub={`${solveRate}% of ${formatAdminNumber(totalAttempts)} attempts`}
           spark={undefined}
         />
       </div>
@@ -362,7 +363,7 @@ export default async function AdminAnalyticsPage() {
           <div className="flex flex-col items-center justify-center py-2">
             <RingChart
               pct={planTotal ? paidCount / planTotal : 0}
-              centerValue={paidCount.toLocaleString()}
+              centerValue={formatAdminNumber(paidCount)}
               centerSub="paid"
               color="var(--color-warning)"
               size={108}
@@ -482,7 +483,7 @@ export default async function AdminAnalyticsPage() {
                       </span>
                     )}
                     <span className="text-dark-text/50 shrink-0 whitespace-nowrap font-mono">
-                      {exam.completedAt ? new Date(exam.completedAt).toLocaleDateString() : '—'}
+                      {formatAdminDay(exam.completedAt)}
                     </span>
                   </div>
                 );

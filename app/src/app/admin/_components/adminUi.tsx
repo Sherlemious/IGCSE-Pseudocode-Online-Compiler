@@ -2,39 +2,20 @@
 
 import { useState, type ReactNode } from 'react';
 import { Check, Copy } from 'lucide-react';
+import { formatRelative } from './adminFormat';
 
 export function nice(value: string) {
   return value.charAt(0) + value.slice(1).toLowerCase();
 }
 
-export function formatAdminDate(value: Date | string | null | undefined, compact = false) {
-  if (!value) return '—';
-  const d = new Date(value);
-  if (Number.isNaN(d.getTime())) return '—';
-  if (compact) {
-    return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-  }
-  return d.toLocaleString(undefined, {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-}
+export { formatAdminDate, formatAdminDay, formatAdminNumber, formatRelative } from './adminFormat';
 
-export function formatRelative(value: Date | string | null | undefined) {
-  if (!value) return '—';
-  const d = new Date(value);
-  if (Number.isNaN(d.getTime())) return '—';
-  const mins = Math.round((Date.now() - d.getTime()) / 60_000);
-  if (Math.abs(mins) < 1) return 'just now';
-  if (Math.abs(mins) < 60) return `${mins}m ago`;
-  const hours = Math.round(mins / 60);
-  if (Math.abs(hours) < 24) return `${hours}h ago`;
-  const days = Math.round(hours / 24);
-  if (Math.abs(days) < 30) return `${days}d ago`;
-  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+/**
+ * "5m ago" depends on the current time, which moves between the server render
+ * and hydration, so the text may legitimately differ — tell React that's fine.
+ */
+export function RelativeTime({ value }: { value: Date | string | null | undefined }) {
+  return <span suppressHydrationWarning>{formatRelative(value)}</span>;
 }
 
 export function chipClass(active: boolean) {

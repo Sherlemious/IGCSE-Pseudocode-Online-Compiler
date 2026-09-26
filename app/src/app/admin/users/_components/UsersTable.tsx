@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
 import { planBadge } from '@/modules/billing/planDisplay';
-import { AdminSearch, Chip, ChipRow, EmptyState, formatRelative, nice } from '../../_components/adminUi';
+import { AdminSearch, Chip, ChipRow, EmptyState, formatAdminDay, nice, RelativeTime } from '../../_components/adminUi';
 import UserDrawer, {
   PlanSelect,
   RoleSelect,
@@ -189,7 +189,7 @@ export default function UsersTable({ users, currentAdminRole }: Props) {
                         onChange={(id, role) => void handleRoleChange(id, role)}
                       />
                       <span className="ml-auto text-[10px] text-dark-text/70 font-mono">
-                        {u._count.learnProgress}p · {u._count.progress}q · {u._count.examAttempts}e · {formatRelative(u.createdAt)}
+                        {u._count.learnProgress}p · {u._count.progress}q · {u._count.examAttempts}e · <RelativeTime value={u.createdAt} />
                       </span>
                     </div>
                   </article>
@@ -262,7 +262,7 @@ export default function UsersTable({ users, currentAdminRole }: Props) {
                         <td className="px-4 py-3 text-dark-text">{u._count.progress}</td>
                         <td className="px-4 py-3 text-dark-text">{u._count.examAttempts}</td>
                         <td className="px-4 py-3 text-dark-text whitespace-nowrap">
-                          {new Date(u.createdAt).toLocaleDateString()}
+                          {formatAdminDay(u.createdAt)}
                         </td>
                         <td className="pr-3">
                           <ChevronRight size={14} className={`text-dark-text/40 transition-colors ${open ? 'text-primary' : ''}`} />

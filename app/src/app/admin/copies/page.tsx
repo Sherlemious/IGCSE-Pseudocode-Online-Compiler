@@ -1,17 +1,12 @@
 import { prisma } from '@/shared/db';
 import { AdminPageHeader, EmptyState } from '../_components/adminUi';
+import { formatAdminDate } from '../_components/adminFormat';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Admin — Copies' };
 
 function when(value: Date) {
-  return value.toLocaleString(undefined, {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+  return formatAdminDate(value);
 }
 
 export default async function AdminCopiesPage() {

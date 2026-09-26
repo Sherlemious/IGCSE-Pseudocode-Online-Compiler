@@ -4,7 +4,7 @@ import { useState } from 'react';
 import type { FeedbackSubmission } from '@prisma/client';
 import { ChevronRight } from 'lucide-react';
 import AdminDrawer, { useHeld } from '../../_components/AdminDrawer';
-import { Chip, ChipRow, EmptyState, formatAdminDate, formatRelative } from '../../_components/adminUi';
+import { Chip, ChipRow, EmptyState, formatAdminDate, RelativeTime } from '../../_components/adminUi';
 
 interface Props {
   submissions: FeedbackSubmission[];
@@ -74,7 +74,7 @@ export default function FeedbackTable({ submissions }: Props) {
                             {tag}
                           </span>
                         ))}
-                        <span className="ml-auto text-[10px] text-dark-text/60 font-mono">{formatRelative(s.createdAt)}</span>
+                        <span className="ml-auto text-[10px] text-dark-text/60 font-mono"><RelativeTime value={s.createdAt} /></span>
                       </div>
                     </div>
                     <ChevronRight size={16} className="text-dark-text/40 shrink-0 mt-1" />
@@ -106,7 +106,7 @@ export default function FeedbackTable({ submissions }: Props) {
                       className={`cursor-pointer transition-colors ${selectedId === s.id ? 'bg-primary/10' : 'hover:bg-border/10'}`}
                     >
                       <td className="px-4 py-3 text-dark-text whitespace-nowrap">
-                        {new Date(s.createdAt).toLocaleString()}
+                        {formatAdminDate(s.createdAt)}
                       </td>
                       <td className="px-4 py-3 text-dark-text truncate max-w-0 w-44">
                         {s.email ?? <span className="italic text-dark-text/50">Anonymous</span>}

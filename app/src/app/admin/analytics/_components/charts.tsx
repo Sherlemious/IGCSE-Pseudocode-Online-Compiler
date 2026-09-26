@@ -1,4 +1,5 @@
 import { TrendingUp, TrendingDown } from 'lucide-react';
+import { formatAdminNumber } from '../../_components/adminFormat';
 
 // Deterministic id from a string — stable across renders, and identical
 // inputs harmlessly share an identical gradient definition.
@@ -136,7 +137,7 @@ export function StatTile({
       </div>
       <div className="mt-2">
         <p className="font-mono tabular-nums tracking-tight text-2xl sm:text-3xl font-semibold text-light-text leading-none">
-          {typeof value === 'number' ? value.toLocaleString() : value}
+          {typeof value === 'number' ? formatAdminNumber(value) : value}
         </p>
         <div className="flex items-end justify-between gap-2 mt-1.5 sm:h-8">
           <span className="text-[11px] text-dark-text leading-tight">{sub ?? ' '}</span>
@@ -305,7 +306,7 @@ export function BarRow({
       <div className="flex items-center justify-between text-xs">
         <span className={`font-medium ${labelColor}`}>{label}</span>
         <span className="text-dark-text font-mono tabular-nums">
-          {typeof count === 'number' ? count.toLocaleString() : count}
+          {typeof count === 'number' ? formatAdminNumber(count) : count}
           <span className="text-dark-text/50"> · {pct}%</span>
         </span>
       </div>

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { CheckCircle2, Circle, Clock } from 'lucide-react';
-import { formatAdminDate, formatRelative } from '../../_components/adminUi';
+import { formatAdminDate, RelativeTime } from '../../_components/adminUi';
 
 type LessonState = 'not_started' | 'attempted' | 'completed';
 
@@ -130,7 +130,7 @@ export default function StudentLearning({
                 <p className="text-warning">{learn.attemptedCount} tried</p>
               )}
               {learn.lastActivityAt && (
-                <p className="text-dark-text/70">{formatRelative(learn.lastActivityAt)}</p>
+                <p className="text-dark-text/70"><RelativeTime value={learn.lastActivityAt} /></p>
               )}
             </div>
           </div>

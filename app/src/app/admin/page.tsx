@@ -8,6 +8,7 @@ import {
   BarChart3, ArrowUpRight, ArrowRight, Mail, Route,
 } from 'lucide-react';
 import { Panel, SectionHeading } from './analytics/_components/charts';
+import { formatAdminDate, formatAdminNumber } from './_components/adminFormat';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Admin — Overview' };
@@ -97,7 +98,7 @@ export default async function AdminOverviewPage() {
             </div>
             <div className="mt-3">
               <p className="font-mono tabular-nums tracking-tight text-2xl sm:text-3xl font-semibold text-light-text leading-none">
-                {value.toLocaleString()}
+                {typeof value === 'number' ? formatAdminNumber(value) : value}
               </p>
               <div className="flex items-center justify-between gap-2 mt-1.5">
                 <p className="text-xs text-dark-text">{label}</p>
@@ -160,7 +161,7 @@ export default async function AdminOverviewPage() {
                     {f.comment && <p className="text-xs text-light-text/70 line-clamp-2 mt-0.5">{f.comment}</p>}
                   </div>
                   <span className="text-[10px] text-dark-text/60 shrink-0 whitespace-nowrap">
-                    {new Date(f.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                    {formatAdminDate(f.createdAt, true)}
                   </span>
                 </div>
               ))}
@@ -193,7 +194,7 @@ export default async function AdminOverviewPage() {
                       {u.role.charAt(0) + u.role.slice(1).toLowerCase()}
                     </span>
                     <span className="text-[10px] text-dark-text/50 font-mono">
-                      {new Date(u.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                      {formatAdminDate(u.createdAt, true)}
                     </span>
                   </div>
                 </div>
@@ -234,7 +235,7 @@ export default async function AdminOverviewPage() {
                     <p className="text-xs text-light-text/70 line-clamp-2 mt-0.5">{m.subject ?? m.message}</p>
                   </div>
                   <span className="text-[10px] text-dark-text/60 shrink-0 whitespace-nowrap">
-                    {new Date(m.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                    {formatAdminDate(m.createdAt, true)}
                   </span>
                 </div>
               ))}

@@ -4,7 +4,7 @@ import { useState } from 'react';
 import type { BugReport, BugStatus } from '@prisma/client';
 import { ChevronRight } from 'lucide-react';
 import AdminDrawer, { useHeld } from '../../_components/AdminDrawer';
-import { Chip, ChipRow, EmptyState, formatAdminDate, formatRelative, MetaField } from '../../_components/adminUi';
+import { Chip, ChipRow, EmptyState, formatAdminDate, MetaField, RelativeTime } from '../../_components/adminUi';
 
 interface Props {
   reports: BugReport[];
@@ -93,7 +93,7 @@ export default function BugReportTable({ reports }: Props) {
                       disabled={busyId === r.id}
                       onChange={(status) => updateStatus(r.id, status)}
                     />
-                    <span className="ml-auto text-[10px] text-dark-text/60 font-mono">{formatRelative(r.createdAt)}</span>
+                    <span className="ml-auto text-[10px] text-dark-text/60 font-mono"><RelativeTime value={r.createdAt} /></span>
                   </div>
                 </article>
               </li>
@@ -122,7 +122,7 @@ export default function BugReportTable({ reports }: Props) {
                       className={`cursor-pointer transition-colors align-top ${selectedId === r.id ? 'bg-primary/10' : 'hover:bg-border/10'}`}
                     >
                       <td className="px-4 py-3 text-dark-text whitespace-nowrap">
-                        {new Date(r.createdAt).toLocaleString()}
+                        {formatAdminDate(r.createdAt)}
                       </td>
                       <td className="px-4 py-3 text-dark-text truncate max-w-0 w-44">
                         {r.email ?? <span className="italic text-dark-text/50">Anonymous</span>}

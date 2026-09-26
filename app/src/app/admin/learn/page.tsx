@@ -4,6 +4,7 @@ import LearnProgressChecklist from '@/modules/learn/LearnProgressChecklist';
 import { buildLearnProgressView } from '@/modules/learn/progressView';
 import type { LearnProgressRecord } from '@/modules/learn/progress';
 import { AdminPageHeader } from '../_components/adminUi';
+import { formatAdminDate } from '../_components/adminFormat';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Admin — Paper 2 Path' };
@@ -84,7 +85,7 @@ export default async function AdminLearnPage() {
                     {learner.view.completedCount}/{learner.view.playableCount} done
                     {learner.view.attemptedCount > 0 ? ` · ${learner.view.attemptedCount} tried` : ''}
                     {learner.view.lastActivityAt
-                      ? ` · ${new Date(learner.view.lastActivityAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`
+                      ? ` · ${formatAdminDate(learner.view.lastActivityAt, true)}`
                       : ''}
                   </span>
                 </span>

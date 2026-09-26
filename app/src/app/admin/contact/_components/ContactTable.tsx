@@ -4,7 +4,7 @@ import { useState } from 'react';
 import type { ContactMessage, ContactStatus } from '@prisma/client';
 import { ChevronRight } from 'lucide-react';
 import AdminDrawer, { useHeld } from '../../_components/AdminDrawer';
-import { AdminSearch, Chip, ChipRow, EmptyState, formatAdminDate, formatRelative, MetaField } from '../../_components/adminUi';
+import { AdminSearch, Chip, ChipRow, EmptyState, formatAdminDate, MetaField, RelativeTime } from '../../_components/adminUi';
 
 interface Props {
   messages: ContactMessage[];
@@ -91,7 +91,7 @@ export default function ContactTable({ messages }: Props) {
                       disabled={busyId === m.id}
                       onChange={(status) => updateStatus(m.id, status)}
                     />
-                    <span className="ml-auto text-[10px] text-dark-text/60 font-mono">{formatRelative(m.createdAt)}</span>
+                    <span className="ml-auto text-[10px] text-dark-text/60 font-mono"><RelativeTime value={m.createdAt} /></span>
                   </div>
                 </article>
               </li>
@@ -120,7 +120,7 @@ export default function ContactTable({ messages }: Props) {
                       className={`cursor-pointer transition-colors align-top ${selectedId === m.id ? 'bg-primary/10' : 'hover:bg-border/10'}`}
                     >
                       <td className="px-4 py-3 text-dark-text whitespace-nowrap">
-                        {new Date(m.createdAt).toLocaleString()}
+                        {formatAdminDate(m.createdAt)}
                       </td>
                       <td className="px-4 py-3 truncate max-w-0 w-48">
                         <p className="text-light-text truncate">{m.name ?? <span className="italic text-dark-text/50">Anonymous</span>}</p>
