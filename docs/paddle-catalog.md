@@ -2,9 +2,25 @@
 
 Create these in **sandbox first**, then mirror in **live**. After each env, paste the `pri_…` IDs into the app (see “Where to paste IDs”). Do **not** reprice or delete existing Starter / Pro / student-subscription prices — current teachers stay on those.
 
-Currency: **USD** list. Turn on Paddle’s per-country overrides (~40% below list) for the PPP set already used on live prices: IN, PK, BD, LK, NP, TH, VN, ID, PH, MM, KH, LA, MV. See `app/src/modules/billing/ppp.ts`.
+Currency: **USD** list. Regional (PPP) overrides go on **student prices only**, for the set in `app/src/modules/billing/ppp.ts`: IN, PK, BD, LK, NP, TH, VN, ID, PH, MM, KH, LA, EG. Teacher plans never get overrides.
 
 Tax category: same as existing compiler products (digital / SaaS).
+
+---
+
+## Live student prices (2026-09-27)
+
+Every student price ends in .99 and is tax-inclusive (`tax_mode: internal`), so the page shows the same figure in every country. India is priced in INR; the other regional countries share one USD override. The Maldives pays list.
+
+| Price | List | Regional (USD) | India (INR) |
+|-------|------|----------------|-------------|
+| Student monthly | $1.99 | $0.99 | ₹99 |
+| Student yearly | $19.99 | $11.99 | ₹999 |
+| 1-month pass | $1.99 | $0.99 | ₹99 |
+| Oct/Nov session | $7.99 | $4.99 | ₹449 |
+| May/June session | $12.99 | $7.99 | ₹699 |
+
+Teacher plans (Starter $5/$50, Classroom $12/$120, Department $39/$390, School $89/$890) are list price everywhere. The dated sections below record how the catalog was created; amounts there are historical.
 
 ---
 
