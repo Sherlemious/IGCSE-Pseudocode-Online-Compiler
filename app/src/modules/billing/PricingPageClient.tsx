@@ -23,15 +23,15 @@ function studentBlurb(passes: StudentPassView[]): string {
   const hasMay = passes.some((p) => p.kind === 'may_june');
   const hasOct = passes.some((p) => p.kind === 'oct_nov');
   if (hasMay && hasOct) {
-    return '$2/month, or switch between the May/June and Oct/Nov session passes.';
+    return '$1.99/month, or switch between the May/June and Oct/Nov session passes.';
   }
   if (hasMay) {
-    return '$2/month, or a one-time May/June session pass through the series.';
+    return '$1.99/month, or a one-time May/June session pass through the series.';
   }
   if (hasOct) {
-    return '$2/month, or a one-time Oct/Nov session pass through the series.';
+    return '$1.99/month, or a one-time Oct/Nov session pass through the series.';
   }
-  return '$2/month for the full practice and exam library. Cancel anytime.';
+  return '$1.99/month for the full practice and exam library. Cancel anytime.';
 }
 
 function PricingViewInner({
@@ -160,11 +160,6 @@ function PricingViewInner({
               </>
             )}
           </p>
-          {view === 'teacher' && (
-            <p className="mx-auto mt-2 max-w-xl text-sm text-dark-text leading-relaxed">
-              Prices are shown in your local currency. Yearly is about two months free.
-            </p>
-          )}
         </div>
 
         {portalFailed && (

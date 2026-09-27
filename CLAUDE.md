@@ -299,7 +299,7 @@ After checkout, `/welcome` shows students (non-TEACHER) every paid level at its 
 |-------|-----------|
 | `welcome_cta_clicked` | `destination` (`learn_level`\|`learn_path`\|`editor`), `level`, `recommended` (the level they hit the paywall on) |
 
-Student checkout hand-off: `/pricing?checkout=student&from=<source>` auto-opens the Student monthly ($2/mo) Paddle checkout for a signed-in student with no plan (never for teachers). Signed out, it opens the in-page auth sheet first (`pricing_signin_prompt_shown` / `_clicked` / `_dismissed` / `_completed`, all with `source`) so the purchase carries `app_user_id` instead of relying on the Paddle email matching the account email. `subscribe_clicked` / `pass_clicked` now carry `source` (the `from` param, default `pricing`) and `auto_opened`.
+Student checkout hand-off: `/pricing?checkout=student&from=<source>` auto-opens the Student monthly ($1.99/mo) Paddle checkout for a signed-in student with no plan (never for teachers). Signed out, it opens the in-page auth sheet first (`pricing_signin_prompt_shown` / `_clicked` / `_dismissed` / `_completed`, all with `source`) so the purchase carries `app_user_id` instead of relying on the Paddle email matching the account email. `subscribe_clicked` / `pass_clicked` now carry `source` (the `from` param, default `pricing`) and `auto_opened`.
 
 ### Compare (`/compare`)
 

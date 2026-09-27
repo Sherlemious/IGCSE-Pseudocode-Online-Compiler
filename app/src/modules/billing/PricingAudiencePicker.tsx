@@ -28,7 +28,7 @@ export default function PricingAudiencePicker({ paddleEnv }: { paddleEnv: string
         </span>
         <span className="mt-4 text-lg font-semibold text-light-text">I&apos;m a student</span>
         <span className="mt-1 text-sm leading-relaxed text-dark-text">
-          $2/month, or a one-time pass for the exam series you&apos;re sitting.
+          $1.99/month, or a one-time pass for the exam series you&apos;re sitting.
         </span>
       </Link>
       <Link

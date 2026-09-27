@@ -35,12 +35,12 @@ const getPricingTiers = unstable_cache(
 export const metadata: Metadata = {
   title: 'Pricing',
   description:
-    'Student monthly access at $2, optional exam-series passes, and teacher plans priced by how many students you teach.',
+    'Student monthly access at $1.99, optional exam-series passes, and teacher plans priced by how many students you teach.',
   alternates: { canonical: '/pricing' },
   openGraph: {
     title: 'Pricing',
     description:
-      'Teacher plans priced by student capacity, plus a $2/month student plan and exam-series passes.',
+      'Teacher plans priced by student capacity, plus a $1.99/month student plan and exam-series passes.',
     url: `${SITE_URL}/pricing`,
     type: 'website',
     images: [SHARE_IMAGE],

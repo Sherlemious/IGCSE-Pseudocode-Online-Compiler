@@ -14,7 +14,7 @@
  * override would badge a price that hasn't actually been reduced.
  *
  * Seeded from the top-of-funnel geography (PostHog, Sep 2026): South & SE Asia,
- * plus the Maldives beachhead.
+ * plus Egypt. The Maldives was dropped (Sep 2026): upper-middle income, pays list.
  */
 export const PPP_COUNTRIES: ReadonlySet<string> = new Set([
   // South Asia
@@ -31,8 +31,8 @@ export const PPP_COUNTRIES: ReadonlySet<string> = new Set([
   'MM', // Myanmar
   'KH', // Cambodia
   'LA', // Laos
-  // Beachhead
-  'MV', // Maldives
+  // Middle East & North Africa
+  'EG', // Egypt
 ]);
 
 /** True when this ISO 3166-1 alpha-2 country has regional pricing configured. */
