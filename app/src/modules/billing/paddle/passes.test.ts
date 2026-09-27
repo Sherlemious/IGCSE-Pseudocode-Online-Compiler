@@ -1,6 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import {
+  amountFromPaddleTotal,
+  compareToMonthly,
   expiryForPurchase,
+  formatMajor,
   isPassVisible,
   isTeacherPlan,
   seriesEnd,
@@ -93,6 +96,35 @@ describe('expiryForPurchase', () => {
       existingExpiresAt: existing,
     });
     expect(next.toISOString()).toBe('2027-06-30T23:59:59.999Z');
+  });
+});
+
+describe('regional session discount', () => {
+  it('uses the prices on screen, not the catalog 33%', () => {
+    expect(compareToMonthly({ monthlyAmount: 2, passAmount: 13, months: 10 })).toEqual({
+      wasAmount: 20,
+      discountPct: 35,
+    });
+    expect(compareToMonthly({ monthlyAmount: 2, passAmount: 8.99, months: 10 })).toEqual({
+      wasAmount: 20,
+      discountPct: 55,
+    });
+    expect(compareToMonthly({ monthlyAmount: 1.5, passAmount: 8.99, months: 10 })).toEqual({
+      wasAmount: 15,
+      discountPct: 40,
+    });
+    expect(compareToMonthly({ monthlyAmount: 2, passAmount: 8, months: 6 })).toEqual({
+      wasAmount: 12,
+      discountPct: 33,
+    });
+  });
+
+  it('reads Paddle minor units and formats the strike price', () => {
+    expect(amountFromPaddleTotal('899', 'USD')).toBe(8.99);
+    expect(amountFromPaddleTotal('14900', 'INR')).toBe(149);
+    expect(formatMajor(20, 'USD')).toBe('$20');
+    expect(formatMajor(8.99, 'USD')).toBe('$8.99');
+    expect(formatMajor(15, 'USD')).toBe('$15');
   });
 });
 

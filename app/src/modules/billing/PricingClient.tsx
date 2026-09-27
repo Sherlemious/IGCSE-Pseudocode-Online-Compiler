@@ -4,6 +4,12 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { usePostHog } from 'posthog-js/react';
 import { usePaddle } from './PaddleProvider';
 import { hasRegionalPricing } from './ppp';
+import {
+  MONTH_PASS_USD,
+  amountFromPaddleTotal,
+  compareToMonthly,
+  formatMajor,
+} from './paddle/passes';
 import { SUPPORT_EMAIL } from '@/shared/lib/seo';
 import {
   LIMITS,
@@ -51,6 +57,12 @@ export interface StudentMonthlyView {
 }
 
 type Interval = 'month' | 'year';
+
+type PriceQuote = {
+  formatted: string;
+  amount: number | null;
+  currency: string | null;
+};
 
 function CheckIcon() {
   return (
@@ -140,7 +152,7 @@ export default function PricingClient({
   const paddle = usePaddle();
   const ph = usePostHog();
   const [interval, setInterval] = useState<Interval>('month');
-  const [totals, setTotals] = useState<Record<string, string>>({});
+  const [quotes, setQuotes] = useState<Record<string, PriceQuote>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [seats, setSeats] = useState(LIMITS.classroom.maxStudentsTotal);
@@ -207,11 +219,16 @@ export default function PricingClient({
       })
       .then((preview) => {
         if (cancelled) return;
-        const next: Record<string, string> = {};
+        const next: Record<string, PriceQuote> = {};
+        const currency = preview.data.currencyCode;
         for (const item of preview.data.details.lineItems) {
-          next[item.price.id] = item.formattedTotals.total;
+          next[item.price.id] = {
+            formatted: item.formattedTotals.total,
+            amount: amountFromPaddleTotal(item.totals.total, currency),
+            currency,
+          };
         }
-        setTotals(next);
+        setQuotes(next);
         setLoading(false);
         const resolved = preview.data.address?.countryCode ?? countryCode;
         ph?.capture('pricing_prices_loaded', {
@@ -304,7 +321,29 @@ export default function PricingClient({
   const seatLabel = seats >= TEACHER_SLIDER_MAX ? '750+' : String(seats);
 
   const renderPassCard = (pass: StudentPassView) => {
-    const total = pass.priceId ? totals[pass.priceId] : undefined;
+    const passQuote = pass.priceId ? quotes[pass.priceId] : undefined;
+    const monthQuote = studentMonthly?.monthPriceId
+      ? quotes[studentMonthly.monthPriceId]
+      : undefined;
+    const total = passQuote?.formatted;
+    const months = MONTH_PASS_USD > 0 ? Math.round(pass.wasUsd / MONTH_PASS_USD) : 0;
+    const sameCurrency =
+      passQuote?.currency != null && passQuote.currency === monthQuote?.currency;
+    const offer =
+      passQuote?.amount != null && monthQuote?.amount != null && sameCurrency
+        ? compareToMonthly({
+            monthlyAmount: monthQuote.amount,
+            passAmount: passQuote.amount,
+            months,
+          })
+        : null;
+    const localizedAway =
+      passQuote?.amount != null &&
+      (passQuote.currency !== 'USD' || Math.abs(passQuote.amount - pass.listUsd) > 0.02);
+    const quotePending = Boolean(loading && pass.priceId && !passQuote);
+    const discountPct = offer ? offer.discountPct : localizedAway ? 0 : pass.discountPct;
+    const wasLabel =
+      offer && passQuote?.currency ? formatMajor(offer.wasAmount, passQuote.currency) : usd(pass.wasUsd);
     const isCurrent = Boolean(currentTier) && pass.slug === currentTier;
     const canBuy = Boolean(paddle) && Boolean(pass.priceId) && !viewerIsTeacher && !isCurrent;
     const price = (
@@ -316,8 +355,8 @@ export default function PricingClient({
             <span className="text-3xl font-bold tracking-tight text-light-text">
               {total ?? usd(pass.listUsd)}
             </span>
-            {pass.discountPct > 0 && (
-              <span className="text-sm text-dark-text line-through">{usd(pass.wasUsd)}</span>
+            {discountPct > 0 && (
+              <span className="text-sm text-dark-text line-through">{wasLabel}</span>
             )}
           </>
         )}
@@ -378,7 +417,7 @@ export default function PricingClient({
         <div className="mt-5 flex items-baseline gap-2">{price}</div>
         <p className="mt-1 text-xs text-dark-text">
           One-time · covers until {formatUntil(pass.coversUntil)}
-          {pass.discountPct > 0 ? ` · ${pass.discountPct}% off monthly` : ''}
+          {!quotePending && discountPct > 0 ? ` · ${discountPct}% off monthly` : ''}
         </p>
         <ul className="mt-6 flex-1 space-y-2.5">
           {pass.features.map((feature) => (
@@ -458,7 +497,7 @@ export default function PricingClient({
 
   const renderTeacherPrice = (tier: PricingTierView) => {
     const priceId = interval === 'month' ? tier.monthPriceId : tier.yearPriceId;
-    const total = priceId ? totals[priceId] : undefined;
+    const total = priceId ? quotes[priceId]?.formatted : undefined;
     const listFallback = interval === 'month' ? tier.listUsdMonth : tier.listUsdYear;
     if (tier.contactOnly) {
       return <span className="text-3xl font-bold tracking-tight text-light-text">Let&apos;s talk</span>;
@@ -543,7 +582,7 @@ export default function PricingClient({
           {studentMonthly &&
             (() => {
               const priceId = studentMonthly.monthPriceId;
-              const total = priceId ? totals[priceId] : undefined;
+              const total = priceId ? quotes[priceId]?.formatted : undefined;
               const isCurrent = currentTier === 'student';
               const canBuy = Boolean(paddle) && Boolean(priceId) && !viewerIsTeacher && !isCurrent;
               return (

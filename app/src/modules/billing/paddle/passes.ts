@@ -26,6 +26,61 @@ function sessionPrice(months: number): { wasUsd: number; listUsd: number; discou
   return { wasUsd, listUsd, discountPct: Math.round(SESSION_DISCOUNT * 100) };
 }
 
+const ZERO_DECIMAL = new Set([
+  'BIF', 'CLP', 'DJF', 'GNF', 'JPY', 'KMF', 'KRW', 'PYG', 'RWF', 'UGX', 'VND', 'VUV', 'XAF', 'XOF', 'XPF',
+]);
+const THREE_DECIMAL = new Set(['BHD', 'IQD', 'JOD', 'KWD', 'LYD', 'OMR', 'TND']);
+
+function minorFactor(currency: string): number {
+  const code = currency.toUpperCase();
+  if (ZERO_DECIMAL.has(code)) return 1;
+  if (THREE_DECIMAL.has(code)) return 1000;
+  return 100;
+}
+
+/** Paddle `totals.total` is a minor-unit integer string (`"899"` → 8.99 USD). */
+export function amountFromPaddleTotal(total: string, currency: string): number | null {
+  if (!total || !currency) return null;
+  if (total.includes('.')) {
+    const major = Number(total);
+    return Number.isFinite(major) ? major : null;
+  }
+  if (!/^-?\d+$/.test(total)) return null;
+  const factor = minorFactor(currency);
+  const digits = factor === 1 ? 0 : factor === 1000 ? 3 : 2;
+  return Number((Number(total) / factor).toFixed(digits));
+}
+
+export function formatMajor(amount: number, currency: string): string {
+  const code = currency.toUpperCase();
+  const max = THREE_DECIMAL.has(code) ? 3 : ZERO_DECIMAL.has(code) ? 0 : 2;
+  const rounded = Number(amount.toFixed(max));
+  const whole = Math.abs(rounded - Math.trunc(rounded)) < 1e-8;
+  return new Intl.NumberFormat('en', {
+    style: 'currency',
+    currency: code,
+    minimumFractionDigits: whole ? 0 : max,
+    maximumFractionDigits: whole ? 0 : max,
+  }).format(rounded);
+}
+
+/**
+ * Strike price and “% off monthly” from the monthly and session amounts the
+ * buyer is actually shown. Months is the window length (May/June 10, Oct/Nov 6).
+ * Returns null when the pass is not cheaper than paying monthly.
+ */
+export function compareToMonthly(input: {
+  monthlyAmount: number;
+  passAmount: number;
+  months: number;
+}): { wasAmount: number; discountPct: number } | null {
+  const { monthlyAmount, passAmount, months } = input;
+  if (!(monthlyAmount > 0) || !(passAmount >= 0) || !Number.isInteger(months) || months <= 0) return null;
+  const wasAmount = monthlyAmount * months;
+  if (!(wasAmount > passAmount)) return null;
+  return { wasAmount, discountPct: Math.round((1 - passAmount / wasAmount) * 100) };
+}
+
 export type PassKind = 'month' | 'may_june' | 'oct_nov';
 
 export interface PassDef {
