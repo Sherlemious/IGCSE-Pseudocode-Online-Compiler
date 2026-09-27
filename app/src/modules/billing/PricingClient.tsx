@@ -143,7 +143,6 @@ export default function PricingClient({
   const [totals, setTotals] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [resolvedCountry, setResolvedCountry] = useState<string | undefined>(countryCode);
   const [seats, setSeats] = useState(LIMITS.classroom.maxStudentsTotal);
   const [sessionSlug, setSessionSlug] = useState<string | null>(null);
 
@@ -215,7 +214,6 @@ export default function PricingClient({
         setTotals(next);
         setLoading(false);
         const resolved = preview.data.address?.countryCode ?? countryCode;
-        setResolvedCountry(resolved);
         ph?.capture('pricing_prices_loaded', {
           paddle_env: paddleEnv,
           country: countryCode ?? null,
@@ -282,17 +280,6 @@ export default function PricingClient({
   });
 
   const intervalLabel = interval === 'month' ? 'mo' : 'yr';
-  const regional = hasRegionalPricing(resolvedCountry);
-  const regionName =
-    regional && resolvedCountry
-      ? (() => {
-          try {
-            return new Intl.DisplayNames(['en'], { type: 'region' }).of(resolvedCountry) ?? null;
-          } catch {
-            return null;
-          }
-        })()
-      : null;
 
   const sessionPasses = studentPasses;
   const featuredSession = sessionPasses.find((p) => p.featured) ?? sessionPasses[0] ?? null;
@@ -536,17 +523,6 @@ export default function PricingClient({
               </button>
             ))}
           </div>
-        </div>
-      )}
-
-      {regional && (
-        <div className="mb-6 flex justify-center">
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/40 bg-primary/5 px-3 py-1 text-xs font-medium text-primary">
-            <span aria-hidden="true">🌍</span>
-            {regionName
-              ? `Regional pricing for ${regionName} — adjusted for your area`
-              : 'Regional pricing applied for your area'}
-          </span>
         </div>
       )}
 

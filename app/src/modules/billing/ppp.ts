@@ -1,5 +1,6 @@
 /**
- * Purchasing-power / regional pricing.
+ * Purchasing-power / regional pricing — **student prices only**. Teacher plans
+ * have no overrides: schools already charge enough to pay list price.
  *
  * Paddle is the source of truth for the actual amounts: set lower **per-country
  * price overrides** on each Price in the Paddle dashboard (target ≈ 40% below the
@@ -7,11 +8,9 @@
  * `PricePreview({ address: { countryCode } })` and renders whatever Paddle
  * returns, so the reduced prices show automatically — no amounts live here.
  *
- * This list exists ONLY so the UI can truthfully badge "regional pricing" and so
- * the funnel can be segmented in analytics (`regional_pricing` on
- * `pricing_prices_loaded`). Keep it in sync with the countries you actually
- * configured overrides for in Paddle — adding a country here without a Paddle
- * override would badge a price that hasn't actually been reduced.
+ * This list exists ONLY so the funnel can be segmented in analytics
+ * (`regional_pricing` on `pricing_prices_loaded`); the page shows no badge. Keep
+ * it in sync with the countries you actually configured overrides for in Paddle.
  *
  * Seeded from the top-of-funnel geography (PostHog, Sep 2026): South & SE Asia,
  * plus Egypt. The Maldives was dropped (Sep 2026): upper-middle income, pays list.
