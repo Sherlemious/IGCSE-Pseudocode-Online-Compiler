@@ -156,6 +156,12 @@ export function toString(v: RuntimeValue): string {
   if (typeof v.value === 'number' && !Number.isFinite(v.value) && !Number.isNaN(v.value)) {
     return v.value > 0 ? 'INFINITY' : '-INFINITY';
   }
+  // Round away binary floating-point noise: 0.1 + 0.2 displays as 0.3 and
+  // 3 * 7.99 + 1.99 as 25.96, as a mark scheme expects. 15 significant digits
+  // is the most a double holds exactly, so no real digit is lost.
+  if (typeof v.value === 'number' && !Number.isInteger(v.value)) {
+    return String(Number(v.value.toPrecision(15)));
+  }
   return String(v.value);
 }
 

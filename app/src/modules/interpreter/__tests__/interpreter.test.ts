@@ -1025,7 +1025,7 @@ describe('A Level — DATE type', () => {
 
   it('spaced division is not parsed as a date', async () => {
     const { outputs } = await runCode('OUTPUT 10 / 02 / 2005\n');
-    expect(outputs).toEqual([String(10 / 2 / 2005)]);
+    expect(outputs).toEqual(['0.00249376558603491']); // 10 / 2 / 2005, shown to 15 significant digits
   });
 });
 
