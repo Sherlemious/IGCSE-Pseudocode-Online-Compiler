@@ -313,7 +313,9 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
     const customTheme = EditorView.theme({
       '&': {
         height: '100%',
+        maxHeight: '100%',
         width: '100%',
+        overflow: 'hidden',
         backgroundColor: 'var(--color-background)',
       },
       '&.cm-editor': {
@@ -360,6 +362,9 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
         borderLeftWidth: '2px',
       },
       '.cm-scroller': {
+        minHeight: '0',
+        overflow: 'auto',
+        overscrollBehavior: 'contain',
         scrollbarWidth: 'thin',
         scrollbarColor: 'color-mix(in srgb, var(--color-dark-text) 35%, transparent) transparent',
       },
@@ -692,7 +697,7 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
     });
   }, [debugLine]);
 
-  return <div ref={editorRef} className="flex-1 min-w-0" />;
+  return <div ref={editorRef} className="h-full min-h-0 min-w-0 flex-1 overflow-hidden" />;
 };
 
 export default CodeMirrorEditor;
