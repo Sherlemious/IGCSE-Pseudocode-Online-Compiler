@@ -1717,6 +1717,109 @@ describe('parameterless PROCEDURE / FUNCTION headers (Cambridge style)', () => {
   });
 });
 
+describe('routine scoping', () => {
+  it('a routine cannot read the locals of its caller', async () => {
+    const src = [
+      'PROCEDURE Inner',
+      '  OUTPUT Secret',
+      'ENDPROCEDURE',
+      'PROCEDURE Outer',
+      '  DECLARE Secret : INTEGER',
+      '  Secret <- 7',
+      '  CALL Inner',
+      'ENDPROCEDURE',
+      'CALL Outer',
+    ].join('\n');
+    await expect(runCode(src)).rejects.toThrow(/Variable 'Secret' is not defined/);
+  });
+
+  it("an undeclared assignment in a callee does not clobber the caller's local", async () => {
+    const src = [
+      'PROCEDURE Reset',
+      '  i <- 100',
+      'ENDPROCEDURE',
+      'PROCEDURE Loop',
+      '  DECLARE i : INTEGER',
+      '  FOR i <- 1 TO 3',
+      '    CALL Reset',
+      '    OUTPUT i',
+      '  NEXT i',
+      'ENDPROCEDURE',
+      'CALL Loop',
+    ].join('\n');
+    const { outputs } = await runCode(src);
+    expect(outputs).toEqual(['1', '2', '3']);
+  });
+
+  it('routines still read and write globals', async () => {
+    const src = [
+      'DECLARE Total : INTEGER',
+      'Total <- 1',
+      'PROCEDURE AddTen',
+      '  Total <- Total + 10',
+      'ENDPROCEDURE',
+      'CALL AddTen',
+      'OUTPUT Total',
+    ].join('\n');
+    const { outputs } = await runCode(src);
+    expect(outputs).toEqual(['11']);
+  });
+
+  it('assigning to a global CONSTANT inside a routine is an error', async () => {
+    const src = [
+      'CONSTANT Rate = 5',
+      'PROCEDURE Change',
+      '  Rate <- 6',
+      'ENDPROCEDURE',
+      'CALL Change',
+    ].join('\n');
+    await expect(runCode(src)).rejects.toThrow(/Cannot assign to constant 'Rate'/);
+  });
+
+  it('recursion keeps a separate frame per call', async () => {
+    const src = [
+      'FUNCTION Fact(N : INTEGER) RETURNS INTEGER',
+      '  IF N <= 1 THEN',
+      '    RETURN 1',
+      '  ENDIF',
+      '  RETURN N * Fact(N - 1)',
+      'ENDFUNCTION',
+      'OUTPUT Fact(10)',
+    ].join('\n');
+    const { outputs } = await runCode(src);
+    expect(outputs).toEqual(['3628800']);
+  });
+
+  it('allows deep but finite recursion', async () => {
+    const src = [
+      'FUNCTION SumTo(N : INTEGER) RETURNS INTEGER',
+      '  IF N = 0 THEN',
+      '    RETURN 0',
+      '  ENDIF',
+      '  RETURN N + SumTo(N - 1)',
+      'ENDFUNCTION',
+      'OUTPUT SumTo(3000)',
+    ].join('\n');
+    const { outputs } = await runCode(src);
+    expect(outputs).toEqual(['4501500']);
+  });
+
+  it('stops runaway recursion with a student-friendly error', async () => {
+    const src = [
+      'PROCEDURE Forever(N : INTEGER)',
+      '  CALL Forever(N + 1)',
+      'ENDPROCEDURE',
+      'CALL Forever(1)',
+    ].join('\n');
+    const err = await runCode(src).then(
+      () => null,
+      (e: Error) => e,
+    );
+    expect(err?.message).toMatch(/Too many nested calls/);
+    expect(humanizeRuntimeError(err!.message)).toContain('base case');
+  });
+});
+
 // Shapes taken from the ErrorSample table (Sept 2026) that used to fall through
 // to the generic "isn't valid IGCSE pseudocode" message.
 describe('parse hints — sampled student mistakes', () => {

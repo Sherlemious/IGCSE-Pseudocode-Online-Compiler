@@ -39,28 +39,30 @@ export class Environment {
   }
 
   set(name: string, value: RuntimeValue): void {
-    const entry = this.variables.get(name);
-    if (entry) {
-      if (entry.constant) {
-        throw new RuntimeError(`Cannot assign to constant '${name}'`);
-      }
-      if (entry.ref) {
-        entry.ref.set(value);
-        return;
-      }
-      entry.value = value;
+    // Assign in the nearest scope that holds the name. An undeclared name is
+    // auto-declared in the outermost (program) scope.
+    const entry = this.lookup(name);
+    if (!entry) {
+      this.root().variables.set(name, { value, constant: false });
       return;
     }
-    if (this.parent) {
-      try {
-        this.parent.set(name, value);
-        return;
-      } catch {
-        // Variable not in parent scope, declare locally
-      }
+    if (entry.constant) {
+      throw new RuntimeError(`Cannot assign to constant '${name}'`);
     }
-    // Auto-declare if not found anywhere
-    this.variables.set(name, { value, constant: false });
+    if (entry.ref) {
+      entry.ref.set(value);
+      return;
+    }
+    entry.value = value;
+  }
+
+  /** The nearest entry for `name` along the scope chain. */
+  private lookup(name: string): Variable | undefined {
+    return this.variables.get(name) ?? this.parent?.lookup(name);
+  }
+
+  private root(): Environment {
+    return this.parent ? this.parent.root() : this;
   }
 
   has(name: string): boolean {

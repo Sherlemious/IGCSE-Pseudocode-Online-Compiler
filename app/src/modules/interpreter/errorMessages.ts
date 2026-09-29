@@ -1719,6 +1719,21 @@ export function humanizeRuntimeError(rawMessage: string): string {
     return 'Division by zero — make sure your divisor is not 0 before dividing.';
   }
 
+  // Runaway recursion
+  if (/Too many nested calls/.test(rawMessage)) {
+    return (
+      'Your routine keeps calling itself and never stops.\n' +
+      '  A recursive FUNCTION needs a base case that RETURNs without calling itself again.\n' +
+      '  Example:\n' +
+      '    FUNCTION Factorial(N : INTEGER) RETURNS INTEGER\n' +
+      '      IF N <= 1 THEN\n' +
+      '        RETURN 1\n' +
+      '      ENDIF\n' +
+      '      RETURN N * Factorial(N - 1)\n' +
+      '    ENDFUNCTION'
+    );
+  }
+
   // Procedure not defined
   const procUndef = rawMessage.match(/Procedure '([^']+)' is not defined/);
   if (procUndef) {
@@ -1869,6 +1884,7 @@ export function categorizeRuntimeError(rawMessage: string): string {
   if (/Array index -?\d+ out of bounds/.test(rawMessage)) return 'array_out_of_bounds';
   if (/Array expects \d+ index/.test(rawMessage)) return 'array_dim_mismatch';
   if (/Division by zero/.test(rawMessage)) return 'division_by_zero';
+  if (/Too many nested calls/.test(rawMessage)) return 'recursion_depth';
   if (/Procedure '[^']+' is not defined/.test(rawMessage)) return 'procedure_undefined';
   if (/Function '[^']+' is not defined/.test(rawMessage)) return 'function_undefined';
   if (/Cannot access private (?:method|property)/.test(rawMessage)) return 'private_access';

@@ -144,8 +144,18 @@ interface MethodFrame {
   definedIn: ClassDefinition;
 }
 
+/**
+ * Nested PROCEDURE/FUNCTION/method calls allowed before a runaway recursion is
+ * stopped. Well above any exam-style recursion (factorial, Fibonacci, binary
+ * search); low enough to fail fast instead of eating memory.
+ */
+export const MAX_CALL_DEPTH = 5000;
+
 export class Interpreter {
   private env: Environment;
+  /** Program scope. Routines see it plus their own locals, never their caller's. */
+  private readonly globalEnv: Environment;
+  private callDepth = 0;
   private callbacks: InterpreterCallbacks;
   private signal: AbortSignal;
   private procedures = new Map<string, CallableDefinition>();
@@ -166,7 +176,8 @@ export class Interpreter {
   private _traceCount = 0;
 
   constructor(callbacks: InterpreterCallbacks, signal: AbortSignal, fileSystem?: VirtualFileSystem) {
-    this.env = new Environment();
+    this.globalEnv = new Environment();
+    this.env = this.globalEnv;
     this.callbacks = callbacks;
     this.signal = signal;
     this.fileSystem = fileSystem ?? new VirtualFileSystem();
@@ -638,24 +649,43 @@ export class Interpreter {
     argListCtx: ArgListContext | null,
     line?: number,
   ): Promise<RuntimeValue> {
-    const localEnv = new Environment(this.env);
+    const localEnv = new Environment(this.globalEnv);
     // Bind every instance field by name so method bodies read/write them directly
     for (const f of instance.classDef.allFields()) {
       localEnv.declareRef(f.name, new ObjectFieldRef(instance, f.name, f.name));
     }
     await this.bindParams(localEnv, found.method.params, argListCtx, found.method.name, line);
 
-    const prevEnv = this.env;
-    this.env = localEnv;
     this.methodStack.push({ instance, definedIn: found.owner });
     try {
-      await this.visitBlock(found.method.body);
+      return await this.runRoutine(localEnv, found.method.body, line);
+    } finally {
+      this.methodStack.pop();
+    }
+  }
+
+  /**
+   * Run a routine body in `localEnv`, restoring the caller's scope afterwards.
+   * Returns the RETURN value (NONE when the body just ends).
+   */
+  private async runRoutine(localEnv: Environment, body: BlockContext, line?: number): Promise<RuntimeValue> {
+    if (this.callDepth >= MAX_CALL_DEPTH) {
+      throw new RuntimeError(
+        `Too many nested calls (more than ${MAX_CALL_DEPTH}) — the recursion may be missing a base case`,
+        line,
+      );
+    }
+    const prevEnv = this.env;
+    this.env = localEnv;
+    this.callDepth++;
+    try {
+      await this.visitBlock(body);
     } catch (e) {
       if (e instanceof ReturnSignal) return e.value;
       throw e;
     } finally {
+      this.callDepth--;
       this.env = prevEnv;
-      this.methodStack.pop();
     }
     return mkNone();
   }
@@ -1111,22 +1141,10 @@ export class Interpreter {
       throw new RuntimeError(`Procedure '${name}' is not defined`, line);
     }
 
-    const localEnv = new Environment(this.env);
+    const localEnv = new Environment(this.globalEnv);
     await this.bindParams(localEnv, proc.params, argListCtx, name, line);
-
-    const prevEnv = this.env;
-    this.env = localEnv;
-    try {
-      await this.visitBlock(proc.body);
-    } catch (e) {
-      if (e instanceof ReturnSignal) {
-        // Procedures ignore return values
-      } else {
-        throw e;
-      }
-    } finally {
-      this.env = prevEnv;
-    }
+    // Procedures ignore return values
+    await this.runRoutine(localEnv, proc.body, line);
   }
 
   private async callFunction(name: string, argListCtx: ArgListContext | null, line?: number): Promise<RuntimeValue> {
@@ -1139,22 +1157,9 @@ export class Interpreter {
       throw new RuntimeError(`Function '${name}' is not defined`, line);
     }
 
-    const localEnv = new Environment(this.env);
+    const localEnv = new Environment(this.globalEnv);
     await this.bindParams(localEnv, func.params, argListCtx, name, line);
-
-    const prevEnv = this.env;
-    this.env = localEnv;
-    try {
-      await this.visitBlock(func.body);
-    } catch (e) {
-      if (e instanceof ReturnSignal) {
-        return e.value;
-      }
-      throw e;
-    } finally {
-      this.env = prevEnv;
-    }
-    return mkNone();
+    return this.runRoutine(localEnv, func.body, line);
   }
 
   // ─── RETURN ─────────────────────────────────────────────────────
