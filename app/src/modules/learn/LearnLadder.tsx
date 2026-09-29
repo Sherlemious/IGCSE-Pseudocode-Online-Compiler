@@ -4,7 +4,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
-import { ArrowRight, Crown, Play, Route, Trophy } from 'lucide-react';
+import { ArrowRight, Crown, Play, Trophy } from 'lucide-react';
+import CourseChooser from './CourseChooser';
 import LearnPathMap from './LearnPathMap';
 import { findLesson, flattenLessons } from './path';
 import { formatMinutes } from './pathTheme';
@@ -12,11 +13,6 @@ import { isComplete, loadProgress, nextIncomplete, type ProgressMap } from './pr
 import { hydrateLearnProgress } from './progressSync';
 import { captureLearn, learnCourseProps, learnLessonProps } from './telemetry';
 import type { LearnCourse } from './types';
-
-const RING = 76;
-const RING_STROKE = 5;
-const RING_R = (RING - RING_STROKE) / 2;
-const RING_C = 2 * Math.PI * RING_R;
 
 export default function LearnLadder({
   course,
@@ -95,7 +91,6 @@ export default function LearnLadder({
   const showUpgrade = ready && freeDone && !premiumAccess && !allPlayableDone;
   const completed = playable.filter((item) => isComplete(progress, item.lesson.id)).length;
   const pct = playable.length > 0 ? Math.round((completed / playable.length) * 100) : 0;
-  const ringOffset = RING_C * (1 - pct / 100);
 
   return (
     <div className="relative flex-1 min-h-0 overflow-y-auto overflow-x-hidden bg-background bg-dot-grid text-light-text scrollbar-pretty">
@@ -109,74 +104,28 @@ export default function LearnLadder({
       />
 
       <div className="relative max-w-3xl mx-auto px-4 sm:px-6 pt-8 sm:pt-12 pb-3">
-        <div className="flex items-start justify-between gap-6">
-          <div className="min-w-0">
-            <div className="mono-label text-primary/80 mb-2.5 flex items-center gap-1.5">
-              <Route size={12} />
-              {course.kicker}
-            </div>
-            <h1 className="display-serif text-[2rem] sm:text-[2.75rem] leading-[1.05] font-semibold mb-3">
-              {course.title}
-            </h1>
-            <p className="text-sm sm:text-[15px] text-dark-text max-w-xl leading-relaxed">
-              {course.subtitle}{' '}
-              {course.basePath === '/learn' && (
-                <Link href="/tutorial" className="text-primary hover:underline">
-                  Written Cambridge O Level tutorial
-                </Link>
-              )}
-              {course.basePath === '/learn' ? '.' : null}{' '}
-              <Link href={course.otherPath.href} className="text-primary hover:underline">
-                {course.otherPath.label}
-              </Link>
-            </p>
-          </div>
+        <CourseChooser courseId={course.id} completed={completed} total={playable.length} />
 
-          <div className="hidden sm:flex shrink-0 items-center gap-5 pt-1 animate-fade-in-up">
-            <dl className="flex flex-col gap-1.5 text-right">
-              <Stat value={String(playable.length)} label="lessons live" />
-              <Stat value={formatMinutes(playableMinutes)} label="to finish" />
-              {freeRange && <Stat value={freeRange} label="free" />}
-            </dl>
-            <div className="relative shrink-0 animate-scale-in" style={{ width: RING, height: RING }}>
-              <svg width={RING} height={RING} className="-rotate-90">
-                <circle
-                  cx={RING / 2}
-                  cy={RING / 2}
-                  r={RING_R}
-                  fill="none"
-                  stroke="color-mix(in srgb, var(--color-dark-text) 28%, transparent)"
-                  strokeWidth={RING_STROKE}
-                />
-                <circle
-                  cx={RING / 2}
-                  cy={RING / 2}
-                  r={RING_R}
-                  fill="none"
-                  stroke="var(--color-success)"
-                  strokeWidth={RING_STROKE}
-                  strokeLinecap="round"
-                  strokeDasharray={RING_C}
-                  strokeDashoffset={ringOffset}
-                  style={{ transition: 'stroke-dashoffset 0.8s ease-out' }}
-                />
-              </svg>
-              <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className="text-base font-bold font-mono text-light-text leading-none tabular-nums">
-                  {pct}%
-                </span>
-                <span className="text-[9px] uppercase tracking-wider text-dark-text mt-1 tabular-nums">
-                  {completed}/{playable.length}
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <p className="sm:hidden mt-4 font-mono text-[11px] text-dark-text tabular-nums">
-          <span className="text-light-text font-semibold">{completed}/{playable.length}</span> done ·{' '}
-          {formatMinutes(playableMinutes)} to finish{freeRange ? ` · ${freeRange} free` : ''}
+        <p className="mt-5 text-sm sm:text-[15px] text-dark-text max-w-xl leading-relaxed">
+          {course.subtitle}
         </p>
+        <p className="mt-2 font-mono text-[11px] text-dark-text tabular-nums">
+          <span className="text-light-text font-semibold">{playable.length} lessons</span>
+          {' · '}
+          {formatMinutes(playableMinutes)} to finish
+        </p>
+        {course.basePath === '/learn' && (
+          <p className="mt-2 text-sm text-dark-text">
+            New to this?{' '}
+            <Link
+              href="/tutorial"
+              className="text-primary underline decoration-primary/40 underline-offset-2 hover:decoration-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/70 focus-visible:ring-offset-2 focus-visible:ring-offset-background rounded-sm"
+            >
+              Read the written O Level tutorial first
+            </Link>
+            .
+          </p>
+        )}
 
         {ready && nextHref && nextFound && (
           <Link
@@ -280,11 +229,3 @@ export default function LearnLadder({
   );
 }
 
-function Stat({ value, label }: { value: string; label: string }) {
-  return (
-    <div className="font-mono text-[11px] text-dark-text tabular-nums whitespace-nowrap">
-      <dd className="inline text-light-text font-semibold">{value}</dd>{' '}
-      <dt className="inline">{label}</dt>
-    </div>
-  );
-}

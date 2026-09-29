@@ -1,7 +1,21 @@
 import { describe, expect, it } from 'vitest';
 import { checkLessonCode } from './check';
+import { COURSE_CHOICES } from './courseChoice';
 import { ALEVEL_9618, IGCSE_PAPER_2 } from './curriculum';
 import { findLesson, flattenLessons, lessonHref, nextLesson, previousLesson } from './path';
+
+describe('learn course choice', () => {
+  it('lists O Level first, then A Level, matching each path', () => {
+    expect(COURSE_CHOICES.map((choice) => choice.id)).toEqual([IGCSE_PAPER_2.id, ALEVEL_9618.id]);
+    expect(COURSE_CHOICES.map((choice) => choice.href)).toEqual(['/learn', '/learn/9618']);
+    for (const course of [IGCSE_PAPER_2, ALEVEL_9618]) {
+      const choice = COURSE_CHOICES.find((item) => item.id === course.id);
+      expect(choice?.href).toBe(course.basePath);
+      expect(choice?.levels).toBe(course.levels.length);
+      expect(choice?.freeLevels).toBe(course.levels.filter((level) => level.free).length);
+    }
+  });
+});
 
 describe('IGCSE Paper 2 curriculum', () => {
   it('has ten named levels with unique ids and slugs', () => {
