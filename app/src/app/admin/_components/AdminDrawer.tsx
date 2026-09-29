@@ -6,7 +6,11 @@ import { X } from 'lucide-react';
 
 export const ADMIN_DRAWER_EXIT_MS = 340;
 
-/** Keep the last non-null value so a drawer can animate out after its item is cleared. */
+/**
+ * Keep the last non-null value so a drawer can animate out after its item is cleared.
+ * `value` must stay the same reference until the item actually changes — a fresh
+ * object on every render makes the setState below loop (React error #301).
+ */
 export function useHeld<T>(value: T | null | undefined): T | null {
   const [held, setHeld] = useState<T | null>(value ?? null);
   // Adjusting state while rendering is React's pattern for tracking a prop's

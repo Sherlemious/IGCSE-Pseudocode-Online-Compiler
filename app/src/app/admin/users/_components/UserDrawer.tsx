@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import Image from 'next/image';
 import { BookOpen, BookOpenCheck, Check, Copy, Route } from 'lucide-react';
 import { planBadge } from '@/modules/billing/planDisplay';
@@ -183,7 +183,13 @@ export default function UserDrawer({
   onPlanChange,
 }: DrawerProps) {
   const open = user != null;
-  const view = useHeld(user ? { user, role: effectiveRole, plan: effectivePlan } : null);
+  // useHeld compares by reference and setStates during render. An inline object
+  // is new every time, so the learning fetch's re-render never settles.
+  const snapshot = useMemo(
+    () => (user ? { user, role: effectiveRole, plan: effectivePlan } : null),
+    [user, effectiveRole, effectivePlan],
+  );
+  const view = useHeld(snapshot);
   const { data: learning, loading: learningLoading } = useStudentLearning(view?.user.id ?? null, open);
   if (!view) return null;
 
