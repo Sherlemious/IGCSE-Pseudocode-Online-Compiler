@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/shared/db';
-import { gradeSubmission } from '@/modules/practice/autograder';
+import { gradeTestCases, MAX_GRADE_CODE_CHARS } from '@/modules/practice/autograder';
 import { auth } from '@/modules/auth/auth';
 import { PREMIUM_GATING_ENABLED } from '@/modules/billing/featureFlags';
 import { getPremiumAccess } from '@/modules/billing/entitlements';
@@ -29,13 +29,17 @@ export async function POST(request: NextRequest, { params }: Props) {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }
 
-  const { code, timeoutMs } = body as { code?: unknown; timeoutMs?: unknown };
+  const { code } = body as { code?: unknown };
 
   if (typeof code !== 'string' || !code.trim()) {
     return NextResponse.json({ error: '`code` is required' }, { status: 400 });
   }
-
-  const timeout = typeof timeoutMs === 'number' ? Math.min(timeoutMs, 30_000) : 10_000;
+  if (code.length > MAX_GRADE_CODE_CHARS) {
+    return NextResponse.json(
+      { error: `Your code is too long to check (over ${MAX_GRADE_CODE_CHARS.toLocaleString('en')} characters).` },
+      { status: 413 },
+    );
+  }
 
   // Session is optional here. Policy (enforced below, once the question is
   // loaded): EASY questions grade anonymously; MEDIUM/HARD require an account;
@@ -90,34 +94,20 @@ export async function POST(request: NextRequest, { params }: Props) {
     }
   }
 
-  // Grade all test cases in parallel
-  const settled = await Promise.allSettled(
-    question.testCases.map((tc) =>
-      gradeSubmission(code, tc.inputs, tc.expectedOutput, tc.initialFiles, timeout)
-    )
-  );
+  const graded = await gradeTestCases(code, question.testCases);
 
-  const gradeFailures = settled.filter((s) => s.status === 'rejected');
+  const gradeFailures = graded.filter((r) => r.error?.kind === 'unknown');
   if (gradeFailures.length > 0) {
     logger.error('Grade: test case execution failed', {
       question_id: id,
       failed: gradeFailures.length,
-      total: settled.length,
-      reason: String((gradeFailures[0] as PromiseRejectedResult).reason),
+      total: graded.length,
+      reason: gradeFailures[0].error?.message,
     });
   }
 
   const results = question.testCases.map((tc, i) => {
-    const s = settled[i];
-    const result =
-      s.status === 'fulfilled'
-        ? s.value
-        : {
-            passed: false,
-            actualOutput: '',
-            error: { kind: 'unknown' as const, message: 'Grading failed' },
-            executionMs: 0,
-          };
+    const result = graded[i];
 
     const base = {
       testCaseId: tc.id,

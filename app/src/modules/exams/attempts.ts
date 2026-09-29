@@ -1,6 +1,6 @@
 import { Prisma, type ExamAttempt } from '@prisma/client';
 import { prisma } from '@/shared/db';
-import { gradeSubmission } from '@/modules/practice/autograder';
+import { gradeTestCases } from '@/modules/practice/autograder';
 import { getQuestionForGrade } from '@/shared/lib/catalogCache';
 
 export class ExamRequestError extends Error {
@@ -104,10 +104,8 @@ export async function gradeExamAnswer(examId: string, userId: string, submission
     return { revision, testCases: question.testCases };
   });
 
-  const results = await Promise.allSettled(prepared.testCases.map((test) =>
-    gradeSubmission(submission.code, test.inputs, test.expectedOutput, test.initialFiles),
-  ));
-  const passCount = results.filter((result) => result.status === 'fulfilled' && result.value.passed).length;
+  const results = await gradeTestCases(submission.code, prepared.testCases);
+  const passCount = results.filter((result) => result.passed).length;
 
   return withAttempt(examId, userId, async (tx, exam, now) => {
     requireActive(exam, now);
@@ -123,10 +121,10 @@ export async function gradeExamAnswer(examId: string, userId: string, submission
       passCount,
       totalTests: prepared.testCases.length,
       results: results.map((result, i) => ({
-        passed: result.status === 'fulfilled' && result.value.passed,
+        passed: result.passed,
         isHidden: prepared.testCases[i].isHidden,
         description: prepared.testCases[i].isHidden ? undefined : prepared.testCases[i].description,
-        error: result.status === 'fulfilled' ? result.value.error : undefined,
+        error: result.error,
       })),
     };
   });

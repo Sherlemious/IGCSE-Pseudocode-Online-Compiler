@@ -11,7 +11,11 @@ const { db, grade, auth, getQuestionForGrade } = vi.hoisted(() => ({
   grade: vi.fn(), auth: vi.fn(), getQuestionForGrade: vi.fn(),
 }));
 vi.mock('@/shared/db', () => ({ prisma: db }));
-vi.mock('@/modules/practice/autograder', () => ({ gradeSubmission: grade }));
+vi.mock('@/modules/practice/autograder', () => ({
+  MAX_GRADE_CODE_CHARS: 20_000,
+  gradeTestCases: (code: string, tests: { inputs: string[]; expectedOutput: string; initialFiles?: string | null }[]) =>
+    Promise.all(tests.map((test) => grade(code, test.inputs, test.expectedOutput, test.initialFiles))),
+}));
 vi.mock('@/modules/auth/auth', () => ({ auth }));
 vi.mock('@/shared/lib/catalogCache', () => ({ getQuestionForGrade }));
 

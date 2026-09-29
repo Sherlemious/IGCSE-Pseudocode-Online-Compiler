@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/modules/auth/auth';
 import { prisma } from '@/shared/db';
+import { limitRequest, requesterKey } from '@/shared/lib/rateLimit';
 
 const CATEGORIES = ['bug', 'suggestion', 'other'] as const;
 
@@ -14,6 +15,12 @@ function cappedString(value: unknown, max: number): string | null {
 export async function POST(req: Request) {
   try {
     const session = await auth();
+    const limited = limitRequest(
+      `bug-report:${requesterKey(req, session?.user?.id)}`,
+      { limit: 5, windowMs: 10 * 60_000 },
+      "You've sent several reports already. Please wait a few minutes before sending another.",
+    );
+    if (limited) return limited;
     const body = await req.json() as {
       description?: unknown;
       category?: unknown;

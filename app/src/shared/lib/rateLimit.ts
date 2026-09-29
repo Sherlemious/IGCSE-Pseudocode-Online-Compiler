@@ -74,6 +74,28 @@ export function rateLimit(
 }
 
 /**
+ * Route-handler shorthand: record a hit and return a 429 response when `key`
+ * is over its limit, or null when the request may proceed.
+ */
+export function limitRequest(
+  key: string,
+  options: RateLimitOptions,
+  message = 'Too many requests. Please wait a moment and try again.',
+): Response | null {
+  const result = rateLimit(key, options);
+  if (result.ok) return null;
+  return Response.json(
+    { error: message, retryAfterSec: result.retryAfterSec },
+    { status: 429, headers: { 'Retry-After': String(result.retryAfterSec) } },
+  );
+}
+
+/** `user:<id>` when signed in, otherwise `ip:<address>`. */
+export function requesterKey(req: Request, userId: string | null | undefined): string {
+  return userId ? `user:${userId}` : `ip:${clientIp(req)}`;
+}
+
+/**
  * Best-effort client IP from proxy headers (Vercel/most reverse proxies set
  * `x-forwarded-for`). Falls back to a shared bucket when no header is present,
  * which is acceptable — the goal is to slow floods, not to identify users.

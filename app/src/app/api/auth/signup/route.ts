@@ -4,10 +4,21 @@ import { prisma } from '@/shared/db';
 import { getResend, FROM_ADDRESS } from '@/modules/auth/resend';
 import { welcomeEmailHtml, welcomeEmailText } from '@/modules/auth/emails/welcome';
 import { SITE_NAME } from '@/shared/lib/seo';
+import { clientIp, limitRequest } from '@/shared/lib/rateLimit';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+// bcrypt only reads the first 72 bytes; anything longer is a mistake or abuse.
+const MAX_PASSWORD_LENGTH = 72;
 
 export async function POST(req: Request) {
+  // Per IP, and generous: a whole class often signs up from one school address.
+  const limited = limitRequest(
+    `signup:${clientIp(req)}`,
+    { limit: 40, windowMs: 15 * 60_000 },
+    'Too many sign-ups from this network. Please wait a few minutes and try again.',
+  );
+  if (limited) return limited;
+
   let body: unknown;
   try {
     body = await req.json();
@@ -26,8 +37,14 @@ export async function POST(req: Request) {
   if (!cleanEmail || !EMAIL_RE.test(cleanEmail)) {
     return NextResponse.json({ error: 'Enter a valid email address.' }, { status: 400 });
   }
-  if (!password || password.length < 8) {
+  if (typeof password !== 'string' || password.length < 8) {
     return NextResponse.json({ error: 'Password must be at least 8 characters.' }, { status: 400 });
+  }
+  if (password.length > MAX_PASSWORD_LENGTH) {
+    return NextResponse.json(
+      { error: `Password must be at most ${MAX_PASSWORD_LENGTH} characters.` },
+      { status: 400 },
+    );
   }
 
   // Only student/teacher are self-selectable at signup — ADMIN is never granted here.

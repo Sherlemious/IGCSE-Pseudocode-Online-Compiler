@@ -65,6 +65,19 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       {
+        // Baseline hardening. No X-Frame-Options / frame-ancestors on purpose:
+        // teachers may embed pages in an LMS iframe.
+        source: "/:path*",
+        headers: [
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          {
+            key: "Permissions-Policy",
+            value: "camera=(), microphone=(), geolocation=(), browsing-topics=()",
+          },
+        ],
+      },
+      {
         source: "/fonts/:path*",
         headers: [
           {

@@ -1,10 +1,16 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/modules/auth/auth';
 import { prisma } from '@/shared/db';
+import { limitRequest, requesterKey } from '@/shared/lib/rateLimit';
 
 export async function POST(req: Request) {
   try {
     const session = await auth();
+    const limited = limitRequest(
+      `feedback:${requesterKey(req, session?.user?.id)}`,
+      { limit: 5, windowMs: 10 * 60_000 },
+    );
+    if (limited) return limited;
     const body = await req.json() as {
       rating?: unknown;
       tier?: unknown;

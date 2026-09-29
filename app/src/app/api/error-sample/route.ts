@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/shared/db';
 import { logger } from '@/shared/lib/logger';
+import { clientIp, limitRequest } from '@/shared/lib/rateLimit';
 import { sanitizeForSampling } from '@/modules/interpreter/sanitizeSample';
 
 // Only the vague parse buckets are worth collecting — see interpreter/errorSampling.ts.
@@ -38,6 +39,9 @@ export async function POST(req: Request) {
     if (!SAMPLING_ENABLED) {
       return NextResponse.json({ ok: true, skipped: true });
     }
+    // Anonymous by design, so keyed by IP; sampling is already sparse client-side.
+    const limited = limitRequest(`error-sample:${clientIp(req)}`, { limit: 60, windowMs: 60_000 });
+    if (limited) return limited;
 
     const body = (await req.json()) as {
       category?: unknown;

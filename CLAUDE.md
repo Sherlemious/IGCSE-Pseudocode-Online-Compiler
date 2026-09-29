@@ -96,6 +96,8 @@ Deliberate parse edges (documented in /docs — do not "fix"):
 - Fully **async** — every visitor method is `async` to support `INPUT` pausing and UI responsiveness
 - **AbortController** for cancellation — checked at every loop iteration
 - **ReturnSignal** is thrown (not returned) to unwind the call stack from `RETURN` statements
+- **Lexical routine scope** — PROCEDURE/FUNCTION/method bodies get a fresh scope whose parent is the program scope (never the caller's), so callees can't read or clobber a caller's locals. An undeclared assignment auto-declares in the program scope; assigning to a CONSTANT from anywhere is an error. Calls nest at most `MAX_CALL_DEPTH` deep (`recursion_depth` hint)
+- **Autograder** (`practice/autograder.ts`) — `gradeTestCases` runs tests one after another with a per-test timeout and a total budget; a timed-out, input-exhausted or output-flooding run always fails (`timeout` / `input_overflow` / `output_limit` categories) whatever it printed first
 - **Designators** — lvalues (`x`, `arr[i,j]`, `rec.Field`, `ptr^`, chains thereof) resolve to `Reference` objects (`core/references.ts`); the same mechanism backs assignment, INPUT/READFILE/GETRECORD targets, BYREF parameters and pointers
 - **Value semantics** — arrays and records deep-copy on assignment (`core/copy.ts`); objects stay references
 - Record/class member names are **case-insensitive** (the Cambridge guide itself mixes `FirstName`/`Firstname`); variable names remain case-sensitive

@@ -14,7 +14,11 @@ vi.mock('@/shared/db', () => ({
 }));
 vi.mock('@/shared/lib/catalogCache', () => ({ getQuestionForGrade }));
 vi.mock('@/modules/auth/auth', () => ({ auth }));
-vi.mock('@/modules/practice/autograder', () => ({ gradeSubmission: grade }));
+vi.mock('@/modules/practice/autograder', () => ({
+  MAX_GRADE_CODE_CHARS: 20_000,
+  gradeTestCases: (code: string, tests: { inputs: string[]; expectedOutput: string }[]) =>
+    Promise.all(tests.map((tc) => grade(code, tc.inputs, tc.expectedOutput))),
+}));
 
 import { POST } from './route';
 import { __resetRateLimit } from '@/shared/lib/rateLimit';
@@ -89,5 +93,14 @@ describe('grade route access control', () => {
     expect(body.passCount).toBe(1);
     // Signed-in grade records progress.
     expect(upsert).toHaveBeenCalledOnce();
+  });
+
+  it('rejects oversized code before grading (413)', async () => {
+    auth.mockResolvedValue(null);
+    getQuestionForGrade.mockResolvedValue(questionWith('EASY'));
+
+    const response = await gradeRequest('OUTPUT 1\n'.repeat(3000));
+    expect(response.status).toBe(413);
+    expect(grade).not.toHaveBeenCalled();
   });
 });
