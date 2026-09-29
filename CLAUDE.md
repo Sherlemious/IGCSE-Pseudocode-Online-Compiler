@@ -2,21 +2,22 @@
 
 ## Stack
 
-- **Next.js 15** (App Router) + TypeScript
+- **Next.js 16** (App Router) + TypeScript
 - **Tailwind CSS** — editor/UI default is One Dark Pro (`#282C34` bg, `#61AFEF` primary). Brand identity (logo, OG, email, 404) lives in `src/shared/brand/` and uses examiner red `#E5533D` on ink `#111726` / paper `#F3EEE3`. Do not restyle the editor with brand colours.
 - **CodeMirror 6** — editor with custom pseudocode language extension
 - **antlr4ng v3** — ANTLR4 parser for pseudocode
 - **Prisma** + **PostgreSQL** (Neon) — database ORM
-- **NextAuth.js v5** — auth (Google OAuth, GitHub OAuth, email/password)
+- **NextAuth.js v5** — auth (Google OAuth, email/password; the GitHub provider is commented out)
 - **Resend** — transactional email
 - **PostHog** — analytics (project: `pseudocode-compiler.sherlemious.com`)
-- **tsconfig**: `strict`, `noUnusedLocals`, `noUnusedParameters`
+- **tsconfig**: `strict`, `noFallthroughCasesInSwitch`. Unused locals/params are an ESLint error (`@typescript-eslint/no-unused-vars`, `_`-prefix to opt out) rather than tsconfig flags, which would also hit the generated parser
+- **CI** (`.github/workflows/ci.yml`): `tsc --noEmit`, `npm run lint`, `npm test` on every push to main and every PR. `next build` runs on Vercel
 
 ## Architecture
 
 Modular monolith. `src/app/` is a thin routing layer (pages + API route handlers). Product code lives in `src/modules/<domain>/`. Cross-cutting UI and infra live in `src/shared/`. The interpreter is a language runtime, not a Next.js feature — it must not import PostHog, Prisma, auth, or billing.
 
-**Client-side interpreter** — pseudocode is parsed and executed entirely in the browser. No server round-trip for running code. The ANTLR4 lexer/parser runs in a Web Worker context and the tree-walking interpreter is fully async to support `INPUT` pausing. Product telemetry is injected via `setInterpreterCapture`.
+**Client-side interpreter** — pseudocode is parsed and executed entirely in the browser. No server round-trip for running code. Parsing and execution run on the main thread (there is no Web Worker yet); the tree-walking interpreter is fully async and yields every ~16 ms so the page stays responsive and `INPUT` can pause it. The terminal keeps the first `MAX_TERMINAL_LINES` (10,000) output lines per run. Product telemetry is injected via `setInterpreterCapture`.
 
 **Next.js backend** — API routes handle auth, practice/exam CRUD, AI grading, and nudge state. Database access goes through Prisma (`src/shared/db.ts`).
 
@@ -340,6 +341,6 @@ Copy `app/.env.example` → `app/.env`. Required:
 - `DATABASE_URL`, `DIRECT_URL` — Neon PostgreSQL
 - `AUTH_SECRET`, `BETTER_AUTH_SECRET` — session signing
 - `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET` — Google OAuth
-- `AUTH_GITHUB_ID` / `AUTH_GITHUB_SECRET` — GitHub OAuth
+- `AUTH_GITHUB_ID` / `AUTH_GITHUB_SECRET` — GitHub OAuth (unused while the provider is commented out)
 - `RESEND_API_KEY` — email (optional in dev)
 - `NEXT_PUBLIC_POSTHOG_KEY` — analytics (leave blank in dev to disable)

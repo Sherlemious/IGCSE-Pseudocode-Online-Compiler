@@ -28,6 +28,12 @@ const eslintConfig = [
   {
     rules: {
       'react-hooks/set-state-in-effect': 'off',
+      // Enforced here rather than via tsconfig noUnused*, which would also
+      // flag the ANTLR-generated parser (not editable, ignored by ESLint).
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        { argsIgnorePattern: '^_', varsIgnorePattern: '^_', caughtErrors: 'none', ignoreRestSiblings: true },
+      ],
     },
   },
   {
@@ -54,6 +60,10 @@ const eslintConfig = [
             {
               name: 'next/navigation',
               message: 'Interpreter is a language runtime, not a Next.js module.',
+            },
+            {
+              name: '@prisma/client',
+              message: 'Interpreter is a language runtime; it cannot touch the database.',
             },
           ],
           patterns: [
@@ -112,6 +122,23 @@ const eslintConfig = [
                   'Shared primitives cannot import product modules. Interpreter tokens are the exception — import from @/modules/interpreter.',
               },
             ]),
+        },
+      ],
+    },
+  },
+  {
+    // Feature pages reuse the editor kit (compiler/editor), not the playground page.
+    files: ['src/modules/{practice,exams,learn}/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['@/modules/compiler/CompilerPage'],
+              message: 'Import the editor kit from @/modules/compiler/editor, not the playground page.',
+            },
+          ],
         },
       ],
     },
