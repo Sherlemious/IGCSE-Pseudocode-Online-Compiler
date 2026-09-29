@@ -12,7 +12,7 @@ import DeploymentNotice from '@/modules/telemetry/DeploymentNotice';
 import OnboardingNudges from '@/modules/onboarding/OnboardingNudges';
 import OnboardingGate from '@/modules/onboarding/OnboardingGate';
 import { CommandProvider } from '@/shared/ui/CommandPalette';
-import GlobalCommands from '@/shared/ui/GlobalCommands';
+import GlobalCommands from '@/shared/layout/GlobalCommands';
 import KeyboardShortcutsModal from '@/shared/ui/KeyboardShortcutsModal';
 import CheatSheetModal from '@/shared/ui/CheatSheetModal';
 import ReportBugModal from '@/modules/feedback/ReportBugModal';

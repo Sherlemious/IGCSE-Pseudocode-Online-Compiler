@@ -8,9 +8,11 @@ export const ADMIN_DRAWER_EXIT_MS = 340;
 
 /** Keep the last non-null value so a drawer can animate out after its item is cleared. */
 export function useHeld<T>(value: T | null | undefined): T | null {
-  const ref = useRef<T | null>(value ?? null);
-  if (value != null) ref.current = value;
-  return value ?? ref.current;
+  const [held, setHeld] = useState<T | null>(value ?? null);
+  // Adjusting state while rendering is React's pattern for tracking a prop's
+  // last value; it re-renders once before committing.
+  if (value != null && value !== held) setHeld(value);
+  return value ?? held;
 }
 
 interface Props {
@@ -50,7 +52,9 @@ export default function AdminDrawer({
   const titleId = useId();
   const sheetRef = useRef<HTMLDivElement>(null);
   const onCloseRef = useRef(onClose);
-  onCloseRef.current = onClose;
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
 
   const [hydrated, setHydrated] = useState(false);
   const [shown, setShown] = useState(open);

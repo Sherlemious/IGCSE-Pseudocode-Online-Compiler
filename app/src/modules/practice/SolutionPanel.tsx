@@ -26,7 +26,7 @@ export default function SolutionPanel({ questionId, isSolved = false, attemptCou
   const [localIsSolved, setLocalIsSolved] = useState(isSolved);
   const [localAttemptCount, setLocalAttemptCount] = useState(attemptCount);
   const [copied, setCopied] = useState(false);
-  const [revealed, setRevealed] = useState<boolean>(() => {
+  const [, setRevealed] = useState<boolean>(() => {
     try {
       return localStorage.getItem(REVEALED_KEY(questionId)) === 'true';
     } catch {

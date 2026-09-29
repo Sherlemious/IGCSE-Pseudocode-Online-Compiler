@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { toast } from 'sonner';
 import { useTheme, themes, type PresetThemeId } from '@/theme';
-import { useRegisterCommands, type Command } from './CommandPalette';
+import { useRegisterCommands, type Command } from '@/shared/ui/CommandPalette';
 import { SITE_NAME, SITE_URL } from '@/shared/lib/seo';
 import { OPEN_BUG_REPORT_EVENT, OPEN_CHEATSHEET_EVENT } from '@/shared/lib/events';
 import { sessionShowsClasses } from '@/modules/classes/visibility';
