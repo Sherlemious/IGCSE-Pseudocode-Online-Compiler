@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useRef, type CSSProperties, type ReactNode } from 'react';
 import Link from 'next/link';
 import { ArrowRight, Check, Crown, Flag, Lock } from 'lucide-react';
-import { IGCSE_PAPER_2 } from './curriculum';
 import { lessonHref } from './path';
 import {
   curveThrough,
@@ -23,17 +22,13 @@ import {
   type ProgressMap,
 } from './progress';
 import { captureLearn, learnLessonProps, learnLevelProps } from './telemetry';
-import type { LearnLesson, LearnLevel } from './types';
-
-const LAYOUT = layoutPath(IGCSE_PAPER_2);
-const SECTION_PATHS = LAYOUT.sections.map((section) =>
-  curveThrough(section.stops.map((stop) => ({ x: stop.x, y: stop.y }))),
-);
+import type { LearnCourse, LearnLesson, LearnLevel } from './types';
 
 type NodeState = 'complete' | 'current' | 'open' | 'gated' | 'paywall';
 type BannerState = 'complete' | 'current' | 'upcoming';
 
 type Props = {
+  course: LearnCourse;
   progress: ProgressMap;
   nextLessonId: string | null;
   ready: boolean;
@@ -42,19 +37,25 @@ type Props = {
 };
 
 export default function LearnPathMap({
+  course,
   progress,
   nextLessonId,
   ready,
   completedCount,
   premiumAccess,
 }: Props) {
+  const layout = useMemo(() => layoutPath(course), [course]);
+  const sectionPaths = useMemo(
+    () => layout.sections.map((section) => curveThrough(section.stops.map((stop) => ({ x: stop.x, y: stop.y })))),
+    [layout],
+  );
   const completedIds = useMemo(() => {
     const ids = new Set<string>();
-    for (const stop of LAYOUT.stops) {
+    for (const stop of layout.stops) {
       if (isComplete(progress, stop.lesson.id)) ids.add(stop.lesson.id);
     }
     return ids;
-  }, [progress]);
+  }, [layout, progress]);
 
   // Bring a returning student to their next node. First-time visitors keep the hero.
   const scrolled = useRef(false);
@@ -70,9 +71,10 @@ export default function LearnPathMap({
     <>
       {/* Phones: level banner + rail list, every lesson titled and tappable. */}
       <div className="md:hidden px-4 pb-12 space-y-10">
-        {LAYOUT.sections.map((section) => (
+        {layout.sections.map((section) => (
           <MobileSection
             key={section.level.slug}
+            course={course}
             section={section}
             progress={progress}
             completedIds={completedIds}
@@ -80,26 +82,26 @@ export default function LearnPathMap({
             premiumAccess={premiumAccess}
           />
         ))}
-        <Roadmap levels={LAYOUT.ahead} />
+        <Roadmap levels={layout.ahead} />
       </div>
 
       {/* Desktop: the winding map. */}
       <div className="hidden md:block max-w-3xl mx-auto px-6 pb-16">
-        <nav aria-label="Paper 2 Path" className="relative" style={{ height: LAYOUT.height }}>
+        <nav aria-label={course.title} className="relative" style={{ height: layout.height }}>
           <svg
             className="absolute inset-0 w-full h-full pointer-events-none"
-            viewBox={`0 0 ${LAYOUT.width} ${LAYOUT.height}`}
+            viewBox={`0 0 ${layout.width} ${layout.height}`}
             preserveAspectRatio="none"
             aria-hidden="true"
           >
             <defs>
-              <linearGradient id="learn-path-lit" x1="0" y1="0" x2="0" y2="1">
+              <linearGradient id={`learn-path-lit-${course.id}`} x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stopColor="var(--color-success)" />
                 <stop offset="100%" stopColor="var(--color-primary)" />
               </linearGradient>
             </defs>
-            {LAYOUT.sections.map((section, i) => {
-              const d = SECTION_PATHS[i]!;
+            {layout.sections.map((section, i) => {
+              const d = sectionPaths[i]!;
               const lit = progressAlongPath(section.stops, completedIds);
               return (
                 <g key={section.level.slug}>
@@ -118,7 +120,7 @@ export default function LearnPathMap({
                       <path
                         d={d}
                         fill="none"
-                        stroke="url(#learn-path-lit)"
+                        stroke={`url(#learn-path-lit-${course.id})`}
                         strokeWidth="14"
                         strokeLinecap="round"
                         opacity="0.16"
@@ -129,7 +131,7 @@ export default function LearnPathMap({
                       <path
                         d={d}
                         fill="none"
-                        stroke="url(#learn-path-lit)"
+                        stroke={`url(#learn-path-lit-${course.id})`}
                         strokeWidth="6"
                         strokeLinecap="round"
                         pathLength={1}
@@ -143,9 +145,10 @@ export default function LearnPathMap({
             })}
           </svg>
 
-          {LAYOUT.sections.map((section) => (
+          {layout.sections.map((section) => (
             <DesktopSection
               key={section.level.slug}
+              course={course}
               section={section}
               progress={progress}
               nextLessonId={nextLessonId}
@@ -153,7 +156,7 @@ export default function LearnPathMap({
             />
           ))}
         </nav>
-        <Roadmap levels={LAYOUT.ahead} />
+        <Roadmap levels={layout.ahead} />
       </div>
     </>
   );
@@ -162,6 +165,7 @@ export default function LearnPathMap({
 /* ── State helpers ─────────────────────────────────────────── */
 
 function nodeState(
+  course: LearnCourse,
   lesson: LearnLesson,
   level: LearnLevel,
   progress: ProgressMap,
@@ -171,7 +175,7 @@ function nodeState(
   if (isComplete(progress, lesson.id)) return 'complete';
   if (!level.free && !premiumAccess) return 'paywall';
   if (lesson.id === nextLessonId) return 'current';
-  if (isLessonUnlocked(IGCSE_PAPER_2, lesson, progress, { premium: premiumAccess })) return 'open';
+  if (isLessonUnlocked(course, lesson, progress, { premium: premiumAccess })) return 'open';
   return 'gated';
 }
 
@@ -185,11 +189,13 @@ function bannerState(level: LearnLevel, progress: ProgressMap, nextLessonId: str
 /* ── Desktop section: watermark + banner + nodes ───────────── */
 
 function DesktopSection({
+  course,
   section,
   progress,
   nextLessonId,
   premiumAccess,
 }: {
+  course: LearnCourse;
   section: LevelSection;
   progress: ProgressMap;
   nextLessonId: string | null;
@@ -238,7 +244,8 @@ function DesktopSection({
             <LessonNode
               level={level}
               lesson={stop.lesson}
-              state={nodeState(stop.lesson, level, progress, nextLessonId, premiumAccess)}
+              basePath={course.basePath}
+              state={nodeState(course, stop.lesson, level, progress, nextLessonId, premiumAccess)}
               size="lg"
               labelSide={stop.labelSide}
               bubble
@@ -253,12 +260,14 @@ function DesktopSection({
 /* ── Mobile section: banner + rail list ────────────────────── */
 
 function MobileSection({
+  course,
   section,
   progress,
   completedIds,
   nextLessonId,
   premiumAccess,
 }: {
+  course: LearnCourse;
   section: LevelSection;
   progress: ProgressMap;
   completedIds: Set<string>;
@@ -295,7 +304,8 @@ function MobileSection({
               <LessonNode
                 level={section.level}
                 lesson={stop.lesson}
-                state={nodeState(stop.lesson, section.level, progress, nextLessonId, premiumAccess)}
+                basePath={course.basePath}
+                state={nodeState(course, stop.lesson, section.level, progress, nextLessonId, premiumAccess)}
                 size="sm"
                 row
               />
@@ -449,6 +459,7 @@ const NODE_FACE: Record<NodeState, string> = {
 function LessonNode({
   level,
   lesson,
+  basePath,
   state,
   size,
   labelSide = 'right',
@@ -457,6 +468,7 @@ function LessonNode({
 }: {
   level: LearnLevel;
   lesson: LearnLesson;
+  basePath: string;
   state: NodeState;
   size: 'sm' | 'lg';
   labelSide?: Side;
@@ -469,7 +481,7 @@ function LessonNode({
   const Icon = meta.icon;
   const boss = isBossLesson(lesson);
   const quiz = lesson.type === 'quiz';
-  const href = lessonHref(level, lesson);
+  const href = lessonHref(level, lesson, basePath);
   const gated = state === 'gated';
   const paywalled = state === 'paywall';
   const lockedLook = gated || paywalled;

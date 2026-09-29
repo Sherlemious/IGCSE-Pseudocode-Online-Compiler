@@ -1,4 +1,9 @@
-export const COURSE_ID = 'igcse-paper-2';
+export const IGCSE_COURSE_ID = 'igcse-paper-2';
+export const ALEVEL_COURSE_ID = 'alevel-9618';
+/** IGCSE Paper 2 path. Kept as the default so existing progress keys stay put. */
+export const COURSE_ID = IGCSE_COURSE_ID;
+
+export type CourseId = typeof IGCSE_COURSE_ID | typeof ALEVEL_COURSE_ID;
 
 export type LessonType = 'run' | 'mutate' | 'grade' | 'quiz';
 
@@ -57,8 +62,15 @@ export type LearnLevel = {
 };
 
 export type LearnCourse = {
-  id: typeof COURSE_ID;
+  id: CourseId;
+  /** Lesson URLs are `${basePath}/${level}/${lesson}`. No trailing slash. */
+  basePath: string;
+  /** Short exam line above the title. */
+  kicker: string;
   title: string;
   subtitle: string;
+  /** Shown when every playable lesson on this path is done. */
+  completeNote: string;
+  otherPath: { href: string; label: string };
   levels: LearnLevel[];
 };

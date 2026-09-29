@@ -1,36 +1,46 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { ArrowRight, Crown, Play, Route, Trophy } from 'lucide-react';
-import { IGCSE_PAPER_2 } from './curriculum';
 import LearnPathMap from './LearnPathMap';
 import { findLesson, flattenLessons } from './path';
 import { formatMinutes } from './pathTheme';
 import { isComplete, loadProgress, nextIncomplete, type ProgressMap } from './progress';
 import { hydrateLearnProgress } from './progressSync';
 import { captureLearn, learnCourseProps, learnLessonProps } from './telemetry';
-
-const PLAYABLE = flattenLessons(IGCSE_PAPER_2).filter((item) => item.lesson.playable);
-const PLAYABLE_MINUTES = PLAYABLE.reduce((sum, item) => sum + item.lesson.minutes, 0);
-const FREE_LEVELS = IGCSE_PAPER_2.levels.filter((level) => level.free);
-const FREE_RANGE =
-  FREE_LEVELS.length > 0
-    ? `Levels ${FREE_LEVELS[0]!.number}–${FREE_LEVELS[FREE_LEVELS.length - 1]!.number}`
-    : null;
+import type { LearnCourse } from './types';
 
 const RING = 76;
 const RING_STROKE = 5;
 const RING_R = (RING - RING_STROKE) / 2;
 const RING_C = 2 * Math.PI * RING_R;
 
-const FREE_LESSONS = flattenLessons(IGCSE_PAPER_2).filter(
-  (item) => item.level.free && item.lesson.playable,
-);
-
-export default function LearnLadder({ premiumAccess: initialPremium }: { premiumAccess: boolean }) {
+export default function LearnLadder({
+  course,
+  premiumAccess: initialPremium,
+}: {
+  course: LearnCourse;
+  premiumAccess: boolean;
+}) {
+  const playable = useMemo(
+    () => flattenLessons(course).filter((item) => item.lesson.playable),
+    [course],
+  );
+  const playableMinutes = playable.reduce((sum, item) => sum + item.lesson.minutes, 0);
+  const freeLevels = course.levels.filter((level) => level.free);
+  const freeRange =
+    freeLevels.length > 0
+      ? `Levels ${freeLevels[0]!.number}–${freeLevels[freeLevels.length - 1]!.number}`
+      : null;
+  const paidLevels = course.levels.filter((level) => !level.free);
+  const paidRange =
+    paidLevels.length > 0
+      ? `Levels ${paidLevels[0]!.number}–${paidLevels[paidLevels.length - 1]!.number}`
+      : null;
+  const freeLessons = playable.filter((item) => item.level.free);
   const searchParams = useSearchParams();
   const { status } = useSession();
   const [progress, setProgress] = useState<ProgressMap>({});
@@ -42,17 +52,17 @@ export default function LearnLadder({ premiumAccess: initialPremium }: { premium
     if (status === 'loading') return;
     let cancelled = false;
     void (async () => {
-      const hydrated = status === 'authenticated' ? await hydrateLearnProgress() : null;
+      const hydrated = status === 'authenticated' ? await hydrateLearnProgress(course.id) : null;
       if (cancelled) return;
-      const map = hydrated?.progress ?? loadProgress();
+      const map = hydrated?.progress ?? loadProgress(course.id);
       setProgress(map);
       if (typeof hydrated?.premiumAccess === 'boolean') setPremiumAccess(hydrated.premiumAccess);
       setReady(true);
       if (opened.current) return;
       opened.current = true;
-      const next = nextIncomplete(IGCSE_PAPER_2, map);
+      const next = nextIncomplete(course, map);
       captureLearn('learn_opened', {
-        ...learnCourseProps(map),
+        ...learnCourseProps(map, course),
         from: searchParams.get('from') ?? 'direct',
         signed_in: status === 'authenticated',
         next_lesson: next ? `${next.levelSlug}/${next.lessonSlug}` : null,
@@ -61,28 +71,30 @@ export default function LearnLadder({ premiumAccess: initialPremium }: { premium
     return () => {
       cancelled = true;
     };
-  }, [searchParams, status]);
+  }, [course, searchParams, status]);
 
   useEffect(() => {
-    const onChange = () => setProgress(loadProgress());
+    const onChange = () => setProgress(loadProgress(course.id));
     window.addEventListener('learn-progress-changed', onChange);
     window.addEventListener('storage', onChange);
     return () => {
       window.removeEventListener('learn-progress-changed', onChange);
       window.removeEventListener('storage', onChange);
     };
-  }, []);
+  }, [course.id]);
 
   // Computed from whatever progress we have so the first node reads as "current"
   // before hydration for a fresh visitor; the Continue card waits for `ready`.
-  const next = nextIncomplete(IGCSE_PAPER_2, progress);
-  const nextFound = next ? findLesson(IGCSE_PAPER_2, next.levelSlug, next.lessonSlug) : null;
-  const nextHref = nextFound ? `/learn/${nextFound.level.slug}/${nextFound.lesson.slug}` : null;
+  const next = nextIncomplete(course, progress);
+  const nextFound = next ? findLesson(course, next.levelSlug, next.lessonSlug) : null;
+  const nextHref = nextFound
+    ? `${course.basePath}/${nextFound.level.slug}/${nextFound.lesson.slug}`
+    : null;
   const allPlayableDone = ready && !next;
-  const freeDone = FREE_LESSONS.every((item) => isComplete(progress, item.lesson.id));
+  const freeDone = freeLessons.every((item) => isComplete(progress, item.lesson.id));
   const showUpgrade = ready && freeDone && !premiumAccess && !allPlayableDone;
-  const completed = PLAYABLE.filter((item) => isComplete(progress, item.lesson.id)).length;
-  const pct = PLAYABLE.length > 0 ? Math.round((completed / PLAYABLE.length) * 100) : 0;
+  const completed = playable.filter((item) => isComplete(progress, item.lesson.id)).length;
+  const pct = playable.length > 0 ? Math.round((completed / playable.length) * 100) : 0;
   const ringOffset = RING_C * (1 - pct / 100);
 
   return (
@@ -101,25 +113,30 @@ export default function LearnLadder({ premiumAccess: initialPremium }: { premium
           <div className="min-w-0">
             <div className="mono-label text-primary/80 mb-2.5 flex items-center gap-1.5">
               <Route size={12} />
-              IGCSE 0478 / 0984 / 2210 · Paper 2
+              {course.kicker}
             </div>
             <h1 className="display-serif text-[2rem] sm:text-[2.75rem] leading-[1.05] font-semibold mb-3">
-              {IGCSE_PAPER_2.title}
+              {course.title}
             </h1>
             <p className="text-sm sm:text-[15px] text-dark-text max-w-xl leading-relaxed">
-              {IGCSE_PAPER_2.subtitle}{' '}
-              <Link href="/tutorial" className="text-primary hover:underline">
-                Written Cambridge O Level tutorial
+              {course.subtitle}{' '}
+              {course.basePath === '/learn' && (
+                <Link href="/tutorial" className="text-primary hover:underline">
+                  Written Cambridge O Level tutorial
+                </Link>
+              )}
+              {course.basePath === '/learn' ? '.' : null}{' '}
+              <Link href={course.otherPath.href} className="text-primary hover:underline">
+                {course.otherPath.label}
               </Link>
-              .
             </p>
           </div>
 
           <div className="hidden sm:flex shrink-0 items-center gap-5 pt-1 animate-fade-in-up">
             <dl className="flex flex-col gap-1.5 text-right">
-              <Stat value={String(PLAYABLE.length)} label="lessons live" />
-              <Stat value={formatMinutes(PLAYABLE_MINUTES)} label="to finish" />
-              {FREE_RANGE && <Stat value={FREE_RANGE} label="free" />}
+              <Stat value={String(playable.length)} label="lessons live" />
+              <Stat value={formatMinutes(playableMinutes)} label="to finish" />
+              {freeRange && <Stat value={freeRange} label="free" />}
             </dl>
             <div className="relative shrink-0 animate-scale-in" style={{ width: RING, height: RING }}>
               <svg width={RING} height={RING} className="-rotate-90">
@@ -149,7 +166,7 @@ export default function LearnLadder({ premiumAccess: initialPremium }: { premium
                   {pct}%
                 </span>
                 <span className="text-[9px] uppercase tracking-wider text-dark-text mt-1 tabular-nums">
-                  {completed}/{PLAYABLE.length}
+                  {completed}/{playable.length}
                 </span>
               </div>
             </div>
@@ -157,8 +174,8 @@ export default function LearnLadder({ premiumAccess: initialPremium }: { premium
         </div>
 
         <p className="sm:hidden mt-4 font-mono text-[11px] text-dark-text tabular-nums">
-          <span className="text-light-text font-semibold">{completed}/{PLAYABLE.length}</span> done ·{' '}
-          {formatMinutes(PLAYABLE_MINUTES)} to finish{FREE_RANGE ? ` · ${FREE_RANGE} free` : ''}
+          <span className="text-light-text font-semibold">{completed}/{playable.length}</span> done ·{' '}
+          {formatMinutes(playableMinutes)} to finish{freeRange ? ` · ${freeRange} free` : ''}
         </p>
 
         {ready && nextHref && nextFound && (
@@ -186,7 +203,7 @@ export default function LearnLadder({ premiumAccess: initialPremium }: { premium
             <span className="hidden sm:flex flex-col items-end shrink-0 font-mono text-[11px] tabular-nums leading-tight">
               <span className="text-dark-text">{nextFound.lesson.minutes} min</span>
               <span className="text-dark-text/70">
-                {completed}/{PLAYABLE.length}
+                {completed}/{playable.length}
               </span>
             </span>
             <ArrowRight
@@ -211,7 +228,7 @@ export default function LearnLadder({ premiumAccess: initialPremium }: { premium
 
         {status === 'unauthenticated' && (
           <p className="mt-3 text-xs text-dark-text">
-            <Link href="/auth/signin?callbackUrl=/learn" className="text-primary hover:underline">
+            <Link href={`/auth/signin?callbackUrl=${encodeURIComponent(course.basePath)}`} className="text-primary hover:underline">
               Sign in
             </Link>{' '}
             to save progress across devices.
@@ -225,7 +242,7 @@ export default function LearnLadder({ premiumAccess: initialPremium }: { premium
             </span>
             <div className="min-w-0">
               <div className="mono-label text-success mb-0.5">Path complete</div>
-              <div className="text-sm text-light-text">All ten levels done. Rewrite a Paper 2 algorithm on paper next — the hall will not show a syntax error.</div>
+              <div className="text-sm text-light-text">{course.completeNote}</div>
             </div>
           </div>
         )}
@@ -236,8 +253,10 @@ export default function LearnLadder({ premiumAccess: initialPremium }: { premium
               <Crown size={16} />
             </span>
             <div className="min-w-0 flex-1">
-              <div className="mono-label text-warning mb-0.5">Levels 1–3 complete</div>
-              <div className="text-sm text-light-text">Unlock Levels 4–10 with a Student plan, or join a class from a teacher who has one.</div>
+              <div className="mono-label text-warning mb-0.5">{freeRange} complete</div>
+              <div className="text-sm text-light-text">
+                Unlock {paidRange} with a Student plan, or join a class from a teacher who has one.
+              </div>
             </div>
             <Link
               href="/pricing?view=student"
@@ -250,6 +269,7 @@ export default function LearnLadder({ premiumAccess: initialPremium }: { premium
       </div>
 
       <LearnPathMap
+        course={course}
         progress={progress}
         nextLessonId={nextFound?.lesson.id ?? null}
         ready={ready}

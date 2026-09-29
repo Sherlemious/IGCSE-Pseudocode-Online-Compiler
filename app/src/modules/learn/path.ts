@@ -1,13 +1,13 @@
 import type { LearnCourse, LearnLesson, LearnLevel } from './types';
 
-export function lessonHref(level: LearnLevel, lesson: LearnLesson): string {
-  return `/learn/${level.slug}/${lesson.slug}`;
+export function lessonHref(level: LearnLevel, lesson: LearnLesson, basePath = '/learn'): string {
+  return `${basePath}/${level.slug}/${lesson.slug}`;
 }
 
 /** Where a level opens: its first playable lesson (always unlocked for anyone with access). */
-export function levelStartHref(level: LearnLevel): string | null {
+export function levelStartHref(level: LearnLevel, basePath = '/learn'): string | null {
   const first = level.lessons.find((lesson) => lesson.playable);
-  return first ? lessonHref(level, first) : null;
+  return first ? lessonHref(level, first, basePath) : null;
 }
 
 export function flattenLessons(course: LearnCourse): { level: LearnLevel; lesson: LearnLesson }[] {

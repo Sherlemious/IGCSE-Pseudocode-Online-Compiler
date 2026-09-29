@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { checkLessonCode } from './check';
-import { IGCSE_PAPER_2 } from './curriculum';
+import { ALEVEL_9618, IGCSE_PAPER_2 } from './curriculum';
 import { findLesson, flattenLessons, lessonHref, nextLesson, previousLesson } from './path';
 
 describe('IGCSE Paper 2 curriculum', () => {
@@ -77,5 +77,63 @@ describe('IGCSE Paper 2 curriculum', () => {
     expect(starter.ok).toBe(false);
     const fixed = await checkLessonCode(lesson, lesson.solutionCode ?? '');
     expect(fixed.ok, fixed.message).toBe(true);
+  });
+});
+
+describe('AS & A Level 9618 curriculum', () => {
+  it('does not reuse an IGCSE lesson id', () => {
+    const igcse = new Set(flattenLessons(IGCSE_PAPER_2).map(({ lesson }) => lesson.id));
+    for (const { lesson } of flattenLessons(ALEVEL_9618)) {
+      expect(igcse.has(lesson.id), lesson.id).toBe(false);
+    }
+  });
+
+  it('has eight playable levels, with 1–3 free', () => {
+    expect(ALEVEL_9618.levels).toHaveLength(8);
+    expect(ALEVEL_9618.basePath).toBe('/learn/9618');
+    for (const level of ALEVEL_9618.levels) {
+      expect(level.playable).toBe(true);
+      expect(level.free).toBe(level.number <= 3);
+      expect(level.lessons.every((lesson) => lesson.playable)).toBe(true);
+    }
+    const ids = ALEVEL_9618.levels.flatMap((level) => level.lessons.map((lesson) => lesson.id));
+    const slugs = flattenLessons(ALEVEL_9618).map(({ level, lesson }) => `${level.slug}/${lesson.slug}`);
+    expect(new Set(ids).size).toBe(ids.length);
+    expect(new Set(slugs).size).toBe(slugs.length);
+  });
+
+  it('links the first record lesson under /learn/9618', () => {
+    const found = findLesson(ALEVEL_9618, '1', 'record');
+    expect(found?.lesson.id).toBe('as1.1');
+    expect(lessonHref(found!.level, found!.lesson, ALEVEL_9618.basePath)).toBe('/learn/9618/1/record');
+    expect(nextLesson(ALEVEL_9618, 'as1.1')?.lesson.id).toBe('as1.2');
+    expect(previousLesson(ALEVEL_9618, 'as1.1')).toBeNull();
+  });
+
+  it('accepts solutionCode for every non-quiz lesson', async () => {
+    const playable = flattenLessons(ALEVEL_9618);
+    expect(playable.length).toBe(47);
+
+    for (const { lesson } of playable) {
+      if (lesson.type === 'quiz') {
+        expect(lesson.quiz?.length).toBeGreaterThan(0);
+        for (const item of lesson.quiz ?? []) {
+          expect(item.options.some((option) => option.id === item.correctId)).toBe(true);
+        }
+        continue;
+      }
+      expect(lesson.solutionCode, `${lesson.id} needs solutionCode`).toBeTruthy();
+      const result = await checkLessonCode(lesson, lesson.solutionCode ?? '');
+      expect(result.ok, `${lesson.id}: ${result.message}`).toBe(true);
+    }
+  });
+
+  it('rejects mutate starters until the student edits them', async () => {
+    const mutates = flattenLessons(ALEVEL_9618).filter(({ lesson }) => lesson.type === 'mutate');
+    expect(mutates.length).toBeGreaterThan(0);
+    for (const { lesson } of mutates) {
+      const starter = await checkLessonCode(lesson, lesson.starterCode ?? '');
+      expect(starter.ok, `${lesson.id} starter already passes`).toBe(false);
+    }
   });
 });

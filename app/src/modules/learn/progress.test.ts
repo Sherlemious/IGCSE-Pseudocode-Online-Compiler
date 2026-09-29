@@ -46,8 +46,12 @@ function stubLevel(number: number, free: boolean, lessons: LearnLesson[]): Learn
 /** Tiny path: free a.1 → a.2 (insert) → a.3, then paid b.1. */
 const FIXTURE: LearnCourse = {
   id: COURSE_ID,
+  basePath: '/learn',
+  kicker: 'fixture',
   title: 'fixture',
   subtitle: '',
+  completeNote: 'done',
+  otherPath: { href: '/learn/9618', label: '9618' },
   levels: [
     stubLevel(1, true, [stubLesson('a.1', 'first'), stubLesson('a.2', 'inserted'), stubLesson('a.3', 'later')]),
     stubLevel(2, false, [stubLesson('b.1', 'paid')]),

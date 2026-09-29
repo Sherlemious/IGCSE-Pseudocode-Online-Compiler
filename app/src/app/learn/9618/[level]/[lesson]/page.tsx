@@ -2,8 +2,8 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { PREMIUM_GATING_ENABLED } from '@/modules/billing/featureFlags';
 import LearnPlayer from '@/modules/learn/LearnPlayer';
-import { IGCSE_PAPER_2 } from '@/modules/learn/curriculum';
-import { findLesson, flattenLessons } from '@/modules/learn/path';
+import { ALEVEL_9618 } from '@/modules/learn/curriculum';
+import { findLesson, flattenLessons, lessonHref } from '@/modules/learn/path';
 import { SHARE_IMAGE, SITE_URL, truncateDescription } from '@/shared/lib/seo';
 
 interface Props {
@@ -11,7 +11,7 @@ interface Props {
 }
 
 export function generateStaticParams() {
-  return flattenLessons(IGCSE_PAPER_2).map(({ level, lesson }) => ({
+  return flattenLessons(ALEVEL_9618).map(({ level, lesson }) => ({
     level: level.slug,
     lesson: lesson.slug,
   }));
@@ -19,22 +19,20 @@ export function generateStaticParams() {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { level: levelSlug, lesson: lessonSlug } = await params;
-  const found = findLesson(IGCSE_PAPER_2, levelSlug, lessonSlug);
+  const found = findLesson(ALEVEL_9618, levelSlug, lessonSlug);
   if (!found) {
     return { title: 'Lesson', robots: { index: false, follow: false } };
   }
   const title = `${found.lesson.title} · Level ${found.level.number} ${found.level.name}`;
-  const path = `/learn/${found.level.slug}/${found.lesson.slug}`;
-  const description = truncateDescription(
-    `${found.lesson.why} Cambridge O Level 2210 and IGCSE 0478 Paper 2.`,
-  );
+  const path = lessonHref(found.level, found.lesson, ALEVEL_9618.basePath);
+  const description = truncateDescription(`${found.lesson.why} Cambridge International 9618.`, 160);
   return {
-    title: { absolute: `${title} | IGCSE & O Level Paper 2` },
+    title: { absolute: `${title} | AS & A Level 9618` },
     description,
     alternates: { canonical: path },
     robots: found.lesson.playable ? undefined : { index: false, follow: false },
     openGraph: {
-      title: `${title} | IGCSE & O Level Paper 2`,
+      title: `${title} | AS & A Level 9618`,
       description,
       url: path,
       type: 'article',
@@ -43,23 +41,24 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-export default async function LearnLessonPage({ params }: Props) {
+export default async function ALevelLessonPage({ params }: Props) {
   const { level: levelSlug, lesson: lessonSlug } = await params;
-  const found = findLesson(IGCSE_PAPER_2, levelSlug, lessonSlug);
+  const found = findLesson(ALEVEL_9618, levelSlug, lessonSlug);
   if (!found) notFound();
 
+  const path = lessonHref(found.level, found.lesson, ALEVEL_9618.basePath);
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'LearningResource',
     name: found.lesson.title,
     description: found.lesson.why,
-    url: `${SITE_URL}/learn/${found.level.slug}/${found.lesson.slug}`,
-    educationalLevel: ['Cambridge O Level 2210', 'IGCSE 0478'],
+    url: `${SITE_URL}${path}`,
+    educationalLevel: ['Cambridge International AS Level 9618', 'Cambridge International A Level 9618'],
     isAccessibleForFree: found.level.free,
     isPartOf: {
       '@type': 'Course',
-      name: IGCSE_PAPER_2.title,
-      url: `${SITE_URL}/learn`,
+      name: ALEVEL_9618.title,
+      url: `${SITE_URL}/learn/9618`,
     },
   };
 
@@ -67,7 +66,7 @@ export default async function LearnLessonPage({ params }: Props) {
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <LearnPlayer
-        course={IGCSE_PAPER_2}
+        course={ALEVEL_9618}
         level={found.level}
         lesson={found.lesson}
         premiumAccess={!PREMIUM_GATING_ENABLED}

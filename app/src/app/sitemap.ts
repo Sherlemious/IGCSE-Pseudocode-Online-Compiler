@@ -1,6 +1,6 @@
 import type { MetadataRoute } from 'next';
 import { getQuestionCatalog } from '@/shared/lib/catalogCache';
-import { IGCSE_PAPER_2 } from '@/modules/learn/curriculum';
+import { ALEVEL_9618, IGCSE_PAPER_2 } from '@/modules/learn/curriculum';
 import { flattenLessons, lessonHref } from '@/modules/learn/path';
 import { SITE_URL } from '@/shared/lib/seo';
 import { BLOG_PATH, BLOG_POSTS, blogPageCount, blogPageHref, blogPostHref } from '@/modules/content/blog';
@@ -42,6 +42,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: now,
       changeFrequency: 'weekly',
       priority: 0.9,
+    },
+    {
+      url: `${SITE_URL}/learn/9618`,
+      lastModified: now,
+      changeFrequency: 'weekly',
+      priority: 0.8,
     },
     {
       url: `${SITE_URL}/tutorial`,
@@ -127,13 +133,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.3,
     },
     ...questionUrls,
-    ...flattenLessons(IGCSE_PAPER_2)
-      .filter(({ lesson }) => lesson.playable)
-      .map(({ level, lesson }) => ({
-        url: `${SITE_URL}${lessonHref(level, lesson)}`,
-        lastModified: now,
-        changeFrequency: 'monthly' as const,
-        priority: 0.6,
-      })),
+    ...[IGCSE_PAPER_2, ALEVEL_9618].flatMap((course) =>
+      flattenLessons(course)
+        .filter(({ lesson }) => lesson.playable)
+        .map(({ level, lesson }) => ({
+          url: `${SITE_URL}${lessonHref(level, lesson, course.basePath)}`,
+          lastModified: now,
+          changeFrequency: 'monthly' as const,
+          priority: 0.6,
+        })),
+    ),
   ];
 }

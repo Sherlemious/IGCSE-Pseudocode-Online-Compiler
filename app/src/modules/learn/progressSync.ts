@@ -12,9 +12,9 @@ export type RemoteLearnProgress = {
   premiumAccess: boolean;
 };
 
-export async function fetchLearnProgress(): Promise<RemoteLearnProgress | null> {
+export async function fetchLearnProgress(courseId: string = COURSE_ID): Promise<RemoteLearnProgress | null> {
   try {
-    const res = await fetch('/api/learn/progress');
+    const res = await fetch(`/api/learn/progress?course=${encodeURIComponent(courseId)}`);
     if (!res.ok) return null;
     const data = (await res.json()) as { lessons?: ProgressMap; premiumAccess?: boolean };
     if (!data.lessons || typeof data.lessons !== 'object') return { lessons: {}, premiumAccess: Boolean(data.premiumAccess) };
@@ -27,13 +27,16 @@ export async function fetchLearnProgress(): Promise<RemoteLearnProgress | null> 
   }
 }
 
-export async function persistLearnProgress(lessons: ProgressMap): Promise<void> {
+export async function persistLearnProgress(
+  lessons: ProgressMap,
+  courseId: string = COURSE_ID,
+): Promise<void> {
   if (Object.keys(lessons).length === 0) return;
   try {
     await fetch('/api/learn/progress', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ lessons }),
+      body: JSON.stringify({ courseId, lessons }),
     });
   } catch {
     /* localStorage remains the source of truth on this device */
@@ -44,12 +47,12 @@ export async function hydrateLearnProgress(
   courseId: string = COURSE_ID,
 ): Promise<{ progress: ProgressMap; premiumAccess: boolean | null }> {
   const local = loadProgress(courseId);
-  const remote = await fetchLearnProgress();
+  const remote = await fetchLearnProgress(courseId);
   if (!remote) return { progress: local, premiumAccess: null };
   const merged = mergeProgress(local, remote.lessons);
   saveProgress(merged, courseId);
   if (progressHasLocalExtras(local, remote.lessons)) {
-    void persistLearnProgress(merged);
+    void persistLearnProgress(merged, courseId);
   }
   return { progress: merged, premiumAccess: remote.premiumAccess };
 }

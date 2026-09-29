@@ -1,4 +1,5 @@
-import { COURSE_ID, type LearnCourse } from './types';
+import { ALEVEL_COURSE_ID, COURSE_ID, type LearnCourse } from './types';
+import { ALEVEL_9618 } from './curriculum/alevel';
 import { level4 } from './curriculum/level4';
 import { level5 } from './curriculum/level5';
 import { level6 } from './curriculum/level6';
@@ -7,11 +8,27 @@ import { level8 } from './curriculum/level8';
 import { level9 } from './curriculum/level9';
 import { level10 } from './curriculum/level10';
 
+export { ALEVEL_9618 };
+
+export function courseById(id: string): LearnCourse | null {
+  if (id === COURSE_ID) return IGCSE_PAPER_2;
+  if (id === ALEVEL_COURSE_ID) return ALEVEL_9618;
+  return null;
+}
+
 export const IGCSE_PAPER_2: LearnCourse = {
   id: COURSE_ID,
+  basePath: '/learn',
+  kicker: 'IGCSE 0478 / 0984 / 2210 · Paper 2',
   title: 'IGCSE & O Level Paper 2 Path',
   subtitle:
     'Ten levels of Cambridge O Level 2210 and IGCSE 0478 / 0984 pseudocode. No videos — you write, run, and check in the compiler.',
+  completeNote:
+    'All ten levels done. Rewrite a Paper 2 algorithm on paper next — the hall will not show a syntax error.',
+  otherPath: {
+    href: '/learn/9618',
+    label: 'Too easy? The AS & A Level 9618 path starts at records.',
+  },
   levels: [
     {
       number: 1,

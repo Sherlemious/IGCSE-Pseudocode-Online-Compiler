@@ -3,11 +3,9 @@ import { auth } from '@/modules/auth/auth';
 import { prisma } from '@/shared/db';
 import { rateLimit } from '@/shared/lib/rateLimit';
 import { resolveLearnPremiumAccess } from '@/modules/learn/access';
-import { IGCSE_PAPER_2 } from '@/modules/learn/curriculum';
+import { courseById } from '@/modules/learn/curriculum';
 import { paidPlayableLessonIds, playableLessonIdSet } from '@/modules/learn/path';
-import {
-  COURSE_ID,
-} from '@/modules/learn/types';
+import { COURSE_ID, type LearnCourse } from '@/modules/learn/types';
 import {
   mergeProgress,
   parseLearnProgressBody,
@@ -18,8 +16,25 @@ import {
 
 const PUT_RATE_LIMIT = 40;
 const PUT_RATE_WINDOW_MS = 60_000;
-const ALLOWED_LESSON_IDS = playableLessonIdSet(IGCSE_PAPER_2);
-const PAID_LESSON_IDS = paidPlayableLessonIds(IGCSE_PAPER_2);
+
+function allowedIds(course: LearnCourse): Set<string> {
+  return playableLessonIdSet(course);
+}
+
+function paidIds(course: LearnCourse): Set<string> {
+  return paidPlayableLessonIds(course);
+}
+
+function courseFromRequest(req: Request | undefined): LearnCourse | null {
+  const requested = req ? new URL(req.url).searchParams.get('course') : null;
+  return courseById(requested ?? COURSE_ID);
+}
+
+function courseIdFromBody(body: unknown): string | null {
+  if (!body || typeof body !== 'object' || !('courseId' in body)) return COURSE_ID;
+  const id = (body as { courseId: unknown }).courseId;
+  return typeof id === 'string' ? id : null;
+}
 
 const ROW_SELECT = {
   lessonId: true,
@@ -38,15 +53,20 @@ function completedAtDate(value: string): Date | null {
   return Number.isNaN(date.getTime()) ? new Date() : date;
 }
 
-export async function GET() {
+export async function GET(req?: Request) {
   const session = await auth();
   if (!session?.user?.id) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
+  const course = courseFromRequest(req);
+  if (!course) {
+    return NextResponse.json({ error: 'Unknown course' }, { status: 400 });
+  }
+
   const [rows, premiumAccess] = await Promise.all([
     prisma.learnProgress.findMany({
-      where: { userId: session.user.id, courseId: COURSE_ID },
+      where: { userId: session.user.id, courseId: course.id },
       select: ROW_SELECT,
     }),
     resolveLearnPremiumAccess(session.user),
@@ -82,16 +102,22 @@ export async function PUT(req: Request) {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }
 
-  const parsed = parseLearnProgressBody(body, ALLOWED_LESSON_IDS);
+  const requestedId = courseIdFromBody(body);
+  const course = requestedId ? courseById(requestedId) : null;
+  if (!course) {
+    return NextResponse.json({ error: 'Unknown course' }, { status: 400 });
+  }
+
+  const parsed = parseLearnProgressBody(body, allowedIds(course));
   if (!parsed.ok) {
     return NextResponse.json({ error: parsed.error }, { status: parsed.status });
   }
 
-  const paidIds = Object.keys(parsed.lessons).filter((id) => PAID_LESSON_IDS.has(id));
-  if (paidIds.length > 0 && !(await resolveLearnPremiumAccess(session.user))) {
+  const blocked = Object.keys(parsed.lessons).filter((id) => paidIds(course).has(id));
+  if (blocked.length > 0 && !(await resolveLearnPremiumAccess(session.user))) {
     return NextResponse.json(
       {
-        error: 'Levels 4–10 need a Student or teacher plan.',
+        error: 'Paid levels need a Student or teacher plan.',
         code: 'PREMIUM_REQUIRED',
       },
       { status: 403 },
@@ -101,7 +127,7 @@ export async function PUT(req: Request) {
   const userId = session.user.id;
   const lessonIds = Object.keys(parsed.lessons);
   const existing = await prisma.learnProgress.findMany({
-    where: { userId, courseId: COURSE_ID, lessonId: { in: lessonIds } },
+    where: { userId, courseId: course.id, lessonId: { in: lessonIds } },
     select: ROW_SELECT,
   });
   const merged = mergeProgress(recordsToProgressMap(existing as LearnProgressRecord[]), parsed.lessons);
@@ -113,10 +139,10 @@ export async function PUT(req: Request) {
       const status = completed ? 'COMPLETED' : 'ATTEMPTED';
       const lastOk = lesson.lastOk ?? completed;
       return prisma.learnProgress.upsert({
-        where: { userId_courseId_lessonId: { userId, courseId: COURSE_ID, lessonId } },
+        where: { userId_courseId_lessonId: { userId, courseId: course.id, lessonId } },
         create: {
           userId,
-          courseId: COURSE_ID,
+          courseId: course.id,
           lessonId,
           status,
           attempts: lesson.attempts,

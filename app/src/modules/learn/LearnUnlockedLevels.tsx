@@ -3,9 +3,10 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
-import { IGCSE_PAPER_2 } from './curriculum';
+import { ALEVEL_9618, IGCSE_PAPER_2 } from './curriculum';
 import { levelStartHref } from './path';
 import { readPaywallLevel } from './paywallLevel';
+import { ALEVEL_COURSE_ID } from './types';
 import { captureLearn } from './telemetry';
 
 /**
@@ -15,13 +16,17 @@ import { captureLearn } from './telemetry';
  */
 export default function LearnUnlockedLevels() {
   const [blockedSlug, setBlockedSlug] = useState<string | null>(null);
+  const [courseId, setCourseId] = useState<string>(IGCSE_PAPER_2.id);
 
   useEffect(() => {
-    setBlockedSlug(readPaywallLevel());
+    const stored = readPaywallLevel();
+    setBlockedSlug(stored?.slug ?? null);
+    if (stored?.courseId) setCourseId(stored.courseId);
   }, []);
 
-  const levels = IGCSE_PAPER_2.levels.flatMap((level) => {
-    const href = !level.free && level.playable ? levelStartHref(level) : null;
+  const course = courseId === ALEVEL_COURSE_ID ? ALEVEL_9618 : IGCSE_PAPER_2;
+  const levels = course.levels.flatMap((level) => {
+    const href = !level.free && level.playable ? levelStartHref(level, course.basePath) : null;
     return href ? [{ level, href }] : [];
   });
   const blocked = levels.find((item) => item.level.slug === blockedSlug) ?? null;
@@ -75,7 +80,7 @@ export default function LearnUnlockedLevels() {
       </ul>
 
       <div className="mt-5 flex flex-wrap justify-center gap-x-5 gap-y-2 text-sm">
-        <Link href="/learn" onClick={() => track('learn_path', null)} className="text-primary hover:underline">
+        <Link href={course.basePath} onClick={() => track('learn_path', null)} className="text-primary hover:underline">
           See the whole path
         </Link>
         <Link href="/" onClick={() => track('editor', null)} className="text-primary hover:underline">
