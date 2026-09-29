@@ -15,8 +15,8 @@ import CodeInput, { type EditorTab, type CursorPosition } from './codeInput';
 import { useRegisterCommands } from '@/shared/ui/CommandPalette';
 import OutputDisplay from './outputDisplay';
 import SplitDivider from '@/shared/ui/SplitDivider';
-import { convertToPython, type PythonConversion } from '@/modules/interpreter/converters/pythonConverter';
-import { convertToFlowchart, type FlowchartConversion } from '@/modules/interpreter/converters/flowchartConverter';
+import type { PythonConversion } from '@/modules/interpreter/converters/pythonConverter';
+import type { FlowchartConversion } from '@/modules/interpreter/converters/flowchartConverter';
 import { formatPseudocode } from '@/modules/interpreter/formatter';
 import Footer from '@/modules/compiler/footer';
 import OnboardingTour from '@/modules/onboarding/OnboardingTour';
@@ -293,8 +293,12 @@ const CompilerPage: React.FC = () => {
     source: '',
   });
 
+  // The converters are loaded on first use; most visitors never open these tabs.
   const convertToPythonNow = useCallback(() => {
-    setPythonConversion({ ...convertToPython(activeTab.content), source: activeTab.content });
+    const source = activeTab.content;
+    void import('@/modules/interpreter/converters/pythonConverter').then(({ convertToPython }) => {
+      setPythonConversion({ ...convertToPython(source), source });
+    });
   }, [activeTab.content]);
 
   // Pseudocode → flowchart follows the same on-demand model as the Python view.
@@ -307,7 +311,10 @@ const CompilerPage: React.FC = () => {
   });
 
   const convertToFlowchartNow = useCallback(() => {
-    setFlowchartConversion({ ...convertToFlowchart(activeTab.content), source: activeTab.content });
+    const source = activeTab.content;
+    void import('@/modules/interpreter/converters/flowchartConverter').then(({ convertToFlowchart }) => {
+      setFlowchartConversion({ ...convertToFlowchart(source), source });
+    });
   }, [activeTab.content]);
 
   const handleOutputTabChange = useCallback(

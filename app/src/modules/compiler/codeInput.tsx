@@ -27,12 +27,15 @@ import type { PasteCleanup } from './pasteCleanup';
 import ExamplePicker from './examplePicker';
 import FileViewer from './fileViewer';
 import CodeMirrorEditor from './CodeMirrorEditor';
-import ExportStudio from './export/ExportStudio';
+import dynamic from 'next/dynamic';
 import { useTheme } from '@/theme/ThemeContext';
 import { useRegisterCommands } from '@/shared/ui/CommandPalette';
 import { editorCodeUrl } from '@/modules/compiler/editorShare';
 import type { OutputEntry, TraceRow } from '@/modules/interpreter/core/types';
 import type { ErrorInfo } from '@/modules/interpreter/useInterpreter';
+
+// The export studio (and html-to-image behind it) only loads once opened.
+const ExportStudio = dynamic(() => import('./export/ExportStudio'), { ssr: false });
 
 const SHORTCUT_HINT_KEY = 'pseudocode_seen_shortcut_hint';
 
@@ -171,6 +174,8 @@ const CodeInput: React.FC<CodeInputProps> = ({
   const [filesOpen, setFilesOpen] = useState(false);
   const [filesCreating, setFilesCreating] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
+  // Mounted on first open (then kept, so it can animate closed).
+  const [exportMounted, setExportMounted] = useState(false);
 
   // Flash the Run button once when a run settles — success-tinted on a clean
   // finish, error-tinted when the run produced an error. Watches the falling
@@ -269,7 +274,10 @@ const CodeInput: React.FC<CodeInputProps> = ({
   const openExamples = useCallback(() => setExamplesOpen(true), []);
   const browseFiles = useCallback(() => { setFilesCreating(false); setFilesOpen(true); }, []);
   const newFile = useCallback(() => { setFilesCreating(true); setFilesOpen(true); }, []);
-  const openExportStudio = useCallback(() => setExportOpen(true), []);
+  const openExportStudio = useCallback(() => {
+    setExportMounted(true);
+    setExportOpen(true);
+  }, []);
 
   // Register the editor's open/export actions in the command palette.
   useRegisterCommands([
@@ -522,15 +530,17 @@ const CodeInput: React.FC<CodeInputProps> = ({
       {/* Controlled modals (render nothing until opened) */}
       <ExamplePicker open={examplesOpen} onOpenChange={setExamplesOpen} onSelectExample={onSelectExample} />
       <FileViewer open={filesOpen} onOpenChange={setFilesOpen} initialCreating={filesCreating} onOpenFile={onOpenFile} />
-      <ExportStudio
-        open={exportOpen}
-        onOpenChange={setExportOpen}
-        code={code}
-        fileName={activeTabName}
-        entries={entries}
-        traceRows={traceRows}
-        outputTab={outputTab}
-      />
+      {exportMounted && (
+        <ExportStudio
+          open={exportOpen}
+          onOpenChange={setExportOpen}
+          code={code}
+          fileName={activeTabName}
+          entries={entries}
+          traceRows={traceRows}
+          outputTab={outputTab}
+        />
+      )}
     </div>
   );
 };

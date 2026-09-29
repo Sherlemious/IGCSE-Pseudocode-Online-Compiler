@@ -11,8 +11,11 @@ import {
   FONT_FAMILIES,
   type FontFamilyId,
 } from '@/theme';
-import ThemeEditorModal from '@/theme/ThemeEditorModal';
+import dynamic from 'next/dynamic';
 import { OPEN_CHEATSHEET_EVENT } from '@/shared/lib/events';
+
+// The settings panel is in every page's header; the theme editor is rarely opened.
+const ThemeEditorModal = dynamic(() => import('@/theme/ThemeEditorModal'), { ssr: false });
 
 const themeOrder: PresetThemeId[] = ['one-dark-pro', 'dracula', 'nord', 'monokai', 'github-light'];
 const fontOrder: FontFamilyId[] = ['fira-code', 'jetbrains-mono', 'source-code-pro', 'inconsolata'];

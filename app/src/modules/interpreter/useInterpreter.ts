@@ -2,6 +2,13 @@ import { useState, useRef, useCallback } from 'react';
 import { Interpreter, parse, PseudocodeError } from './index';
 import type { OutputEntry, DebugVariable, TraceRow } from './core/types';
 import { MAX_TRACE_ROWS } from './core/types';
+
+/**
+ * Lines of program output the terminal keeps per run. Past this the program
+ * keeps running but further output is dropped, so a runaway print loop can't
+ * freeze the page by growing the terminal without bound.
+ */
+export const MAX_TERMINAL_LINES = 10_000;
 import {
   humanizeParseError,
   humanizeRuntimeError,
@@ -86,6 +93,8 @@ export function useInterpreter(runContext?: RunContext) {
   // append site. `entries.length` isn't reliable at pause time because output
   // is rAF-buffered; this ref lets us record an accurate boundary per step.
   const entriesLenRef = useRef(0);
+  // Program output lines produced this run (shown or not), for MAX_TERMINAL_LINES.
+  const outputLinesRef = useRef(0);
 
   // Step-history buffer. Refs are the source of truth for step/stepBack logic
   // (read synchronously, immune to React batching / StrictMode double-invokes);
@@ -326,6 +335,7 @@ export function useInterpreter(runContext?: RunContext) {
       }
       outputBuffer.current = [];
       entriesLenRef.current = 0;
+      outputLinesRef.current = 0;
       traceBuffer.current = [];
       traceOutputBuffer.current = [];
       traceStepRef.current = 0;
@@ -416,6 +426,23 @@ export function useInterpreter(runContext?: RunContext) {
       const interpreter = new Interpreter(
         {
           onOutput(text: string) {
+            outputLinesRef.current += 1;
+            if (outputLinesRef.current > MAX_TERMINAL_LINES) {
+              if (outputLinesRef.current === MAX_TERMINAL_LINES + 1) {
+                flushOutputSync();
+                entriesLenRef.current += 1;
+                setEntries((prev) => [
+                  ...prev,
+                  {
+                    kind: 'error',
+                    text:
+                      `Output limit reached: only the first ${MAX_TERMINAL_LINES.toLocaleString('en')} lines are shown. ` +
+                      'Press Stop if your program is stuck in a loop.',
+                  },
+                ]);
+              }
+              return;
+            }
             outputBuffer.current.push(text);
             if (flushTimeout.current === null) {
               flushTimeout.current = requestAnimationFrame(flushOutput);
@@ -538,7 +565,7 @@ export function useInterpreter(runContext?: RunContext) {
       }
       return terminal;
     },
-    [breakpoints, resetDebugHistory, pushDebugSnapshot, reportRun, recordError]
+    [breakpoints, resetDebugHistory, pushDebugSnapshot, reportRun, recordError, flushOutput, flushOutputSync, flushTrace, flushTraceSync]
   );
 
   const run = useCallback(
@@ -640,6 +667,7 @@ export function useInterpreter(runContext?: RunContext) {
     }
     outputBuffer.current = [];
     entriesLenRef.current = 0;
+    outputLinesRef.current = 0;
     traceBuffer.current = [];
     setEntries([]);
     setTraceRows([]);
