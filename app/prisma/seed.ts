@@ -6,7 +6,8 @@ import { igcseRecentPaperQuestions } from './igcseRecentPaperQuestions';
 const prisma = new PrismaClient();
 
 // ─── Practice Questions ────────────────────────────────────────────────────────
-const questions = [
+// Exported so seedSolutions.test.ts can grade every solution against its tests.
+export const questions = [
 
   // ════════════════════════════════════════════════════════════ EASY ═══
   {
@@ -3773,7 +3774,8 @@ UNTIL Answer = 3`,
       },
       {
         inputs: ['4', '3'],
-        expectedOutput: 'Enter 1 to input, 2 to output, 3 to stop\nYou must input 1, 2 or 3. Please try again\nEnter 1 to input, 2 to output, 3 to stop',
+        // The menu prints once; the validation loop only re-reads the choice.
+        expectedOutput: 'Enter 1 to input, 2 to output, 3 to stop\nYou must input 1, 2 or 3. Please try again',
         description: null,
         sortOrder: 3,
         isHidden: true,
@@ -5073,8 +5075,8 @@ Output: Enter temperature
         Enter temperature
         Enter temperature
         Enter temperature
-        Average C: 15.0
-        Average F: 59.0
+        Average C: 15
+        Average F: 59
 \`\`\``,
     difficulty: 'HARD' as const,
     topic: 'Arrays',
@@ -5124,10 +5126,10 @@ OUTPUT "Average C: " & AverageTemp
 OUTPUT "Average F: " & Fahrenheit`,
     solutionExplanation: 'A FOR loop with a nested WHILE loop for range validation populates the array. DIV/MOD are not needed here — ROUND formats the computed averages.',
     testCases: [
-      { inputs: ['10.0', '60.0', '20.0', '15.0', '15.0', '15.0'],  expectedOutput: 'Enter temperature\nEnter temperature\nInvalid temperature\nEnter temperature\nEnter temperature\nEnter temperature\nAverage C: 15.0\nAverage F: 59.0', description: 'One invalid',  sortOrder: 0 },
-      { inputs: ['0.0', '0.0', '0.0', '0.0', '0.0'],                expectedOutput: 'Enter temperature\nEnter temperature\nEnter temperature\nEnter temperature\nEnter temperature\nAverage C: 0.0\nAverage F: 32.0',                      description: 'All zeros',   sortOrder: 1 },
-      { inputs: ['-20.0', '50.0', '10.0', '-10.0', '20.0'],         expectedOutput: 'Enter temperature\nEnter temperature\nEnter temperature\nEnter temperature\nEnter temperature\nAverage C: 10.0\nAverage F: 50.0',                    description: null,          sortOrder: 2, isHidden: true },
-      { inputs: ['-25.0', '25.0', '25.0', '25.0', '25.0', '25.0'],  expectedOutput: 'Enter temperature\nInvalid temperature\nEnter temperature\nEnter temperature\nEnter temperature\nEnter temperature\nAverage C: 25.0\nAverage F: 77.0', description: null,         sortOrder: 3, isHidden: true },
+      { inputs: ['10.0', '60.0', '20.0', '15.0', '15.0', '15.0'],  expectedOutput: 'Enter temperature\nEnter temperature\nInvalid temperature\nEnter temperature\nEnter temperature\nEnter temperature\nAverage C: 15\nAverage F: 59', description: 'One invalid',  sortOrder: 0 },
+      { inputs: ['0.0', '0.0', '0.0', '0.0', '0.0'],                expectedOutput: 'Enter temperature\nEnter temperature\nEnter temperature\nEnter temperature\nEnter temperature\nAverage C: 0\nAverage F: 32',                      description: 'All zeros',   sortOrder: 1 },
+      { inputs: ['-20.0', '50.0', '10.0', '-10.0', '20.0'],         expectedOutput: 'Enter temperature\nEnter temperature\nEnter temperature\nEnter temperature\nEnter temperature\nAverage C: 10\nAverage F: 50',                    description: null,          sortOrder: 2, isHidden: true },
+      { inputs: ['-25.0', '25.0', '25.0', '25.0', '25.0', '25.0'],  expectedOutput: 'Enter temperature\nInvalid temperature\nEnter temperature\nEnter temperature\nEnter temperature\nEnter temperature\nAverage C: 25\nAverage F: 77', description: null,         sortOrder: 3, isHidden: true },
       { inputs: ['-5.5', '2.5', '10.0', '12.5', '18.0'],            expectedOutput: 'Enter temperature\nEnter temperature\nEnter temperature\nEnter temperature\nEnter temperature\nAverage C: 7.5\nAverage F: 45.5',                     description: null,          sortOrder: 4, isHidden: true },
     ],
   },
@@ -10714,6 +10716,9 @@ async function main() {
   console.log(`\nDone — ${exampleData.length} examples + ${questions.length} questions seeded.`);
 }
 
-main()
-  .catch((e) => { console.error(e); process.exit(1); })
-  .finally(() => prisma.$disconnect());
+// Seed only when run as a script (npm run db:seed), not when a test imports the questions.
+if (/seed\.ts$/.test(process.argv[1] ?? '')) {
+  main()
+    .catch((e) => { console.error(e); process.exit(1); })
+    .finally(() => prisma.$disconnect());
+}
