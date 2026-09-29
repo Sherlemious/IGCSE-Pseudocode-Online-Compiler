@@ -21,6 +21,7 @@ const ERROR_MESSAGES: Record<string, string> = {
   AccessDenied: 'Google sign-in was denied. Please try again and allow access.',
   Configuration: 'Authentication is not configured correctly. Please try again later.',
   Verification: 'The sign-in link is invalid or expired. Please try signing in again.',
+  EmailVerifyInvalid: 'That email confirmation link is invalid, expired or already used.',
   default: 'Sign-in failed. Please try again.',
 };
 

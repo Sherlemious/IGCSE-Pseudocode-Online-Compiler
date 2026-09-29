@@ -537,6 +537,18 @@ model PricingTier {
   @@index([paddleEnv, active])
 }
 
+// Every Paddle webhook event we've handled, keyed by Paddle's event id. A
+// redelivery of the same event is skipped (so a pass is never extended twice),
+// and the rows double as an audit trail of billing changes.
+model PaddleEvent {
+  id          String   @id // evt_…
+  type        String
+  occurredAt  DateTime
+  processedAt DateTime @default(now())
+
+  @@index([occurredAt])
+}
+
 // A browser that loaded this app from somewhere other than the official site
 // calls home with that hostname. One row per host.
 model HostSighting {

@@ -9,6 +9,8 @@ import { getResend, FROM_ADDRESS } from './resend';
 import { welcomeEmailHtml, welcomeEmailText } from '@/modules/auth/emails/welcome';
 import { parseSignupRole, SIGNUP_ROLE_COOKIE } from './signupRole';
 import { SITE_NAME } from '@/shared/lib/seo';
+import { logger } from '@/shared/lib/logger';
+import { hardenOAuthLink } from './emailVerification';
 
 const authSecret =
   process.env.AUTH_SECRET ??
@@ -67,6 +69,17 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     signIn: '/auth/signin',
   },
   events: {
+    async linkAccount({ user, account }) {
+      // Google only issues verified addresses, which is why email linking is on.
+      if (!user.id || account.provider !== 'google') return;
+      try {
+        if (await hardenOAuthLink(user.id, true)) {
+          logger.warn('Cleared unverified password on Google link', { user_id: user.id });
+        }
+      } catch (e) {
+        logger.error('OAuth link hardening failed', { user_id: user.id, error: String(e) });
+      }
+    },
     async createUser({ user }) {
       if (user.id) {
         try {

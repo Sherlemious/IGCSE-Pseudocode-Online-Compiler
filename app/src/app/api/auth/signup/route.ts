@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import { prisma } from '@/shared/db';
 import { getResend, FROM_ADDRESS } from '@/modules/auth/resend';
 import { welcomeEmailHtml, welcomeEmailText } from '@/modules/auth/emails/welcome';
+import { createEmailVerificationUrl } from '@/modules/auth/emailVerification';
 import { SITE_NAME } from '@/shared/lib/seo';
 import { clientIp, limitRequest } from '@/shared/lib/rateLimit';
 
@@ -77,18 +78,22 @@ export async function POST(req: Request) {
 
   // Welcome email (best-effort). The adapter's `createUser` event only fires for
   // OAuth signups, so credentials signups get their welcome email from here.
+  // It also carries the link that verifies the address (see emailVerification.ts).
   const resend = getResend();
   if (resend && user.email) {
     const displayName = user.name ?? 'Student';
-    await resend.emails
-      .send({
+    try {
+      const verifyUrl = await createEmailVerificationUrl(user.email);
+      await resend.emails.send({
         from: FROM_ADDRESS,
         to: user.email,
         subject: `Welcome to the ${SITE_NAME}`,
-        html: welcomeEmailHtml(displayName),
-        text: welcomeEmailText(displayName),
-      })
-      .catch(() => {}); // non-critical — never block signup on email
+        html: welcomeEmailHtml(displayName, { verifyUrl }),
+        text: welcomeEmailText(displayName, { verifyUrl }),
+      });
+    } catch {
+      // non-critical — never block signup on email
+    }
   }
 
   return NextResponse.json({ ok: true });

@@ -159,6 +159,8 @@ The autograder returns `error.hint` (same text as the Run button) and `error.cat
 - `ExamAttempt` / `ExamAnswer` — a student's run of an exam (timed session). `examId` is null for the self-service random simulator; set when the attempt is a run of a shared `Exam`.
 - `Exam` / `ExamQuestion` — instructor-authored, reusable, shareable exam **definitions** (fixed ordered question set, `shareCode`, `isPublished`). Any signed-in user can create one and share it via `/e/[code]`; taking it materializes an `ExamAttempt` (`api/exams/[examId]/start`) so the existing take→grade→results pipeline is reused unchanged.
 - `Example` — built-in code examples (also seeded in `data/examples.ts`)
+- `PaddleEvent` — every handled Paddle webhook, keyed by event id (`billing/paddle/webhookEvents.ts`). A redelivery is skipped; a failed handler releases its claim so Paddle's retry runs. `User.planUpdatedAt` holds the event's `occurred_at`, so an older event for the current subscription is ignored, and a revoke/cancel of any other (replaced) subscription never downgrades the user
+- `User.emailVerified` — set by the welcome-email confirm link (`auth/emailVerification.ts`, `/api/auth/verify-email`) or by linking Google. Linking Google to an account whose password was never verified clears that password (pre-registration takeover guard)
 
 > **DB workflow:** the migration history under `prisma/migrations/` is stale/incomplete — `prisma migrate dev` fails on shadow-DB replay of an older migration. Apply schema changes to the dev DB with `npx prisma db push` (schema-diff, no shadow replay). Purely additive changes are non-destructive.
 

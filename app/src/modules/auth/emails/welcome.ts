@@ -1,8 +1,18 @@
 import { BRAND, SITE_NAME } from '@/shared/brand/brand';
 import { SITE_URL } from '@/modules/auth/resend';
 
-export function welcomeEmailHtml(name: string): string {
-  const firstName = name.split(' ')[0];
+/** Names come from the signup form; never let them inject markup into the email. */
+function escapeHtml(text: string): string {
+  return text.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
+}
+
+export interface WelcomeEmailOptions {
+  /** Password signups get a link that proves they own the address. */
+  verifyUrl?: string;
+}
+
+export function welcomeEmailHtml(name: string, { verifyUrl }: WelcomeEmailOptions = {}): string {
+  const firstName = escapeHtml(name.split(' ')[0]);
   const { ink, paper, red } = BRAND.colors;
 
   return `<!DOCTYPE html>
@@ -95,6 +105,11 @@ export function welcomeEmailHtml(name: string): string {
                   </td>
                 </tr>
               </table>
+${verifyUrl ? `
+              <p style="margin:24px 0 0;font-size:13px;font-family:'Segoe UI',Arial,sans-serif;color:${ink};opacity:0.72;line-height:1.6;">
+                One more thing: <a href="${escapeHtml(verifyUrl)}" style="color:${red};font-weight:600;">confirm this is your email address</a>
+                so you can keep signing in with your password.
+              </p>` : ''}
 
                   </td>
                 </tr>
@@ -121,7 +136,7 @@ export function welcomeEmailHtml(name: string): string {
 </html>`;
 }
 
-export function welcomeEmailText(name: string): string {
+export function welcomeEmailText(name: string, { verifyUrl }: WelcomeEmailOptions = {}): string {
   const firstName = name.split(' ')[0];
   return `Hey ${firstName}, welcome to the ${SITE_NAME}!
 
@@ -133,7 +148,10 @@ Your account is ready. Here's what you can do:
 - Timed exam simulation — replicate real exam conditions
 
 Start practising: ${SITE_URL}/practice
-
+${verifyUrl ? `
+Confirm this is your email address (so you can keep signing in with your password):
+${verifyUrl}
+` : ''}
 ---
 You're receiving this because you signed up at ${SITE_URL}.
 If that wasn't you, ignore this email.`;
