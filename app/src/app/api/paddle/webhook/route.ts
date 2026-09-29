@@ -9,6 +9,13 @@ import { expiryForPurchase, isTeacherPlan, passForPriceId } from '@/modules/bill
 import { planUpdateFromPaddle, type PaddleSubscriptionLike } from '@/modules/billing/paddle/subscriptionState';
 import { captureServerEvent } from '@/modules/telemetry/serverCapture';
 import { revalidatePremiumAccess } from '@/modules/billing/entitlements';
+import {
+  claimPaddleEvent,
+  isOtherSubscription,
+  isStaleEvent,
+  releasePaddleEvent,
+} from '@/modules/billing/paddle/webhookEvents';
+import { logger } from '@/shared/lib/logger';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -36,7 +43,7 @@ export async function POST(req: Request) {
   const secret = process.env.PADDLE_WEBHOOK_SECRET;
   const paddle = getPaddleServer();
   if (!secret || !paddle) {
-    console.error('[paddle/webhook] missing PADDLE_WEBHOOK_SECRET or PADDLE_API_KEY');
+    logger.error('Paddle webhook: missing PADDLE_WEBHOOK_SECRET or PADDLE_API_KEY');
     return NextResponse.json({ error: 'Webhook not configured.' }, { status: 500 });
   }
   if (!signature) {
@@ -47,11 +54,18 @@ export async function POST(req: Request) {
   try {
     event = await paddle.webhooks.unmarshal(raw, secret, signature);
   } catch (err) {
-    console.error('[paddle/webhook] signature verification failed', err);
+    logger.warn('Paddle webhook: signature verification failed', { error: String(err) });
     return NextResponse.json({ error: 'Invalid signature.' }, { status: 400 });
   }
   if (!event) {
     return NextResponse.json({ error: 'Unparseable event.' }, { status: 400 });
+  }
+
+  // A redelivered event was already applied; applying it again would, for
+  // example, extend a pass twice.
+  const occurredAt = new Date(event.occurredAt);
+  if (!(await claimPaddleEvent(event.eventId, event.eventType, occurredAt))) {
+    return NextResponse.json({ received: true, duplicate: true });
   }
 
   try {
@@ -61,33 +75,46 @@ export async function POST(req: Request) {
       case EventName.SubscriptionUpdated:
       case EventName.SubscriptionResumed:
       case EventName.SubscriptionTrialing:
-        await applySubscription(event.data as unknown as SubscriptionData, paddle);
+        await applySubscription(event.data as unknown as SubscriptionData, paddle, occurredAt);
         break;
       case EventName.SubscriptionCanceled:
       case EventName.SubscriptionPaused:
       case EventName.SubscriptionPastDue:
-        await downgrade(event.data as unknown as SubscriptionData);
+        await downgrade(event.data as unknown as SubscriptionData, occurredAt);
         break;
       case EventName.TransactionCompleted:
-        await applyPassPurchase(event.data as unknown as TransactionData, paddle);
+        await applyPassPurchase(event.data as unknown as TransactionData, paddle, occurredAt);
         break;
       default:
         break;
     }
   } catch (err) {
-    console.error(`[paddle/webhook] handler error for ${event.eventType}`, err);
+    logger.error('Paddle webhook: handler error', { event_type: event.eventType, event_id: event.eventId, error: String(err) });
+    // Let Paddle's retry run the handler again.
+    await releasePaddleEvent(event.eventId).catch(() => {});
     return NextResponse.json({ error: 'Handler error.' }, { status: 500 });
   }
 
   return NextResponse.json({ received: true });
 }
 
-async function applySubscription(data: SubscriptionData, paddle: Paddle) {
+async function applySubscription(data: SubscriptionData, paddle: Paddle, occurredAt: Date) {
   const user = await resolveUser(data, paddle);
   if (!user) {
-    console.warn(
-      `[paddle/webhook] no app user for subscription ${data.id} (customer ${data.customerId})`,
-    );
+    logger.warn('Paddle webhook: no app user for subscription', {
+      subscription_id: data.id,
+      customer_id: data.customerId,
+    });
+    return;
+  }
+  // Ordering only means something within one subscription: a new purchase's
+  // events may legitimately arrive after the old subscription's cancellation.
+  if (user.paddleSubscriptionId === data.id && isStaleEvent(occurredAt, user.planUpdatedAt)) {
+    logger.warn('Paddle webhook: skipped out-of-date subscription event', {
+      user_id: user.id,
+      subscription_id: data.id,
+      status: data.status,
+    });
     return;
   }
 
@@ -97,7 +124,16 @@ async function applySubscription(data: SubscriptionData, paddle: Paddle) {
   const update = planUpdateFromPaddle(data, mapped);
 
   if (update.outcome === 'revoke') {
+    if (isOtherSubscription(user.paddleSubscriptionId, data.id)) {
+      logger.warn('Paddle webhook: ignored revoke of a subscription the user no longer uses', {
+        user_id: user.id,
+        subscription_id: data.id,
+        status: data.status,
+      });
+      return;
+    }
     await setPlan(user.id, {
+      occurredAt,
       plan: 'FREE',
       planTier: null,
       subscriptionId: data.id,
@@ -112,12 +148,13 @@ async function applySubscription(data: SubscriptionData, paddle: Paddle) {
   }
 
   if (update.outcome === 'unmapped') {
-    console.warn(`[paddle/webhook] unmapped price ${priceId} on subscription ${data.id}`);
+    logger.warn('Paddle webhook: unmapped price on subscription', { price_id: priceId, subscription_id: data.id });
     await linkPaddleIds(user.id, data);
     return;
   }
 
   await setPlan(user.id, {
+    occurredAt,
     plan: update.plan,
     planTier: update.planTier,
     planExpiresAt: update.planExpiresAt,
@@ -150,13 +187,29 @@ async function applySubscription(data: SubscriptionData, paddle: Paddle) {
   });
 }
 
-async function downgrade(data: SubscriptionData) {
+async function downgrade(data: SubscriptionData, occurredAt: Date) {
   const user = await findLinkedUser(data);
   if (!user) {
-    console.warn(`[paddle/webhook] no app user to downgrade for subscription ${data.id}`);
+    logger.warn('Paddle webhook: no app user to downgrade', { subscription_id: data.id });
+    return;
+  }
+  // findLinkedUser falls back to the customer, which also matches a user who
+  // has since moved to a new subscription: cancelling the old one mustn't
+  // take away the new plan.
+  if (isOtherSubscription(user.paddleSubscriptionId, data.id)) {
+    logger.warn('Paddle webhook: ignored downgrade of a subscription the user no longer uses', {
+      user_id: user.id,
+      subscription_id: data.id,
+      status: data.status,
+    });
+    return;
+  }
+  if (isStaleEvent(occurredAt, user.planUpdatedAt)) {
+    logger.warn('Paddle webhook: skipped out-of-date downgrade', { user_id: user.id, subscription_id: data.id });
     return;
   }
   await setPlan(user.id, {
+    occurredAt,
     plan: 'FREE',
     planTier: null,
     subscriptionId: data.id,
@@ -174,7 +227,7 @@ async function downgrade(data: SubscriptionData) {
  * Student-only one-time pass. Ignored for teacher accounts (role or plan) and
  * for transactions that aren't a known pass price (subscription renewals).
  */
-async function applyPassPurchase(data: TransactionData, paddle: Paddle) {
+async function applyPassPurchase(data: TransactionData, paddle: Paddle, occurredAt: Date) {
   const env = getPaddleEnv();
   let pass = null as ReturnType<typeof passForPriceId>;
   for (const item of data.items ?? []) {
@@ -185,19 +238,23 @@ async function applyPassPurchase(data: TransactionData, paddle: Paddle) {
 
   const user = await resolveUser(data as unknown as SubscriptionData, paddle);
   if (!user) {
-    console.warn(
-      `[paddle/webhook] no app user for pass transaction ${data.id} (customer ${data.customerId})`,
-    );
+    logger.warn('Paddle webhook: no app user for pass transaction', {
+      transaction_id: data.id,
+      customer_id: data.customerId,
+    });
     return;
   }
   if (user.role === 'TEACHER' || isTeacherPlan(user.plan)) {
-    console.warn(
-      `[paddle/webhook] ignoring student pass for teacher user ${user.id} (role=${user.role} plan=${user.plan})`,
-    );
+    logger.warn('Paddle webhook: ignored student pass for a teacher', {
+      user_id: user.id,
+      role: user.role,
+      plan: user.plan,
+    });
     return;
   }
 
   await setPlan(user.id, {
+    occurredAt,
     plan: 'STUDENT',
     planTier: pass.tier,
     planExpiresAt: expiryForPurchase(pass, {
@@ -233,7 +290,7 @@ async function resolveUser(data: SubscriptionData, paddle: Paddle) {
         if (byEmail) return byEmail;
       }
     } catch (err) {
-      console.error('[paddle/webhook] customer email lookup failed', err);
+      logger.error('Paddle webhook: customer email lookup failed', { error: String(err) });
     }
   }
   return null;
@@ -261,6 +318,8 @@ function readAppUserId(data: SubscriptionData): string | null {
 async function setPlan(
   userId: string,
   opts: {
+    /** When Paddle says the change happened; orders later events against it. */
+    occurredAt: Date;
     plan: Plan;
     planTier: string | null;
     planExpiresAt?: Date | null;
@@ -277,7 +336,7 @@ async function setPlan(
       planExpiresAt: opts.planExpiresAt ?? null,
       paddleSubscriptionId: opts.subscriptionId || undefined,
       paddleCustomerId: opts.customerId || undefined,
-      planUpdatedAt: new Date(),
+      planUpdatedAt: opts.occurredAt,
       ...(opts.legacyCapacity !== undefined ? { legacyCapacity: opts.legacyCapacity } : {}),
     },
   });
