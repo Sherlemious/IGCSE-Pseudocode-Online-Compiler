@@ -39,6 +39,9 @@ interface ThemeContextValue {
   /** Keyword / snippet / builtin completions in the editor. */
   autocomplete: boolean;
   setAutocomplete: (v: boolean) => void;
+  /** Indent after IF/FOR/…, snap ENDIF/NEXT/… back as they are typed. On by default. */
+  autoIndent: boolean;
+  setAutoIndent: (v: boolean) => void;
   /** Programming ligatures (`>=`, `<-`, `!=`, …). Off by default so exam operators stay as typed. */
   fontLigatures: boolean;
   setFontLigatures: (v: boolean) => void;
@@ -62,6 +65,7 @@ const STORAGE_KEY_FONT_FAMILY = 'pseudocode-font-family';
 const STORAGE_KEY_DYSLEXIC = 'pseudocode-dyslexic-font';
 const STORAGE_KEY_LIGATURES = 'pseudocode-font-ligatures';
 const STORAGE_KEY_AUTOCOMPLETE = 'pseudocode-autocomplete';
+const STORAGE_KEY_AUTO_INDENT = 'pseudocode-auto-indent';
 const STORAGE_KEY_ACTIVE_COLORS = 'pseudocode-active-colors'; // first-paint cache for active custom theme
 const STORAGE_KEY_LEGACY_CUSTOM = 'pseudocode-custom-theme';  // pre-multi-theme single custom theme
 const DEFAULT_THEME: PresetThemeId = 'one-dark-pro';
@@ -159,6 +163,11 @@ function loadAutocomplete(): boolean {
   return localStorage.getItem(STORAGE_KEY_AUTOCOMPLETE) === 'true';
 }
 
+/** On unless the user turned it off in settings. */
+function loadAutoIndent(): boolean {
+  return localStorage.getItem(STORAGE_KEY_AUTO_INDENT) !== 'false';
+}
+
 function parseStoredColors(raw: string | null): CustomColors | null {
   if (!raw) return null;
   try {
@@ -219,6 +228,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const [dyslexicFont, setDyslexicFontState] = useState<boolean>(false);
   const [fontLigatures, setFontLigaturesState] = useState<boolean>(false);
   const [autocomplete, setAutocompleteState] = useState<boolean>(false);
+  const [autoIndent, setAutoIndentState] = useState<boolean>(true);
   const [customThemes, setCustomThemes] = useState<SavedTheme[]>([]);
   const [themesLoading, setThemesLoading] = useState<boolean>(true);
 
@@ -232,6 +242,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     setDyslexicFontState(loadDyslexicFont());
     setFontLigaturesState(loadFontLigatures());
     setAutocompleteState(loadAutocomplete());
+    setAutoIndentState(loadAutoIndent());
   }, []);
 
   // Fetch the user's saved themes when auth state resolves; migrate any legacy theme.
@@ -366,6 +377,12 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     try { posthog.capture('autocomplete_toggled', { enabled: v }); } catch { /* non-critical */ }
   };
 
+  const setAutoIndent = (v: boolean) => {
+    setAutoIndentState(v);
+    localStorage.setItem(STORAGE_KEY_AUTO_INDENT, String(v));
+    try { posthog.capture('auto_indent_toggled', { enabled: v }); } catch { /* non-critical */ }
+  };
+
   const createTheme = useCallback(async (name: string, colors: CustomColors) => {
     const created = await apiCreateTheme(name, colors);
     if (!created) {
@@ -411,6 +428,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         dyslexicFont, setDyslexicFont,
         fontLigatures, setFontLigatures,
         autocomplete, setAutocomplete,
+        autoIndent, setAutoIndent,
         customThemes, themesLoading, isSignedIn,
         createTheme, updateTheme, deleteTheme,
       }}

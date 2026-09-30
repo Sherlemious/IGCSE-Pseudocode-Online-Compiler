@@ -1,18 +1,18 @@
 import { describe, expect, it } from 'vitest';
 import { EditorSelection, EditorState, type Transaction } from '@codemirror/state';
-import { indentOnInput } from '@codemirror/language';
+import { indentOnInput, indentUnit } from '@codemirror/language';
 import { insertNewlineAndIndent, undo, history } from '@codemirror/commands';
-import { pseudocodeLanguage, reindentCloserThenNewline } from '../pseudocode-lang';
+import { pseudocodeAutoIndent, pseudocodeLanguage, reindentCloserThenNewline } from '../pseudocode-lang';
 import { formatPseudocode } from '../formatter';
 
 /** `|` marks the cursor. */
-function stateAt(docWithCursor: string) {
+function stateAt(docWithCursor: string, autoIndent = true) {
   const cursor = docWithCursor.indexOf('|');
   const doc = docWithCursor.replace('|', '');
   return EditorState.create({
     doc,
     selection: EditorSelection.cursor(cursor),
-    extensions: [pseudocodeLanguage(), indentOnInput(), history()],
+    extensions: [pseudocodeLanguage(), autoIndent ? pseudocodeAutoIndent() : [], indentOnInput(), history()],
   });
 }
 
@@ -142,5 +142,20 @@ describe('agrees with the formatter', () => {
     });
     const doc = state.doc.toString();
     expect(doc).toBe(formatPseudocode(doc));
+  });
+});
+
+describe('with the Auto-indent setting off', () => {
+  it('Enter only copies the line above', () => {
+    expect(cursorLine(enter(stateAt('IF x THEN|', false)))).toBe('');
+    expect(cursorLine(enter(stateAt('IF x THEN\n    OUTPUT x|', false)))).toBe('    ');
+  });
+
+  it('typing a closer leaves the line where it is', () => {
+    expect(cursorLine(type(stateAt('IF x THEN\n    OUTPUT x\n    |', false), 'ENDIF'))).toBe('    ENDIF');
+  });
+
+  it('Tab still indents by 4 spaces', () => {
+    expect(stateAt('|', false).facet(indentUnit)).toBe('    ');
   });
 });

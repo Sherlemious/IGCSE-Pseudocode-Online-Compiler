@@ -57,6 +57,7 @@ export default function GlobalCommands() {
 
     { id: 'view-wrap', label: 'Toggle word wrap', group: 'View', run: () => theme.setWordWrap(!theme.wordWrap) },
     { id: 'view-autocomplete', label: 'Toggle autocomplete', group: 'View', keywords: 'intellisense complete suggestions snippets', run: () => theme.setAutocomplete(!theme.autocomplete) },
+    { id: 'view-auto-indent', label: 'Toggle auto-indent', group: 'View', keywords: 'indentation tab spaces endif format', run: () => theme.setAutoIndent(!theme.autoIndent) },
     { id: 'view-dyslexic', label: 'Toggle dyslexia-friendly font', group: 'View', keywords: 'opendyslexic accessibility', run: () => theme.setDyslexicFont(!theme.dyslexicFont) },
     { id: 'view-ligatures', label: 'Toggle font ligatures', group: 'View', keywords: 'liga calt fira arrow operators >= <-', run: () => theme.setFontLigatures(!theme.fontLigatures) },
     { id: 'view-font-inc', label: 'Increase font size', group: 'View', keywords: 'bigger zoom', run: () => theme.setFontSize(theme.fontSize + 1) },

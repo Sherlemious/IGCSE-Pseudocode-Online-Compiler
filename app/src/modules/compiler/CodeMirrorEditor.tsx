@@ -20,7 +20,7 @@ import { defaultKeymap, indentWithTab, history, historyKeymap } from '@codemirro
 import { bracketMatching, foldGutter, indentOnInput } from '@codemirror/language';
 import { searchKeymap, highlightSelectionMatches } from '@codemirror/search';
 import { autocompletion, completionKeymap } from '@codemirror/autocomplete';
-import { pseudocodeLanguage, reindentCloserThenNewline } from '@/modules/interpreter/pseudocode-lang';
+import { pseudocodeAutoIndent, pseudocodeLanguage } from '@/modules/interpreter/pseudocode-lang';
 import { formatPseudocode } from '@/modules/interpreter/formatter';
 import { cleanPaste, type PasteCleanup } from './pasteCleanup';
 import { inlineErrorField, inlineErrorTheme, quickFixAnnotation, setInlineError } from './errorWidget';
@@ -35,6 +35,7 @@ const ariaLabelCompartment = new Compartment();
 const wrapCompartment = new Compartment();
 const fontSizeCompartment = new Compartment();
 const autocompleteCompartment = new Compartment();
+const autoIndentCompartment = new Compartment();
 
 function autocompleteExtensions(enabled: boolean) {
   return enabled ? [autocompletion(), keymap.of(completionKeymap)] : [];
@@ -144,7 +145,7 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
   onErrorExample,
   onInlineErrorDismissed,
 }) => {
-  const { fontSize, dyslexicFont, fontLigatures, autocomplete } = useTheme();
+  const { fontSize, dyslexicFont, fontLigatures, autocomplete, autoIndent } = useTheme();
   const editorRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
   const onChangeRef = useRef(onChange);
@@ -521,8 +522,6 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
           return true;
         },
       },
-      // Snap a bare NEXT / lowercase endif back to its block before breaking the line.
-      { key: 'Enter', run: reindentCloserThenNewline },
       indentWithTab,
       ...defaultKeymap,
       ...historyKeymap,
@@ -558,6 +557,8 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
         indentOnInput(),
         bracketMatching(),
         autocompleteCompartment.of(autocompleteExtensions(autocomplete)),
+        // Before customKeymap so its Enter binding runs ahead of the default Enter.
+        autoIndentCompartment.of(autoIndent ? pseudocodeAutoIndent() : []),
         rectangularSelection(),
         crosshairCursor(),
         highlightActiveLine(),
@@ -649,6 +650,13 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
       effects: autocompleteCompartment.reconfigure(autocompleteExtensions(autocomplete)),
     });
   }, [autocomplete]);
+
+  useEffect(() => {
+    if (!viewRef.current) return;
+    viewRef.current.dispatch({
+      effects: autoIndentCompartment.reconfigure(autoIndent ? pseudocodeAutoIndent() : []),
+    });
+  }, [autoIndent]);
 
   // Reconfigure typography so CodeMirror remeasures (font size, spacing, ligatures)
   useEffect(() => {

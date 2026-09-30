@@ -8,7 +8,8 @@ import {
   indentString,
   indentUnit,
 } from '@codemirror/language';
-import type { StateCommand, Transaction } from '@codemirror/state';
+import type { Extension, StateCommand, Transaction } from '@codemirror/state';
+import { keymap } from '@codemirror/view';
 import { insertNewlineAndIndent } from '@codemirror/commands';
 import { tags } from '@lezer/highlight';
 import { KEYWORDS as keywords, TYPES as types, BOOLEANS as booleans } from './tokens';
@@ -191,13 +192,23 @@ export const reindentCloserThenNewline: StateCommand = ({ state, dispatch }) => 
 
 export function pseudocodeLanguage() {
   return new LanguageSupport(pseudocode, [
+    pseudocode.data.of({ autocomplete: pseudocodeCompletionSource }),
+    indentUnit.of(DEFAULT_INDENT),
+  ]);
+}
+
+/**
+ * Block-aware auto-indent (the "Auto-indent" editor setting). Without it, Enter just
+ * copies the previous line's indentation.
+ */
+export function pseudocodeAutoIndent(): Extension {
+  return [
+    // Re-indent a closer as soon as it is typed. NEXT/UNTIL wait for the following
+    // space so a name like `NextNum` or `UntilDone` never jumps mid-word.
     pseudocode.data.of({
-      autocomplete: pseudocodeCompletionSource,
-      // Re-indent a closer as soon as it is typed. NEXT/UNTIL wait for the following
-      // space so a name like `NextNum` or `UntilDone` never jumps mid-word.
       indentOnInput: /^\s*(END(IF|WHILE|CASE|FUNCTION|PROCEDURE|TYPE|CLASS)|ELSE(IF)?|(NEXT|UNTIL)\s)$/i,
     }),
     indentService.of(pseudocodeIndent),
-    indentUnit.of(DEFAULT_INDENT),
-  ]);
+    keymap.of([{ key: 'Enter', run: reindentCloserThenNewline }]),
+  ];
 }
