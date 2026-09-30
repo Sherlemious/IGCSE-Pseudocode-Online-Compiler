@@ -20,7 +20,7 @@ import { defaultKeymap, indentWithTab, history, historyKeymap } from '@codemirro
 import { bracketMatching, foldGutter, indentOnInput } from '@codemirror/language';
 import { searchKeymap, highlightSelectionMatches } from '@codemirror/search';
 import { autocompletion, completionKeymap } from '@codemirror/autocomplete';
-import { pseudocodeLanguage } from '@/modules/interpreter/pseudocode-lang';
+import { pseudocodeLanguage, reindentCloserThenNewline } from '@/modules/interpreter/pseudocode-lang';
 import { formatPseudocode } from '@/modules/interpreter/formatter';
 import { cleanPaste, type PasteCleanup } from './pasteCleanup';
 import { inlineErrorField, inlineErrorTheme, quickFixAnnotation, setInlineError } from './errorWidget';
@@ -521,6 +521,8 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
           return true;
         },
       },
+      // Snap a bare NEXT / lowercase endif back to its block before breaking the line.
+      { key: 'Enter', run: reindentCloserThenNewline },
       indentWithTab,
       ...defaultKeymap,
       ...historyKeymap,
