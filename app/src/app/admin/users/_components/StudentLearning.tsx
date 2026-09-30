@@ -6,23 +6,28 @@ import { formatAdminDate, RelativeTime } from '../../_components/adminUi';
 
 type LessonState = 'not_started' | 'attempted' | 'completed';
 
+export type StudentPath = {
+  courseId: string;
+  exam: string;
+  paper: string;
+  playableCount: number;
+  completedCount: number;
+  attemptedCount: number;
+  notStartedCount: number;
+  lastActivityAt: string | null;
+  lessons: Array<{
+    lessonId: string;
+    title: string;
+    levelNumber: number;
+    levelName: string;
+    levelSlug: string;
+    state: LessonState;
+    attempts: number;
+  }>;
+};
+
 export type StudentLearning = {
-  learn: {
-    playableCount: number;
-    completedCount: number;
-    attemptedCount: number;
-    notStartedCount: number;
-    lastActivityAt: string | null;
-    lessons: Array<{
-      lessonId: string;
-      title: string;
-      levelNumber: number;
-      levelName: string;
-      levelSlug: string;
-      state: LessonState;
-      attempts: number;
-    }>;
-  };
+  paths: StudentPath[];
   practice: {
     solved: number;
     attempted: number;
@@ -47,6 +52,16 @@ export type StudentLearning = {
     completedAt: string | null;
   }>;
 };
+
+export function pathChipValue(paths: StudentPath[]) {
+  return paths
+    .map((path) => `${shortExam(path.exam)} ${path.completedCount}/${path.playableCount}`)
+    .join(' · ');
+}
+
+function shortExam(exam: string) {
+  return exam.replace(/ Level$/, '');
+}
 
 export function useStudentLearning(userId: string | null, open: boolean) {
   const [data, setData] = useState<StudentLearning | null>(null);
@@ -97,74 +112,13 @@ export default function StudentLearning({
   }
   if (!data) return null;
 
-  const { learn, practice, exams } = data;
-  const pct = learn.playableCount > 0
-    ? Math.round((learn.completedCount / learn.playableCount) * 100)
-    : 0;
-  const next = learn.lessons.find((lesson) => lesson.state !== 'completed');
-  const groups = groupLevels(learn.lessons);
-  const hasPath = learn.completedCount + learn.attemptedCount > 0;
-  const pathComplete = hasPath && next == null;
-  const currentGroup = groups.find((group) => !levelComplete(group));
-  const completedGroups = groups.filter(levelComplete);
-  const upcomingGroups = groups.filter(
-    (group) => group !== currentGroup && !levelComplete(group),
-  );
+  const { paths, practice, exams } = data;
 
   return (
     <div className="space-y-5">
-      <section className="space-y-2">
-        <p className="mono-label text-dark-text">Paper 2 Path</p>
-        <div className="rounded-xl border border-border bg-background/50 p-3 space-y-2.5">
-          <div className="flex items-end justify-between gap-3">
-            <div>
-              <p className="font-mono tabular-nums text-lg font-semibold text-light-text leading-none">
-                {learn.completedCount}/{learn.playableCount}
-              </p>
-              <p className="text-[11px] text-dark-text mt-1">lessons done · {pct}%</p>
-            </div>
-            <div className="text-right text-[11px] font-mono tabular-nums">
-              {pathComplete ? (
-                <p className="text-success">Path complete</p>
-              ) : (
-                <p className="text-warning">{learn.attemptedCount} tried</p>
-              )}
-              {learn.lastActivityAt && (
-                <p className="text-dark-text/70"><RelativeTime value={learn.lastActivityAt} /></p>
-              )}
-            </div>
-          </div>
-          <div className="h-1.5 w-full rounded-full bg-border/50 overflow-hidden">
-            <div className="h-full rounded-full bg-success" style={{ width: `${pct}%` }} />
-          </div>
-          {next && (
-            <p className="text-xs text-dark-text">
-              Next: <span className="text-light-text">{next.title}</span>
-              <span className="text-dark-text/60"> · L{next.levelNumber}</span>
-            </p>
-          )}
-          {!hasPath && (
-            <p className="text-xs text-dark-text/70">No signed-in path progress yet.</p>
-          )}
-        </div>
-
-        {hasPath && pathComplete && (
-          <LevelBundle label={`${groups.length} levels`} groups={groups} />
-        )}
-        {hasPath && !pathComplete && (
-          <div className="space-y-1.5">
-            {currentGroup && <LevelGroup group={currentGroup} defaultOpen />}
-            <LevelBundle
-              label={`Completed · ${completedGroups.length} level${completedGroups.length === 1 ? '' : 's'}`}
-              groups={completedGroups}
-            />
-            <LevelBundle
-              label={`Upcoming · ${upcomingGroups.length} level${upcomingGroups.length === 1 ? '' : 's'}`}
-              groups={upcomingGroups}
-            />
-          </div>
-        )}
-      </section>
+      {paths.map((path) => (
+        <PathSection key={path.courseId} path={path} />
+      ))}
 
       <section className="space-y-3">
         <p className="mono-label text-dark-text">Practice</p>
@@ -227,6 +181,83 @@ export default function StudentLearning({
         )}
       </section>
     </div>
+  );
+}
+
+function PathSection({ path }: { path: StudentPath }) {
+  const hasPath = path.completedCount + path.attemptedCount > 0;
+  const label = `${path.exam} · ${path.paper}`;
+
+  if (!hasPath) {
+    return (
+      <section className="space-y-2">
+        <p className="mono-label text-dark-text">{label}</p>
+        <p className="text-xs text-dark-text/70">Not started</p>
+      </section>
+    );
+  }
+
+  const pct = path.playableCount > 0
+    ? Math.round((path.completedCount / path.playableCount) * 100)
+    : 0;
+  const next = path.lessons.find((lesson) => lesson.state !== 'completed');
+  const groups = groupLevels(path.lessons);
+  const pathComplete = next == null;
+  const currentGroup = groups.find((group) => !levelComplete(group));
+  const completedGroups = groups.filter(levelComplete);
+  const upcomingGroups = groups.filter(
+    (group) => group !== currentGroup && !levelComplete(group),
+  );
+
+  return (
+    <section className="space-y-2">
+      <p className="mono-label text-dark-text">{label}</p>
+      <div className="rounded-xl border border-border bg-background/50 p-3 space-y-2.5">
+        <div className="flex items-end justify-between gap-3">
+          <div>
+            <p className="font-mono tabular-nums text-lg font-semibold text-light-text leading-none">
+              {path.completedCount}/{path.playableCount}
+            </p>
+            <p className="text-[11px] text-dark-text mt-1">lessons done · {pct}%</p>
+          </div>
+          <div className="text-right text-[11px] font-mono tabular-nums">
+            {pathComplete ? (
+              <p className="text-success">Path complete</p>
+            ) : (
+              <p className="text-warning">{path.attemptedCount} tried</p>
+            )}
+            {path.lastActivityAt && (
+              <p className="text-dark-text/70"><RelativeTime value={path.lastActivityAt} /></p>
+            )}
+          </div>
+        </div>
+        <div className="h-1.5 w-full rounded-full bg-border/50 overflow-hidden">
+          <div className="h-full rounded-full bg-success" style={{ width: `${pct}%` }} />
+        </div>
+        {next && (
+          <p className="text-xs text-dark-text">
+            Next: <span className="text-light-text">{next.title}</span>
+            <span className="text-dark-text/60"> · L{next.levelNumber}</span>
+          </p>
+        )}
+      </div>
+
+      {pathComplete ? (
+        <LevelBundle label={`${groups.length} levels`} groups={groups} />
+      ) : (
+        <div className="space-y-1.5">
+          {currentGroup && <LevelGroup group={currentGroup} defaultOpen />}
+          <LevelBundle
+            label={`Completed · ${completedGroups.length} level${completedGroups.length === 1 ? '' : 's'}`}
+            groups={completedGroups}
+          />
+          <LevelBundle
+            label={`Upcoming · ${upcomingGroups.length} level${upcomingGroups.length === 1 ? '' : 's'}`}
+            groups={upcomingGroups}
+          />
+        </div>
+      )}
+    </section>
   );
 }
 
@@ -298,7 +329,7 @@ function LevelGroup({
   );
 }
 
-function LessonList({ lessons }: { lessons: StudentLearning['learn']['lessons'] }) {
+function LessonList({ lessons }: { lessons: StudentPath['lessons'] }) {
   return (
     <ul className="mt-2 space-y-1 border-t border-border/50 pt-2">
       {lessons.map((lesson) => (
@@ -322,7 +353,7 @@ function LessonList({ lessons }: { lessons: StudentLearning['learn']['lessons'] 
   );
 }
 
-function groupLevels(lessons: StudentLearning['learn']['lessons']) {
+function groupLevels(lessons: StudentPath['lessons']) {
   const groups: Array<{ number: number; name: string; slug: string; lessons: typeof lessons }> = [];
   for (const lesson of lessons) {
     const last = groups[groups.length - 1];

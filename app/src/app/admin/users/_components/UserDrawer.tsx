@@ -6,7 +6,7 @@ import { BookOpen, BookOpenCheck, Check, Copy, Route } from 'lucide-react';
 import { planBadge } from '@/modules/billing/planDisplay';
 import AdminDrawer, { useHeld } from '../../_components/AdminDrawer';
 import { CopyValue, MetaField, formatAdminDate, nice } from '../../_components/adminUi';
-import StudentLearning, { useStudentLearning } from './StudentLearning';
+import StudentLearning, { pathChipValue, useStudentLearning } from './StudentLearning';
 
 export interface UserRow {
   id: string;
@@ -214,8 +214,8 @@ export default function UserDrawer({
         <div className="grid grid-cols-3 gap-2 md:gap-3">
           <StatChip
             icon={Route}
-            label="Path"
-            value={learning ? `${learning.learn.completedCount}/${learning.learn.playableCount}` : shown._count.learnProgress}
+            label="Paths"
+            value={learning ? pathChipValue(learning.paths) : shown._count.learnProgress}
           />
           <StatChip icon={BookOpenCheck} label="Practice" value={learning ? learning.practice.solved : shown._count.progress} />
           <StatChip icon={BookOpen} label="Exams" value={shown._count.examAttempts} />

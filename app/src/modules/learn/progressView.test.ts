@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { IGCSE_PAPER_2 } from './curriculum';
+import { ALEVEL_9618, IGCSE_PAPER_2 } from './curriculum';
 import { flattenLessons } from './path';
 import type { LearnProgressRecord } from './progress';
+import { ALEVEL_COURSE_ID } from './types';
 import { buildLearnProgressView, groupLessonsByLevel } from './progressView';
 
 describe('buildLearnProgressView', () => {
@@ -53,5 +54,27 @@ describe('buildLearnProgressView', () => {
     const groups = groupLessonsByLevel(view.lessons);
     expect(groups[0]?.levelNumber).toBe(1);
     expect(groups.some((group) => group.levelNumber === 4)).toBe(true);
+  });
+
+  it('scores A Level rows against the 9618 course', () => {
+    const playable = flattenLessons(ALEVEL_9618).filter((item) => item.lesson.playable);
+    const rows: LearnProgressRecord[] = [
+      {
+        lessonId: 'as1.1',
+        status: 'COMPLETED',
+        attempts: 1,
+        lastOk: true,
+        lastReason: 'passed',
+        lastCode: null,
+        completedAt: '2026-09-30T11:00:00.000Z',
+        updatedAt: '2026-09-30T11:00:00.000Z',
+      },
+    ];
+    const view = buildLearnProgressView(rows, ALEVEL_9618);
+    expect(view.courseId).toBe(ALEVEL_COURSE_ID);
+    expect(view.playableCount).toBe(playable.length);
+    expect(view.completedCount).toBe(1);
+    expect(view.lessons.find((item) => item.lessonId === 'as1.1')?.state).toBe('completed');
+    expect(buildLearnProgressView(rows).completedCount).toBe(0);
   });
 });

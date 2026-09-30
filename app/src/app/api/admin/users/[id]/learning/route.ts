@@ -2,7 +2,8 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/modules/auth/auth';
 import { prisma } from '@/shared/db';
 import { isAdmin } from '@/modules/admin/isAdmin';
-import { COURSE_ID } from '@/modules/learn/types';
+import { COURSE_CHOICES } from '@/modules/learn/courseChoice';
+import { courseById } from '@/modules/learn/curriculum';
 import { buildLearnProgressView } from '@/modules/learn/progressView';
 import type { LearnProgressRecord } from '@/modules/learn/progress';
 import { getQuestionCatalog } from '@/shared/lib/catalogCache';
@@ -20,8 +21,9 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
 
   const [learnRows, practiceRows, solvedCount, attemptedCount, examRows, catalog] = await Promise.all([
     prisma.learnProgress.findMany({
-      where: { userId: id, courseId: COURSE_ID },
+      where: { userId: id },
       select: {
+        courseId: true,
         lessonId: true,
         status: true,
         attempts: true,
@@ -64,28 +66,37 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     getQuestionCatalog(),
   ]);
 
-  const records: LearnProgressRecord[] = learnRows.map((row) => ({
-    lessonId: row.lessonId,
-    status: row.status,
-    attempts: row.attempts,
-    lastOk: row.lastOk,
-    lastReason: row.lastReason,
-    lastCode: null,
-    completedAt: row.completedAt,
-    updatedAt: row.updatedAt,
-  }));
+  const byCourse = new Map<string, LearnProgressRecord[]>();
+  for (const row of learnRows) {
+    const list = byCourse.get(row.courseId) ?? [];
+    list.push({
+      lessonId: row.lessonId,
+      status: row.status,
+      attempts: row.attempts,
+      lastOk: row.lastOk,
+      lastReason: row.lastReason,
+      lastCode: null,
+      completedAt: row.completedAt,
+      updatedAt: row.updatedAt,
+    });
+    byCourse.set(row.courseId, list);
+  }
 
   const titles = new Map(catalog.map((q) => [q.id, q.title]));
-  const learn = buildLearnProgressView(records);
-
-  return NextResponse.json({
-    learn: {
-      playableCount: learn.playableCount,
-      completedCount: learn.completedCount,
-      attemptedCount: learn.attemptedCount,
-      notStartedCount: learn.notStartedCount,
-      lastActivityAt: learn.lastActivityAt,
-      lessons: learn.lessons.map((lesson) => ({
+  const paths = COURSE_CHOICES.flatMap((choice) => {
+    const course = courseById(choice.id);
+    if (!course) return [];
+    const view = buildLearnProgressView(byCourse.get(choice.id) ?? [], course);
+    return [{
+      courseId: view.courseId,
+      exam: choice.exam,
+      paper: choice.paper,
+      playableCount: view.playableCount,
+      completedCount: view.completedCount,
+      attemptedCount: view.attemptedCount,
+      notStartedCount: view.notStartedCount,
+      lastActivityAt: view.lastActivityAt,
+      lessons: view.lessons.map((lesson) => ({
         lessonId: lesson.lessonId,
         title: lesson.title,
         levelNumber: lesson.levelNumber,
@@ -94,7 +105,11 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
         state: lesson.state,
         attempts: lesson.attempts,
       })),
-    },
+    }];
+  });
+
+  return NextResponse.json({
+    paths,
     practice: {
       solved: solvedCount,
       attempted: attemptedCount,

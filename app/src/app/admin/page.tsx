@@ -49,7 +49,7 @@ export default async function AdminOverviewPage() {
 
   const stats = [
     { label: 'Total users',    value: userCount,          icon: Users,         color: 'text-primary', tint: 'bg-primary/10', href: '/admin/users',     cta: 'Manage users' },
-    { label: 'Path learners',  value: learnLearnerCount,  icon: Route,         color: 'text-success', tint: 'bg-success/10', href: '/admin/learn',     cta: 'View path' },
+    { label: 'Path learners',  value: learnLearnerCount,  icon: Route,         color: 'text-success', tint: 'bg-success/10', href: '/admin/learn',     cta: 'View paths' },
     { label: 'Feedback items', value: feedbackCount,      icon: MessageSquare, color: 'text-success', tint: 'bg-success/10', href: '/admin/feedback',  cta: 'Read feedback' },
     { label: 'Exam attempts',  value: examCount,          icon: BookOpen,      color: 'text-warning', tint: 'bg-warning/10', href: '/admin/analytics', cta: 'View analytics' },
     { label: 'Questions',      value: questionCount,      icon: BookOpenCheck, color: 'text-error',   tint: 'bg-error/10',   href: '/admin/analytics', cta: 'View analytics' },
@@ -57,7 +57,7 @@ export default async function AdminOverviewPage() {
 
   const navCards = [
     { title: 'Users',     desc: 'Roles, plans & activity',       icon: Users,         href: '/admin/users' },
-    { title: 'Path',      desc: 'Paper 2 Path progress',         icon: Route,         href: '/admin/learn' },
+    { title: 'Paths',     desc: 'O Level and A Level progress',  icon: Route,         href: '/admin/learn' },
     { title: 'Feedback',  desc: 'Ratings & comments',            icon: MessageSquare, href: '/admin/feedback' },
     { title: 'Contact',   desc: newContactCount > 0 ? `${newContactCount} new message${newContactCount !== 1 ? 's' : ''}` : 'No new messages', icon: Mail, href: '/admin/contact' },
     { title: 'Analytics', desc: 'Growth & learning insights',    icon: BarChart3,     href: '/admin/analytics' },

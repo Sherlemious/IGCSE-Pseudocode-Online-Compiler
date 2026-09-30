@@ -23,7 +23,7 @@ const NAV = [
   { href: '/admin/contact',   label: 'Contact',   icon: Mail            },
   { href: '/admin/copies',    label: 'Copies',    icon: Radar           },
   { href: '/admin/users',     label: 'Users',     icon: Users           },
-  { href: '/admin/learn',     label: 'Path',      icon: Route           },
+  { href: '/admin/learn',     label: 'Paths',     icon: Route           },
   { href: '/admin/analytics', label: 'Analytics', icon: BarChart3       },
 ];
 
