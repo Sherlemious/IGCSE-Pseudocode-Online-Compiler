@@ -4,7 +4,7 @@ import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { CodeMirrorEditor } from '@/modules/compiler/editor';
+import { CodeMirrorEditor, EditorUndoButtons, useEditorHistory } from '@/modules/compiler/editor';
 import { useInterpreter } from '@/modules/interpreter/useInterpreter';
 import { captureEvent } from '@/modules/interpreter/analytics';
 import type { OutputEntry } from '@/modules/interpreter';
@@ -115,6 +115,7 @@ export default function ExamWorkspace({ examId, questions, timeLimitMin, started
     provideInput,
     clearEntries,
   } = useInterpreter({ feature: 'exam', examId, questionId: question.questionId });
+  const { actionsRef, history, onHistoryChange, undo, redo } = useEditorHistory();
   const cursorLineRef = useRef<number | undefined>(undefined);
 
   // Analytics: exam_started once per attempt view.
@@ -548,6 +549,13 @@ export default function ExamWorkspace({ examId, questions, timeLimitMin, started
               {grading ? <Loader2 size={11} className="animate-spin" /> : <ClipboardCheck size={11} />}
               Check
             </button>
+            <EditorUndoButtons
+              canUndo={history.canUndo}
+              canRedo={history.canRedo}
+              onUndo={undo}
+              onRedo={redo}
+              disabled={isStepping || timeUp || submitting}
+            />
             <button
               onClick={() => handleCodeChange(question.starterCode)}
               className="flex items-center gap-1 px-2 py-1 rounded-md text-xs
@@ -605,6 +613,9 @@ export default function ExamWorkspace({ examId, questions, timeLimitMin, started
               debugLine={debugLine}
               errorLine={errorLine}
               errorFocusKey={errorFocusKey}
+              actionsRef={actionsRef}
+              onHistoryChange={onHistoryChange}
+              historyScope={question.questionId}
             />
           </div>
 

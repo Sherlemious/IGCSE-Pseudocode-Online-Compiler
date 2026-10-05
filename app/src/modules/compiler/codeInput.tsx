@@ -27,6 +27,7 @@ import type { PasteCleanup } from './pasteCleanup';
 import ExamplePicker from './examplePicker';
 import FileViewer from './fileViewer';
 import CodeMirrorEditor from './CodeMirrorEditor';
+import { EditorUndoButtons, useEditorHistory } from './editorHistory';
 import dynamic from 'next/dynamic';
 import { useTheme } from '@/theme/ThemeContext';
 import { useRegisterCommands } from '@/shared/ui/CommandPalette';
@@ -146,6 +147,7 @@ const CodeInput: React.FC<CodeInputProps> = ({
   const { wordWrap } = useTheme();
   const ph = usePostHog();
   const aiEggShownRef = useRef(false);
+  const { actionsRef, history, onHistoryChange, undo, redo } = useEditorHistory();
 
   // A pasted AI/Markdown answer was trimmed down to just its code. Track it, and
   // reward the common "pasted a whole ChatGPT reply" case with a one-time nudge.
@@ -288,6 +290,8 @@ const CodeInput: React.FC<CodeInputProps> = ({
     { id: 'code-download', label: 'Download code (.pseudo)', group: 'Code', keywords: 'save export', run: () => handleDownload() },
     { id: 'code-share', label: 'Share code (copy link)', group: 'Code', keywords: 'permalink url', run: () => handleShareCode() },
     { id: 'code-copy', label: 'Copy code', group: 'Code', keywords: 'clipboard', run: () => handleCopyCode() },
+    { id: 'code-undo', label: 'Undo', group: 'Code', keywords: 'back revert ctrl z deleted', run: () => undo() },
+    { id: 'code-redo', label: 'Redo', group: 'Code', keywords: 'forward ctrl y', run: () => redo() },
   ]);
 
   const activeTab = tabs.find((t) => t.id === activeTabId) ?? tabs[0];
@@ -393,8 +397,16 @@ const CodeInput: React.FC<CodeInputProps> = ({
           </div>
         </div>
 
-        {/* Right: debug/run controls */}
+        {/* Right: undo, then debug/run */}
         <div className="flex items-center gap-0.5 shrink-0 px-1">
+          <EditorUndoButtons
+            canUndo={history.canUndo}
+            canRedo={history.canRedo}
+            onUndo={undo}
+            onRedo={redo}
+            disabled={isStepping}
+          />
+          <div className="w-px h-4 bg-border mx-0.5" aria-hidden="true" />
           {isStepping && (
             <>
               <button
@@ -480,7 +492,7 @@ const CodeInput: React.FC<CodeInputProps> = ({
       {showShortcutHint && (
         <div className="hidden md:flex items-center justify-between px-3 py-1 bg-primary/5 border-b border-primary/15 text-[11px] text-primary/60 animate-fade-in shrink-0">
           <span>
-            <kbd className="font-mono">Ctrl+Enter</kbd> run &middot; <kbd className="font-mono">Ctrl+K</kbd> command palette &middot; <kbd className="font-mono">Ctrl+Shift+K</kbd> stop
+            <kbd className="font-mono">Ctrl+Z</kbd> undo &middot; <kbd className="font-mono">Ctrl+Enter</kbd> run &middot; <kbd className="font-mono">Ctrl+K</kbd> command palette &middot; <kbd className="font-mono">Ctrl+Shift+K</kbd> stop
           </span>
           <button onClick={dismissShortcutHint} aria-label="Dismiss shortcut hint" className="ml-3 text-primary/40 hover:text-primary/70 transition-colors leading-none">
             <X size={11} />
@@ -513,6 +525,9 @@ const CodeInput: React.FC<CodeInputProps> = ({
           onFixApplied={onFixApplied}
           onErrorExample={onErrorExample}
           onInlineErrorDismissed={onInlineErrorDismissed}
+          actionsRef={actionsRef}
+          onHistoryChange={onHistoryChange}
+          historyScope={activeTabId}
         />
 
         {code.length === 0 && !isRunning && (

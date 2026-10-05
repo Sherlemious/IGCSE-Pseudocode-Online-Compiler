@@ -15,8 +15,9 @@ import {
   Decoration,
   DecorationSet,
 } from '@codemirror/view';
-import { EditorState, Compartment, StateField, StateEffect, RangeSetBuilder } from '@codemirror/state';
-import { defaultKeymap, indentWithTab, history, historyKeymap } from '@codemirror/commands';
+import { EditorState, Compartment, StateField, StateEffect, RangeSetBuilder, Transaction } from '@codemirror/state';
+import { defaultKeymap, indentWithTab, history, historyKeymap, undo, redo, undoDepth, redoDepth } from '@codemirror/commands';
+import type { EditorActions, EditorHistoryState } from './editorHistory';
 import { bracketMatching, foldGutter, indentOnInput } from '@codemirror/language';
 import { searchKeymap, highlightSelectionMatches } from '@codemirror/search';
 import { autocompletion, completionKeymap } from '@codemirror/autocomplete';
@@ -119,6 +120,15 @@ interface CodeMirrorEditorProps {
   onErrorExample?: () => void;
   /** The student edited the code, so the inline error no longer applies. */
   onInlineErrorDismissed?: () => void;
+  /** Called with undo/redo so a toolbar button can drive this editor. */
+  actionsRef?: React.RefObject<EditorActions | null>;
+  /** Fires when the undo or redo stack becomes empty or non-empty. */
+  onHistoryChange?: (history: EditorHistoryState) => void;
+  /**
+   * Identity of the buffer (tab, lesson, question). Changing it rebuilds the
+   * editor so undo from the previous buffer cannot land on this one.
+   */
+  historyScope?: string;
 }
 
 const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
@@ -144,6 +154,9 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
   onFixApplied,
   onErrorExample,
   onInlineErrorDismissed,
+  actionsRef,
+  onHistoryChange,
+  historyScope = 'default',
 }) => {
   const { fontSize, dyslexicFont, fontLigatures, autocomplete, autoIndent } = useTheme();
   const editorRef = useRef<HTMLDivElement>(null);
@@ -192,11 +205,24 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
   const onFixAppliedRef = useRef(onFixApplied);
   const onErrorExampleRef = useRef(onErrorExample);
   const onInlineErrorDismissedRef = useRef(onInlineErrorDismissed);
+  const onHistoryChangeRef = useRef(onHistoryChange);
+  const historySnap = useRef<EditorHistoryState>({ canUndo: false, canRedo: false });
   useEffect(() => {
     onFixAppliedRef.current = onFixApplied;
     onErrorExampleRef.current = onErrorExample;
     onInlineErrorDismissedRef.current = onInlineErrorDismissed;
-  }, [onFixApplied, onErrorExample, onInlineErrorDismissed]);
+    onHistoryChangeRef.current = onHistoryChange;
+  }, [onFixApplied, onErrorExample, onInlineErrorDismissed, onHistoryChange]);
+
+  const publishHistory = useCallback((view: EditorView) => {
+    const next = { canUndo: undoDepth(view.state) > 0, canRedo: redoDepth(view.state) > 0 };
+    const prev = historySnap.current;
+    if (prev.canUndo === next.canUndo && prev.canRedo === next.canRedo) return;
+    historySnap.current = next;
+    onHistoryChangeRef.current?.(next);
+  }, []);
+  const publishHistoryRef = useRef(publishHistory);
+  publishHistoryRef.current = publishHistory;
 
   // Apply the current error's quick fix as one undoable edit. Refuses a stale fix
   // (the line was edited since the run) rather than guessing.
@@ -580,6 +606,7 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
             onChangeRef.current(update.state.doc.toString());
             const byFix = update.transactions.some((tr) => tr.annotation(quickFixAnnotation));
             if (!byFix && inlineErrorRef.current) onInlineErrorDismissedRef.current?.();
+            publishHistoryRef.current(update.view);
           }
           if (update.selectionSet && onCursorChangeRef.current) {
             const pos = update.state.selection.main.head;
@@ -598,14 +625,44 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
     });
 
     viewRef.current = view;
+    // Force a publish even when the new buffer also has nothing to undo,
+    // so a button left enabled by the previous buffer turns off.
+    historySnap.current = { canUndo: true, canRedo: true };
+    publishHistoryRef.current(view);
 
     return () => {
       view.destroy();
       viewRef.current = null;
     };
-  }, [createGutter]); // Include createGutter in dependencies
+    // historyScope rebuilds the view so a new tab, lesson, or question
+    // starts with an empty undo stack. `value` is read from this render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [createGutter, historyScope]);
 
-  // Update document when value changes externally
+  useEffect(() => {
+    const ref = actionsRef;
+    if (!ref) return;
+    ref.current = {
+      undo: () => {
+        const view = viewRef.current;
+        if (!view) return;
+        undo(view);
+        view.focus();
+      },
+      redo: () => {
+        const view = viewRef.current;
+        if (!view) return;
+        redo(view);
+        view.focus();
+      },
+    };
+    return () => {
+      ref.current = null;
+    };
+  }, [actionsRef]);
+
+  // Parent replaced the buffer (example, reset, another tab's content).
+  // Keep it out of the undo stack: that stack belongs to edits the student typed.
   useEffect(() => {
     if (!viewRef.current) return;
     const currentDoc = viewRef.current.state.doc.toString();
@@ -616,6 +673,7 @@ const CodeMirrorEditor: React.FC<CodeMirrorEditorProps> = ({
           to: currentDoc.length,
           insert: value,
         },
+        annotations: Transaction.addToHistory.of(false),
       });
     }
   }, [value]);

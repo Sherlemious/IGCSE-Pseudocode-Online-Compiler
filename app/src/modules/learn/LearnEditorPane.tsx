@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { CheckCircle, Play, Square, Terminal, XCircle } from 'lucide-react';
-import { CodeMirrorEditor, TraceTable } from '@/modules/compiler/editor';
+import { CodeMirrorEditor, EditorUndoButtons, TraceTable, useEditorHistory } from '@/modules/compiler/editor';
 import { useInterpreter } from '@/modules/interpreter/useInterpreter';
 import { checkLessonCode, type LessonCheckResult } from './check';
 import { markAttempt } from './progress';
@@ -27,6 +27,7 @@ export default function LearnEditorPane({ level, lesson, onPassed }: Props) {
     run, stop, clearEntries, provideInput, entries, isRunning, waitingForInput, errorLine, traceRows, maxTraceRows,
     errorInfo, noteFixApplied, noteErrorHelp, dismissErrorInfo,
   } = useInterpreter({ feature: 'learn', questionId: lesson.id });
+  const { actionsRef, history, onHistoryChange, undo, redo } = useEditorHistory();
   const canCheck = lesson.type !== 'quiz';
 
   useEffect(() => {
@@ -117,6 +118,12 @@ export default function LearnEditorPane({ level, lesson, onPassed }: Props) {
           {checking ? 'Checking…' : 'Check'}
         </button>
         )}
+        <EditorUndoButtons
+          canUndo={history.canUndo}
+          canRedo={history.canRedo}
+          onUndo={undo}
+          onRedo={redo}
+        />
         <span className="ml-auto hidden sm:inline text-[10px] uppercase tracking-wider text-dark-text/60 truncate min-w-0">
         {lesson.type === 'mutate' ? 'Change the starter' : lesson.type === 'grade' ? 'Hidden tests' : lesson.type === 'quiz' ? 'Run to fill the trace' : 'Match the output'}
         </span>
@@ -135,6 +142,9 @@ export default function LearnEditorPane({ level, lesson, onPassed }: Props) {
           onFixApplied={noteFixApplied}
           onErrorExample={() => noteErrorHelp('show_example')}
           onInlineErrorDismissed={dismissErrorInfo}
+          actionsRef={actionsRef}
+          onHistoryChange={onHistoryChange}
+          historyScope={lesson.id}
         />
       </div>
 

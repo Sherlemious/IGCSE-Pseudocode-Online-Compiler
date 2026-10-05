@@ -3,7 +3,7 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
-import { CodeMirrorEditor, TraceTable } from '@/modules/compiler/editor';
+import { CodeMirrorEditor, EditorUndoButtons, TraceTable, useEditorHistory } from '@/modules/compiler/editor';
 import SplitDivider from '@/shared/ui/SplitDivider';
 import PracticeStartGate from './PracticeStartGate';
 import GradeAuthSheet, { PENDING_GRADE_KEY } from './GradeAuthSheet';
@@ -176,6 +176,7 @@ export default function PracticeWorkspace({ questionId, starterCode, savedCode, 
     traceRows, maxTraceRows,
     run, debugRun, step, continueExecution, provideInput, stop, clearEntries, toggleBreakpoint,
   } = useInterpreter({ feature: 'practice', questionId });
+  const { actionsRef, history, onHistoryChange, undo, redo } = useEditorHistory();
   const cursorLineRef = useRef<number | undefined>(undefined);
 
   /* ── Output panel ───────────────────────────────────── */
@@ -481,6 +482,13 @@ export default function PracticeWorkspace({ questionId, starterCode, savedCode, 
               <div className="w-px h-4 bg-border mx-0.5" />
             </>
           )}
+          <EditorUndoButtons
+            canUndo={history.canUndo}
+            canRedo={history.canRedo}
+            onUndo={undo}
+            onRedo={redo}
+            disabled={busy}
+          />
           <button
             onClick={handleReset}
             disabled={busy || code === resetTarget}
@@ -631,6 +639,9 @@ export default function PracticeWorkspace({ questionId, starterCode, savedCode, 
             onFixApplied={noteFixApplied}
             onErrorExample={() => noteErrorHelp('show_example')}
             onInlineErrorDismissed={dismissErrorInfo}
+            actionsRef={actionsRef}
+            onHistoryChange={onHistoryChange}
+            historyScope={questionId}
           />
         </div>
 

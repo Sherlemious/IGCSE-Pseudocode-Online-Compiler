@@ -1714,9 +1714,10 @@ export function humanizeRuntimeError(rawMessage: string): string {
     return `This array needs ${expected} index(es), but ${got} was given.`;
   }
 
-  // Division by zero
+  // Division by zero. Students use 1 / 0 as an "infinity" sentinel (a minimum
+  // that loses to every real input). Pseudocode has no infinity value.
   if (rawMessage.includes('Division by zero')) {
-    return 'Division by zero — make sure your divisor is not 0 before dividing.';
+    return 'Division by zero — pseudocode has no infinity, so 1 / 0 is an error, not a number. For a starting minimum bigger than any input, use a large number such as 999999 instead.';
   }
 
   // Runaway recursion

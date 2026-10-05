@@ -621,6 +621,15 @@ describe('humanizeParseError — source-line pattern detectors', () => {
   });
 });
 
+describe('humanizeRuntimeError — division by zero', () => {
+  it('explains that 1 / 0 is not infinity', () => {
+    const msg = humanizeRuntimeError('Division by zero');
+    expect(msg).toContain('no infinity');
+    expect(msg).toContain('1 / 0');
+    expect(msg).toContain('999999');
+  });
+});
+
 describe('humanizeRuntimeError — unknown function aliases', () => {
   it('Sqrt / SQRT explain that Cambridge has no square-root builtin', () => {
     const msg = humanizeRuntimeError("Function 'Sqrt' is not defined");
