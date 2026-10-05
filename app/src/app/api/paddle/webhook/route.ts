@@ -31,8 +31,11 @@ interface SubscriptionData extends PaddleSubscriptionLike {
 interface TransactionData {
   id: string;
   status: string;
-  customerId: string;
+  origin?: string | null;
+  customerId: string | null;
   customData?: Record<string, unknown> | null;
+  currencyCode?: string | null;
+  details?: { totals?: { total?: string | null } | null } | null;
   items?: Array<{ price?: { id?: string | null } | null }>;
 }
 
@@ -84,6 +87,9 @@ export async function POST(req: Request) {
         break;
       case EventName.TransactionCompleted:
         await applyPassPurchase(event.data as unknown as TransactionData, paddle, occurredAt);
+        break;
+      case EventName.TransactionCreated:
+        await recordCheckoutOpened(event.data as unknown as TransactionData);
         break;
       default:
         break;
@@ -268,6 +274,43 @@ async function applyPassPurchase(data: TransactionData, paddle: Paddle, occurred
     plan_tier: pass.tier,
     paddle_env: env,
     transaction_id: data.id,
+  });
+}
+
+/**
+ * A signed-in buyer opened checkout (Paddle creates the transaction when the
+ * overlay loads). Captured here rather than only in the browser because ad
+ * blockers hide some buyers from PostHog entirely; the "checkout not finished"
+ * follow-up workflow triggers on it. Email and name are `$set` so that workflow
+ * can reach someone PostHog never identified.
+ */
+async function recordCheckoutOpened(data: TransactionData) {
+  if (data.origin !== 'web') return;
+  const appUserId = readAppUserId(data as unknown as SubscriptionData);
+  if (!appUserId) return;
+  const user = await prisma.user.findUnique({
+    where: { id: appUserId },
+    select: { id: true, email: true, name: true, role: true },
+  });
+  if (!user?.email) return;
+
+  const env = getPaddleEnv();
+  const priceId = data.items?.[0]?.price?.id ?? '';
+  const pass = passForPriceId(priceId, env);
+  await captureServerEvent(user.id, 'checkout_opened', {
+    transaction_id: data.id,
+    price_id: priceId,
+    tier: pass?.tier ?? (await tierSlugForPriceId(priceId, env)),
+    sku_type: pass ? 'session_pass' : 'subscription',
+    currency: data.currencyCode ?? null,
+    total: data.details?.totals?.total ?? null,
+    role: user.role,
+    paddle_env: env,
+    // Also on the event: a person PostHog has never seen may not have the
+    // `$set` applied yet when the workflow reads it.
+    email: user.email,
+    name: user.name ?? null,
+    $set: { email: user.email, ...(user.name ? { name: user.name } : {}) },
   });
 }
 

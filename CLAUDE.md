@@ -263,6 +263,7 @@ Page-side events fire from `PricingClient`; the `checkout_*` events are bridged 
 | `checkout_failed` | `paddle_env` + last-known context (terminal failure, distinct from a dismissed error dialog) |
 | `checkout_error` | `paddle_env` + last-known context + `error_name`, `error_type`, `error_code`, `error_detail`. Error events carry no `data`, so price/tier come from the remembered context. |
 | `checkout_success_viewed` | `transaction` (`_ptxn`) — fired on `/welcome` |
+| `checkout_opened` | webhook (`transaction.created`, signed-in web checkouts only) — `transaction_id`, `price_id`, `tier`, `sku_type`, `currency`, `total`, `role`, `paddle_env`; `$set`s `email`/`name`. Server-side so ad-blocked buyers still count; triggers the "checkout not finished" follow-up email (skipped once they buy) |
 | `subscription_plan_granted` | webhook — `plan`, `plan_tier`, `price_id`, `paddle_env`, `subscription_id`, `status` |
 | `subscription_plan_revoked` | webhook — `reason` (Paddle status), `paddle_env`, `subscription_id` |
 | `student_pass_granted` | webhook — `pass_kind`, `plan_tier`, `paddle_env`, `transaction_id` |

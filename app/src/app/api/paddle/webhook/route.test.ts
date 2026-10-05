@@ -13,10 +13,11 @@ type FakeUser = {
   paddleSubscriptionId: string | null;
 };
 
-const { users, events, failNextUpdate } = vi.hoisted(() => ({
+const { users, events, failNextUpdate, captured } = vi.hoisted(() => ({
   users: new Map<string, FakeUser>(),
   events: new Set<string>(),
   failNextUpdate: { value: false },
+  captured: [] as Array<{ distinctId: string; event: string; properties: Record<string, unknown> }>,
 }));
 
 vi.mock('@/shared/db', () => {
@@ -63,7 +64,11 @@ vi.mock('@/modules/billing/paddle/plan', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/modules/billing/paddle/plan')>()),
   tierSlugForPriceId: async () => 'starter',
 }));
-vi.mock('@/modules/telemetry/serverCapture', () => ({ captureServerEvent: async () => {} }));
+vi.mock('@/modules/telemetry/serverCapture', () => ({
+  captureServerEvent: async (distinctId: string, event: string, properties: Record<string, unknown> = {}) => {
+    captured.push({ distinctId, event, properties });
+  },
+}));
 vi.mock('@/modules/billing/entitlements', () => ({ revalidatePremiumAccess: () => {} }));
 
 import { POST } from './route';
@@ -107,6 +112,7 @@ beforeEach(() => {
   users.clear();
   events.clear();
   failNextUpdate.value = false;
+  captured.length = 0;
   process.env.PADDLE_WEBHOOK_SECRET = 'secret';
 });
 
@@ -160,5 +166,27 @@ describe('paddle webhook', () => {
     const retried = await deliver('evt_a', 'subscription.created', '2026-09-01T10:00:00Z', subscription('sub_1', 'active'));
     expect(retried.status).toBe(200);
     expect(users.get('u1')!.plan).toBe('STARTER');
+  });
+
+  it('records a signed-in checkout opening with the email the follow-up needs', async () => {
+    addUser();
+    const txn = { id: 'txn_9', status: 'draft', origin: 'web', customerId: null, customData: { app_user_id: 'u1' }, items: [{ price: { id: 'pri_starter' } }] };
+    await deliver('evt_open', 'transaction.created', '2026-10-01T01:35:08Z', txn);
+    expect(captured).toEqual([
+      expect.objectContaining({
+        distinctId: 'u1',
+        event: 'checkout_opened',
+        properties: expect.objectContaining({ transaction_id: 'txn_9', tier: 'starter', email: 'ada@example.com', $set: { email: 'ada@example.com' } }),
+      }),
+    ]);
+  });
+
+  it('skips signed-out checkouts and renewals', async () => {
+    addUser();
+    const guest = { id: 'txn_g', status: 'draft', origin: 'web', customerId: null, customData: null, items: [{ price: { id: 'pri_starter' } }] };
+    const renewal = { id: 'txn_r', status: 'billed', origin: 'subscription_recurring', customerId: 'ctm_1', customData: { app_user_id: 'u1' }, items: [{ price: { id: 'pri_starter' } }] };
+    await deliver('evt_g', 'transaction.created', '2026-10-01T01:00:00Z', guest);
+    await deliver('evt_r', 'transaction.created', '2026-10-01T02:00:00Z', renewal);
+    expect(captured).toEqual([]);
   });
 });
