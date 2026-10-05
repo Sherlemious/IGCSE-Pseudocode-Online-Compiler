@@ -27,6 +27,7 @@ import {
   SITE_URL,
 } from '@/shared/lib/seo';
 import { BRAND } from '@/shared/brand/brand';
+import { DOM_MUTATION_GUARD_SCRIPT } from '@/shared/lib/domMutationGuard';
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -179,6 +180,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        {/* First, before any React chunk: survive browser translation rewriting the DOM. */}
+        <script dangerouslySetInnerHTML={{ __html: DOM_MUTATION_GUARD_SCRIPT }} />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}

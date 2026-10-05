@@ -5,6 +5,7 @@ import { PostHogProvider as PHProvider, usePostHog } from 'posthog-js/react';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { useEffect, Suspense } from 'react';
 import { setInterpreterCapture } from '@/modules/interpreter/telemetry';
+import { DOM_MUTATION_GUARDED_EVENT } from '@/shared/lib/domMutationGuard';
 
 const key = process.env.NEXT_PUBLIC_POSTHOG_KEY;
 const host = process.env.NEXT_PUBLIC_POSTHOG_HOST ?? 'https://us.i.posthog.com';
@@ -32,6 +33,21 @@ if (typeof window !== 'undefined' && key) {
   // exempt them; everything else (autocapture, rage clicks) stays limited.
   setInterpreterCapture((event, properties) => {
     posthog.capture(event, properties, { skip_client_rate_limiting: true });
+  });
+  // The inline DOM guard (root layout) absorbed a NotFoundError that would have
+  // crashed the page. Once per op per page load; Chrome Translate marks <html>
+  // with translated-ltr/rtl and sets its lang to the target language.
+  const guardedOps = new Set<unknown>();
+  window.addEventListener(DOM_MUTATION_GUARDED_EVENT, (e) => {
+    const op = (e as CustomEvent).detail;
+    if (guardedOps.has(op)) return;
+    guardedOps.add(op);
+    const html = document.documentElement;
+    posthog.capture('dom_mutation_guarded', {
+      op,
+      translated: /\btranslated-(ltr|rtl)\b/.test(html.className),
+      page_lang: html.lang,
+    });
   });
 }
 
