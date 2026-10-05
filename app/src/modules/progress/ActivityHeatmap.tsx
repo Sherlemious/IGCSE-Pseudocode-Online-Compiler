@@ -1,8 +1,8 @@
 'use client';
 
 import type { CSSProperties } from 'react';
+import { buildHeatmap } from './heatmap';
 
-const MONTH_LABELS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const DAY_LABELS = ['', 'Mon', '', 'Wed', '', 'Fri', ''];
 
 // Alpha levels picked so that every step is visually distinct regardless of the
@@ -27,64 +27,10 @@ function cellProps(count: number): { className: string; style: CSSProperties } {
   };
 }
 
-interface DayCell {
-  date: string;
-  count: number;
-}
-
-export default function ActivityHeatmap({ activityByDate }: { activityByDate: Record<string, number> }) {
-  // Build 52-week grid anchored to today
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const todayTime = today.getTime();
-
-  // Start from the Sunday that is 51 weeks before the Sunday of this week
-  const startDate = new Date(today);
-  startDate.setDate(today.getDate() - today.getDay() - 51 * 7);
-
-  type WeekCol = (DayCell | null)[];
-  const weeks: WeekCol[] = [];
-  const monthLabels: (string | null)[] = [];
-  let prevMonth = -1;
-
-  for (let w = 0; w < 52; w++) {
-    const week: WeekCol = [];
-    let labelForWeek: string | null = null;
-    for (let d = 0; d < 7; d++) {
-      const date = new Date(startDate);
-      date.setDate(startDate.getDate() + w * 7 + d);
-      date.setHours(0, 0, 0, 0);
-      if (date.getTime() > todayTime) {
-        week.push(null);
-        continue;
-      }
-      const dateStr = date.toISOString().split('T')[0];
-      const month = date.getMonth();
-      if (month !== prevMonth) {
-        labelForWeek = MONTH_LABELS[month];
-        prevMonth = month;
-      }
-      week.push({ date: dateStr, count: activityByDate[dateStr] ?? 0 });
-    }
-    weeks.push(week);
-    monthLabels.push(labelForWeek);
-  }
-
-  // Stats
-  const totalActiveDays = Object.values(activityByDate).filter((v) => v > 0).length;
-
-  const todayStr = today.toISOString().split('T')[0];
-  const yesterdayStr = new Date(todayTime - 86400000).toISOString().split('T')[0];
-  let currentStreak = 0;
-  const hasToday = !!activityByDate[todayStr];
-  const startOffset = hasToday ? 0 : activityByDate[yesterdayStr] ? 1 : -1;
-  if (startOffset >= 0) {
-    for (let i = startOffset; ; i++) {
-      const ds = new Date(todayTime - i * 86400000).toISOString().split('T')[0];
-      if (activityByDate[ds]) currentStreak++;
-      else break;
-    }
-  }
+export default function ActivityHeatmap({ activityByDate, asOf }: { activityByDate: Record<string, number>; asOf: number }) {
+  // UTC days from the server's timestamp, so the server render and the browser
+  // hydrate the same grid.
+  const { weeks, monthLabels, totalActiveDays, currentStreak } = buildHeatmap(activityByDate, asOf);
 
   return (
     <div className="bg-surface rounded-xl border border-border p-4 mb-4 animate-fade-in-up">

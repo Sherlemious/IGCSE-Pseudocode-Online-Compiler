@@ -57,6 +57,9 @@ export type ProgressReportData = {
   difficultyMap: Record<string, { attempted: number; solved: number }>;
   topicMap: Record<string, { attempted: number; solved: number }>;
   activityByDate: Record<string, number>;
+  /** When the report was built (ms). The heatmap anchors "today" to it, so the
+   *  server render and the browser hydrate draw the same grid. */
+  asOf: number;
   recentActivity: RecentActivityItem[];
   exams: ExamHistoryItem[];
 };
@@ -78,7 +81,7 @@ export function buildProgressReport(
   progressData: ProgressRow[],
   examData: ExamRow[],
   totalQuestions: number,
-  options?: { voice?: ProgressVoice },
+  options?: { voice?: ProgressVoice; now?: number },
 ): ProgressReportData {
   const voice = options?.voice ?? 'self';
   const totalAttempted = progressData.length;
@@ -127,6 +130,7 @@ export function buildProgressReport(
     difficultyMap,
     topicMap,
     activityByDate,
+    asOf: options?.now ?? Date.now(),
     recentActivity: progressData.slice(0, 10).map((p) => ({
       questionTitle: p.question.title,
       difficulty: p.question.difficulty,

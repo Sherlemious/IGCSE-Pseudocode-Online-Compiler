@@ -106,7 +106,7 @@ export default function ProgressReport({
         )
       ) : (
         <>
-          <ActivityHeatmap activityByDate={report.activityByDate} />
+          <ActivityHeatmap activityByDate={report.activityByDate} asOf={report.asOf} />
           <SummaryCards
             totalQuestions={report.totalQuestions}
             totalAttempted={report.totalAttempted}
