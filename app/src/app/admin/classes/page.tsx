@@ -4,8 +4,8 @@ import { ChevronRight } from 'lucide-react';
 import { StatTile } from '../analytics/_components/charts';
 import { AdminPager } from '../_components/AdminPager';
 import ScrollMain from '../_components/ScrollMain';
-import { AdminPageHeader, ChipRow, EmptyState, FilterLink, formatAdminDay, nice } from '../_components/adminUi';
-import { formatAdminNumber } from '../_components/adminFormat';
+import { AdminPageHeader, ChipRow, EmptyState, FilterLink } from '../_components/adminUi';
+import { formatAdminDay, formatAdminNumber } from '../_components/adminFormat';
 import { UserAvatar } from '../users/_components/UserDrawer';
 import { usersHref } from '../users/usersQuery';
 import ClassSearch from './_components/ClassSearch';
@@ -275,7 +275,7 @@ function StudentList({
 }
 
 function planLabel(plan: string, tier: string | null) {
-  const base = nice(plan);
+  const base = plan.charAt(0) + plan.slice(1).toLowerCase();
   if (!tier || tier.toLowerCase() === plan.toLowerCase()) return base;
   return `${base} · ${tier}`;
 }
