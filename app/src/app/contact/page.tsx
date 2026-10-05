@@ -11,7 +11,14 @@ export const metadata: Metadata = {
   },
 };
 
-export default function ContactPage() {
+export default async function ContactPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ subject?: string }>;
+}) {
+  const { subject } = await searchParams;
+  const defaultSubject = (subject ?? '').trim().slice(0, 200);
+
   return (
     <div className="flex-1 overflow-y-auto bg-background bg-dot-grid">
       <div
@@ -32,7 +39,7 @@ export default function ContactPage() {
           </p>
 
           <div className="mt-8">
-            <ContactForm />
+            <ContactForm defaultSubject={defaultSubject} />
           </div>
 
           <IndexLinks current="/contact" />

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import Link from 'next/link';
 import { usePostHog } from 'posthog-js/react';
 import { usePaddle } from './PaddleProvider';
 import { hasRegionalPricing } from './ppp';
@@ -10,7 +11,6 @@ import {
   compareToMonthly,
   formatMajor,
 } from './paddle/passes';
-import { SUPPORT_EMAIL } from '@/shared/lib/seo';
 import {
   LIMITS,
   TEACHER_SLIDER_MAX,
@@ -436,16 +436,15 @@ export default function PricingClient({
     const priceId = interval === 'month' ? tier.monthPriceId : tier.yearPriceId;
     const isCurrent = currentTier ? matchSlugs.includes(currentTier) : false;
     if (tier.contactOnly) {
+      const subject = `${tier.name} plan enquiry`;
       return (
-        <a
-          href={`mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(
-            `Pseudocode Compiler — ${tier.name} plan enquiry`,
-          )}`}
+        <Link
+          href={`/contact?subject=${encodeURIComponent(subject)}`}
           onClick={() => ph?.capture('contact_sales_clicked', { tier: tier.slug, paddle_env: paddleEnv })}
-          className="mt-6 block w-full rounded-lg bg-primary px-4 py-2.5 text-center text-sm font-semibold text-white transition-colors hover:bg-primary-hover"
+          className="relative z-10 mt-6 block w-full cursor-pointer rounded-lg bg-primary px-4 py-2.5 text-center text-sm font-semibold text-white transition-colors hover:bg-primary-hover"
         >
           Contact me
-        </a>
+        </Link>
       );
     }
     if (isCurrent) {
@@ -761,7 +760,7 @@ export default function PricingClient({
                 onKeyUp={(e) => reportSeats(Number((e.target as HTMLInputElement).value))}
                 aria-label="Number of students"
                 aria-valuetext={`${seatLabel} students, ${selected?.name ?? band.tier} plan, ${formatCap(selectedLimits.maxClasses)} classes`}
-                className="mt-4 h-2 w-full cursor-pointer appearance-none rounded-full bg-border accent-primary"
+                className="relative z-0 mt-4 block h-2 w-full cursor-pointer appearance-none rounded-full bg-border accent-primary"
               />
               <div className="mt-3 flex flex-wrap gap-2">
                 {(

@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 interface Props {
   defaultName?: string;
   defaultEmail?: string;
+  defaultSubject?: string;
   signedIn?: boolean;
 }
 
@@ -16,14 +17,19 @@ const inputClass =
   'w-full px-3 py-2 rounded-lg bg-background border border-border text-light-text text-sm ' +
   'placeholder:text-dark-text/40 focus:outline-none focus:border-primary/50 transition-colors';
 
-export default function ContactForm({ defaultName = '', defaultEmail = '', signedIn: signedInProp }: Props) {
+export default function ContactForm({
+  defaultName = '',
+  defaultEmail = '',
+  defaultSubject = '',
+  signedIn: signedInProp,
+}: Props) {
   const ph = usePostHog();
   const { data: session, status } = useSession();
   const signedIn = signedInProp ?? status === 'authenticated';
 
   const [name, setName] = useState(defaultName);
   const [email, setEmail] = useState(defaultEmail);
-  const [subject, setSubject] = useState('');
+  const [subject, setSubject] = useState(defaultSubject);
   const [message, setMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
@@ -34,7 +40,8 @@ export default function ContactForm({ defaultName = '', defaultEmail = '', signe
     if (session.user.email) setEmail((current) => current || session.user.email || '');
   }, [session]);
 
-  const emailOk = signedIn || email.trim().length > 0;
+  const replyEmail = email.trim();
+  const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(replyEmail);
   const canSubmit = message.trim().length > 0 && emailOk && !submitting;
 
   async function submit() {
@@ -49,7 +56,7 @@ export default function ContactForm({ defaultName = '', defaultEmail = '', signe
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: name.trim() || null,
-          email: signedIn ? null : email.trim() || null,
+          email: replyEmail,
           subject: subject.trim() || null,
           message: message.trim(),
           pageUrl: (() => {
@@ -79,7 +86,7 @@ export default function ContactForm({ defaultName = '', defaultEmail = '', signe
         <p className="text-base font-semibold text-light-text">Message sent</p>
         <p className="text-sm text-dark-text max-w-sm">
           Thanks for reaching out. We&apos;ll reply to{' '}
-          <span className="text-light-text">{signedIn ? defaultEmail : email.trim()}</span> as soon as we can.
+          <span className="text-light-text">{replyEmail}</span> as soon as we can.
         </p>
       </div>
     );
@@ -106,17 +113,19 @@ export default function ContactForm({ defaultName = '', defaultEmail = '', signe
         </div>
         <div>
           <label htmlFor="contact-email" className="mono-label text-dark-text mb-1.5 block">
-            Email {!signedIn && <span className="text-error">*</span>}
+            Email <span className="text-error">*</span>
           </label>
           <input
             id="contact-email"
             type="email"
+            required
+            autoComplete="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            disabled={signedIn}
-            placeholder="you@example.com"
-            className={`${inputClass} disabled:opacity-60 disabled:cursor-not-allowed`}
+            placeholder="you@school.edu"
+            className={inputClass}
           />
+          <p className="mt-1.5 text-xs text-dark-text">We&apos;ll reply to this address.</p>
         </div>
       </div>
 

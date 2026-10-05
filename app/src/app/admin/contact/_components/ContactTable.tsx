@@ -170,7 +170,18 @@ export default function ContactTable({ messages }: Props) {
             />
             <dl className="grid gap-3">
               <MetaField label="From" value={shown.name ?? 'Anonymous'} />
-              <MetaField label="Email" value={shown.email ?? '—'} />
+              <MetaField
+                label="Email"
+                value={
+                  shown.email ? (
+                    <a href={`mailto:${shown.email}`} className="text-primary hover:text-primary-hover">
+                      {shown.email}
+                    </a>
+                  ) : (
+                    '—'
+                  )
+                }
+              />
               <MetaField label="Received" value={formatAdminDate(shown.createdAt)} />
               <MetaField label="Page" value={shown.pageUrl ?? '—'} mono />
             </dl>

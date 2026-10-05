@@ -32,10 +32,10 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'A message is required' }, { status: 400 });
     }
 
-    // Prefer the authenticated identity; fall back to what a logged-out user types.
-    // We need some way to reply, so an email is required when there's no session.
-    const email = session?.user?.email ?? cappedString(body.email, 320);
-    if (!email) {
+    // Always store the address they typed. A signed-in account email is only a
+    // prefill in the form — the reply has to go where they asked.
+    const email = cappedString(body.email, 320);
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       return NextResponse.json({ error: 'An email is required so we can reply' }, { status: 400 });
     }
 
