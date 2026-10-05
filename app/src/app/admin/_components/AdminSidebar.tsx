@@ -4,7 +4,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, MessageSquare, Users, ArrowLeft, BarChart3, Bug, Mail, Route, Radar, Menu, X } from 'lucide-react';
+import { LayoutDashboard, MessageSquare, Users, ArrowLeft, BarChart3, Bug, Mail, Route, Radar, Menu, X, GraduationCap } from 'lucide-react';
 
 interface User {
   name?: string | null;
@@ -23,6 +23,7 @@ const NAV = [
   { href: '/admin/contact',   label: 'Contact',   icon: Mail            },
   { href: '/admin/copies',    label: 'Copies',    icon: Radar           },
   { href: '/admin/users',     label: 'Users',     icon: Users           },
+  { href: '/admin/classes',   label: 'Classes',   icon: GraduationCap   },
   { href: '/admin/learn',     label: 'Paths',     icon: Route           },
   { href: '/admin/analytics', label: 'Analytics', icon: BarChart3       },
 ];

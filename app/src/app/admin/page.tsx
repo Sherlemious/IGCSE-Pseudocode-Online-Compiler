@@ -5,8 +5,9 @@ import { auth } from '@/modules/auth/auth';
 import { getQuestionCount } from '@/shared/lib/catalogCache';
 import {
   Users, MessageSquare, BookOpen, BookOpenCheck,
-  BarChart3, ArrowUpRight, ArrowRight, Mail, Route,
+  BarChart3, ArrowUpRight, ArrowRight, Mail, Route, GraduationCap,
 } from 'lucide-react';
+import { classesHref } from './classes/classesQuery';
 import { Panel, SectionHeading } from './analytics/_components/charts';
 import { formatAdminDate, formatAdminNumber } from './_components/adminFormat';
 
@@ -17,6 +18,7 @@ export default async function AdminOverviewPage() {
   const [
     session, userCount, feedbackCount, examCount, questionCount, learnLearnerCount,
     feedbackAgg, recentFeedback, recentUsers, newContactCount, recentContact,
+    classCount, teacherCount, recentJoins,
   ] =
     await Promise.all([
       auth(),
@@ -42,6 +44,24 @@ export default async function AdminOverviewPage() {
         take: 5,
         select: { id: true, name: true, email: true, subject: true, message: true, status: true, createdAt: true },
       }),
+      prisma.class.count(),
+      prisma.user.count({ where: { taughtClasses: { some: {} } } }),
+      prisma.classMembership.findMany({
+        orderBy: { joinedAt: 'desc' },
+        take: 5,
+        select: {
+          id: true,
+          joinedAt: true,
+          user: { select: { name: true, email: true } },
+          class: {
+            select: {
+              id: true,
+              name: true,
+              owner: { select: { name: true, email: true } },
+            },
+          },
+        },
+      }),
     ]);
 
   const firstName = session?.user?.name?.split(' ')[0] ?? 'Admin';
@@ -49,6 +69,7 @@ export default async function AdminOverviewPage() {
 
   const stats = [
     { label: 'Total users',    value: userCount,          icon: Users,         color: 'text-primary', tint: 'bg-primary/10', href: '/admin/users',     cta: 'Manage users' },
+    { label: 'Classes',        value: classCount,         icon: GraduationCap, color: 'text-primary', tint: 'bg-primary/10', href: '/admin/classes',   cta: 'View classes' },
     { label: 'Path learners',  value: learnLearnerCount,  icon: Route,         color: 'text-success', tint: 'bg-success/10', href: '/admin/learn',     cta: 'View paths' },
     { label: 'Feedback items', value: feedbackCount,      icon: MessageSquare, color: 'text-success', tint: 'bg-success/10', href: '/admin/feedback',  cta: 'Read feedback' },
     { label: 'Exam attempts',  value: examCount,          icon: BookOpen,      color: 'text-warning', tint: 'bg-warning/10', href: '/admin/analytics', cta: 'View analytics' },
@@ -57,6 +78,7 @@ export default async function AdminOverviewPage() {
 
   const navCards = [
     { title: 'Users',     desc: 'Roles, plans & activity',       icon: Users,         href: '/admin/users' },
+    { title: 'Classes',   desc: teacherCount > 0 ? `${teacherCount} teacher${teacherCount === 1 ? '' : 's'} with a class` : 'No classes yet', icon: GraduationCap, href: '/admin/classes' },
     { title: 'Paths',     desc: 'O Level and A Level progress',  icon: Route,         href: '/admin/learn' },
     { title: 'Feedback',  desc: 'Ratings & comments',            icon: MessageSquare, href: '/admin/feedback' },
     { title: 'Contact',   desc: newContactCount > 0 ? `${newContactCount} new message${newContactCount !== 1 ? 's' : ''}` : 'No new messages', icon: Mail, href: '/admin/contact' },
@@ -83,7 +105,7 @@ export default async function AdminOverviewPage() {
       </header>
 
       {/* ── Clickable stat cards ── */}
-      <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
         {stats.map(({ label, value, icon: Icon, color, tint, href, cta }) => (
           <Link
             key={label}
@@ -110,7 +132,7 @@ export default async function AdminOverviewPage() {
       </div>
 
       {/* ── Quick-access nav cards ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {navCards.map(({ title, desc, icon: Icon, href }) => (
           <Link
             key={title}
@@ -130,7 +152,7 @@ export default async function AdminOverviewPage() {
       </div>
 
       {/* ── Recent activity ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Recent feedback */}
         <Panel pad={false}>
           <div className="px-4 sm:px-5 pt-5">
@@ -199,6 +221,46 @@ export default async function AdminOverviewPage() {
                   </div>
                 </div>
               ))}
+            </div>
+          )}
+        </Panel>
+
+        {/* Recent class joins */}
+        <Panel pad={false}>
+          <div className="px-4 sm:px-5 pt-5">
+            <SectionHeading
+              eyebrow="Classes"
+              title="Recent joins"
+              meta={<Link href="/admin/classes" className="text-primary hover:underline">View all →</Link>}
+            />
+          </div>
+          {recentJoins.length === 0 ? (
+            <p className="px-4 sm:px-5 pb-5 text-sm text-dark-text">No students have joined a class yet.</p>
+          ) : (
+            <div className="divide-y divide-border border-t border-border">
+              {recentJoins.map((join) => {
+                const teacher = join.class.owner.name ?? join.class.owner.email ?? 'A teacher';
+                return (
+                  <Link
+                    key={join.id}
+                    href={classesHref({
+                      q: join.class.owner.email ?? join.class.owner.name ?? join.class.name,
+                      classId: join.class.id,
+                    })}
+                    className="px-4 sm:px-5 py-3 flex items-start gap-3 hover:bg-border/10 transition-colors"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs text-light-text truncate">{join.user.name ?? join.user.email ?? 'Unnamed'}</p>
+                      <p className="text-[10px] text-dark-text/70 truncate mt-0.5">
+                        {join.class.name} · {teacher}
+                      </p>
+                    </div>
+                    <span className="text-[10px] text-dark-text/60 shrink-0 whitespace-nowrap">
+                      {formatAdminDate(join.joinedAt, true)}
+                    </span>
+                  </Link>
+                );
+              })}
             </div>
           )}
         </Panel>
