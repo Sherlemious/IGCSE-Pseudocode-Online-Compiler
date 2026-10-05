@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { Book, Search, X, ChevronRight, ChevronLeft, FileCode, ArrowRight } from 'lucide-react';
 import { examples as staticExamples, type Example } from '@/modules/content/examples';
 
@@ -113,7 +114,7 @@ const ExamplePicker: React.FC<ExamplePickerProps> = ({ onSelectExample, open, on
 
   /* ── Browser panel (list of examples) ────────────────── */
   const renderBrowser = () => (
-    <div className="flex-1 flex flex-col min-h-0">
+    <div className="flex min-h-0 min-w-0 w-full flex-1 flex-col">
       {/* Search */}
       <div className="p-2 border-b border-border shrink-0">
         <div className="relative">
@@ -169,7 +170,7 @@ const ExamplePicker: React.FC<ExamplePickerProps> = ({ onSelectExample, open, on
                           ${isSelected ? 'bg-primary/15 text-primary' : 'text-light-text hover:bg-surface'}`}
                       >
                         <FileCode size={12} className={`shrink-0 ${isSelected ? 'text-primary' : 'text-dark-text'}`} />
-                        <span className="truncate text-left">{example.title}</span>
+                        <span className="min-w-0 flex-1 truncate text-left">{example.title}</span>
                         {/* Mobile: show a chevron hint */}
                         <ChevronRight size={12} className="shrink-0 text-dark-text/40 ml-auto md:hidden" />
                       </button>
@@ -190,12 +191,12 @@ const ExamplePicker: React.FC<ExamplePickerProps> = ({ onSelectExample, open, on
 
   /* ── Preview panel (code) ────────────────────────────── */
   const renderPreview = () => (
-    <div className="flex-1 flex flex-col min-h-0">
+    <div className="flex min-h-0 min-w-0 w-full flex-1 flex-col overflow-hidden">
       {selectedExample ? (
         <>
           {/* Preview header */}
-          <div className="h-9 bg-surface border-b border-border flex items-center justify-between px-3 shrink-0">
-            <div className="flex items-center gap-1.5 min-w-0">
+          <div className="flex h-9 shrink-0 items-center justify-between gap-2 border-b border-border bg-surface px-3 min-w-0">
+            <div className="flex min-w-0 flex-1 items-center gap-1.5">
               {/* Mobile back button */}
               <button
                 onClick={() => setMobileView('list')}
@@ -204,28 +205,40 @@ const ExamplePicker: React.FC<ExamplePickerProps> = ({ onSelectExample, open, on
                 <ChevronLeft size={14} />
               </button>
               <FileCode size={12} className="text-primary shrink-0" />
-              <span className="text-xs font-mono text-light-text truncate">{selectedExample.title}</span>
-              <span className="text-xs text-dark-text hidden sm:inline">— {selectedExample.category}</span>
+              <span className="min-w-0 truncate text-xs font-mono text-light-text">{selectedExample.title}</span>
+              <span className="hidden shrink-0 text-xs text-dark-text sm:inline">— {selectedExample.category}</span>
             </div>
             <button
               onClick={handleUse}
-              className="flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded
-                bg-primary/15 text-primary hover:bg-primary/25 transition-colors shrink-0"
+              className="hidden md:flex shrink-0 items-center gap-1 px-2.5 py-1 text-xs font-medium rounded
+                bg-primary/15 text-primary hover:bg-primary/25 transition-colors"
             >
               Load
               <ArrowRight size={12} />
             </button>
           </div>
 
-          {/* Code preview */}
+          {/* Code preview. min-w-0 keeps a long line from stretching the dialog
+              and pushing Load past the edge of a phone screen. */}
           <pre
             style={{ fontSize: 'var(--editor-font-size)' }}
-            className="flex-1 p-4 font-mono text-light-text overflow-auto leading-relaxed
+            className="min-h-0 min-w-0 flex-1 overflow-auto p-4 font-mono leading-relaxed text-light-text
               scrollbar-thin scrollbar-thumb-primary hover:scrollbar-thumb-primary-hover
               scrollbar-track-background scrollbar-thumb-rounded-full"
           >
             <code>{selectedExample.code}</code>
           </pre>
+
+          <div className="shrink-0 border-t border-border p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] md:hidden">
+            <button
+              type="button"
+              onClick={handleUse}
+              className="flex w-full items-center justify-center gap-1.5 rounded-md bg-primary px-3 py-2.5 text-sm font-medium text-on-primary hover:bg-primary-hover transition-colors"
+            >
+              Load example
+              <ArrowRight size={14} />
+            </button>
+          </div>
         </>
       ) : (
         <div className="flex-1 flex flex-col items-center justify-center gap-3 text-dark-text">
@@ -239,15 +252,14 @@ const ExamplePicker: React.FC<ExamplePickerProps> = ({ onSelectExample, open, on
     </div>
   );
 
-  if (!open) return null;
+  if (!open || typeof document === 'undefined') return null;
 
-  return (
-    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center md:p-3">
+  return createPortal(
+    <div className="fixed inset-0 z-[80] flex h-dvh max-h-dvh w-full min-w-0 flex-col bg-black/60 md:items-center md:justify-center md:p-3">
       <div
         ref={modalRef}
-        className="bg-background border-0 md:border border-border md:rounded-md
-          w-full h-full md:h-auto md:max-w-5xl md:max-h-[85vh]
-          flex flex-col shadow-intense overflow-hidden"
+        className="flex h-full min-h-0 w-full min-w-0 flex-col overflow-hidden bg-background shadow-intense
+          pt-[env(safe-area-inset-top)] md:h-auto md:max-h-[85vh] md:max-w-5xl md:rounded-md md:border md:border-border md:pt-0"
       >
         {/* Header bar */}
         <div className="h-10 md:h-9 bg-surface border-b border-border flex items-center justify-between px-3 shrink-0">
@@ -266,19 +278,20 @@ const ExamplePicker: React.FC<ExamplePickerProps> = ({ onSelectExample, open, on
         </div>
 
         {/* Desktop: side-by-side layout */}
-        <div className="hidden md:flex flex-1 min-h-0">
+        <div className="hidden min-h-0 min-w-0 flex-1 md:flex">
           {/* Left panel */}
-          <div className="w-64 border-r border-border flex flex-col min-h-0 shrink-0">{renderBrowser()}</div>
+          <div className="flex w-64 shrink-0 flex-col min-h-0 min-w-0 border-r border-border">{renderBrowser()}</div>
           {/* Right panel */}
           {renderPreview()}
         </div>
 
         {/* Mobile: single-pane navigation */}
-        <div className="flex md:hidden flex-1 min-h-0">
+        <div className="flex min-h-0 min-w-0 w-full flex-1 overflow-hidden md:hidden">
           {mobileView === 'list' ? renderBrowser() : renderPreview()}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 };
 
