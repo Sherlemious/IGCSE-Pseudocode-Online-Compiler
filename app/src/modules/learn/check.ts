@@ -1,4 +1,5 @@
 import { gradeSubmission } from '@/modules/practice/autograder';
+import type { QuickFix } from '@/modules/interpreter/quickFix';
 import type { LearnLesson } from './types';
 
 export type CheckReason =
@@ -17,6 +18,10 @@ export type LessonCheckResult = {
   actualOutput?: string;
   /** Error category slug when the code failed to parse or run (`reason: 'runtime'`). */
   errorCategory?: string;
+  /** 1-based line to explain under, when the mistake is on a specific line. */
+  line?: number;
+  /** One-click edit for that line, when the correction is mechanical. */
+  fix?: QuickFix;
 };
 
 function containsAll(code: string, needles: string[]): string | null {
@@ -26,21 +31,105 @@ function containsAll(code: string, needles: string[]): string | null {
   return null;
 }
 
-/**
- * Why a required snippet is "missing". The grammar accepts `=` for assignment
- * and lowercase keywords, so code that runs fine can still miss the exact
- * Cambridge form — say which form, instead of claiming it isn't there at all.
- */
-function mustContainMessage(code: string, needle: string): string {
-  if (needle === '<-' && /[A-Za-z_]\w*(?:\[[^\]]*\])?\s*=(?!=)/.test(code))
-    return 'Assign with `<-`, not `=` — for example `Score <- 42`. In Cambridge pseudocode `=` means "is equal to".';
+/** A line that stores with `=`, which this compiler accepts and the paper does not. */
+function equalsAssignment(code: string): { line: number; original: string; corrected: string } | null {
+  const lines = code.split('\n');
+  for (let i = 0; i < lines.length; i++) {
+    const match = lines[i].match(/^(\s*)([A-Za-z_]\w*(?:\[[^\]]*\])?)\s*=(?!=)\s*(.*?)\s*$/);
+    if (!match) continue;
+    return {
+      line: i + 1,
+      original: lines[i],
+      corrected: `${match[1]}${match[2]} <- ${match[3]}`,
+    };
+  }
+  return null;
+}
+
+function mustContainMessage(code: string, needle: string): { message: string; line?: number; fix?: QuickFix } {
+  if (needle === '<-') {
+    const found = equalsAssignment(code);
+    if (found) {
+      const shown = found.corrected.trim();
+      return {
+        message: `\`=\` compares two values. \`<-\` stores a value. Change this line to \`${shown}\`.`,
+        line: found.line,
+        fix: {
+          id: 'assign_arrow',
+          label: `Change to: ${shown}`,
+          line: found.line,
+          kind: 'replace',
+          text: found.corrected,
+          original: found.original,
+        },
+      };
+    }
+  }
   const at = code.toLowerCase().indexOf(needle.toLowerCase());
   if (at >= 0) {
     const wrote = code.slice(at, at + needle.length);
     const keyword = /^[A-Z_]+$/.test(needle) ? ' Keywords are written in capitals on the paper.' : '';
-    return `Write \`${needle}\` exactly like that — you wrote \`${wrote}\`.${keyword}`;
+    return { message: `Write \`${needle}\` exactly like that — you wrote \`${wrote}\`.${keyword}` };
   }
-  return `Your code must include \`${needle}\`.`;
+  return { message: `Your code must include \`${needle}\`.` };
+}
+
+function outputLines(text: string): string[] {
+  return text
+    .replace(/\r\n/g, '\n')
+    .trim()
+    .split('\n')
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0);
+}
+
+function joinLines(lines: string[]): string {
+  const bits = lines.map((line) => `\`${line}\``);
+  if (bits.length <= 1) return bits[0] ?? '';
+  if (bits.length === 2) return `${bits[0]}, then ${bits[1]}`;
+  return `${bits.slice(0, -1).join(', ')}, then ${bits[bits.length - 1]}`;
+}
+
+/** 1-based line of the nth OUTPUT in the program. */
+function outputLineNumber(code: string, index: number): number | undefined {
+  const nums: number[] = [];
+  code.split('\n').forEach((line, i) => {
+    if (/^\s*OUTPUT\b/i.test(line.replace(/\/\/.*$/, ''))) nums.push(i + 1);
+  });
+  return nums[index] ?? nums[0];
+}
+
+/**
+ * The printed lines are the right words in the wrong order, or the right words
+ * with the wrong capitals. Returns null when the output is a different answer.
+ */
+function explainOutputLines(expectedRaw: string, actualRaw: string, code: string): { message: string; line?: number } | null {
+  const expected = outputLines(expectedRaw);
+  const actual = outputLines(actualRaw);
+  if (expected.length === 0 || expected.length !== actual.length) return null;
+  const key = (lines: string[]) => lines.map((line) => line.toLowerCase()).sort().join('\0');
+  if (key(expected) !== key(actual)) return null;
+
+  const mismatch = expected.findIndex((line, i) => line !== actual[i]);
+  if (mismatch < 0) return null;
+  const line = outputLineNumber(code, mismatch);
+  const sameOrder = expected.every((line, i) => line.toLowerCase() === actual[i].toLowerCase());
+  if (sameOrder) {
+    const wrong = expected.flatMap((line, i) => (line === actual[i] ? [] : [{ got: actual[i], want: line }]));
+    const message =
+      wrong.length === 1
+        ? `\`${wrong[0].got}\` should be \`${wrong[0].want}\`.`
+        : `These words need capitals. You printed ${joinLines(actual)}. Print ${joinLines(expected)}.`;
+    return { message, line };
+  }
+  const wrongCase = actual.some((got) => {
+    const want = expected.find((line) => line.toLowerCase() === got.toLowerCase());
+    return want !== undefined && want !== got;
+  });
+  const message = wrongCase
+    ? `Wrong order, and these words need capitals. You printed ${joinLines(actual)}. Print ${joinLines(expected)}.`
+    : `Wrong order. You printed ${joinLines(actual)}. Print ${joinLines(expected)}.`;
+  return { message, line };
 }
 
 const oneLine = (text: string) => text.replace(/\n/g, ' / ');
@@ -65,7 +154,8 @@ export async function checkLessonCode(lesson: LearnLesson, code: string): Promis
 
   const missing = lesson.mustContain ? containsAll(code, lesson.mustContain) : null;
   if (missing !== null) {
-    return { ok: false, reason: 'must_contain', message: mustContainMessage(code, missing) };
+    const hint = mustContainMessage(code, missing);
+    return { ok: false, reason: 'must_contain', message: hint.message, line: hint.line, fix: hint.fix };
   }
 
   const forbidden = lesson.mustNotContain ? containsAny(code, lesson.mustNotContain) : null;
@@ -112,6 +202,16 @@ export async function checkLessonCode(lesson: LearnLesson, code: string): Promis
           `${label}${expected}, got \`${oneLine(result.actualOutput)}\` — the same answer as an earlier test. ` +
           'Work it out from the value you INPUT, not a fixed number.';
       } else {
+        const explained = explainOutputLines(test.expectedOutput, result.actualOutput, code);
+        if (explained) {
+          return {
+            ok: false,
+            reason: 'wrong_output',
+            message: `${label}${explained.message}`,
+            actualOutput: result.actualOutput,
+            line: explained.line,
+          };
+        }
         message = `${label}${expected}, got \`${oneLine(result.actualOutput)}\`.`;
       }
       return { ok: false, reason: 'wrong_output', message, actualOutput: result.actualOutput };

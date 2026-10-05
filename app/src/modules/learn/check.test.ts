@@ -76,7 +76,49 @@ describe('checkLessonCode feedback', () => {
   it('explains <- when the student assigned with =', async () => {
     const lesson: LearnLesson = { ...celsius, tests: undefined, expectedOutput: '42', mustContain: ['<-'] };
     const result = await checkLessonCode(lesson, 'DECLARE Score : INTEGER\nScore = 42\nOUTPUT Score');
-    expect(result.message).toContain('Assign with `<-`, not `=`');
+    expect(result.message).toContain('`=` compares two values');
+    expect(result.message).toContain('`<-` stores a value');
+    expect(result.message).toContain('Score <- 42');
+    expect(result.line).toBe(2);
+    expect(result.fix?.text).toBe('Score <- 42');
+    expect(result.fix?.original).toBe('Score = 42');
+  });
+
+  it('names a swapped OUTPUT order and the line to move', async () => {
+    const lesson: LearnLesson = {
+      ...celsius,
+      tests: undefined,
+      expectedOutput: 'Ready\nSet\nGo',
+    };
+    const result = await checkLessonCode(lesson, 'OUTPUT "Go"\nOUTPUT "Ready"\nOUTPUT "Set"');
+    expect(result.reason).toBe('wrong_output');
+    expect(result.message).toContain('Wrong order');
+    expect(result.message).toContain('`Go`, `Ready`, then `Set`');
+    expect(result.message).toContain('`Ready`, `Set`, then `Go`');
+    expect(result.line).toBe(1);
+  });
+
+  it('names a lowercase word on the line that printed it', async () => {
+    const lesson: LearnLesson = {
+      ...celsius,
+      tests: undefined,
+      expectedOutput: 'Ready\nSet\nGo',
+    };
+    const result = await checkLessonCode(lesson, 'OUTPUT "Ready"\nOUTPUT "Set"\nOUTPUT "go"');
+    expect(result.message).toBe('`go` should be `Go`.');
+    expect(result.line).toBe(3);
+  });
+
+  it('names capitals when every word is lowercase but the order is right', async () => {
+    const lesson: LearnLesson = {
+      ...celsius,
+      tests: undefined,
+      expectedOutput: 'Ready\nSet\nGo',
+    };
+    const result = await checkLessonCode(lesson, 'OUTPUT "ready"\nOUTPUT "set"\nOUTPUT "go"');
+    expect(result.message).toContain('need capitals');
+    expect(result.message).toContain('`ready`, `set`, then `go`');
+    expect(result.line).toBe(1);
   });
 
   it('points at capitals when a keyword is written in lowercase', async () => {

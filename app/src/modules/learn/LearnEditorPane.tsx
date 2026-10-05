@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { CheckCircle, Play, Square, Terminal, XCircle } from 'lucide-react';
 import { CodeMirrorEditor, EditorUndoButtons, TraceTable, useEditorHistory } from '@/modules/compiler/editor';
-import { useInterpreter } from '@/modules/interpreter/useInterpreter';
+import { useInterpreter, type ErrorInfo } from '@/modules/interpreter/useInterpreter';
 import { checkLessonCode, type LessonCheckResult } from './check';
 import { markAttempt } from './progress';
 import { persistLearnProgress } from './progressSync';
@@ -20,6 +20,7 @@ export default function LearnEditorPane({ level, lesson, onPassed }: Props) {
   const [code, setCode] = useState(lesson.starterCode ?? '');
   const [inputValue, setInputValue] = useState('');
   const [check, setCheck] = useState<LessonCheckResult | null>(null);
+  const [inlineHidden, setInlineHidden] = useState(false);
   const [checking, setChecking] = useState(false);
   const [attempts, setAttempts] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -29,10 +30,23 @@ export default function LearnEditorPane({ level, lesson, onPassed }: Props) {
   } = useInterpreter({ feature: 'learn', questionId: lesson.id });
   const { actionsRef, history, onHistoryChange, undo, redo } = useEditorHistory();
   const canCheck = lesson.type !== 'quiz';
+  const checkError: ErrorInfo | null =
+    check && !check.ok && check.line && !inlineHidden
+      ? {
+          errorType: 'runtime',
+          category: check.reason,
+          line: check.line,
+          message: check.message,
+          fix: check.fix ?? null,
+          unchanged: false,
+          fixApplied: false,
+        }
+      : null;
 
   useEffect(() => {
     setCode(lesson.starterCode ?? '');
     setCheck(null);
+    setInlineHidden(false);
     setAttempts(0);
     clearEntries();
   }, [lesson.id, lesson.starterCode, clearEntries]);
@@ -43,6 +57,7 @@ export default function LearnEditorPane({ level, lesson, onPassed }: Props) {
 
   const handleRun = useCallback(() => {
     setCheck(null);
+    setInlineHidden(false);
     void run(code);
   }, [code, run]);
 
@@ -53,6 +68,7 @@ export default function LearnEditorPane({ level, lesson, onPassed }: Props) {
     setAttempts(nextAttempts);
     try {
       const result = await checkLessonCode(lesson, code);
+      setInlineHidden(false);
       setCheck(result);
       const map = markAttempt(lesson.id, {
         lastOk: result.ok,
@@ -136,12 +152,21 @@ export default function LearnEditorPane({ level, lesson, onPassed }: Props) {
           onRun={handleRun}
           onStop={stop}
           isRunning={isRunning}
-          errorLine={errorLine}
+          errorLine={checkError ? checkError.line : errorLine}
           ariaLabel={`${lesson.title} editor`}
-          inlineError={errorInfo}
-          onFixApplied={noteFixApplied}
+          inlineError={checkError ?? errorInfo}
+          onFixApplied={(surface) => {
+            if (checkError?.fix) {
+              setCheck(null);
+              return;
+            }
+            noteFixApplied(surface);
+          }}
           onErrorExample={() => noteErrorHelp('show_example')}
-          onInlineErrorDismissed={dismissErrorInfo}
+          onInlineErrorDismissed={() => {
+            if (checkError) setInlineHidden(true);
+            dismissErrorInfo();
+          }}
           actionsRef={actionsRef}
           onHistoryChange={onHistoryChange}
           historyScope={lesson.id}

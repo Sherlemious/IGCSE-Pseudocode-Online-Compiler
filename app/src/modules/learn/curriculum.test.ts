@@ -74,7 +74,9 @@ describe('IGCSE Paper 2 curriculum', () => {
     const starter = await checkLessonCode(lesson, lesson.starterCode ?? '');
     expect(starter.ok).toBe(false);
     expect(starter.reason).not.toBe('passed');
-    expect(starter.message).toContain('<-');
+    expect(starter.message).toContain('`=` compares two values');
+    expect(starter.message).toContain('`<-` stores a value');
+    expect(starter.line).toBe(2);
   });
 
   it('fails 10.3 starter until the four errors are fixed', async () => {
