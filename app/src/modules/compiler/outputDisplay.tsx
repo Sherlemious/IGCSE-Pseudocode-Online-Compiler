@@ -25,6 +25,133 @@ const FlowchartView = dynamic(() => import('./FlowchartView'), {
 
 type OutputTab = 'terminal' | 'trace' | 'python' | 'flowchart';
 
+interface TerminalHandlers {
+  jumpToLine: (line: number) => void;
+  toggleExample: (index: number, opening: boolean) => void;
+  applyFix: () => void;
+}
+
+interface TerminalEntriesProps {
+  entries: OutputEntry[];
+  expandedErrors: Set<number>;
+  canJump: boolean;
+  fixLine: number | null;
+  fixLabel: string;
+  fixApplied: boolean;
+  /** Stable ref, so a page re-render with new callbacks doesn't redraw every line. */
+  handlers: React.RefObject<TerminalHandlers>;
+}
+
+/**
+ * The terminal's lines, apart from a live INPUT row. Memoized because the
+ * playground re-renders on every keystroke in the editor: with a full terminal
+ * (10,000 lines after a runaway loop) redrawing them cost ~0.5 s per key, and
+ * the queued keystrokes tripped React's update-depth limit (#185).
+ */
+const TerminalEntries = React.memo(function TerminalEntries({
+  entries,
+  expandedErrors,
+  canJump,
+  fixLine,
+  fixLabel,
+  fixApplied,
+  handlers,
+}: TerminalEntriesProps) {
+  const firstErrorIdx = entries.findIndex((e) => e.kind === 'error');
+  return (
+    <>
+      {entries.map((entry, i) => {
+        if (entry.kind === 'output') {
+          return (
+            <div key={i} className="terminal-line flex gap-2 whitespace-pre-wrap">
+              <ChevronRight className="text-primary/40 shrink-0 mt-0.5 w-[1em] h-[1em]" />
+              <span className="text-light-text" translate="no">{entry.text}</span>
+            </div>
+          );
+        }
+
+        if (entry.kind === 'error') {
+          const lineMatch = entry.text.match(/^Line (\d+)/);
+          const errLine = lineMatch ? parseInt(lineMatch[1], 10) : null;
+          const clickable = errLine !== null && canJump;
+          const newlineIdx = entry.text.indexOf('\n');
+          const summary = newlineIdx === -1 ? entry.text : entry.text.slice(0, newlineIdx);
+          const detail = newlineIdx === -1 ? null : entry.text.slice(newlineIdx + 1);
+          const isExpanded = expandedErrors.has(i);
+          const showFix = fixLine !== null && errLine === fixLine && i === firstErrorIdx;
+          return (
+            <div
+              key={i}
+              className={`terminal-line flex gap-2 py-0.5 ${clickable ? 'cursor-pointer hover:opacity-80 transition-opacity' : ''}`}
+              onClick={clickable ? () => handlers.current.jumpToLine(errLine!) : undefined}
+              title={clickable ? `Click to jump to line ${errLine}` : undefined}
+            >
+              <span className="text-error shrink-0 font-bold">!</span>
+              <span className="text-error">
+                <span className="whitespace-pre-wrap">{summary}</span>
+                {detail && (
+                  <>
+                    {' '}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handlers.current.toggleExample(i, !isExpanded);
+                      }}
+                      className="text-error/60 hover:text-error text-xs underline underline-offset-2 transition-colors"
+                    >
+                      {isExpanded ? 'hide example ▲' : 'show example ▼'}
+                    </button>
+                    {isExpanded && (
+                      <pre className="mt-1 whitespace-pre-wrap text-error/80">{detail}</pre>
+                    )}
+                  </>
+                )}
+                {showFix && (
+                  <span className="block mt-1">
+                    {fixApplied ? (
+                      <span className="text-success text-xs">✓ Fixed — run again to check</span>
+                    ) : (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handlers.current.applyFix();
+                        }}
+                        className="text-xs px-2 py-0.5 rounded border border-primary/60 bg-primary/10 text-primary
+                          hover:bg-primary/20 transition-colors max-w-full truncate"
+                        title={fixLabel}
+                      >
+                        Fix it: {fixLabel.replace(/^Change to: /, '')}
+                      </button>
+                    )}
+                  </span>
+                )}
+              </span>
+            </div>
+          );
+        }
+
+        if (entry.kind === 'input' && entry.submitted) {
+          return (
+            <div key={i} className="terminal-line flex flex-col">
+              {entry.prompt && (
+                <span className="text-primary whitespace-pre-wrap" translate="no">{entry.prompt}</span>
+              )}
+              <div className="flex gap-2 whitespace-pre-wrap">
+                <span className="text-info/50 shrink-0">&larr;</span>
+                <span className="text-dark-text/70" translate="no">{entry.variableName}:</span>
+                <span className="text-info" translate="no">{entry.value}</span>
+              </div>
+            </div>
+          );
+        }
+
+        // The live INPUT row is rendered by OutputDisplay.
+        return null;
+      })}
+    </>
+  );
+});
+
 interface OutputDisplayProps {
   entries: OutputEntry[];
   isRunning: boolean;
@@ -97,8 +224,29 @@ const OutputDisplay: React.FC<OutputDisplayProps> = ({
   const varsContainerRef = useRef<HTMLDivElement>(null);
   const varsDragging = useRef(false);
 
-  // Reset expanded errors when a new run starts (entries array replaced)
-  useEffect(() => { setExpandedErrors(new Set()); }, [entries]);
+  // Reset expanded errors when a new run starts (entries array replaced). Keep
+  // the same Set when nothing is open, or every output flush renders twice.
+  useEffect(() => { setExpandedErrors((prev) => (prev.size ? new Set() : prev)); }, [entries]);
+
+  const terminalHandlers = useRef<TerminalHandlers>({
+    jumpToLine: () => {},
+    toggleExample: () => {},
+    applyFix: () => {},
+  });
+  useEffect(() => {
+    terminalHandlers.current = {
+      jumpToLine: (line) => onJumpToLine?.(line),
+      toggleExample: (index, opening) => {
+        if (opening) onShowErrorExample?.();
+        setExpandedErrors((prev) => {
+          const next = new Set(prev);
+          if (opening) next.add(index); else next.delete(index);
+          return next;
+        });
+      },
+      applyFix: () => onApplyFix?.(),
+    };
+  }, [onJumpToLine, onShowErrorExample, onApplyFix]);
 
   // Auto-scroll to bottom on new entries
   useEffect(() => {
@@ -359,7 +507,11 @@ const OutputDisplay: React.FC<OutputDisplayProps> = ({
     }
 
     const hadError = entries.some((e) => e.kind === 'error');
-    const firstErrorIdx = entries.findIndex((e) => e.kind === 'error');
+    // The live INPUT row changes on every key the student types into it, so it
+    // renders outside the memoized list. It is always the last entry: the
+    // program is paused on it.
+    const last = entries[entries.length - 1];
+    const activeInput = last?.kind === 'input' && !last.submitted ? last : null;
 
     return (
       <div
@@ -370,125 +522,38 @@ const OutputDisplay: React.FC<OutputDisplayProps> = ({
           letterSpacing: 'var(--editor-letter-spacing)',
         }}
       >
-        {entries.map((entry, i) => {
-          if (entry.kind === 'output') {
-            return (
-              <div key={i} className="terminal-line flex gap-2 whitespace-pre-wrap">
-                <ChevronRight className="text-primary/40 shrink-0 mt-0.5 w-[1em] h-[1em]" />
-                <span className="text-light-text" translate="no">{entry.text}</span>
-              </div>
-            );
-          }
+        <TerminalEntries
+          entries={entries}
+          expandedErrors={expandedErrors}
+          canJump={!!onJumpToLine}
+          fixLine={quickFix?.line ?? null}
+          fixLabel={quickFix?.label ?? ''}
+          fixApplied={quickFix?.applied ?? false}
+          handlers={terminalHandlers}
+        />
 
-          if (entry.kind === 'error') {
-            const lineMatch = entry.text.match(/^Line (\d+)/);
-            const errLine = lineMatch ? parseInt(lineMatch[1], 10) : null;
-            const clickable = errLine !== null && onJumpToLine;
-            const newlineIdx = entry.text.indexOf('\n');
-            const summary = newlineIdx === -1 ? entry.text : entry.text.slice(0, newlineIdx);
-            const detail = newlineIdx === -1 ? null : entry.text.slice(newlineIdx + 1);
-            const isExpanded = expandedErrors.has(i);
-            const toggleExpand = (e: React.MouseEvent) => {
-              e.stopPropagation();
-              if (!expandedErrors.has(i)) onShowErrorExample?.();
-              setExpandedErrors(prev => {
-                const next = new Set(prev);
-                if (next.has(i)) next.delete(i); else next.add(i);
-                return next;
-              });
-            };
-            const showFix = quickFix != null && errLine === quickFix.line && i === firstErrorIdx;
-            return (
-              <div
-                key={i}
-                className={`terminal-line flex gap-2 py-0.5 ${clickable ? 'cursor-pointer hover:opacity-80 transition-opacity' : ''}`}
-                onClick={clickable ? () => onJumpToLine!(errLine!) : undefined}
-                title={clickable ? `Click to jump to line ${errLine}` : undefined}
-              >
-                <span className="text-error shrink-0 font-bold">!</span>
-                <span className="text-error">
-                  <span className="whitespace-pre-wrap">{summary}</span>
-                  {detail && (
-                    <>
-                      {' '}
-                      <button
-                        onClick={toggleExpand}
-                        className="text-error/60 hover:text-error text-xs underline underline-offset-2 transition-colors"
-                      >
-                        {isExpanded ? 'hide example ▲' : 'show example ▼'}
-                      </button>
-                      {isExpanded && (
-                        <pre className="mt-1 whitespace-pre-wrap text-error/80">{detail}</pre>
-                      )}
-                    </>
-                  )}
-                  {showFix && (
-                    <span className="block mt-1">
-                      {quickFix.applied ? (
-                        <span className="text-success text-xs">✓ Fixed — run again to check</span>
-                      ) : (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onApplyFix?.();
-                          }}
-                          className="text-xs px-2 py-0.5 rounded border border-primary/60 bg-primary/10 text-primary
-                            hover:bg-primary/20 transition-colors max-w-full truncate"
-                          title={quickFix.label}
-                        >
-                          Fix it: {quickFix.label.replace(/^Change to: /, '')}
-                        </button>
-                      )}
-                    </span>
-                  )}
-                </span>
-              </div>
-            );
-          }
-
-          if (entry.kind === 'input') {
-            if (entry.submitted) {
-              return (
-                <div key={i} className="terminal-line flex flex-col">
-                  {entry.prompt && (
-                    <span className="text-primary whitespace-pre-wrap" translate="no">{entry.prompt}</span>
-                  )}
-                  <div className="flex gap-2 whitespace-pre-wrap">
-                    <span className="text-info/50 shrink-0">&larr;</span>
-                    <span className="text-dark-text/70" translate="no">{entry.variableName}:</span>
-                    <span className="text-info" translate="no">{entry.value}</span>
-                  </div>
-                </div>
-              );
-            }
-
-            // Active input (last unsubmitted)
-            return (
-              <div key={i} className="terminal-line flex flex-col my-1">
-                {entry.prompt && (
-                  <span className="text-primary whitespace-pre-wrap" translate="no">{entry.prompt}</span>
-                )}
-                <form onSubmit={handleSubmit} className="flex items-center gap-2">
-                  <span className="text-info terminal-cursor shrink-0">&gt;</span>
-                  <span className="text-dark-text/70 shrink-0" translate="no">{entry.variableName}:</span>
-                  <input
-                    ref={inputRef}
-                    type="text"
-                    value={inputValue}
-                    onChange={(e) => setInputValue(e.target.value)}
-                    className="flex-1 bg-transparent border-b border-primary/50
-                      text-info outline-none font-mono py-0.5 px-0.5
-                      focus:border-info"
-                    style={{ fontSize: 'inherit' }}
-                    autoFocus
-                  />
-                </form>
-              </div>
-            );
-          }
-
-          return null;
-        })}
+        {activeInput && (
+          <div className="terminal-line flex flex-col my-1">
+            {activeInput.prompt && (
+              <span className="text-primary whitespace-pre-wrap" translate="no">{activeInput.prompt}</span>
+            )}
+            <form onSubmit={handleSubmit} className="flex items-center gap-2">
+              <span className="text-info terminal-cursor shrink-0">&gt;</span>
+              <span className="text-dark-text/70 shrink-0" translate="no">{activeInput.variableName}:</span>
+              <input
+                ref={inputRef}
+                type="text"
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                className="flex-1 bg-transparent border-b border-primary/50
+                  text-info outline-none font-mono py-0.5 px-0.5
+                  focus:border-info"
+                style={{ fontSize: 'inherit' }}
+                autoFocus
+              />
+            </form>
+          </div>
+        )}
 
         {/* Stepping indicator */}
         {isStepping && entries.length === 0 && (

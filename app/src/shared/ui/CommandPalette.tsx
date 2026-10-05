@@ -113,9 +113,10 @@ export function CommandProvider({ children }: { children: React.ReactNode }) {
 
   // Global Ctrl/⌘ K. Capture phase so it fires even over the editor, and
   // preventDefault to stop the browser's own Ctrl+K search-bar shortcut.
+  // Not with Shift: Ctrl+Shift+K is Stop, and it must reach the editor.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === 'K')) {
+      if ((e.metaKey || e.ctrlKey) && !e.shiftKey && (e.key === 'k' || e.key === 'K')) {
         e.preventDefault();
         setOpen((o) => !o);
       }

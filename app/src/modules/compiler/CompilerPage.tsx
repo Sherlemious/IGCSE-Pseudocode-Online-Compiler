@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import {
   FileText,
   PanelLeftOpen,
@@ -121,7 +121,6 @@ const CompilerPage: React.FC = () => {
   const [activeTabId, setActiveTabId] = useState('main');
   const [isRunning, setIsRunning] = useState(false);
   const [cursor, setCursor] = useState<CursorPosition | undefined>();
-  const [lineCount, setLineCount] = useState(1);
   const [showFeedback, setShowFeedback] = useState(false);
   const feedbackShownRef = useRef(false);
   const [jumpToLine, setJumpToLine] = useState<number | null>(null);
@@ -341,10 +340,9 @@ const CompilerPage: React.FC = () => {
     }
   }, [waitingForInput]);
 
-  // Update line count when active tab content changes
-  useEffect(() => {
-    setLineCount(activeTab.content.split('\n').length);
-  }, [activeTab.content]);
+  // Derived, not synced in an effect: a setState after every keystroke left a
+  // render pending, and while typing those piled up into React #185.
+  const lineCount = useMemo(() => activeTab.content.split('\n').length, [activeTab.content]);
 
   // Auto-save the main scratch file with a debounce. Files opened from the
   // virtual filesystem are persisted immediately in handleCodeChange so a

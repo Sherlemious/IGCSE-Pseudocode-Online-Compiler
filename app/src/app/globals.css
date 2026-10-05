@@ -720,8 +720,13 @@ textarea:focus-visible {
   }
 }
 
+/* A runaway loop leaves 10,000 lines. `backwards`, not `both`: a finished
+   animation must not stay applied to every line, and off-screen lines skip
+   layout, so typing in the editor doesn't re-style the whole terminal. */
 .terminal-line {
-  animation: terminal-line-in 0.22s ease-out both;
+  animation: terminal-line-in 0.22s ease-out backwards;
+  content-visibility: auto;
+  contain-intrinsic-size: auto 1.5em;
 }
 
 /* Expanding ring the Run button fires once when execution settles —         */
