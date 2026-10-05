@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, type ReactNode } from 'react';
+import Link from 'next/link';
 import { Check, Copy } from 'lucide-react';
 import { formatRelative } from './adminFormat';
 
@@ -39,6 +40,32 @@ export function Chip({
     <button type="button" onClick={onClick} className={chipClass(active)}>
       {children}
     </button>
+  );
+}
+
+/** Filter chips that navigate. Prefetch stays off so a row of filters doesn't fan out into a query each. */
+export function FilterLink({
+  href,
+  active,
+  title,
+  children,
+}: {
+  href: string;
+  active: boolean;
+  title?: string;
+  children: ReactNode;
+}) {
+  return (
+    <Link
+      href={href}
+      title={title}
+      scroll={false}
+      prefetch={false}
+      className={chipClass(active)}
+      aria-current={active ? 'true' : undefined}
+    >
+      {children}
+    </Link>
   );
 }
 

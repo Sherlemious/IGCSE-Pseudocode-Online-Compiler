@@ -158,10 +158,13 @@ export function AreaChart({
   primary,
   secondary,
   labels,
+  unit = 'signups',
 }: {
   primary: number[];
   secondary?: number[];
   labels: string[];
+  /** Word after the primary value in the hover title. */
+  unit?: string;
 }) {
   const W = 720;
   const H = 200;
@@ -222,7 +225,7 @@ export function AreaChart({
         <path d={pLine} fill="none" stroke="var(--color-primary)" strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
         {pPts.map(([x, y], i) => (
           <circle key={i} cx={x} cy={y} r={6} fill="transparent">
-            <title>{`${labels[i]}: ${primary[i]}${secondary ? ` signups · ${secondary[i]} active` : ' signups'}`}</title>
+            <title>{`${labels[i]}: ${primary[i]} ${secondary ? `${unit} · ${secondary[i]} active` : unit}`}</title>
           </circle>
         ))}
       </svg>

@@ -1,55 +1,25 @@
 'use client';
 
 import { useState } from 'react';
-import type { FeedbackSubmission } from '@prisma/client';
 import { ChevronRight } from 'lucide-react';
 import AdminDrawer, { useHeld } from '../../_components/AdminDrawer';
-import { Chip, ChipRow, EmptyState, formatAdminDate, RelativeTime } from '../../_components/adminUi';
+import { formatAdminDate, RelativeTime } from '../../_components/adminUi';
+import type { FeedbackListItem } from '../feedbackQuery';
 
 interface Props {
-  submissions: FeedbackSubmission[];
+  submissions: FeedbackListItem[];
 }
 
 export default function FeedbackTable({ submissions }: Props) {
-  const [ratingFilter, setRatingFilter] = useState<number | null>(null);
-  const [tierFilter, setTierFilter] = useState<string>('all');
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  const filtered = submissions.filter((s) => {
-    if (ratingFilter !== null && s.rating !== ratingFilter) return false;
-    if (tierFilter !== 'all' && s.tier !== tierFilter) return false;
-    return true;
-  });
-
-  const selected = filtered.find((s) => s.id === selectedId) ?? null;
+  const selected = submissions.find((s) => s.id === selectedId) ?? null;
   const shown = useHeld(selected);
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col gap-3">
-        <ChipRow label="Rating">
-          {[null, 1, 2, 3, 4, 5].map((r) => (
-            <Chip key={r ?? 'all'} active={ratingFilter === r} onClick={() => setRatingFilter(r)}>
-              {r ?? 'All'}
-            </Chip>
-          ))}
-        </ChipRow>
-        <ChipRow label="Tier">
-          {['all', 'low', 'mid', 'high'].map((t) => (
-            <Chip key={t} active={tierFilter === t} onClick={() => setTierFilter(t)}>
-              {t.charAt(0).toUpperCase() + t.slice(1)}
-            </Chip>
-          ))}
-        </ChipRow>
-        <p className="text-xs text-dark-text">{filtered.length} result{filtered.length !== 1 ? 's' : ''}</p>
-      </div>
-
-      {filtered.length === 0 ? (
-        <EmptyState>No submissions match the current filters.</EmptyState>
-      ) : (
-        <>
-          <ul className="md:hidden space-y-2">
-            {filtered.map((s) => (
+      <ul className="md:hidden space-y-2">
+            {submissions.map((s) => (
               <li key={s.id}>
                 <button
                   type="button"
@@ -85,7 +55,7 @@ export default function FeedbackTable({ submissions }: Props) {
           </ul>
 
           <div className="hidden md:block bg-surface border border-border rounded-xl overflow-hidden">
-            <div className="overflow-auto max-h-[calc(100vh-240px)] scrollbar-pretty">
+            <div className="overflow-x-auto scrollbar-pretty">
               <table className="w-full text-xs">
                 <thead className="sticky top-0 z-10">
                   <tr className="border-b border-border bg-surface">
@@ -99,7 +69,7 @@ export default function FeedbackTable({ submissions }: Props) {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
-                  {filtered.map((s) => (
+                  {submissions.map((s) => (
                     <tr
                       key={s.id}
                       onClick={() => setSelectedId(s.id)}
@@ -144,8 +114,6 @@ export default function FeedbackTable({ submissions }: Props) {
               </table>
             </div>
           </div>
-        </>
-      )}
 
       {shown && (
         <AdminDrawer

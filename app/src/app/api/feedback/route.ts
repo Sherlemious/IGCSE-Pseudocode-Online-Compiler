@@ -1,7 +1,9 @@
+import { revalidateTag } from 'next/cache';
 import { NextResponse } from 'next/server';
 import { auth } from '@/modules/auth/auth';
 import { prisma } from '@/shared/db';
 import { limitRequest, requesterKey } from '@/shared/lib/rateLimit';
+import { ADMIN_FEEDBACK_CACHE_TAG } from '@/app/admin/feedback/feedbackQuery';
 
 export async function POST(req: Request) {
   try {
@@ -39,6 +41,7 @@ export async function POST(req: Request) {
       },
     });
 
+    revalidateTag(ADMIN_FEEDBACK_CACHE_TAG, { expire: 0 });
     return NextResponse.json({ ok: true });
   } catch {
     return NextResponse.json({ error: 'Internal error' }, { status: 500 });

@@ -3,14 +3,12 @@
 import { useState } from 'react';
 import { ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
-import { planBadge } from '@/modules/billing/planDisplay';
-import { AdminSearch, Chip, ChipRow, EmptyState, formatAdminDay, nice, RelativeTime } from '../../_components/adminUi';
+import { formatAdminDay, RelativeTime } from '../../_components/adminUi';
 import UserDrawer, {
   PlanSelect,
   RoleSelect,
   UserAvatar,
   isTrialActive,
-  PLANS,
   type UserRow,
 } from './UserDrawer';
 
@@ -20,56 +18,13 @@ interface Props {
 }
 
 export default function UsersTable({ users, currentAdminRole }: Props) {
-  const [search, setSearch] = useState('');
-  const [accessFilter, setAccessFilter] = useState<'all' | 'free' | 'paid' | 'trial'>('all');
-  const [planFilter, setPlanFilter] = useState<string>('all');
-  const [roleFilter, setRoleFilter] = useState<string>('all');
   const [roleOverrides, setRoleOverrides] = useState<Record<string, string>>({});
   const [planOverrides, setPlanOverrides] = useState<Record<string, string>>({});
   const [updatingRole, setUpdatingRole] = useState<string | null>(null);
   const [updatingPlan, setUpdatingPlan] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  const filtered = users.filter((u) => {
-    const effectiveRole = roleOverrides[u.id] ?? u.role;
-    const effectivePlan = planOverrides[u.id] ?? u.plan;
-    const paid = planBadge({
-      plan: effectivePlan,
-      planTier: u.planTier,
-      legacyCapacity: u.legacyCapacity,
-      planExpiresAt: u.planExpiresAt,
-    }).paid;
-    const trial = isTrialActive(u.trialEndsAt);
-    if (accessFilter === 'free' && paid) return false;
-    if (accessFilter === 'paid' && !paid) return false;
-    if (accessFilter === 'trial' && !trial) return false;
-    if (planFilter !== 'all' && effectivePlan !== planFilter) return false;
-    if (roleFilter !== 'all' && effectiveRole !== roleFilter) return false;
-    if (search) {
-      const q = search.toLowerCase();
-      if (!u.name?.toLowerCase().includes(q) && !u.email?.toLowerCase().includes(q)) return false;
-    }
-    return true;
-  });
-
-  const accessCounts = users.reduce(
-    (acc, u) => {
-      const effectivePlan = planOverrides[u.id] ?? u.plan;
-      const paid = planBadge({
-        plan: effectivePlan,
-        planTier: u.planTier,
-        legacyCapacity: u.legacyCapacity,
-        planExpiresAt: u.planExpiresAt,
-      }).paid;
-      if (paid) acc.paid += 1;
-      else acc.free += 1;
-      if (isTrialActive(u.trialEndsAt)) acc.trial += 1;
-      return acc;
-    },
-    { free: 0, paid: 0, trial: 0 },
-  );
-
-  const selected = filtered.find((u) => u.id === selectedId) ?? users.find((u) => u.id === selectedId) ?? null;
+  const selected = users.find((u) => u.id === selectedId) ?? null;
 
   async function handleRoleChange(userId: string, newRole: string) {
     setUpdatingRole(userId);
@@ -113,44 +68,8 @@ export default function UsersTable({ users, currentAdminRole }: Props) {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col gap-3">
-        <AdminSearch value={search} onChange={setSearch} placeholder="Search name or email…" />
-        <ChipRow label="Access">
-          {([
-            { id: 'all', label: 'All' },
-            { id: 'free', label: `Free · ${accessCounts.free}` },
-            { id: 'paid', label: `Paid · ${accessCounts.paid}` },
-            { id: 'trial', label: `Trial · ${accessCounts.trial}` },
-          ] as const).map((opt) => (
-            <Chip key={opt.id} active={accessFilter === opt.id} onClick={() => setAccessFilter(opt.id)}>
-              {opt.label}
-            </Chip>
-          ))}
-        </ChipRow>
-        <ChipRow label="Plan">
-          {['all', ...PLANS].map((p) => (
-            <Chip key={p} active={planFilter === p} onClick={() => setPlanFilter(p)}>
-              {p === 'all' ? 'All' : nice(p)}
-            </Chip>
-          ))}
-        </ChipRow>
-        <ChipRow label="Role">
-          {['all', 'STUDENT', 'TEACHER', 'ADMIN'].map((r) => (
-            <Chip key={r} active={roleFilter === r} onClick={() => setRoleFilter(r)}>
-              {r === 'all' ? 'All' : nice(r)}
-            </Chip>
-          ))}
-        </ChipRow>
-        <p className="text-xs text-dark-text">{filtered.length} user{filtered.length !== 1 ? 's' : ''}</p>
-      </div>
-
-      {filtered.length === 0 ? (
-        <EmptyState>No users match.</EmptyState>
-      ) : (
-        <>
-          {/* Mobile cards */}
           <ul className="md:hidden space-y-2">
-            {filtered.map((u) => {
+            {users.map((u) => {
               const effectiveRole = roleOverrides[u.id] ?? u.role;
               const effectivePlan = planOverrides[u.id] ?? u.plan;
               const trial = isTrialActive(u.trialEndsAt);
@@ -200,7 +119,7 @@ export default function UsersTable({ users, currentAdminRole }: Props) {
 
           {/* Desktop table */}
           <div className="hidden md:block bg-surface border border-border rounded-xl overflow-hidden">
-            <div className="overflow-auto max-h-[calc(100vh-240px)] scrollbar-pretty">
+            <div className="overflow-x-auto scrollbar-pretty">
               <table className="w-full text-xs">
                 <thead className="sticky top-0 z-10">
                   <tr className="border-b border-border bg-surface">
@@ -216,7 +135,7 @@ export default function UsersTable({ users, currentAdminRole }: Props) {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
-                  {filtered.map((u) => {
+                  {users.map((u) => {
                     const effectiveRole = roleOverrides[u.id] ?? u.role;
                     const effectivePlan = planOverrides[u.id] ?? u.plan;
                     const trial = isTrialActive(u.trialEndsAt);
@@ -274,8 +193,6 @@ export default function UsersTable({ users, currentAdminRole }: Props) {
               </table>
             </div>
           </div>
-        </>
-      )}
 
       <UserDrawer
         user={selected}
