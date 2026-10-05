@@ -10,9 +10,11 @@
  *    dismissed across devices and browser clears.
  *
  * Timeline:
- *  - 90 s cumulative usage, unauthenticated:  sign-up prompt
  *  - 15 min cumulative usage, no Learn progress: "Follow the Paper 2 Path"
  *  - 2nd+ session, anyone:                    "Try an Exam"
+ *
+ * The 90 s sign-up card is retired. Anonymous playground visitors get the
+ * save-program sheet after their first successful run instead.
  *
  * Trimmed Sept 2026 (30-day PostHog): the 25-min "share" card was clicked by
  * 0.3% and the 15-min "Try Practice" card led to no solves, so share is gone
@@ -29,13 +31,11 @@ import { UserPlus, Map as MapIcon } from 'lucide-react';
 import { authHref } from '@/modules/auth/callback';
 import NudgeCard from './NudgeCard';
 import ExamNudgeCard from './ExamNudgeCard';
-import { SAVE_PROGRAM_PROMPT_FLAG } from '@/modules/telemetry/experiments';
 import { loadProgress } from '@/modules/learn/progress';
 
 const LS = {
   usageMs: 'nudge_usage_ms',
   sessionCount: 'nudge_sessions',
-  signup: 'nudge_shown_signup',
   learn: 'nudge_shown_learn',
   exam: 'nudge_shown_exam',
 } as const;
@@ -44,7 +44,6 @@ type NudgeKey = 'signup' | 'learn' | 'exam';
 type ActiveNudge = NudgeKey | null;
 
 const THRESHOLDS = {
-  signupMs: 90_000,
   learnMs: 15 * 60_000,
   examSession: 2,
 } as const;
@@ -74,8 +73,6 @@ export default function OnboardingNudges() {
   const startRef = useRef<number>(Date.now());
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const dbSyncedRef = useRef(false);
-  const savePromptVariantRef = useRef<string | null>(null);
-  const savePromptFlagsReadyRef = useRef(false);
   const [activeNudge, setActiveNudge] = useState<ActiveNudge>(null);
 
   const markShown = useCallback(
@@ -124,20 +121,9 @@ export default function OnboardingNudges() {
   );
 
   const checkNudges = useCallback(
-    (totalMs: number, sessions: number, isAuthed: boolean) => {
+    (totalMs: number, sessions: number) => {
       // Not marked as shown: it waits until they're back on a normal page.
       if (quietRef.current) return;
-      const suppressSignup = savePromptVariantRef.current === 'test';
-      if (
-        !isAuthed &&
-        savePromptFlagsReadyRef.current &&
-        !suppressSignup &&
-        totalMs >= THRESHOLDS.signupMs &&
-        !lsGet(LS.signup)
-      ) {
-        triggerNudge('signup');
-        return;
-      }
       if (totalMs >= THRESHOLDS.learnMs && !lsGet(LS.learn) && !hasLearnProgress()) {
         triggerNudge('learn');
         return;
@@ -149,37 +135,6 @@ export default function OnboardingNudges() {
     },
     [triggerNudge],
   );
-
-  // Assign the save-prompt experiment for anonymous users so test suppresses
-  // the 90s signup nudge. Wait for flags before that nudge so we don't flash control.
-  useEffect(() => {
-    if (status === 'authenticated') {
-      savePromptVariantRef.current = null;
-      savePromptFlagsReadyRef.current = true;
-      return;
-    }
-    if (!ph) {
-      savePromptFlagsReadyRef.current = true;
-      return;
-    }
-    const apply = () => {
-      try {
-        const value = ph.getFeatureFlag(SAVE_PROGRAM_PROMPT_FLAG);
-        savePromptVariantRef.current = typeof value === 'string' ? value : null;
-      } catch {
-        savePromptVariantRef.current = null;
-      }
-      savePromptFlagsReadyRef.current = true;
-      if (savePromptVariantRef.current === 'test') {
-        setActiveNudge((current) => (current === 'signup' ? null : current));
-      } else {
-        checkNudges(lsNum(LS.usageMs), lsNum(LS.sessionCount), false);
-      }
-    };
-    apply();
-    const unsubscribe = ph.onFeatureFlags(apply);
-    return () => { unsubscribe?.(); };
-  }, [ph, status, checkNudges]);
 
   // Dev shortcuts
   useEffect(() => {
@@ -212,10 +167,10 @@ export default function OnboardingNudges() {
       const total = lsNum(LS.usageMs) + elapsed;
       lsSet(LS.usageMs, String(total));
       startRef.current = Date.now();
-      checkNudges(total, sessions, status === 'authenticated');
+      checkNudges(total, sessions);
     }, 30_000);
 
-    checkNudges(lsNum(LS.usageMs), sessions, status === 'authenticated');
+    checkNudges(lsNum(LS.usageMs), sessions);
 
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);

@@ -34,7 +34,7 @@ import { FILE_PREFIX, FILES_CHANGED_EVENT } from '@/modules/interpreter/storage'
 import { AUTOSAVE_DELAY, CLOUD_AUTOSAVE_DELAY, loadSplitPercent } from '@/shared/lib/persist';
 import { ONBOARDING_KEY } from '@/modules/onboarding/constants';
 import { formatOutputEntries } from '@/modules/compiler/formatOutputEntries';
-import { LEARN_FIRST_START_FLAG, SAVE_PROGRAM_PROMPT_FLAG } from '@/modules/telemetry/experiments';
+import { LEARN_FIRST_START_FLAG } from '@/modules/telemetry/experiments';
 import SaveProgramSheet from './SaveProgramSheet';
 import { suggestLearnPath } from '@/modules/learn/learnNudge';
 import LearnFirstStart, { LEARN_FIRST_SEEN_KEY } from '@/modules/learn/LearnFirstStart';
@@ -129,7 +129,6 @@ const CompilerPage: React.FC = () => {
   const [applyFixKey, setApplyFixKey] = useState(0);
   const [outputTab, setOutputTab] = useState<'terminal' | 'trace' | 'python' | 'flowchart'>('terminal');
   const [saveSheetOpen, setSaveSheetOpen] = useState(false);
-  const [savePromptVariant, setSavePromptVariant] = useState<string | null>(null);
   // `learn-first-start` experiment: `pending` until we know whether this is a
   // first visit in the test arm; the tour waits so the two never overlap.
   const [learnFirst, setLearnFirst] = useState<'pending' | 'show' | 'off'>('pending');
@@ -227,23 +226,6 @@ const CompilerPage: React.FC = () => {
       unsubscribe?.();
     };
   }, [ph]);
-
-  // Assign the save-prompt experiment only for anonymous playground visitors so
-  // signed-in users are not counted as exposed.
-  useEffect(() => {
-    if (authStatus === 'authenticated' || !ph) return;
-    const apply = () => {
-      try {
-        const value = ph.getFeatureFlag(SAVE_PROGRAM_PROMPT_FLAG);
-        setSavePromptVariant(typeof value === 'string' ? value : null);
-      } catch {
-        /* PostHog may be uninitialized */
-      }
-    };
-    apply();
-    const unsubscribe = ph.onFeatureFlags(apply);
-    return () => { unsubscribe?.(); };
-  }, [ph, authStatus]);
 
   // Hydrate from the account snapshot on a new device; otherwise push this
   // browser's autosave up so "Save this program" is a real cloud copy.
@@ -685,7 +667,7 @@ const CompilerPage: React.FC = () => {
     if (
       outcome === 'success' &&
       authStatus !== 'authenticated' &&
-      (forceSavePromptFromUrl() || (savePromptVariant === 'test' && !hasShownSavePrompt()))
+      (forceSavePromptFromUrl() || !hasShownSavePrompt())
     ) {
       markSavePromptShown();
       setSaveSheetOpen(true);
