@@ -8,17 +8,17 @@ export const revalidate = 86400;
 
 export const metadata: Metadata = {
   title: {
-    absolute: 'Pseudocode Practice Questions | IGCSE & A Level Past Papers',
+    absolute: 'Pseudocode Practice Checker | IGCSE & A Level Tester',
   },
   description:
-    'Free Cambridge IGCSE and A Level pseudocode practice questions from past papers. Run algorithms in the online compiler, check answers with hidden tests, and use hints and trace tables.',
+    'Pseudocode checker and tester for Cambridge IGCSE and A Level. Practise past-paper questions, run them in the compiler, and check answers against hidden tests.',
   alternates: {
     canonical: '/practice',
   },
   openGraph: {
-    title: 'Pseudocode Practice Questions | IGCSE & A Level Past Papers',
+    title: 'Pseudocode Practice Checker | IGCSE & A Level Tester',
     description:
-      'Free Cambridge IGCSE and A Level pseudocode practice questions from past papers. Run algorithms in the online compiler with hidden tests, hints and trace tables.',
+      'Pseudocode checker and tester for Cambridge IGCSE and A Level. Practise past-paper questions and check answers against hidden tests.',
     url: `${SITE_URL}/practice`,
     type: 'website',
     images: [SHARE_IMAGE],

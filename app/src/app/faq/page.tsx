@@ -89,17 +89,25 @@ export default function FaqPage() {
             <Link href="/compare" className="text-primary hover:text-primary-hover">
               why this compiler
             </Link>
-            . Open the{' '}
-            <Link href="/" className="text-primary hover:text-primary-hover">
-              editor
+            .             Open the{' '}
+            <Link href="/editor" className="text-primary hover:text-primary-hover">
+              pseudocode editor online
             </Link>
-            ,{' '}
+            , the{' '}
+            <Link href="/" className="text-primary hover:text-primary-hover">
+              compiler
+            </Link>
+            , the{' '}
             <Link href="/docs" className="text-primary hover:text-primary-hover">
               Cambridge pseudocode guide
             </Link>
-            , or{' '}
+            , the{' '}
+            <Link href="/guide/9618" className="text-primary hover:text-primary-hover">
+              9618 pseudocode guide
+            </Link>
+            , or the{' '}
             <Link href="/practice" className="text-primary hover:text-primary-hover">
-              practice questions
+              pseudocode practice checker
             </Link>
             .
           </p>

@@ -1,4 +1,5 @@
 import toc from '@/modules/docs/toc';
+import { GUIDE_PAGES, guideHref } from '@/modules/content/guidePages';
 import { examples, exampleSlug } from '@/modules/content/examples';
 import { faqItems } from '@/modules/content/faq';
 import { buildLlmsBrief } from '@/modules/content/geo';
@@ -22,11 +23,16 @@ function productLinks() {
   return [
     '## Pages',
     line('/', 'Online compiler', 'write and run Cambridge pseudocode'),
+    line('/editor', 'Pseudocode editor online', 'free editor, runner and IDE for IGCSE 0478 and A Level 9618'),
+    line('/guide/9618', '9618 pseudocode guide', 'AS & A Level TYPE, DATE, BYREF, CASE ranges, files and classes'),
     line('/tutorial', 'Cambridge O Level pseudocode tutorial', '2210 / IGCSE 0478 Paper 2 — DECLARE, INPUT, loops, arrays, then run every example'),
     line('/learn', 'Paper 2 Path', 'sequenced IGCSE and O Level 2210 pseudocode levels — write, run, check'),
     line('/practice', 'Practice questions', 'past-paper style tasks with autograding and hidden tests'),
     line('/exam', 'Timed exam simulator', 'Paper 2-style timed papers'),
     line('/docs', 'Cambridge pseudocode guide', 'IGCSE 0478 and A Level 9618 syntax — DECLARE, CONSTANT, DIV, ROUND'),
+    ...GUIDE_PAGES.filter((page) => page.slug !== '9618').map((page) =>
+      line(guideHref(page.slug), page.h1),
+    ),
     line('/examples', 'Cambridge pseudocode examples', 'runnable snippets by topic'),
     line('/compare', 'Why this compiler for Paper 2', 'hidden tests, timed mocks, trace table, Student and teacher plans'),
     line('/faq', 'FAQ', 'how the site works, DECLARE, teachers, grading, which tool to use'),

@@ -4,6 +4,7 @@ import { ALEVEL_9618, IGCSE_PAPER_2 } from '@/modules/learn/curriculum';
 import { flattenLessons, lessonHref } from '@/modules/learn/path';
 import { SITE_URL } from '@/shared/lib/seo';
 import { BLOG_PATH, BLOG_POSTS, blogPageCount, blogPageHref, blogPostHref } from '@/modules/content/blog';
+import { GUIDE_PAGES, guideHref } from '@/modules/content/guidePages';
 
 export const revalidate = 86400;
 
@@ -78,6 +79,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: 'weekly',
       priority: 0.9,
     },
+    {
+      url: `${SITE_URL}/editor`,
+      lastModified: now,
+      changeFrequency: 'weekly',
+      priority: 0.9,
+    },
+    ...GUIDE_PAGES.map((page) => ({
+      url: `${SITE_URL}${guideHref(page.slug)}`,
+      lastModified: now,
+      changeFrequency: 'monthly' as const,
+      priority: page.slug === '9618' ? 0.8 : 0.7,
+    })),
     {
       url: `${SITE_URL}/compare`,
       lastModified: now,

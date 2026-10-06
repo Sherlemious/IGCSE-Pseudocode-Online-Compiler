@@ -161,11 +161,11 @@ export default function PracticeIndex({
                 Past-paper practice
               </div>
               <h1 className="display-serif text-[1.75rem] leading-tight font-semibold">
-                Cambridge Pseudocode Practice Questions
+                Pseudocode Practice Checker
               </h1>
               <p className="text-sm text-dark-text mt-1 max-w-md">
-                Solve autograded IGCSE and A Level past-paper questions. Every submission is checked
-                against hidden test cases.
+                A pseudocode tester and simulator for IGCSE and A Level past-paper questions. Write an answer,
+                run it, and check it against hidden test cases.
               </p>
             </div>
 

@@ -294,6 +294,31 @@ const DocsPage = () => {
               </Link>
               .
             </p>
+            <p className="text-sm text-dark-text mt-3 leading-relaxed">
+              <Link href="/guide/div-in-pseudocode" className="text-primary hover:underline">
+                What DIV does in pseudocode
+              </Link>
+              {' · '}
+              <Link href="/guide/round-in-pseudocode" className="text-primary hover:underline">
+                How to round
+              </Link>
+              {' · '}
+              <Link href="/guide/declare-a-constant" className="text-primary hover:underline">
+                Declare a constant
+              </Link>
+              {' · '}
+              <Link href="/guide/not-equal-to" className="text-primary hover:underline">
+                Not equal to
+              </Link>
+              {' · '}
+              <Link href="/guide/9618" className="text-primary hover:underline">
+                9618 pseudocode guide
+              </Link>
+              {' · '}
+              <Link href="/editor" className="text-primary hover:underline">
+                Pseudocode editor online
+              </Link>
+            </p>
           </div>
 
           {/* ──────────────────────────────────────────────── */}

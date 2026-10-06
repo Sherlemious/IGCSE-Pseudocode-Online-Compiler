@@ -1,6 +1,7 @@
 import Link from 'next/link';
 
 const LINKS = [
+  { href: '/editor', label: 'Pseudocode editor' },
   { href: '/tutorial', label: 'O Level tutorial' },
   { href: '/blog', label: 'Blog' },
   { href: '/learn', label: 'Paper 2 Path' },
@@ -8,6 +9,7 @@ const LINKS = [
   { href: '/faq', label: 'FAQ' },
   { href: '/examples', label: 'Examples' },
   { href: '/docs', label: 'Pseudocode guide' },
+  { href: '/guide/9618', label: '9618 pseudocode guide' },
   { href: '/pricing', label: 'Pricing' },
   { href: '/privacy', label: 'Privacy' },
   { href: '/terms', label: 'Terms' },

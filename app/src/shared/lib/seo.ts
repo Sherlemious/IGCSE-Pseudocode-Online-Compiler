@@ -9,7 +9,7 @@ export const SUPPORT_EMAIL = 'sherlemious@sherlemious.com';
 export const DEFAULT_TITLE = 'Pseudocode Compiler Online | IGCSE 0478 & A Level 9618 Editor';
 
 export const DEFAULT_DESCRIPTION =
-  'Free online pseudocode compiler, editor and runner for Cambridge IGCSE 0478 and A Level 9618. Run and check code in the browser, dry-run with trace tables, and practise past-paper questions.';
+  'IGCSE pseudocode compiler online for Cambridge 0478 and A Level 9618. Free editor and runner: write, run and check pseudocode in the browser.';
 
 /** 1:1 owl. WhatsApp reads this as a stamp — the exam-sheet card does not. */
 export const SHARE_IMAGE = {

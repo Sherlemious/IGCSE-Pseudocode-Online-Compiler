@@ -50,7 +50,7 @@ const Header: React.FC = () => {
     },
     [ph, pathname],
   );
-  const isDocs = pathname === '/docs' || pathname.startsWith('/docs/');
+  const isDocs = pathname === '/docs' || pathname.startsWith('/docs/') || pathname.startsWith('/guide');
   const isLearn = pathname === '/learn' || pathname.startsWith('/learn/');
   const isPractice = pathname === '/practice' || pathname.startsWith('/practice/');
   const isExam =

@@ -2,10 +2,13 @@ import Link from 'next/link';
 import CompilerPage from '@/modules/compiler/CompilerPage';
 
 const FEATURE_LINKS = [
+  { label: 'Pseudocode editor online', href: '/editor' },
+  { label: '9618 pseudocode guide', href: '/guide/9618' },
   { label: 'Cambridge O Level Pseudocode Tutorial', href: '/tutorial' },
   { label: 'Paper 2 Path', href: '/learn' },
-  { label: 'Practice Questions', href: '/practice' },
+  { label: 'Pseudocode practice checker', href: '/practice' },
   { label: 'Cambridge Pseudocode Guide', href: '/docs' },
+  { label: 'What DIV does in pseudocode', href: '/guide/div-in-pseudocode' },
   { label: 'Timed Exams', href: '/exam' },
   { label: 'Why this compiler', href: '/compare' },
   { label: 'Progress Analytics', href: '/analytics' },
@@ -31,10 +34,10 @@ export default function Home() {
       <section aria-label="About this compiler" className="sr-only">
         <div className="flex items-center gap-2 min-w-0">
           <h1 className="text-xs font-semibold text-light-text whitespace-nowrap">
-            Online Pseudocode Compiler for IGCSE and A Level
+            Pseudocode Compiler Online for IGCSE and A Level
           </h1>
           <span>
-            Free online pseudocode compiler, editor and runner for Cambridge IGCSE Computer Science,
+            IGCSE pseudocode compiler online. Free pseudocode editor and runner for Cambridge IGCSE Computer Science,
             Cambridge O Level Computer Science, and Cambridge International AS &amp; A Level Computer
             Science (9618). Supports 0478, 0984, 2210 and 9618 pseudocode, including a native ANTLR
             interpreter, interactive INPUT, trace tables, records, pointers, classes, object-oriented
