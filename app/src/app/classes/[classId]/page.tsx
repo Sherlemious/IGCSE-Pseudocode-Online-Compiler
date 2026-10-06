@@ -99,7 +99,7 @@ export default async function ClassDetailPage({ params }: Props) {
 
     const assignedExamIds = cls.assignments.map((a) => a.exam.id);
     const memberIds = cls.memberships.map((m) => m.userId);
-    const [{ limits }, availableExams, rosterStats] = await Promise.all([
+    const [{ limits, tier }, availableExams, rosterStats] = await Promise.all([
       getEntitlements(userId),
       prisma.exam.findMany({
         where: { ownerId: userId, isPublished: true, id: { notIn: assignedExamIds } },
@@ -143,6 +143,7 @@ export default async function ClassDetailPage({ params }: Props) {
           maxStudents={Number.isFinite(limits.maxStudentsPerClass) ? limits.maxStudentsPerClass : null}
           assignmentCount={cls.assignments.length}
           members={members}
+          offerStarter={tier === 'free'}
         />
         <div className="mt-8">
           <ClassAssignments classId={classId} joinCode={cls.joinCode} assignments={assignmentRows} availableExams={availableExams} />

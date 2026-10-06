@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { toast } from 'sonner';
 import { ArrowRight, Crown, Map as MapIcon, X } from 'lucide-react';
+import { studentCheckoutHref, studentCheckoutLabel } from '@/modules/billing/paddle/passes';
 import { captureEvent } from '@/modules/interpreter/analytics';
 import { loadProgress } from './progress';
 
@@ -93,14 +94,14 @@ export function promptLearnUpgrade(finishedLevel: number, nextLevel: number): vo
             files and exam-style problems.
           </span>
           <Link
-            href="/pricing?view=student&checkout=student&from=learn_level_complete"
+            href={studentCheckoutHref('learn_level_complete')}
             onClick={() => {
               captureEvent('nudge_clicked', { nudge, level: finishedLevel });
               toast.dismiss(toastId);
             }}
             className="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-warning/30 bg-warning/10 px-2.5 py-1.5 text-[11px] font-semibold text-warning transition-colors hover:border-warning/50 hover:bg-warning/20"
           >
-            Unlock levels {nextLevel}–10
+            {studentCheckoutLabel()}
             <ArrowRight size={12} aria-hidden="true" />
           </Link>
         </span>

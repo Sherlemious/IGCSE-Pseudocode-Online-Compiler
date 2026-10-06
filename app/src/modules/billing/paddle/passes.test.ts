@@ -3,10 +3,14 @@ import {
   amountFromPaddleTotal,
   compareToMonthly,
   expiryForPurchase,
+  featuredPassKind,
   formatMajor,
   isPassVisible,
   isTeacherPlan,
   seriesEnd,
+  studentCheckoutHref,
+  studentCheckoutLabel,
+  studentCheckoutSlug,
   visiblePasses,
   PASS_CATALOG,
   MONTH_PASS,
@@ -37,6 +41,20 @@ describe('session pass visibility (UTC months)', () => {
     expect(isPassVisible('oct_nov', utc(2026, 10, 30))).toBe(true); // Nov
     expect(isPassVisible('oct_nov', utc(2026, 11, 1))).toBe(false); // Dec
     expect(isPassVisible('oct_nov', utc(2027, 4, 31))).toBe(false); // May
+  });
+
+  it('leads with May/June except while Oct/Nov is the series in progress', () => {
+    expect(featuredPassKind(utc(2026, 9, 6))).toBe('may_june'); // October
+    expect(featuredPassKind(utc(2026, 8, 15))).toBe('may_june'); // September, both on sale
+    expect(featuredPassKind(utc(2027, 4, 1))).toBe('may_june');
+    expect(featuredPassKind(utc(2026, 5, 1))).toBe('oct_nov'); // June
+    expect(featuredPassKind(utc(2026, 7, 15))).toBe('oct_nov'); // August
+    expect(studentCheckoutSlug(utc(2026, 9, 6))).toBe('student-may-june');
+    expect(studentCheckoutSlug(utc(2026, 6, 1))).toBe('student-oct-nov');
+    expect(studentCheckoutLabel(utc(2026, 9, 6))).toBe('Get the May/June pass');
+    expect(studentCheckoutHref('learn_paywall', utc(2026, 9, 6))).toBe(
+      '/pricing?view=student&checkout=student-may-june&from=learn_paywall',
+    );
   });
 
   it('does not list the leftover 1-month one-time SKU', () => {

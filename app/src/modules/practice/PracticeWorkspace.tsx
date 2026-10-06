@@ -10,6 +10,7 @@ import GradeAuthSheet, { PENDING_GRADE_KEY } from './GradeAuthSheet';
 import { useInterpreter } from '@/modules/interpreter/useInterpreter';
 import { captureEvent } from '@/modules/interpreter/analytics';
 import { suggestLearnPath } from '@/modules/learn/learnNudge';
+import PracticePassOffer from './PracticePassOffer';
 import { readStreak, recordSolveDay } from './practiceStreak';
 import { authHref } from '@/modules/auth/callback';
 import { AUTOSAVE_DELAY, loadSplitPercent } from '@/shared/lib/persist';
@@ -1051,6 +1052,11 @@ export default function PracticeWorkspace({ questionId, starterCode, savedCode, 
               Next question
               <ArrowRight size={11} aria-hidden="true" />
             </Link>
+          )}
+          {allPassed && (
+            <div className="mt-2">
+              <PracticePassOffer questionId={questionId} />
+            </div>
           )}
         </div>
 

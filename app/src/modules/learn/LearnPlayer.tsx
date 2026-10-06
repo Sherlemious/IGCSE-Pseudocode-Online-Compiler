@@ -22,6 +22,7 @@ import {
   type ProgressMap,
 } from './progress';
 import { hydrateLearnProgress, persistLearnProgress } from './progressSync';
+import { studentCheckoutHref, studentCheckoutLabel, studentUnlockPitch } from '@/modules/billing/paddle/passes';
 import { captureLearn, learnCourseProps, learnLessonProps, learnLevelProps } from './telemetry';
 import { ALEVEL_COURSE_ID, type LearnCourse, type LearnLesson, type LearnLevel, type QuizItem } from './types';
 
@@ -221,7 +222,7 @@ export default function LearnPlayer({ course, level, lesson, premiumAccess: init
           <h1 className="display-serif text-xl font-semibold text-light-text mb-2">{lesson.title}</h1>
           <p className="text-sm text-dark-text mb-4">
             {paywalled
-              ? 'Levels 4–10 are what Paper 2 actually tests: IF and CASE, loops, string handling, arrays, procedures and functions, files, and full exam-style problems. Unlock them with the Student plan, or join a class from a teacher who has one.'
+              ? `Levels 4–10 are what Paper 2 actually tests: IF and CASE, loops, string handling, arrays, procedures and functions, files, and full exam-style problems. ${studentUnlockPitch()}`
               : 'Complete the previous lesson to unlock this one.'}
           </p>
           {paywalled && (
@@ -236,15 +237,14 @@ export default function LearnPlayer({ course, level, lesson, premiumAccess: init
                 </button>
               ) : (
                 <Link
-                  href="/pricing?view=student&checkout=student&from=learn_paywall"
+                  href={studentCheckoutHref('learn_paywall')}
                   onClick={() =>
                     captureLearn('learn_upgrade_clicked', learnLessonProps(level, lesson, { source: 'paywall' }))
                   }
                   className="inline-flex items-center gap-1.5 min-h-10 px-3 rounded-lg bg-warning/15 text-warning text-sm font-medium hover:bg-warning/25"
                 >
                   <Crown size={14} />
-                  Unlock levels {course.levels.find((item) => !item.free)?.number ?? 4}–
-                  {course.levels[course.levels.length - 1]!.number}
+                  {studentCheckoutLabel()}
                 </Link>
               )}
               {status === 'authenticated' && (

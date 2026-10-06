@@ -178,6 +178,61 @@ export function visiblePasses(now: Date = new Date()): PassDef[] {
   return PASS_CATALOG.filter((p) => isPassVisible(p.kind, now));
 }
 
+/**
+ * Which session pass to lead with. June–August the Oct/Nov series is the one
+ * in progress. Every other month May/June is on sale, and it is the longer
+ * grant, so it wins over a still-visible Oct/Nov pass.
+ */
+export function featuredPassKind(now: Date = new Date()): Exclude<PassKind, 'month'> | null {
+  const month = utcMonth(now);
+  const mayJuneUp = isPassVisible('may_june', now);
+  const octNovUp = isPassVisible('oct_nov', now);
+  if (month >= 5 && month <= 7 && octNovUp) return 'oct_nov';
+  if (mayJuneUp) return 'may_june';
+  if (octNovUp) return 'oct_nov';
+  return null;
+}
+
+export function featuredPass(now: Date = new Date()): PassDef | null {
+  const kind = featuredPassKind(now);
+  if (!kind) return null;
+  return PASS_CATALOG.find((p) => p.kind === kind) ?? null;
+}
+
+/** `?checkout=` slug for student hand-offs. The featured pass while one is on sale. */
+export function studentCheckoutSlug(now: Date = new Date()): string {
+  return featuredPass(now)?.tier ?? 'student';
+}
+
+export function studentCheckoutHref(from: string, now: Date = new Date()): string {
+  const params = new URLSearchParams({
+    view: 'student',
+    checkout: studentCheckoutSlug(now),
+    from,
+  });
+  return `/pricing?${params.toString()}`;
+}
+
+/** Button label for a student hand-off that opens checkout. */
+export function studentCheckoutLabel(now: Date = new Date()): string {
+  const kind = featuredPassKind(now);
+  if (kind === 'may_june') return 'Get the May/June pass';
+  if (kind === 'oct_nov') return 'Get the Oct/Nov pass';
+  return 'Unlock with the Student plan';
+}
+
+/** Closing sentence on the Learn paywall. Names the one-time pass while it is on sale. */
+export function studentUnlockPitch(now: Date = new Date()): string {
+  const kind = featuredPassKind(now);
+  if (kind === 'may_june') {
+    return 'Unlock them with one payment through 30 June, or join a class from a teacher who has a plan.';
+  }
+  if (kind === 'oct_nov') {
+    return 'Unlock them with one payment through 30 November, or join a class from a teacher who has a plan.';
+  }
+  return 'Unlock them with the Student plan, or join a class from a teacher who has one.';
+}
+
 /** Calendar end of the exam series this purchase covers. */
 export function seriesEnd(kind: Exclude<PassKind, 'month'>, now: Date = new Date()): Date {
   const m = utcMonth(now);

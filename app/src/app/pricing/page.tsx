@@ -8,6 +8,7 @@ import { type PricingTierView, type StudentMonthlyView, type StudentPassView } f
 import { displayTier, TIER_COPY } from '@/modules/billing/tierCopy';
 import {
   expiryForPurchase,
+  featuredPassKind,
   MONTH_PASS_USD,
   priceIdForPass,
   visiblePasses,
@@ -63,7 +64,7 @@ const UPCOMING_BANDS: Array<{
 function passDescription(kind: string): { description: string; features: string[] } {
   if (kind === 'may_june') {
     return {
-      description: 'Sit the May/June series. One payment, no auto-renew.',
+      description: 'One payment covers practice and exams until 30 June.',
       features: [
         'Full practice + exam library until 30 June',
         'Unlimited saved solutions',
@@ -146,11 +147,7 @@ export default async function PricingPage() {
   const now = new Date();
   const tiers = await getPricingTiers(paddleEnv);
 
-  const month = now.getUTCMonth();
-  const mayJuneUp = visiblePasses(now).some((p) => p.kind === 'may_june');
-  const octNovUp = visiblePasses(now).some((p) => p.kind === 'oct_nov');
-  const featuredKind: 'may_june' | 'oct_nov' | undefined =
-    month >= 5 && month <= 7 && octNovUp ? 'oct_nov' : mayJuneUp ? 'may_june' : octNovUp ? 'oct_nov' : undefined;
+  const featuredKind = featuredPassKind(now);
 
   const studentPasses: StudentPassView[] = visiblePasses(now)
     .filter((pass): pass is typeof pass & { kind: 'may_june' | 'oct_nov' } => pass.kind !== 'month')

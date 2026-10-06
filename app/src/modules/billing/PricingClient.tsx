@@ -148,7 +148,7 @@ export default function PricingClient({
   paddleEnv: string;
   /**
    * `?checkout=<slug>`: open that plan's checkout on load once signed in
-   * (`student` from the Learn paywall, or whatever a signed-out buyer clicked).
+   * (the featured session pass from the Learn paywall, or whatever a signed-out buyer clicked).
    */
   autoCheckout?: string | null;
   /** `?interval=year` alongside a teacher-plan `autoCheckout`. */
@@ -164,8 +164,11 @@ export default function PricingClient({
 }) {
   const paddle = usePaddle();
   const ph = usePostHog();
-  // A yearly plan clicked before signing in comes back as `?interval=year`.
-  const [interval, setInterval] = useState<Interval>(autoInterval === 'year' ? 'year' : 'month');
+  // Teacher plans open on yearly: one payment for the year.
+  // `?interval=month` still honours an explicit monthly choice.
+  const [interval, setInterval] = useState<Interval>(
+    autoInterval === 'month' ? 'month' : autoInterval === 'year' || showTeachers ? 'year' : 'month',
+  );
   const [quotes, setQuotes] = useState<Record<string, PriceQuote>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -334,7 +337,7 @@ export default function PricingClient({
   const featuredSession = sessionPasses.find((p) => p.featured) ?? sessionPasses[0] ?? null;
   const activeSession =
     sessionPasses.find((p) => p.slug === sessionSlug) ?? featuredSession;
-  const showSessionSwitcher = sessionPasses.length > 1;
+  const otherSession = sessionPasses.find((p) => p.slug !== activeSession?.slug) ?? null;
 
   const reportSeats = (next: number) => {
     const nextBand = teacherBandForStudents(next);
@@ -374,6 +377,10 @@ export default function PricingClient({
       (passQuote.currency !== 'USD' || Math.abs(passQuote.amount - pass.listUsd) > 0.02);
     const quotePending = Boolean(loading && pass.priceId && !passQuote);
     const discountPct = offer ? offer.discountPct : localizedAway ? 0 : pass.discountPct;
+    // The strike price is the full window (May/June = 10 months). A pass that is
+    // not the one we are leading with can have little of that window left, so
+    // the "% off" line would oversell it.
+    const showDiscount = pass.featured && discountPct > 0;
     const wasLabel =
       offer && passQuote?.currency ? formatMajor(offer.wasAmount, passQuote.currency) : usd(pass.wasUsd);
     const isCurrent = Boolean(currentTier) && pass.slug === currentTier;
@@ -387,7 +394,7 @@ export default function PricingClient({
             <span className="text-3xl font-bold tracking-tight text-light-text">
               {total ?? usd(pass.listUsd)}
             </span>
-            {discountPct > 0 && (
+            {showDiscount && (
               <span className="text-sm text-dark-text line-through">{wasLabel}</span>
             )}
           </>
@@ -398,7 +405,7 @@ export default function PricingClient({
       <button
         type="button"
         disabled
-        className="cursor-default rounded-lg border border-primary/40 px-4 py-2.5 text-sm font-semibold text-primary opacity-70"
+        className="w-full cursor-default rounded-lg border border-primary/40 px-4 py-2.5 text-sm font-semibold text-primary opacity-70"
       >
         Current pass
       </button>
@@ -408,15 +415,15 @@ export default function PricingClient({
       <button
         type="button"
         onClick={() => openCheckout({ slug: pass.slug, priceId: pass.priceId, interval: 'pass' })}
-        className="rounded-lg px-4 py-2.5 text-sm font-semibold transition-colors bg-primary text-white hover:bg-primary-hover"
+        className="w-full rounded-lg px-4 py-2.5 text-sm font-semibold transition-colors bg-primary text-white hover:bg-primary-hover"
       >
-        Buy pass
+        {pass.kind === 'may_june' ? 'Buy the May/June pass' : 'Buy the Oct/Nov pass'}
       </button>
     ) : (
       <button
         type="button"
         disabled
-        className="cursor-not-allowed rounded-lg border border-border px-4 py-2.5 text-sm font-semibold text-dark-text opacity-70"
+        className="w-full cursor-not-allowed rounded-lg border border-border px-4 py-2.5 text-sm font-semibold text-dark-text opacity-70"
       >
         {pass.priceId ? 'Loading…' : 'Available soon'}
       </button>
@@ -440,7 +447,7 @@ export default function PricingClient({
         ) : (
           pass.featured && (
             <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-primary px-3 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-white">
-              This series
+              Best value
             </span>
           )
         )}
@@ -449,7 +456,7 @@ export default function PricingClient({
         <div className="mt-5 flex items-baseline gap-2">{price}</div>
         <p className="mt-1 text-xs text-dark-text">
           One-time · covers until {formatUntil(pass.coversUntil)}
-          {!quotePending && discountPct > 0 ? ` · ${discountPct}% off monthly` : ''}
+          {!quotePending && showDiscount ? ` · ${discountPct}% less than paying monthly` : ''}
         </p>
         <ul className="mt-6 flex-1 space-y-2.5">
           {pass.features.map((feature) => (
@@ -567,7 +574,7 @@ export default function PricingClient({
       )}
 
       {showTeachers && (
-        <div className="mb-8 flex justify-center">
+        <div className="mb-8 flex flex-col items-center gap-2">
           <div
             role="radiogroup"
             aria-label="Billing interval"
@@ -593,6 +600,9 @@ export default function PricingClient({
               </button>
             ))}
           </div>
+          {interval === 'year' && (
+            <p className="text-xs text-dark-text">One payment for the year.</p>
+          )}
         </div>
       )}
 
@@ -603,10 +613,32 @@ export default function PricingClient({
       )}
 
       {showPasses && (
-        <section className={`mx-auto grid max-w-4xl gap-6 ${studentMonthly && activeSession ? 'lg:grid-cols-2' : 'max-w-md'}`}>
+        <section className="mx-auto flex max-w-md flex-col gap-4">
           {viewerIsTeacher && (
-            <p className="lg:col-span-2 mb-0 text-center text-sm text-dark-text">
+            <p className="mb-0 text-center text-sm text-dark-text">
               Session passes and the student plan are for students only. Your classes stay on a teacher plan.
+            </p>
+          )}
+
+          {activeSession && renderPassCard(activeSession)}
+
+          {activeSession && otherSession && (
+            <p className="text-center text-xs text-dark-text">
+              <button
+                type="button"
+                onClick={() => {
+                  setSessionSlug(otherSession.slug);
+                  ph?.capture('pricing_session_changed', {
+                    session: otherSession.kind,
+                    paddle_env: paddleEnv,
+                  });
+                }}
+                className="underline decoration-border underline-offset-2 hover:text-light-text"
+              >
+                {otherSession.kind === 'oct_nov'
+                  ? 'Sitting Oct/Nov this year?'
+                  : 'Need it until June? See the May/June pass'}
+              </button>
             </p>
           )}
 
@@ -616,6 +648,61 @@ export default function PricingClient({
               const total = priceId ? quotes[priceId]?.formatted : undefined;
               const isCurrent = currentTier === 'student';
               const canBuy = Boolean(paddle) && Boolean(priceId) && !viewerIsTeacher && !isCurrent;
+              const priceLabel = loading && priceId && total === undefined
+                ? null
+                : `${total ?? usd(studentMonthly.listUsdMonth)}/mo`;
+              const monthlyButton = isCurrent ? (
+                canManageBilling ? (
+                  <a
+                    href="/api/paddle/portal"
+                    className="shrink-0 rounded-lg border border-primary/40 px-3 py-2 text-center text-sm font-semibold text-primary transition-colors hover:bg-primary/10"
+                  >
+                    Manage subscription
+                  </a>
+                ) : (
+                  <span className="shrink-0 text-sm font-semibold text-primary">Current plan</span>
+                )
+              ) : viewerIsTeacher ? (
+                <span className="shrink-0 text-xs text-dark-text">Student checkout only</span>
+              ) : canBuy ? (
+                <button
+                  type="button"
+                  onClick={() =>
+                    openCheckout({
+                      slug: studentMonthly.slug,
+                      priceId,
+                      interval: 'month',
+                    })
+                  }
+                  className="shrink-0 rounded-lg border border-border px-3 py-2 text-sm font-medium text-dark-text transition-colors hover:border-primary/40 hover:text-light-text"
+                >
+                  Subscribe monthly
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  disabled
+                  className="shrink-0 cursor-not-allowed rounded-lg border border-border px-3 py-2 text-sm text-dark-text opacity-70"
+                >
+                  {priceId ? 'Loading…' : 'Available soon'}
+                </button>
+              );
+
+              if (activeSession) {
+                return (
+                  <div className="flex flex-col gap-3 rounded-xl border border-border bg-surface/50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-light-text">Only need a short stretch?</p>
+                      <p className="mt-0.5 text-xs text-dark-text">
+                        {priceLabel ? `${priceLabel} · ` : ''}
+                        renews every month until you cancel
+                      </p>
+                    </div>
+                    {monthlyButton}
+                  </div>
+                );
+              }
+
               return (
                 <div
                   className={`relative flex flex-col rounded-2xl border p-6 backdrop-blur-sm ${
@@ -632,7 +719,7 @@ export default function PricingClient({
                   <h2 className="text-lg font-semibold text-light-text">{studentMonthly.name}</h2>
                   <p className="mt-1 text-sm text-dark-text">{studentMonthly.description}</p>
                   <div className="mt-5 flex items-baseline gap-1">
-                    {loading && priceId && total === undefined ? (
+                    {priceLabel == null ? (
                       <span className="inline-block h-8 w-24 animate-pulse rounded bg-border/60" />
                     ) : (
                       <>
@@ -652,89 +739,10 @@ export default function PricingClient({
                       </li>
                     ))}
                   </ul>
-                  {isCurrent ? (
-                    canManageBilling ? (
-                      <a
-                        href="/api/paddle/portal"
-                        className="mt-6 block w-full rounded-lg border border-primary/40 px-4 py-2.5 text-center text-sm font-semibold text-primary transition-colors hover:bg-primary/10"
-                      >
-                        Manage subscription
-                      </a>
-                    ) : (
-                      <button
-                        type="button"
-                        disabled
-                        className="mt-6 w-full cursor-default rounded-lg border border-primary/40 px-4 py-2.5 text-sm font-semibold text-primary opacity-70"
-                      >
-                        Current plan
-                      </button>
-                    )
-                  ) : viewerIsTeacher ? (
-                    <p className="mt-6 text-center text-xs text-dark-text">Student checkout only</p>
-                  ) : canBuy ? (
-                    <button
-                      type="button"
-                      onClick={() =>
-                        openCheckout({
-                          slug: studentMonthly.slug,
-                          priceId,
-                          interval: 'month',
-                        })
-                      }
-                      className="mt-6 w-full rounded-lg border border-primary/40 px-4 py-2.5 text-sm font-semibold text-primary transition-colors hover:bg-primary/10"
-                    >
-                      Subscribe monthly
-                    </button>
-                  ) : (
-                    <button
-                      type="button"
-                      disabled
-                      className="mt-6 w-full cursor-not-allowed rounded-lg border border-border px-4 py-2.5 text-sm font-semibold text-dark-text opacity-70"
-                    >
-                      {priceId ? 'Loading…' : 'Available soon'}
-                    </button>
-                  )}
+                  <div className="mt-6 [&_a]:block [&_a]:w-full [&_button]:w-full">{monthlyButton}</div>
                 </div>
               );
             })()}
-
-          {activeSession && (
-            <div>
-              {showSessionSwitcher && (
-                <div className="mb-6 flex justify-center">
-                  <div
-                    role="radiogroup"
-                    aria-label="Exam series"
-                    className="inline-flex items-center gap-1 rounded-full border border-border bg-surface/80 p-1"
-                  >
-                    {sessionPasses.map((pass) => (
-                      <button
-                        key={pass.slug}
-                        type="button"
-                        role="radio"
-                        aria-checked={activeSession.slug === pass.slug}
-                        onClick={() => {
-                          setSessionSlug(pass.slug);
-                          ph?.capture('pricing_session_changed', {
-                            session: pass.kind,
-                            paddle_env: paddleEnv,
-                          });
-                        }}
-                        className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
-                          activeSession.slug === pass.slug
-                            ? 'bg-primary text-white'
-                            : 'text-dark-text hover:text-light-text'
-                        }`}
-                      >
-                        {pass.kind === 'may_june' ? 'May/June' : 'Oct/Nov'}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-              {renderPassCard(activeSession)}
-            </div>
-          )}
         </section>
       )}
 
@@ -764,6 +772,21 @@ export default function PricingClient({
                 Students on your roster get the library — they don&apos;t pay.
               </p>
               {renderTeacherCta(starter, ['starter'], false)}
+              {currentTier !== 'starter' && !canManageBilling && (
+                <Link
+                  href={`/contact?subject=${encodeURIComponent('Starter plan invoice')}`}
+                  onClick={() =>
+                    ph?.capture('contact_sales_clicked', {
+                      tier: 'starter',
+                      paddle_env: paddleEnv,
+                      source: 'invoice',
+                    })
+                  }
+                  className="mt-3 block text-center text-xs text-dark-text hover:text-primary"
+                >
+                  Need a school invoice? Email me
+                </Link>
+              )}
             </div>
           )}
 

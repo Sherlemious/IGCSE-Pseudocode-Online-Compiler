@@ -1,9 +1,11 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Copy, Check, Pencil, Archive, UserMinus, Loader2, Users, ChevronRight } from 'lucide-react';
 import { captureEvent } from '@/modules/interpreter/analytics';
+import { teacherYearlyCheckoutHref } from '@/modules/billing/teacherCheckout';
 import StudentProgressLink from './StudentProgressLink';
 import { formatLastActive, rosterHeadlineStats } from './rosterStats';
 
@@ -28,6 +30,8 @@ interface Props {
   maxStudents: number | null; // null = unlimited
   assignmentCount: number;
   members: ClassMember[];
+  /** Free teachers: students stay on the free editor until Starter. */
+  offerStarter?: boolean;
 }
 
 function displayName(m: ClassMember): string {
@@ -66,6 +70,7 @@ export default function ClassManager({
   maxStudents,
   assignmentCount,
   members: initialMembers,
+  offerStarter = false,
 }: Props) {
   const router = useRouter();
   const [members, setMembers] = useState(initialMembers);
@@ -86,7 +91,10 @@ export default function ClassManager({
       assignment_count: assignmentCount,
       ...headline,
     });
-  }, [assignmentCount, classId, initialMembers]);
+    if (offerStarter) {
+      captureEvent('nudge_shown', { nudge: 'class_starter_year', class_id: classId });
+    }
+  }, [assignmentCount, classId, initialMembers, offerStarter]);
 
   const sorted = useMemo(() => sortMembers(members, sort), [members, sort]);
 
@@ -178,6 +186,21 @@ export default function ClassManager({
           Archive
         </button>
       </div>
+
+      {offerStarter && (
+        <div className="rounded-xl border border-primary/30 bg-primary/5 px-4 py-3.5">
+          <p className="text-sm text-light-text">
+            Your students stay on the free editor until you start Starter. $50 for the year, one payment, and the whole class is covered.
+          </p>
+          <Link
+            href={teacherYearlyCheckoutHref('class_progress')}
+            onClick={() => captureEvent('nudge_clicked', { nudge: 'class_starter_year', class_id: classId })}
+            className="mt-2 inline-flex text-sm font-semibold text-primary hover:underline"
+          >
+            Start Starter for the year
+          </Link>
+        </div>
+      )}
 
       {/* Join link */}
       <div className="bg-surface/80 backdrop-blur-sm rounded-xl border border-border p-5 card-glow">

@@ -8,6 +8,7 @@ import { usePostHog } from 'posthog-js/react';
 import { UserPlus } from 'lucide-react';
 import AuthSheet from '@/modules/auth/AuthSheet';
 import { SITE_NAME, SUPPORT_EMAIL } from '@/shared/lib/seo';
+import { studentCheckoutSlug } from './paddle/passes';
 import { planBadge } from './planDisplay';
 import PaddleProvider from './PaddleProvider';
 import PricingAudiencePicker, { PricingSwitchLink } from './PricingAudiencePicker';
@@ -20,16 +21,12 @@ import PricingClient, {
 type PricingView = 'choose' | 'student' | 'teacher';
 
 function studentBlurb(passes: StudentPassView[]): string {
-  const hasMay = passes.some((p) => p.kind === 'may_june');
-  const hasOct = passes.some((p) => p.kind === 'oct_nov');
-  if (hasMay && hasOct) {
-    return '$1.99/month, or switch between the May/June and Oct/Nov session passes.';
+  const featured = passes.find((p) => p.featured) ?? passes[0];
+  if (featured?.kind === 'may_june') {
+    return 'One payment covers you until 30 June. Month-by-month is there if you only need a short stretch.';
   }
-  if (hasMay) {
-    return '$1.99/month, or a one-time May/June session pass through the series.';
-  }
-  if (hasOct) {
-    return '$1.99/month, or a one-time Oct/Nov session pass through the series.';
+  if (featured?.kind === 'oct_nov') {
+    return 'One payment covers you until 30 November. Month-by-month is there if you only need a short stretch.';
   }
   return '$1.99/month for the full practice and exam library. Cancel anytime.';
 }
@@ -53,7 +50,7 @@ function PricingViewInner({
   // `?checkout=<slug>` opens that plan's checkout, but only once signed in:
   // without an account the purchase can only be matched by the email typed into
   // Paddle, which often isn't the account email. The Learn paywall links here
-  // with `checkout=student`; a signed-out click on any buy button sets it too.
+  // with the featured session pass; a signed-out click on any buy button sets it too.
   // Either way, sign them in first, in place, then checkout opens.
   const checkoutFrom = searchParams.get('from');
   const checkoutSlug = searchParams.get('checkout');
@@ -82,7 +79,7 @@ function PricingViewInner({
   const checkoutReturnPath =
     typeof window !== 'undefined'
       ? `${window.location.pathname}${window.location.search}`
-      : '/pricing?view=student&checkout=student';
+      : `/pricing?view=student&checkout=${studentCheckoutSlug()}`;
   const portalFailed = searchParams.get('portal') === 'error';
 
   useEffect(() => {

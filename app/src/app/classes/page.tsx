@@ -6,6 +6,7 @@ import { prisma } from '@/shared/db';
 import { getEntitlements } from '@/modules/billing/entitlements';
 import { GraduationCap, Users, ArrowRight, School } from 'lucide-react';
 import CreateClassForm from '@/modules/classes/CreateClassForm';
+import { teacherYearlyCheckoutHref } from '@/modules/billing/teacherCheckout';
 
 export const metadata: Metadata = {
   title: 'My Classes',
@@ -55,8 +56,8 @@ export default async function ClassesPage() {
               {entitlements.tier === 'free' ? (
                 <>
                   Invite students by link.{' '}
-                  <Link href="/pricing?view=teacher" className="text-primary hover:underline">
-                    Starter unlocks the full practice library for your roster
+                  <Link href={teacherYearlyCheckoutHref('classes')} className="text-primary hover:underline">
+                    Starter is $50 for the year and covers your roster
                   </Link>
                   .
                 </>
