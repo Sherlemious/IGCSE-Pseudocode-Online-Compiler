@@ -4,7 +4,7 @@ import { resolve } from 'node:path';
 import { parse } from '../parser';
 import { Interpreter } from '../core/interpreter';
 import { ServerVirtualFileSystem } from '../core/serverFilesystem';
-import { humanizeParseError, humanizeRuntimeError, categorizeParseError } from '../errorMessages';
+import { humanizeParseError, humanizeRuntimeError, categorizeParseError, resolveOffendingLine } from '../errorMessages';
 import { normalizeSource } from '../normalize';
 import type { PseudocodeError } from '../core/types';
 import { examples } from '@/modules/content/examples';
@@ -2032,5 +2032,103 @@ describe('parse hints — sampled student mistakes', () => {
     const d = diagnose('DECLARE N : INTEGER\nWHILE N < 3\nTHEN\n  N <- N + 1\nENDWHILE');
     expect(d.category).toBe('misplaced_then');
     expect(d.message).toContain('DO');
+  });
+
+  // The line the editor actually highlights (blank lines walk back to the code).
+  function shown(source: string) {
+    const normalized = normalizeSource(source).code;
+    const { errors } = parse(normalized);
+    expect(errors.length).toBeGreaterThan(0);
+    const lines = normalized.split('\n');
+    const resolved = resolveOffendingLine(lines, errors[0].line);
+    const context = { lines, line: resolved.line };
+    return {
+      category: categorizeParseError(errors[0].message, resolved.text, context),
+      message: humanizeParseError(errors[0].message, resolved.text, context),
+    };
+  }
+
+  it('=> and =< on the line mean >= and <=', () => {
+    const gt = shown('DECLARE Score : INTEGER\nIF Score => 50 THEN\n  OUTPUT "Pass"\nENDIF');
+    expect(gt.category).toBe('reversed_compare');
+    expect(gt.message).toContain('`=>` means `>=`');
+    expect(gt.message).toContain('IF Score >= 50 THEN');
+
+    const lt = shown('DECLARE age : INTEGER\nIF age =< 18 THEN\n  OUTPUT "Junior"\nENDIF');
+    expect(lt.category).toBe('reversed_compare');
+    expect(lt.message).toContain('`=<` means `<=`');
+    expect(lt.message).toContain('IF age <= 18 THEN');
+
+    const spaced = shown('DECLARE option : INTEGER\nIF option = > 1 THEN\n  OUTPUT option\nENDIF');
+    expect(spaced.category).toBe('reversed_compare');
+    expect(spaced.message).toContain('IF option >= 1 THEN');
+  });
+
+  it('a real >=, <= or <> is not read as a reversed operator', () => {
+    const raw = "no viable alternative at input 'x'";
+    expect(categorizeParseError(raw, 'IF Score >= 50 THEN')).not.toBe('reversed_compare');
+    expect(categorizeParseError(raw, 'IF age <= 18 THEN')).not.toBe('reversed_compare');
+    expect(categorizeParseError(raw, 'IF age <> 18 THEN')).not.toBe('reversed_compare');
+    expect(categorizeParseError(raw, 'OUTPUT "score => 50"')).not.toBe('reversed_compare');
+  });
+
+  it('RETURN in a FUNCTION header is the word RETURNS', () => {
+    const d = shown(
+      'FUNCTION CalculateArea(length : INTEGER, width : INTEGER) RETURN REAL\n  RETURN length * width\nENDFUNCTION',
+    );
+    expect(d.category).toBe('return_vs_returns');
+    expect(d.message).toContain('The header word is `RETURNS`, not `RETURN`');
+    expect(d.message).toContain('FUNCTION CalculateArea(length : INTEGER, width : INTEGER) RETURNS REAL');
+  });
+
+  it('a type used as the variable names the DECLARE', () => {
+    const d = shown('DECLARE Efficiency : INTEGER\nIF INTEGER >= 95 THEN\n  OUTPUT "A"\nENDIF');
+    expect(d.category).toBe('type_as_variable');
+    expect(d.message).toContain('`INTEGER` is the type of `Efficiency`, not a variable');
+    expect(d.message).toContain('IF Efficiency >= 95 THEN');
+  });
+
+  it('several variables of that type are named, not guessed', () => {
+    const d = shown(
+      'DECLARE Score : INTEGER\nDECLARE Efficiency : INTEGER\nIF INTEGER >= 95 THEN\n  OUTPUT "A"\nENDIF',
+    );
+    expect(d.category).toBe('type_as_variable');
+    expect(d.message).toContain('`Score`');
+    expect(d.message).toContain('`Efficiency`');
+    expect(d.message).not.toContain('IF Score >= 95 THEN');
+    expect(d.message).not.toContain('IF Efficiency >= 95 THEN');
+  });
+
+  it('comparing a value with a type stays the whole-number hint', () => {
+    const d = shown('DECLARE N : INTEGER\nIF N = INTEGER THEN\n  OUTPUT N\nENDIF');
+    expect(d.category).toBe('type_as_value');
+  });
+
+  it('is greater than or equal to means >=', () => {
+    const d = shown(
+      'DECLARE grade : INTEGER\nIF grade is greater than or equal to 80 THEN\n  OUTPUT "Pass"\nENDIF',
+    );
+    expect(d.category).toBe('english_compare');
+    expect(d.message).toContain('`is greater than or equal to` means `>=`');
+    expect(d.message).toContain('IF grade >= 80 THEN');
+  });
+
+  it('is before a comparison operator is dropped', () => {
+    const d = shown('DECLARE tempereature : INTEGER\nIF tempereature is > 35 THEN\n  OUTPUT "hot"\nENDIF');
+    expect(d.category).toBe('english_compare');
+    expect(d.message).toContain('Drop `is`');
+    expect(d.message).toContain('IF tempereature > 35 THEN');
+  });
+
+  it('is expired is not rewritten as a comparison', () => {
+    const d = shown('DECLARE Expiry_Date : STRING\nIF Expiry_Date is expired THEN\n  OUTPUT "no"\nENDIF');
+    expect(d.category).not.toBe('english_compare');
+    expect(d.message).not.toContain('>=');
+  });
+
+  it('an English comparison inside a string is left alone', () => {
+    expect(categorizeParseError("no viable alternative at input 'x'", 'OUTPUT "is greater than or equal to"')).not.toBe(
+      'english_compare',
+    );
   });
 });

@@ -776,18 +776,18 @@ function forDoHint(line: string): LineDiagnosis | null {
   };
 }
 
-/** `FUNCTION F(...) RETURN INTEGER` — the header declares its type with RETURNS. */
+/** `FUNCTION F(...) RETURN INTEGER` — the header word is RETURNS. */
 function returnTypeHint(line: string): LineDiagnosis | null {
   const t = line.trim();
   // A FUNCTION header line whose type keyword is RETURN, not RETURNS (`\bRETURN\b`
   // already excludes RETURNS — there's no word boundary between the N and the S).
   if (!/^FUNCTION\b[^\n]*\bRETURN\b/i.test(t)) return null;
+  const next = t.replace(/\bRETURN\b/i, 'RETURNS');
   return {
     category: 'return_vs_returns',
     message:
-      'A FUNCTION header declares its return type with RETURNS (with an S).\n' +
-      '  Example:\n    FUNCTION Area(w : INTEGER, h : INTEGER) RETURNS INTEGER\n' +
-      '  (RETURN — no S — is only used *inside* the function to send a value back.)',
+      `The header word is \`RETURNS\`, not \`RETURN\`. Change this line to \`${clip(next, 72)}\`.\n` +
+      '  RETURN (no S) is only used inside the function, to send a value back.',
   };
 }
 
@@ -1257,6 +1257,241 @@ function plainWordsHint(line: string): LineDiagnosis | null {
   };
 }
 
+// ── Oct 2026 mismatched-input leftovers ─────────────────────────────────────
+// `=>` / `=<`, English "is greater than or equal to", and a type name used as
+// the variable (`IF INTEGER >= 95` after `DECLARE Efficiency : INTEGER`).
+// Each keys off text that is never valid Cambridge pseudocode. Strings and
+// comments are ignored so a quoted example cannot be "corrected".
+
+/** Blank out "strings" and // comments, keeping indexes aligned with `line`. */
+function maskNonCode(line: string): string {
+  let out = '';
+  let i = 0;
+  while (i < line.length) {
+    if (line[i] === '"') {
+      const start = i;
+      i++;
+      while (i < line.length && line[i] !== '"') i++;
+      if (i < line.length) i++;
+      out += ' '.repeat(i - start);
+      continue;
+    }
+    if (line[i] === '/' && line[i + 1] === '/') {
+      out += ' '.repeat(line.length - i);
+      break;
+    }
+    out += line[i];
+    i++;
+  }
+  return out;
+}
+
+/** Replace matches that sit outside strings and comments. */
+function replaceOutsideCode(line: string, re: RegExp, replacer: (match: string) => string): string {
+  const masked = maskNonCode(line);
+  const global = new RegExp(re.source, re.flags.includes('g') ? re.flags : `${re.flags}g`);
+  let out = '';
+  let last = 0;
+  let m: RegExpExecArray | null;
+  while ((m = global.exec(masked)) !== null) {
+    out += line.slice(last, m.index);
+    out += replacer(line.slice(m.index, m.index + m[0].length));
+    last = m.index + m[0].length;
+    if (m[0].length === 0) global.lastIndex++;
+  }
+  return out + line.slice(last);
+}
+
+function collapseSpaces(line: string): string {
+  return replaceOutsideCode(line, / {2,}/, () => ' ');
+}
+
+/** Index of a `//` comment outside a string, or -1. */
+function commentStart(line: string): number {
+  let i = 0;
+  while (i < line.length) {
+    if (line[i] === '"') {
+      i++;
+      while (i < line.length && line[i] !== '"') i++;
+      if (i < line.length) i++;
+      continue;
+    }
+    if (line[i] === '/' && line[i + 1] === '/') return i;
+    i++;
+  }
+  return -1;
+}
+
+/** `IF` / `WHILE` headers still need THEN / DO after the comparison is rewritten. */
+function ensureConditionCloser(line: string): string {
+  const indent = line.match(/^\s*/)?.[0] ?? '';
+  const rest = line.slice(indent.length);
+  const commentAt = commentStart(rest);
+  const code = (commentAt < 0 ? rest : rest.slice(0, commentAt)).trimEnd();
+  const comment = commentAt < 0 ? '' : rest.slice(commentAt);
+  const tail = comment ? `  ${comment.trim()}` : '';
+  if (/^(?:IF|ELSE\s*IF|ELSEIF)\b/i.test(code) && !/\bTHEN\b/i.test(code) && !/\bENDIF\b/i.test(code))
+    return `${indent}${code} THEN${tail}`;
+  if (/^WHILE\b/i.test(code) && !/\bDO\b/i.test(code) && !/\bENDWHILE\b/i.test(code))
+    return `${indent}${code} DO${tail}`;
+  return line;
+}
+
+function tidyReversedSpacing(line: string): string {
+  const spaced = replaceOutsideCode(line, /([A-Za-z0-9_])(<=|>=)/, (m) => `${m[0]} ${m.slice(1)}`);
+  return replaceOutsideCode(spaced, /(<=|>=)(?=\S)/, (m) => `${m} `);
+}
+
+/** `=>` and `=<` (with or without a space) are `>=` and `<=` written backwards. */
+export function reversedComparisonRewrite(line: string): { gt: boolean; lt: boolean; next: string } | null {
+  const masked = maskNonCode(line);
+  const gt = /=\s*>/.test(masked);
+  const lt = /=\s*</.test(masked);
+  if (!gt && !lt) return null;
+  let next = replaceOutsideCode(line, /(?:\bis\s+)?=\s*[><]/gi, (m) => (m.includes('>') ? '>=' : '<='));
+  next = collapseSpaces(tidyReversedSpacing(next));
+  next = ensureConditionCloser(next);
+  if (next === line) return null;
+  return { gt, lt, next };
+}
+
+function reversedCompareHint(line: string): LineDiagnosis | null {
+  const found = reversedComparisonRewrite(line);
+  if (!found) return null;
+  const parts: string[] = [];
+  if (found.gt) parts.push('`=>` means `>=`');
+  if (found.lt) parts.push('`=<` means `<=`');
+  return {
+    category: 'reversed_compare',
+    message: `${parts.join(' and ')}. Change this line to \`${clip(found.next.trim(), 72)}\`.`,
+  };
+}
+
+const ENGLISH_PHRASES: { pattern: string; op: string }[] = [
+  { pattern: 'greater\\s+than\\s+or\\s+equal(?:\\s+to)?', op: '>=' },
+  { pattern: 'less\\s+than\\s+or\\s+equal(?:\\s+to)?', op: '<=' },
+  { pattern: 'not\\s+equal(?:\\s+to)?', op: '<>' },
+  { pattern: 'greater\\s+than', op: '>' },
+  { pattern: 'less\\s+than', op: '<' },
+  { pattern: 'more\\s+than', op: '>' },
+  { pattern: 'equal\\s+to', op: '=' },
+];
+
+/** "is greater than or equal to" and the same shape for the other comparisons. */
+export function englishComparisonRewrite(line: string): { spoken: string; op: string; next: string } | null {
+  const masked = maskNonCode(line);
+  let spoken: string | null = null;
+  let op: string | null = null;
+  for (const phrase of ENGLISH_PHRASES) {
+    const m = masked.match(new RegExp(`(?:\\bis\\s+)?(?:${phrase.pattern})`, 'i'));
+    if (m && m.index != null) {
+      spoken = line.slice(m.index, m.index + m[0].length).replace(/\s+/g, ' ').trim();
+      op = phrase.op;
+      break;
+    }
+  }
+  let next = line;
+  if (spoken) {
+    for (const phrase of ENGLISH_PHRASES) {
+      next = replaceOutsideCode(next, new RegExp(`(?:\\bis\\s+)?(?:${phrase.pattern})`, 'i'), () => phrase.op);
+    }
+  }
+  const opMasked = maskNonCode(next);
+  const opMatch = opMasked.match(/\bis\s*(<=|>=|<>|<|>|=(?!=))/i);
+  if (opMatch && opMatch.index != null) {
+    if (!spoken) {
+      spoken = next.slice(opMatch.index, opMatch.index + opMatch[0].length).replace(/\s+/g, ' ').trim();
+      op = opMatch[1];
+    }
+    next = replaceOutsideCode(next, /\bis\s*(<=|>=|<>|<|>|=(?!=))/i, (m) => {
+      const symbol = m.match(/(<=|>=|<>|<|>|=)/)![0];
+      return `${symbol} `;
+    });
+  }
+  if (!spoken || !op) return null;
+  next = collapseSpaces(next);
+  next = ensureConditionCloser(next);
+  if (next === line) return null;
+  return { spoken, op, next };
+}
+
+function englishCompareHint(line: string): LineDiagnosis | null {
+  const found = englishComparisonRewrite(line);
+  if (!found) return null;
+  const droppedIs = new RegExp(`^is\\s*${found.op.replace(/[<>]/g, '\\$&')}$`, 'i').test(found.spoken);
+  const lead = droppedIs
+    ? `Drop \`is\` — the comparison is \`${found.op}\``
+    : `\`${found.spoken}\` means \`${found.op}\``;
+  return {
+    category: 'english_compare',
+    message: `${lead}. Change this line to \`${clip(found.next.trim(), 72)}\`.`,
+  };
+}
+
+const TYPE_SUBJECT = /\b(INTEGER|REAL|STRING|CHAR|BOOLEAN)\b(?=\s*(?:<=|>=|<>|<|>|=(?!=)|<-|←))/i;
+
+function declaredNamesOfType(lines: string[], type: string): string[] {
+  const names: string[] = [];
+  for (const line of lines) {
+    const m = codeOf(line).match(/^DECLARE\s+([A-Za-z_]\w*)\s*:\s*([A-Za-z_]\w*)\b/i);
+    if (!m || m[2].toUpperCase() !== type) continue;
+    if (names.some((n) => n.toLowerCase() === m[1].toLowerCase())) continue;
+    names.push(m[1]);
+  }
+  return names;
+}
+
+function joinNames(names: string[]): string {
+  const shown = names.slice(0, 3).map((n) => `\`${n}\``);
+  if (shown.length <= 1) return shown[0] ?? '';
+  if (shown.length === 2) return `${shown[0]} or ${shown[1]}`;
+  return `${shown.slice(0, -1).join(', ')}, or ${shown[shown.length - 1]}`;
+}
+
+/**
+ * A reserved type used where a variable belongs: `IF INTEGER >= 95` after
+ * `DECLARE Efficiency : INTEGER`. Several variables of that type are named,
+ * not guessed — a guess would parse and still change the program.
+ */
+export function typeUsedAsVariable(
+  lines: string[],
+  line: string,
+): { type: string; names: string[]; next: string } | null {
+  const masked = maskNonCode(line);
+  const m = masked.match(TYPE_SUBJECT);
+  if (!m || m.index == null) return null;
+  const before = masked.slice(0, m.index);
+  if (/(?:\:\s*|OF\s+|RETURNS\s+)$/i.test(before)) return null;
+  const type = m[1].toUpperCase();
+  const names = declaredNamesOfType(lines, type);
+  const next =
+    names.length === 1
+      ? replaceOutsideCode(line, new RegExp(`\\b${type}\\b(?=\\s*(?:<=|>=|<>|<|>|=(?!=)|<-|←))`, 'i'), () => names[0])
+      : line;
+  return { type, names, next };
+}
+
+function typeAsVariableHint(ctx: ParseErrorContext, sourceLine: string | undefined): LineDiagnosis | null {
+  if (!sourceLine) return null;
+  const found = typeUsedAsVariable(ctx.lines, sourceLine);
+  if (!found) return null;
+  const { type, names, next } = found;
+  if (names.length === 1 && next !== sourceLine)
+    return {
+      category: 'type_as_variable',
+      message: `\`${type}\` is the type of \`${names[0]}\`, not a variable. Change this line to \`${clip(next.trim(), 72)}\`.`,
+    };
+  if (names.length > 1)
+    return {
+      category: 'type_as_variable',
+      message: `\`${type}\` is a data type, not a variable. Use the name you declared (${joinNames(names)}).`,
+    };
+  return {
+    category: 'type_as_variable',
+    message: `\`${type}\` is a data type, not a variable. Use the name from your DECLARE line, not \`${type}\`.`,
+  };
+}
+
 /** Shared source-line diagnosis used by both the humanizer and the categorizer. */
 function sourceLineHint(sourceLine: string | undefined): LineDiagnosis | null {
   if (!sourceLine || !sourceLine.trim()) return null;
@@ -1273,6 +1508,8 @@ function sourceLineHint(sourceLine: string | undefined): LineDiagnosis | null {
     forLoopHint(sourceLine) ??
     forDoHint(sourceLine) ??
     returnTypeHint(sourceLine) ??
+    reversedCompareHint(sourceLine) ??
+    englishCompareHint(sourceLine) ??
     missingOperandHint(sourceLine) ??
     ifConditionHint(sourceLine) ??
     arrowInConditionHint(sourceLine) ??
@@ -1395,7 +1632,7 @@ function programHint(
 ): LineDiagnosis | null {
   if (!ctx) return null;
   if (rawMessage.includes('<EOF>') || rawMessage.includes('token recognition error')) return null;
-  return misplacedThenHint(ctx, sourceLine) ?? unclosedBlockHint(ctx);
+  return typeAsVariableHint(ctx, sourceLine) ?? misplacedThenHint(ctx, sourceLine) ?? unclosedBlockHint(ctx);
 }
 
 export function humanizeParseError(

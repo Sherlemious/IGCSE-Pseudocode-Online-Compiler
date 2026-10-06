@@ -7,7 +7,13 @@
  * line. A wrong guess is therefore dropped rather than shown to a student.
  */
 import { parse } from './parser';
-import { nearestKeyword, resolveOffendingLine } from './errorMessages';
+import {
+  englishComparisonRewrite,
+  nearestKeyword,
+  resolveOffendingLine,
+  reversedComparisonRewrite,
+  typeUsedAsVariable,
+} from './errorMessages';
 import { BUILTIN_SIGNATURES } from './builtinSignatures';
 
 export interface QuickFix {
@@ -242,9 +248,23 @@ function* candidates(lines: string[], flagged: number): Generator<QuickFix> {
     if (synonym && (synonym[1] ?? synonym[2])?.trim())
       yield* yieldIf(replace('output_synonym', `OUTPUT ${(synonym[1] ?? synonym[2]).trim()}`));
 
+    // `=>` / `=<` are >= / <= written backwards. Offered on its own so the
+    // button id matches the hint; operator_symbols below still covers a line
+    // that also has != or ==.
+    const reversed = reversedComparisonRewrite(code);
+    if (reversed) yield* yieldIf(replace('reversed_compare', reversed.next.trim()));
+    const english = englishComparisonRewrite(code);
+    if (english) yield* yieldIf(replace('english_compare', english.next.trim()));
+    // INTEGER used as the variable, and exactly one DECLARE of that type.
+    // Several names would parse with a guessed swap, so no button then.
+    const typeUse = typeUsedAsVariable(lines, code);
+    if (typeUse && typeUse.names.length === 1) yield* yieldIf(replace('type_as_variable', typeUse.next.trim()));
+
     // Operators from other languages (outside strings)
     const ops = outsideStrings(code, (s) =>
       s
+        .replace(/(?:\bis\s+)?=\s*>/gi, '>=')
+        .replace(/(?:\bis\s+)?=\s*</gi, '<=')
         .replace(/!=/g, '<>')
         .replace(/==/g, '=')
         .replace(/\s*&&\s*/g, ' AND ')

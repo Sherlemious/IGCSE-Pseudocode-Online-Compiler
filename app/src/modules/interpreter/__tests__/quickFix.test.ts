@@ -133,6 +133,46 @@ describe('quick fixes', () => {
     expect(fixOf('OUTPUT (').fix).toBeNull();
   });
 
+  it('turns => and =< into >= and <=', () => {
+    expectFixedTo(
+      prog('DECLARE Score : INTEGER', 'IF Score => 50 THEN', '  OUTPUT "Pass"', 'ENDIF'),
+      prog('DECLARE Score : INTEGER', 'IF Score >= 50 THEN', '  OUTPUT "Pass"', 'ENDIF'),
+    );
+    expectFixedTo(
+      prog('DECLARE age : INTEGER', 'IF age =< 18 THEN', '  OUTPUT "Junior"', 'ENDIF'),
+      prog('DECLARE age : INTEGER', 'IF age <= 18 THEN', '  OUTPUT "Junior"', 'ENDIF'),
+    );
+  });
+
+  it('rewrites an English comparison', () => {
+    expectFixedTo(
+      prog('DECLARE grade : INTEGER', 'IF grade is greater than or equal to 80 THEN', '  OUTPUT "Pass"', 'ENDIF'),
+      prog('DECLARE grade : INTEGER', 'IF grade >= 80 THEN', '  OUTPUT "Pass"', 'ENDIF'),
+    );
+    expectFixedTo(
+      prog('DECLARE grade : INTEGER', 'IF grade is greater than or equal to 80', '  OUTPUT "Pass"', 'ENDIF'),
+      prog('DECLARE grade : INTEGER', 'IF grade >= 80 THEN', '  OUTPUT "Pass"', 'ENDIF'),
+    );
+  });
+
+  it('uses the declared name when a type stands in for the variable', () => {
+    expectFixedTo(
+      prog('DECLARE Efficiency : INTEGER', 'IF INTEGER >= 95 THEN', '  OUTPUT "A"', 'ENDIF'),
+      prog('DECLARE Efficiency : INTEGER', 'IF Efficiency >= 95 THEN', '  OUTPUT "A"', 'ENDIF'),
+    );
+  });
+
+  it('does not guess which variable when several share the type', () => {
+    const src = prog(
+      'DECLARE Score : INTEGER',
+      'DECLARE Efficiency : INTEGER',
+      'IF INTEGER >= 95 THEN',
+      '  OUTPUT "A"',
+      'ENDIF',
+    );
+    expect(fixOf(src).fix).toBeNull();
+  });
+
   it('does not close a PROCEDURE by swallowing the main program', () => {
     // No indented body: appending ENDPROCEDURE at the end would pull CALL Hi()
     // into the procedure, so no fix is offered.
