@@ -26,6 +26,9 @@ if (typeof window !== 'undefined' && key) {
     },
     debug: isDev,
     opt_out_capturing_by_default: isDev, // no data collected in dev unless opted in
+    // Same-origin fetches (RSC, route handlers) carry the person and session so
+    // server traces can be opened from a replay. Other hosts are left alone.
+    tracing_headers: [window.location.hostname],
   });
   // One typo can cascade into dozens of ANTLR errors, each captured at once. That
   // burst trips posthog-js's client rate limit (10/s), which silently drops them

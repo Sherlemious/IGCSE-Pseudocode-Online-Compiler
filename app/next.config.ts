@@ -1,14 +1,24 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Keep the OpenTelemetry logs SDK out of the server bundle — it relies on
-  // Node built-ins and misbehaves when webpack-bundled. Loaded via the
-  // instrumentation hook (see src/instrumentation.node.ts).
+  // Keep the OpenTelemetry SDK out of the server bundle — it relies on Node
+  // built-ins and misbehaves when webpack-bundled. `@opentelemetry/api` has to
+  // stay a single copy so Next.js request spans and Prisma spans share the
+  // provider registered in src/instrumentation.node.ts.
   serverExternalPackages: [
+    '@opentelemetry/api',
+    '@opentelemetry/api-logs',
     '@opentelemetry/sdk-logs',
     '@opentelemetry/exporter-logs-otlp-http',
-    '@opentelemetry/api-logs',
+    '@opentelemetry/sdk-trace-node',
+    '@opentelemetry/sdk-trace-base',
+    '@opentelemetry/sdk-trace',
+    '@opentelemetry/exporter-trace-otlp-proto',
     '@opentelemetry/resources',
+    '@opentelemetry/semantic-conventions',
+    '@opentelemetry/core',
+    '@opentelemetry/otlp-exporter-base',
+    '@opentelemetry/otlp-transformer',
   ],
   // Vercel stores every retained deployment's function bundle and bills the
   // total ("deployment function storage"), so keep files the server never
