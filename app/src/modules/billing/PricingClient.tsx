@@ -128,7 +128,9 @@ export default function PricingClient({
   canManageBilling,
   paddleEnv,
   autoCheckout,
+  autoInterval,
   checkoutSource,
+  onSignInToCheckout,
 }: {
   teacherTiers: PricingTierView[];
   studentMonthly: StudentMonthlyView | null;
@@ -144,14 +146,26 @@ export default function PricingClient({
   passActiveUntil?: string | null;
   canManageBilling?: boolean;
   paddleEnv: string;
-  /** `?checkout=student`: open the student checkout on load (Learn paywall hand-off). */
+  /**
+   * `?checkout=<slug>`: open that plan's checkout on load once signed in
+   * (`student` from the Learn paywall, or whatever a signed-out buyer clicked).
+   */
   autoCheckout?: string | null;
+  /** `?interval=year` alongside a teacher-plan `autoCheckout`. */
+  autoInterval?: string | null;
   /** `?from=`: where the buyer came from, attached to subscribe/pass clicks. */
   checkoutSource?: string | null;
+  /**
+   * Signed-out click on a buy button. Checkout never opens without an account:
+   * the plan could only be matched by the email typed into Paddle, and signed-out
+   * buyers never got past Paddle's email step anyway (0 of 6, Sept 2026).
+   */
+  onSignInToCheckout?: (target: { slug: string; interval: Interval | 'pass' }) => void;
 }) {
   const paddle = usePaddle();
   const ph = usePostHog();
-  const [interval, setInterval] = useState<Interval>('month');
+  // A yearly plan clicked before signing in comes back as `?interval=year`.
+  const [interval, setInterval] = useState<Interval>(autoInterval === 'year' ? 'year' : 'month');
   const [quotes, setQuotes] = useState<Record<string, PriceQuote>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -272,7 +286,12 @@ export default function PricingClient({
       sku_type: opts.interval === 'pass' ? 'session_pass' : 'subscription',
       source: checkoutSource ?? 'pricing',
       auto_opened: Boolean(opts.auto),
+      signed_in: Boolean(appUserId),
     });
+    if (!appUserId && onSignInToCheckout) {
+      onSignInToCheckout({ slug: opts.slug, interval: opts.interval });
+      return;
+    }
     paddle.Checkout.open({
       items: [{ priceId: opts.priceId, quantity: 1 }],
       ...(customerEmail ? { customer: { email: customerEmail } } : {}),
@@ -285,15 +304,28 @@ export default function PricingClient({
     });
   };
 
-  // Learn paywall hand-off: the student is already signed in, so skip the plan
-  // browsing and open the student checkout straight away (once per page load).
+  // `?checkout=<slug>` hand-off (Learn paywall, or a signed-out click that went
+  // through sign-in): open that plan's checkout as soon as the buyer is signed
+  // in, once per page load.
   const autoOpenedRef = useRef(false);
-  const autoPriceId = studentMonthly?.monthPriceId;
   useEffect(() => {
-    if (autoOpenedRef.current || autoCheckout !== 'student') return;
-    if (!paddle || !appUserId || !autoPriceId || !studentMonthly || currentTier || viewerIsTeacher) return;
+    if (autoOpenedRef.current || !autoCheckout) return;
+    if (!paddle || !appUserId || currentTier) return;
+    const teacherTier = teacherTiers.find((t) => t.slug === autoCheckout && !t.contactOnly);
+    const pass = studentPasses.find((p) => p.slug === autoCheckout);
+    let target: { slug: string; priceId: string; interval: Interval | 'pass' } | null = null;
+    if (teacherTier) {
+      const tierInterval: Interval = autoInterval === 'year' ? 'year' : 'month';
+      const priceId = tierInterval === 'year' ? teacherTier.yearPriceId : teacherTier.monthPriceId;
+      if (priceId) target = { slug: teacherTier.slug, priceId, interval: tierInterval };
+    } else if (!viewerIsTeacher && pass?.priceId) {
+      target = { slug: pass.slug, priceId: pass.priceId, interval: 'pass' };
+    } else if (!viewerIsTeacher && studentMonthly?.monthPriceId && autoCheckout === studentMonthly.slug) {
+      target = { slug: studentMonthly.slug, priceId: studentMonthly.monthPriceId, interval: 'month' };
+    }
+    if (!target) return;
     autoOpenedRef.current = true;
-    openCheckout({ slug: studentMonthly.slug, priceId: autoPriceId, interval: 'month', auto: true });
+    openCheckout({ ...target, auto: true });
   });
 
   const intervalLabel = interval === 'month' ? 'mo' : 'yr';

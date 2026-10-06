@@ -50,19 +50,35 @@ function PricingViewInner({
   const { data: session, status: sessionStatus, update: updateSession } = useSession();
   const ph = usePostHog();
 
-  // `?checkout=student` (Learn paywall, upgrade toast, paywall email) auto-opens
-  // the Student checkout, but only for a signed-in student: without an account
-  // the purchase can only be matched by the email typed into Paddle, which
-  // often isn't the account email. Sign them in first, in place.
+  // `?checkout=<slug>` opens that plan's checkout, but only once signed in:
+  // without an account the purchase can only be matched by the email typed into
+  // Paddle, which often isn't the account email. The Learn paywall links here
+  // with `checkout=student`; a signed-out click on any buy button sets it too.
+  // Either way, sign them in first, in place, then checkout opens.
   const checkoutFrom = searchParams.get('from');
-  const needsSignInForCheckout =
-    searchParams.get('checkout') === 'student' && sessionStatus === 'unauthenticated';
+  const checkoutSlug = searchParams.get('checkout');
+  const checkoutForTeacher = Boolean(checkoutSlug && teacherTiers.some((t) => t.slug === checkoutSlug));
+  const needsSignInForCheckout = Boolean(checkoutSlug) && sessionStatus === 'unauthenticated';
   const [checkoutAuthOpen, setCheckoutAuthOpen] = useState(false);
   useEffect(() => {
     if (!needsSignInForCheckout) return;
     setCheckoutAuthOpen(true);
-    ph?.capture('pricing_signin_prompt_shown', { source: checkoutFrom ?? 'unknown', paddle_env: paddleEnv });
-  }, [needsSignInForCheckout, checkoutFrom, ph, paddleEnv]);
+    ph?.capture('pricing_signin_prompt_shown', {
+      source: checkoutFrom ?? 'unknown',
+      tier: checkoutSlug,
+      paddle_env: paddleEnv,
+    });
+  }, [needsSignInForCheckout, checkoutFrom, checkoutSlug, ph, paddleEnv]);
+  const signInToCheckout = ({ slug, interval }: { slug: string; interval: string }) => {
+    const next = new URLSearchParams(searchParams.toString());
+    next.set('checkout', slug);
+    if (interval === 'year') next.set('interval', 'year');
+    else next.delete('interval');
+    if (!next.get('from')) next.set('from', 'pricing');
+    router.replace(`/pricing?${next.toString()}`, { scroll: false });
+    // Same URL after a dismissed sheet won't re-run the effect above.
+    setCheckoutAuthOpen(true);
+  };
   const checkoutReturnPath =
     typeof window !== 'undefined'
       ? `${window.location.pathname}${window.location.search}`
@@ -210,7 +226,9 @@ function PricingViewInner({
           <div className="mb-8 mx-auto max-w-xl rounded-2xl border border-primary/30 bg-primary/[0.06] p-5 text-center">
             <p className="text-sm font-semibold text-light-text">Sign in first so the plan goes on your account</p>
             <p className="mt-1 text-xs text-dark-text">
-              Use the account you study with. Checkout opens right after, and levels 4–10 unlock on that account.
+              {checkoutForTeacher
+                ? 'Use the account you teach with. Checkout opens right after, and the plan covers your classes on that account.'
+                : 'Use the account you study with. Checkout opens right after, and levels 4–10 unlock on that account.'}
             </p>
             <button
               type="button"
@@ -228,13 +246,17 @@ function PricingViewInner({
 
         {checkoutAuthOpen && needsSignInForCheckout && (
           <AuthSheet
-            ariaLabel="Sign in to unlock the Student plan"
-            headerLabel="Student plan"
+            ariaLabel={checkoutForTeacher ? 'Sign in to buy a teacher plan' : 'Sign in to unlock the Student plan'}
+            headerLabel={checkoutForTeacher ? 'Teacher plan' : 'Student plan'}
             headerIcon={UserPlus}
             title="Sign in, then we'll open checkout."
-            description="The plan attaches to the account you sign in with, so use the one you study with."
+            description={
+              checkoutForTeacher
+                ? 'The plan attaches to the account you sign in with, so use the one you teach with.'
+                : 'The plan attaches to the account you sign in with, so use the one you study with.'
+            }
             signInSource="pricing_checkout"
-            role="STUDENT"
+            role={checkoutForTeacher ? 'TEACHER' : 'STUDENT'}
             googleCallbackUrl={checkoutReturnPath}
             onClose={() => {
               ph?.capture('pricing_signin_prompt_dismissed', { source: checkoutFrom ?? 'unknown', paddle_env: paddleEnv });
@@ -271,8 +293,10 @@ function PricingViewInner({
               passActiveUntil={passActiveUntil}
               canManageBilling={canManageBilling}
               paddleEnv={paddleEnv}
-              autoCheckout={searchParams.get('checkout')}
-              checkoutSource={searchParams.get('from')}
+              autoCheckout={checkoutSlug}
+              autoInterval={searchParams.get('interval')}
+              checkoutSource={checkoutFrom}
+              onSignInToCheckout={signInToCheckout}
             />
           </PaddleProvider>
         )}
