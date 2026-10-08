@@ -70,6 +70,7 @@ const toc: TocEntry[] = [
       { id: 'repeat', label: 'REPEAT Loop' },
     ],
   },
+  { id: 'flowcharts', label: 'Flowcharts' },
   {
     id: 'subroutines',
     label: 'Procedures & Functions',

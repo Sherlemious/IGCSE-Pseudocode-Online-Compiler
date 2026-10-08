@@ -5,7 +5,8 @@ export const COURSE_ID = IGCSE_COURSE_ID;
 
 export type CourseId = typeof IGCSE_COURSE_ID | typeof ALEVEL_COURSE_ID;
 
-export type LessonType = 'run' | 'mutate' | 'grade' | 'quiz';
+/** `flowchart`: the answer is drawn on the flowchart builder and checked like code. */
+export type LessonType = 'run' | 'mutate' | 'grade' | 'quiz' | 'flowchart';
 
 export type LessonTest = {
   inputs: string[];
@@ -47,6 +48,13 @@ export type LearnLesson = {
   mustContain?: string[];
   mustNotContain?: string[];
   quiz?: QuizItem[];
+  /** Pseudocode drawn as a read-only flowchart under the lesson text. */
+  diagramCode?: string;
+  /**
+   * `flowchart` lessons: boxes of solutionCode's flowchart left blank for the
+   * student to fill in. Without it the student draws on a blank canvas.
+   */
+  flowchartBlanks?: string[];
 };
 
 export type LearnLevel = {

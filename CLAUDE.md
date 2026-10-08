@@ -29,6 +29,7 @@ Modular monolith. `src/app/` is a thin routing layer (pages + API route handlers
 |--------|------|
 | `modules/interpreter` | Grammar, generated parser, runtime, `useInterpreter` |
 | `modules/compiler` | Playground UI + shared editor kit (`editor.ts`) |
+| `modules/flowchart` | Flowchart builder (`/flowchart`), node shapes (shared with the playground's read-only view), `useFlowchartRun`, `FlowchartDiagram` |
 | `modules/billing` | Paddle, plans, entitlements, pricing page |
 | `modules/practice` | Practice UI + autograder |
 | `modules/learn` | Paper 2 Path (`/learn`) — sequenced levels, player, local progress |
@@ -45,7 +46,7 @@ Dependency rules (enforced by ESLint):
 - `interpreter` ↛ product modules, Prisma, PostHog, Next.js
 - `billing` ↛ interpreter / compiler / practice
 - `shared/ui` + `shared/lib` ↛ product modules (interpreter tokens are allowed). `shared/layout` may compose feature UI (Header → UserMenu).
-- `practice` / `exams` / `learn` may import `compiler/editor` (CodeMirror + trace table), not `CompilerPage`
+- `practice` / `exams` / `learn` / `flowchart` may import `compiler/editor` (CodeMirror + trace table), not `CompilerPage`. They may import `flowchart`
 
 ## Key Paths
 
@@ -57,6 +58,8 @@ Dependency rules (enforced by ESLint):
 | `app/src/modules/interpreter/core/environment.ts` | Variable scoping / closures |
 | `app/src/modules/interpreter/errorMessages.ts` | Human-friendly parse + runtime error messages |
 | `app/src/modules/interpreter/useInterpreter.ts` | React hook wrapping the interpreter |
+| `app/src/modules/interpreter/converters/flowchartToPseudocode.ts` | Drawn flowchart → structured pseudocode (+ line → box map) |
+| `app/src/modules/interpreter/converters/flowchartDoc.ts` | `FlowchartDoc` format, validation, templates (blank boxes) |
 | `app/src/modules/practice/autograder.ts` | Test-case grading |
 | `app/src/modules/auth/auth.ts` | NextAuth config |
 | `app/src/modules/billing/` | Pricing, Paddle, entitlements |
@@ -117,6 +120,26 @@ INPUT record.Field, "prompt text"        // record field with prompt
 
 The optional string literal is stripped of its quotes and passed to `onInputRequest(variableName, prompt?)` → stored in `OutputEntry.prompt?` → rendered in `OutputDisplay` as a `text-primary` line above the input field.
 
+## Flowcharts
+
+`FlowchartDoc` (`converters/flowchartDoc.ts`) is the converter's node/edge graph plus optional positions and template flags (`locked`, `blank`). It is the builder's state, a question's diagram or template, and a student's answer. `convertToFlowchart(code, { fullLabels: true })` makes one from code (labels are never truncated, so it round-trips).
+
+`flowchartToPseudocode(doc)` structures the graph back into code, so a flowchart runs, debugs and grades through the ordinary interpreter and autograder:
+- DFS back edges find loops, and dominators reject an arrow into the middle of a loop (`flowchart_jump_into_loop`). Only reducible drawings convert.
+- A loop has exactly one way out (`flowchart_loop_exit`). If the header decision is the exit, it becomes `WHILE` (or `FOR` when it is `v ← a` / `v ≤ b` / `v ← v + k`, and the body changes neither `v` nor the bound). If the bottom decision arrows back to the top, it becomes `REPEAT … UNTIL`. A branch into a RETURN-only region is an early return, not an exit.
+- Any other decision is `IF`, joined at its immediate post-dominator. A diamond labelled `CASE OF x` with value arrows is `CASE`. An extra START labelled `PROCEDURE …`/`FUNCTION …` is a routine, emitted first.
+- Labels are normalised: `←`/`≤`/`≥`/`≠`, smart quotes, a trailing `?`, and `PRINT`/`READ` in I/O boxes. A box's parse error gets the editor's own hint (`humanizeParseError`), pinned to the box through `lineToNode`.
+- `flowchartRoundTrip.test.ts` checks every seed solution and example survives code → flowchart → code.
+
+Builder gotchas: React Flow runs in loose connection mode. The clipped shapes render their handles *after* the clip layers, or the dots can't be grabbed. A box with one way out moves its old arrow when a new one is drawn. A new decision starts with no arrows out (next box = Yes, then No). Drawing problems ring boxes only after a Run/Check.
+
+Questions: `Question.answerFormat` (`CODE` | `FLOWCHART`) and `Question.flowchart`.
+- **Draw it:** `FLOWCHART` with no flowchart.
+- **Complete it:** `FLOWCHART` with a template. The grade route fills only `blank` boxes from `answers` into its own template.
+- **Flowchart → pseudocode:** `CODE` with a diagram.
+
+The grade route converts a flowchart answer and runs the same tests; a drawing problem fails every test without running. FLOWCHART questions are excluded from exams (`filterExamPool`, `/api/questions`). Seed them in `prisma/flowchartQuestions.ts` with `diagramOf(solution)` / `templateOf(solution, blankLabels)`, never hand-written JSON. Learn: `type: 'flowchart'` lessons (`flowchartBlanks` for a template) and `diagramCode` for a read-only diagram under the lesson text.
+
 ## Error Messages
 
 `errorMessages.ts` converts raw ANTLR parse errors and runtime errors into student-friendly messages. Raw messages are still sent to PostHog for analysis.
@@ -160,6 +183,7 @@ The autograder returns `error.hint` (same text as the Run button) and `error.cat
 - `ExamAttempt` / `ExamAnswer` — a student's run of an exam (timed session). `examId` is null for the self-service random simulator; set when the attempt is a run of a shared `Exam`.
 - `Exam` / `ExamQuestion` — instructor-authored, reusable, shareable exam **definitions** (fixed ordered question set, `shareCode`, `isPublished`). Any signed-in user can create one and share it via `/e/[code]`; taking it materializes an `ExamAttempt` (`api/exams/[examId]/start`) so the existing take→grade→results pipeline is reused unchanged.
 - `Example` — built-in code examples (also seeded in `data/examples.ts`)
+- `Question.answerFormat` / `Question.flowchart` / `Progress.lastFlowchart` — flowchart questions (see Flowcharts). `lastCode` keeps the pseudocode a flowchart answer became
 - `PaddleEvent` — every handled Paddle webhook, keyed by event id (`billing/paddle/webhookEvents.ts`). A redelivery is skipped; a failed handler releases its claim so Paddle's retry runs. `User.planUpdatedAt` holds the event's `occurred_at`, so an older event for the current subscription is ignored, and a revoke/cancel of any other (replaced) subscription never downgrades the user
 - `User.emailVerified` — set by the welcome-email confirm link (`auth/emailVerification.ts`, `/api/auth/verify-email`) or by linking Google. Linking Google to an account whose password was never verified clears that password (pre-registration takeover guard)
 
@@ -207,6 +231,20 @@ npm run antlr:generate  # regenerate parser from grammar
 | `nudge_shown` / `nudge_clicked` / `nudge_dismissed` (Learn path) | `nudge` (`learn_path_playground`\|`learn_path_practice`), `surface` — one-time toast after a successful run / passed question (`learn/learnNudge.tsx`); the link lands on `/learn?from=<nudge>` so `learn_opened.from` attributes it |
 
 Paywall follow-up: PostHog workflow "Nudge if they hit the Learn paywall and don't buy" emails anyone with an email one day after their first `learn_gate_blocked` (`source: paywall`) unless they bought. Open/click tracking is on; links carry `utm_campaign=learn_paywall` (pricing) and `?from=paywall_email` (learn). The "Student conversion & checkout friction" dashboard tracks payment-method failures, school vs personal accounts at checkout, the weekly Learn funnel, and paywall hitters who haven't bought.
+
+### Flowchart builder (`/flowchart`)
+
+| Event | Properties |
+|-------|-----------|
+| `flowchart_opened` | `from`, `restored` (autosave), `imported` (playground hand-off) |
+| `flowchart_node_added` | `shape`, `surface` (`builder`\|`practice`\|`learn`) |
+| `flowchart_run` | `surface`, `debug`, `node_count`, `outcome` (`started`\|`drawing_error`), `error_category` |
+| `flowchart_converted` | `direction` (`from_code`\|`to_code`), `source` (`playground`\|`paste`) or `action` (`copy`\|`open_editor`) |
+| `flowchart_exported` | `surface`, `node_count` (PNG download) |
+| `flowchart_example_loaded` | `example` |
+| `flowchart_edit_clicked` | `from: playground` — "Edit as flowchart" on the editor's Flowchart tab (code handed over in sessionStorage `flowchart_import_code`) |
+
+Runs from the builder send `code_run` with `feature_context: flowchart`. On flowchart questions, `practice_opened` / `practice_graded` / `practice_solved` and `learn_check_submitted` carry `answer_format: flowchart`.
 
 ### Practice retention (first solve + streak)
 

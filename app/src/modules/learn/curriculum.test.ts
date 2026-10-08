@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { checkLessonCode } from './check';
+import { checkLessonCode, checkLessonFlowchart } from './check';
+import { lessonFlowchartSolution, lessonFlowchartStart } from './flowchartLesson';
 import { COURSE_CHOICES } from './courseChoice';
 import { ALEVEL_9618, IGCSE_PAPER_2 } from './curriculum';
 import { findLesson, flattenLessons, lessonHref, nextLesson, previousLesson } from './path';
@@ -47,9 +48,9 @@ describe('IGCSE Paper 2 curriculum', () => {
 
   it('accepts solutionCode for every playable non-quiz lesson', async () => {
     const playable = flattenLessons(IGCSE_PAPER_2).filter(({ lesson }) => lesson.playable);
-    expect(playable.length).toBe(78);
+    expect(playable.length).toBe(80);
     expect(IGCSE_PAPER_2.levels.map((level) => level.lessons.length)).toEqual([
-      6, 8, 6, 8, 10, 7, 9, 7, 7, 10,
+      6, 8, 6, 8, 10, 7, 9, 7, 7, 12,
     ]);
 
     for (const { lesson } of playable) {
@@ -61,6 +62,14 @@ describe('IGCSE Paper 2 curriculum', () => {
         continue;
       }
       expect(lesson.solutionCode, `${lesson.id} needs solutionCode`).toBeTruthy();
+      if (lesson.type === 'flowchart') {
+        // The model flowchart passes; the starting canvas doesn't.
+        const solved = await checkLessonFlowchart(lesson, lessonFlowchartSolution(lesson));
+        expect(solved.ok, `${lesson.id}: ${solved.message}`).toBe(true);
+        const blank = await checkLessonFlowchart(lesson, lessonFlowchartStart(lesson));
+        expect(blank.ok, `${lesson.id} passes before any drawing`).toBe(false);
+        continue;
+      }
       const result = await checkLessonCode(lesson, lesson.solutionCode ?? '');
       expect(result.ok, `${lesson.id}: ${result.message}`).toBe(true);
     }

@@ -10,6 +10,7 @@
 // flowchart shapes; A Level / awkward constructs (pointers, random-access files,
 // class internals) render best-effort as plain process boxes and leave a note.
 
+import type { ParserRuleContext } from 'antlr4ng';
 import { parse } from '../parser';
 import { PseudocodeError } from '../core/types';
 import {
@@ -67,13 +68,24 @@ export interface FlowchartConversion {
   errors: PseudocodeError[];
 }
 
-export function convertToFlowchart(source: string): FlowchartConversion {
+export interface ConvertOptions {
+  /**
+   * Keep every label whole (no truncation, whitespace kept) and write constructs
+   * the diagram can't expand (TYPE / CLASS bodies, random-file operations) as their
+   * full source text, so `flowchartToPseudocode` can turn the graph back into a
+   * program. Used when importing code into the flowchart builder and when seeding
+   * flowchart questions; the read-only view keeps the short labels.
+   */
+  fullLabels?: boolean;
+}
+
+export function convertToFlowchart(source: string, options: ConvertOptions = {}): FlowchartConversion {
   if (!source.trim()) return { nodes: [], edges: [], notes: [], errors: [] };
   const { tree, errors } = parse(source);
   if (errors.length > 0 || !tree) {
     return { nodes: [], edges: [], notes: [], errors };
   }
-  return new FlowchartBuilder().build(tree);
+  return new FlowchartBuilder(options.fullLabels ?? false).build(tree);
 }
 
 // ─── Builder ────────────────────────────────────────────────────────────────
@@ -93,6 +105,17 @@ class FlowchartBuilder {
 
   /** Terminator that RETURN (and the trailing flow) connects to in the current routine. */
   private currentEndId = '';
+
+  constructor(private readonly fullLabels: boolean) {}
+
+  private clip(text: string, max = MAX_LABEL): string {
+    return this.fullLabels ? text : truncate(text, max);
+  }
+
+  /** Text for a construct the diagram doesn't expand: the original source in full-label mode. */
+  private opaque(ctx: ParserRuleContext): string {
+    return this.fullLabels ? sourceText(ctx) : truncate(ctx.getText());
+  }
 
   build(tree: ProgramContext): FlowchartConversion {
     const stmts = tree.statement();
@@ -117,7 +140,7 @@ class FlowchartBuilder {
 
   private addNode(shape: NodeShape, label: string): string {
     const id = `n${this.nodeId++}`;
-    this.nodes.push({ id, shape, label: truncate(label) });
+    this.nodes.push({ id, shape, label: this.clip(label) });
     return id;
   }
 
@@ -155,7 +178,7 @@ class FlowchartBuilder {
       const label = asg
         .singleAssignment()
         .map((sa) => `${designatorText(sa.designator())} ${ARROW} ${exprText(sa.expr())}`)
-        .join('   ');
+        .join(', ');
       return this.linear('process', label, incoming);
     }
 
@@ -166,7 +189,10 @@ class FlowchartBuilder {
     if (con) return this.linear('process', `CONSTANT ${con.identifier().getText()} = ${exprText(con.expr())}`, incoming);
 
     const typeDef = ctx.typeDefinition();
-    if (typeDef) return this.linear('process', `TYPE ${typeDef.getChild(1)?.getText() ?? ''}`, incoming);
+    if (typeDef) {
+      const label = this.fullLabels ? sourceText(typeDef) : `TYPE ${typeDef.getChild(1)?.getText() ?? ''}`;
+      return this.linear('process', label, incoming);
+    }
 
     const def = ctx.defineStatement();
     if (def) return this.linear('process', `DEFINE ${def.identifier().getText()}`, incoming);
@@ -174,7 +200,8 @@ class FlowchartBuilder {
     const cls = ctx.classDeclaration();
     if (cls) {
       this.note('Class definitions are shown as a single box — their methods are not expanded into separate flowcharts.');
-      return this.linear('process', `CLASS ${cls.IDENTIFIER(0)?.getText() ?? ''}`, incoming);
+      const label = this.fullLabels ? sourceText(cls) : `CLASS ${cls.IDENTIFIER(0)?.getText() ?? ''}`;
+      return this.linear('process', label, incoming);
     }
 
     const inp = ctx.inputStatement();
@@ -231,17 +258,17 @@ class FlowchartBuilder {
 
     if (ctx.seekStatement() || ctx.getRecordStatement() || ctx.putRecordStatement()) {
       this.note('Random-access file operations (SEEK / GETRECORD / PUTRECORD) are shown as plain steps.');
-      return this.linear('process', truncate(ctx.getText()), incoming);
+      return this.linear('process', this.opaque(ctx), incoming);
     }
 
     // Nested routine declarations (rare) or anything unhandled → best-effort box.
     if (ctx.procedureDeclaration() || ctx.functionDeclaration()) {
       this.note('Nested subroutine definitions are shown as a single box rather than expanded inline.');
-      return this.linear('process', truncate(ctx.getText()), incoming);
+      return this.linear('process', this.opaque(ctx), incoming);
     }
     const text = ctx.getText().trim();
     if (!text) return incoming; // blank / comment-only line
-    return this.linear('process', truncate(text), incoming);
+    return this.linear('process', this.opaque(ctx), incoming);
   }
 
   /** A single in-line node: connect incoming → node, hand back the node's out-edge. */
@@ -291,7 +318,7 @@ class FlowchartBuilder {
           return es.length === 2 ? `${exprText(es[0])} TO ${exprText(es[1])}` : exprText(es[0]);
         })
         .join(', ');
-      merged = merged.concat(this.emitBlock(clause.block().statement(), [{ from: decId, label: truncate(label, 24) }]));
+      merged = merged.concat(this.emitBlock(clause.block().statement(), [{ from: decId, label: this.clip(label, 24) }]));
     }
 
     if (ctx.OTHERWISE() && ctx.block()) {
@@ -386,6 +413,13 @@ class FlowchartBuilder {
 
 // ─── Label rendering (pure, no builder state) ─────────────────────────────────
 
+/** The statement exactly as written (whitespace and all), unlike `getText()` which drops hidden tokens. */
+function sourceText(ctx: ParserRuleContext): string {
+  const input = ctx.start?.inputStream;
+  if (!input || !ctx.start || !ctx.stop) return ctx.getText();
+  return input.getTextFromRange(ctx.start.start, ctx.stop.stop);
+}
+
 function truncate(text: string, max = MAX_LABEL): string {
   const t = text.replace(/\s+/g, ' ').trim();
   return t.length > max ? t.slice(0, max - 1) + '…' : t;
@@ -462,5 +496,8 @@ function declareText(ds: DeclareStatementContext): string {
 
 function paramText(ctx: ParamListContext | null): string {
   if (!ctx) return '';
-  return ctx.param().map((p) => `${p.identifier().getText()} : ${p.dataType().getText()}`).join(', ');
+  return ctx
+    .param()
+    .map((p) => `${p.BYREF() ? 'BYREF ' : ''}${p.identifier().getText()} : ${p.dataType().getText()}`)
+    .join(', ');
 }

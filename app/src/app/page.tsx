@@ -7,6 +7,7 @@ const FEATURE_LINKS = [
   { label: 'Cambridge O Level Pseudocode Tutorial', href: '/tutorial' },
   { label: 'Paper 2 Path', href: '/learn' },
   { label: 'Pseudocode practice checker', href: '/practice' },
+  { label: 'Flowchart maker', href: '/flowchart' },
   { label: 'Cambridge Pseudocode Guide', href: '/docs' },
   { label: 'What DIV does in pseudocode', href: '/guide/div-in-pseudocode' },
   { label: 'Timed Exams', href: '/exam' },

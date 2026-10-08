@@ -18,13 +18,14 @@ export async function GET(_request: Request, { params }: Props) {
   const [row, premiumAccess] = await Promise.all([
     prisma.progress.findUnique({
       where: { userId_questionId: { userId: session.user.id, questionId: id } },
-      select: { lastCode: true, status: true, attempts: true },
+      select: { lastCode: true, lastFlowchart: true, status: true, attempts: true },
     }),
     PREMIUM_GATING_ENABLED ? getPremiumAccess(session.user.id) : Promise.resolve(true),
   ]);
 
   return NextResponse.json({
     lastCode: row?.lastCode ?? null,
+    lastFlowchart: row?.lastFlowchart ?? null,
     status: row?.status ?? null,
     attempts: row?.attempts ?? 0,
     premiumAccess,

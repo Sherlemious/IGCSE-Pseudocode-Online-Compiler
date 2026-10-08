@@ -983,3 +983,10 @@ button:active > .learn-node {
     animation: none;
   }
 }
+
+/* Flowchart builder: bigger touch target around the small connection dots. */
+.flowchart-handle::after {
+  content: '';
+  position: absolute;
+  inset: -10px;
+}

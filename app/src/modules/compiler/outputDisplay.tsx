@@ -180,6 +180,8 @@ interface OutputDisplayProps {
   flowchartErrors?: PseudocodeError[];
   flowchartStale?: boolean;
   onRefreshFlowchart?: () => void;
+  /** Open this program in the flowchart builder. */
+  onEditFlowchart?: () => void;
 }
 
 const OutputDisplay: React.FC<OutputDisplayProps> = ({
@@ -202,6 +204,7 @@ const OutputDisplay: React.FC<OutputDisplayProps> = ({
   pythonErrors = [],
   pythonStale = false,
   onRefreshPython,
+  onEditFlowchart,
   flowchartNodes = [],
   flowchartEdges = [],
   flowchartNotes = [],
@@ -474,8 +477,19 @@ const OutputDisplay: React.FC<OutputDisplayProps> = ({
     }
     return (
       <div className="h-full flex flex-col">
-        <div className="flex-1 min-h-0">
+        <div className="relative flex-1 min-h-0">
           <FlowchartView nodes={flowchartNodes} edges={flowchartEdges} />
+          {onEditFlowchart && (
+            <button
+              type="button"
+              onClick={onEditFlowchart}
+              className="absolute top-2 right-2 z-10 inline-flex items-center gap-1.5 rounded-md border border-primary/40 bg-surface px-2.5 py-1.5 text-xs font-semibold text-primary shadow hover:bg-primary/10"
+              title="Open this flowchart in the builder to change it, run it and step through it"
+            >
+              <Workflow className="h-3.5 w-3.5" />
+              Edit as flowchart
+            </button>
+          )}
         </div>
         {flowchartNotes.length > 0 && (
           <div className="shrink-0 max-h-24 overflow-y-auto scrollbar-pretty border-t border-border bg-surface/50 px-3 py-1.5 text-[11px] text-dark-text/70">

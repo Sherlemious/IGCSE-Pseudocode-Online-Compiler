@@ -1,5 +1,5 @@
 import { unstable_cache } from 'next/cache';
-import type { Difficulty, Prisma } from '@prisma/client';
+import type { AnswerFormat, Difficulty, Prisma } from '@prisma/client';
 import { prisma } from '@/shared/db';
 
 /**
@@ -51,6 +51,9 @@ export type BankQuestion = {
   tags: string[];
   isPremium: boolean;
   starterCode: string | null;
+  answerFormat: AnswerFormat;
+  /** FlowchartDoc JSON (see Question.flowchart); validate with parseFlowchartDoc before use. */
+  flowchart: unknown;
   hints: string[];
   createdAt: string;
   updatedAt: string;
@@ -59,7 +62,7 @@ export type BankQuestion = {
 
 export type QuestionCatalogItem = Omit<
   BankQuestion,
-  'description' | 'starterCode' | 'hints' | 'createdAt' | 'testCases'
+  'description' | 'starterCode' | 'flowchart' | 'hints' | 'createdAt' | 'testCases'
 >;
 
 export type VisibleTestCase = Omit<BankTestCase, 'isHidden'>;
@@ -72,6 +75,8 @@ export type GradeQuestion = {
   id: string;
   difficulty: Difficulty;
   isPremium: boolean;
+  answerFormat: AnswerFormat;
+  flowchart: unknown;
   testCases: BankTestCase[];
 };
 
@@ -111,6 +116,7 @@ export function toCatalogItem(question: BankQuestion): QuestionCatalogItem {
     topic: question.topic,
     tags: question.tags,
     isPremium: question.isPremium,
+    answerFormat: question.answerFormat,
     updatedAt: question.updatedAt,
   };
 }
@@ -136,6 +142,8 @@ export function toGradeQuestion(question: BankQuestion): GradeQuestion {
     id: question.id,
     difficulty: question.difficulty,
     isPremium: question.isPremium,
+    answerFormat: question.answerFormat,
+    flowchart: question.flowchart,
     testCases: question.testCases,
   };
 }
@@ -146,6 +154,8 @@ export function filterExamPool(
 ): { id: string }[] {
   return catalog
     .filter((question) => {
+      // Exams answer in the code editor; flowchart-answer questions stay in Practice.
+      if (question.answerFormat === 'FLOWCHART') return false;
       if (!opts.includePremium && question.isPremium) return false;
       if (opts.topic && question.topic !== opts.topic) return false;
       if (opts.difficulty && question.difficulty !== opts.difficulty) return false;
@@ -177,6 +187,7 @@ export function listQuestionsApiPayload(
 ) {
   return bank
     .filter((question) => {
+      if (question.answerFormat === 'FLOWCHART') return false;
       if (filters.topic && question.topic !== filters.topic) return false;
       if (filters.difficulty && question.difficulty !== filters.difficulty) return false;
       return true;
@@ -240,6 +251,8 @@ const BANK_QUESTION_SELECT = {
   tags: true,
   isPremium: true,
   starterCode: true,
+  answerFormat: true,
+  flowchart: true,
   hints: true,
   createdAt: true,
   updatedAt: true,
@@ -283,6 +296,7 @@ async function loadCatalog(): Promise<QuestionCatalogItem[]> {
       topic: true,
       tags: true,
       isPremium: true,
+      answerFormat: true,
       updatedAt: true,
     },
   });
