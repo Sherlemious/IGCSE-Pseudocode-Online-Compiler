@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { usePostHog } from 'posthog-js/react';
@@ -27,6 +27,7 @@ import { useCommands } from '@/shared/ui/CommandPalette';
 import { OPEN_BUG_REPORT_EVENT } from '@/shared/lib/events';
 import { useSession } from 'next-auth/react';
 import { sessionShowsClasses } from '@/modules/classes/visibility';
+import { FLOWCHART_VISITED_KEY } from '@/modules/flowchart/constants';
 
 const GITHUB_URL = 'https://github.com/Sherlemious/IGCSE-Pseudocode-Online-Compiler';
 const PORTFOLIO_URL = 'https://www.sherlemious.com';
@@ -39,6 +40,7 @@ const SimpleGithubIcon: React.FC<{ size: number; className?: string }> = ({ size
 
 const Header: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [flowchartNew, setFlowchartNew] = useState(false);
   const pathname = usePathname();
   const ph = usePostHog();
   const { openPalette } = useCommands();
@@ -61,6 +63,15 @@ const Header: React.FC = () => {
     pathname.startsWith('/exams/') ||
     pathname.startsWith('/e/');
   const isClasses = pathname === '/classes' || pathname.startsWith('/classes/');
+  const isFlowchart = pathname === '/flowchart' || pathname.startsWith('/flowchart/');
+
+  useEffect(() => {
+    try {
+      setFlowchartNew(localStorage.getItem(FLOWCHART_VISITED_KEY) !== '1');
+    } catch {
+      setFlowchartNew(false);
+    }
+  }, [pathname]);
   const isCompilerPage = pathname === '/';
   const isPricing = pathname === '/pricing';
   const activeNavIndex = isDocs
@@ -190,6 +201,19 @@ const Header: React.FC = () => {
               </span>
             </div>
             <Link
+              href="/flowchart"
+              onClick={() => trackNav('flowchart')}
+              className={`${navLinkClass(isFlowchart)} inline-flex items-center justify-center gap-1`}
+              aria-current={isFlowchart ? 'page' : undefined}
+            >
+              Flowchart
+              {flowchartNew && (
+                <span className="rounded bg-primary/15 px-1 py-px text-[9px] font-semibold uppercase tracking-wide text-primary">
+                  New
+                </span>
+              )}
+            </Link>
+            <Link
               href="/pricing"
               onClick={() => trackNav('pricing')}
               className={navLinkClass(isPricing)}
@@ -291,6 +315,11 @@ const Header: React.FC = () => {
             >
               <Workflow size={14} />
               Flowchart maker
+              {flowchartNew && (
+                <span className="rounded bg-primary/15 px-1 py-px text-[9px] font-semibold uppercase tracking-wide text-primary">
+                  New
+                </span>
+              )}
             </Link>
             {showClasses && (
               <Link

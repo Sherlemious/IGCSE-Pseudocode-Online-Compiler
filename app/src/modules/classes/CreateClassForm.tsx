@@ -11,6 +11,10 @@ import type { Tier } from '@/modules/billing/entitlements';
 interface Props {
   canCreate: boolean;
   maxClasses: number;
+  /** Classes this teacher already owns. The limit card only shows once this has reached maxClasses. */
+  classCount: number;
+  /** Students across those classes. The limit email only sends once this is at least 1. */
+  studentCount: number;
   /** The caller's current class-capacity tier — drives the accurate "on the … plan" copy. */
   tier: Tier;
 }
@@ -25,7 +29,7 @@ const PLAN_LABELS: Record<Tier, string> = {
   campus: 'Campus',
 };
 
-export default function CreateClassForm({ canCreate, maxClasses, tier }: Props) {
+export default function CreateClassForm({ canCreate, maxClasses, classCount, studentCount, tier }: Props) {
   const router = useRouter();
   const ph = usePostHog();
   const { update } = useSession();
@@ -39,9 +43,15 @@ export default function CreateClassForm({ canCreate, maxClasses, tier }: Props) 
   useEffect(() => {
     if (!canCreate && !shownRef.current) {
       shownRef.current = true;
-      ph?.capture('nudge_shown', { nudge: 'class_limit' });
+      ph?.capture('nudge_shown', {
+        nudge: 'class_limit',
+        class_count: classCount,
+        student_count: studentCount,
+        max_classes: maxClasses,
+        tier,
+      });
     }
-  }, [canCreate, ph]);
+  }, [canCreate, classCount, studentCount, maxClasses, tier, ph]);
 
   if (!canCreate) {
     return (

@@ -12,6 +12,7 @@ import LearnFlowchartPane from './LearnFlowchartPane';
 import FlowchartDiagram from '@/modules/flowchart/FlowchartDiagram';
 import { promptLearnUpgrade } from './learnNudge';
 import { paywallPersonProps, rememberPaywallLevel } from './paywallLevel';
+import { identifyAccount } from '@/modules/telemetry/identifyAccount';
 import LearnAccountSheet, { LEARN_PENDING_AUTH_KEY, type LearnAuthGate } from './LearnAccountSheet';
 import { flattenLessons, lessonHref, nextLesson, previousLesson } from './path';
 import {
@@ -37,7 +38,12 @@ type Props = {
 
 export default function LearnPlayer({ course, level, lesson, premiumAccess: initialPremium }: Props) {
   const router = useRouter();
-  const { status, update: updateSession } = useSession();
+  const { data: session, status, update: updateSession } = useSession();
+  // Read inside the start effect without re-running it when the session object changes.
+  const sessionRef = useRef(session);
+  useEffect(() => {
+    sessionRef.current = session;
+  }, [session]);
   const [progress, setProgress] = useState<ProgressMap>({});
   const [premiumAccess, setPremiumAccess] = useState(initialPremium);
   const [mobilePane, setMobilePane] = useState<'lesson' | 'editor'>('lesson');
@@ -88,8 +94,14 @@ export default function LearnPlayer({ course, level, lesson, premiumAccess: init
       const open = isLessonUnlocked(course, lesson, map, {
         premium: hydrated?.premiumAccess ?? initialPremium,
       });
-      if (open && level.free && levelNeedsAccount(level) && status !== 'authenticated') {
-        // Not marked started: once they sign in this effect re-runs and starts the lesson.
+      const entitled = hydrated?.premiumAccess ?? initialPremium;
+      const paywalled = lesson.playable && !level.free && !entitled;
+      // Account first, including a paid lesson. The paywall event is what the
+      // email workflow sends on, so it must not fire until they are signed in.
+      const accountFirst =
+        status !== 'authenticated' && ((open && level.free && levelNeedsAccount(level)) || paywalled);
+      if (accountFirst) {
+        // Not marked started: once they sign in this effect re-runs and continues.
         if (gateShown.current !== 'account') {
           gateShown.current = 'account';
           captureLearn('learn_signup_gate_shown', learnLessonProps(level, lesson, { gate: 'account' }));
@@ -99,8 +111,6 @@ export default function LearnPlayer({ course, level, lesson, premiumAccess: init
       }
       startedFor.current = lesson.id;
       if (!lesson.playable || !open) {
-        const entitled = hydrated?.premiumAccess ?? initialPremium;
-        const paywalled = lesson.playable && !level.free && !entitled;
         captureLearn(
           'learn_gate_viewed',
           learnLessonProps(level, lesson, {
@@ -110,9 +120,15 @@ export default function LearnPlayer({ course, level, lesson, premiumAccess: init
         );
         if (paywalled) {
           rememberPaywallLevel(level, course.id);
+          const account = sessionRef.current?.user;
+          // Identify first so the paywall workflow sees person.email on this event.
+          identifyAccount(account);
           captureLearn('learn_gate_blocked', {
             ...learnLessonProps(level, lesson, { unlocked: false, source: 'paywall' }),
-            $set: paywallPersonProps(level, course.basePath),
+            $set: {
+              ...paywallPersonProps(level, course.basePath),
+              ...(account?.email ? { email: account.email } : {}),
+            },
           });
         }
         return;
@@ -196,9 +212,19 @@ export default function LearnPlayer({ course, level, lesson, premiumAccess: init
   function authSheet(returnPath: string) {
     if (!authGate || status === 'authenticated') return null;
     const gate = authGate;
+    const copy =
+      gate === 'account' && !level.free
+        ? {
+            header: 'Keep going',
+            title: 'Create a free account to continue.',
+            description:
+              'It is free. Your progress stays on the account, and you pick up this lesson once you are signed in.',
+          }
+        : undefined;
     return (
       <LearnAccountSheet
         gate={gate}
+        copy={copy}
         returnPath={returnPath}
         onClose={() => {
           captureLearn('learn_signup_gate_dismissed', learnLessonProps(level, lesson, { gate }));
@@ -211,84 +237,14 @@ export default function LearnPlayer({ course, level, lesson, premiumAccess: init
     );
   }
 
-  if (!lesson.playable || !unlocked) {
-    const paywalled = lesson.playable && !premiumAccess && !level.free;
-    const lessonPath = lessonHref(level, lesson, course.basePath);
-    return (
-      <div className="flex-1 min-h-0 overflow-y-auto bg-background bg-dot-grid px-4 py-8 sm:py-10">
-        <div className="max-w-lg mx-auto rounded-2xl border border-border bg-surface p-5 sm:p-6">
-          {paywalled ? (
-            <Crown className="h-5 w-5 text-warning mb-3" />
-          ) : (
-            <Lock className="h-5 w-5 text-dark-text mb-3" />
-          )}
-          <h1 className="display-serif text-xl font-semibold text-light-text mb-2">{lesson.title}</h1>
-          <p className="text-sm text-dark-text mb-4">
-            {paywalled
-              ? `Levels 4–10 are what Paper 2 actually tests: IF and CASE, loops, string handling, arrays, procedures and functions, files, and full exam-style problems. ${studentUnlockPitch()}`
-              : 'Complete the previous lesson to unlock this one.'}
-          </p>
-          {paywalled && (
-            <div className="flex flex-wrap items-center gap-3 mb-4">
-              {status !== 'authenticated' ? (
-                <button
-                  type="button"
-                  onClick={() => openAuth('paywall')}
-                  className="inline-flex items-center min-h-10 px-3 rounded-lg bg-primary/15 text-primary text-sm font-medium hover:bg-primary/25"
-                >
-                  Sign in to continue
-                </button>
-              ) : (
-                <Link
-                  href={studentCheckoutHref('learn_paywall')}
-                  onClick={() =>
-                    captureLearn('learn_upgrade_clicked', learnLessonProps(level, lesson, { source: 'paywall' }))
-                  }
-                  className="inline-flex items-center gap-1.5 min-h-10 px-3 rounded-lg bg-warning/15 text-warning text-sm font-medium hover:bg-warning/25"
-                >
-                  <Crown size={14} />
-                  {studentCheckoutLabel()}
-                </Link>
-              )}
-              {status === 'authenticated' && (
-                <Link
-                  href="/pricing?view=student&from=learn_paywall"
-                  onClick={() =>
-                    captureLearn('learn_upgrade_clicked', learnLessonProps(level, lesson, { source: 'paywall_compare' }))
-                  }
-                  className="text-sm text-dark-text hover:text-light-text hover:underline"
-                >
-                  Compare plans and passes
-                </Link>
-              )}
-            </div>
-          )}
-          <Link
-            href={course.basePath}
-            className="text-sm text-primary hover:underline"
-            onClick={() =>
-              captureLearn('learn_path_clicked', learnLessonProps(level, lesson, { source: 'gate' }))
-            }
-          >
-            Back to the path
-          </Link>
-        </div>
-        {authSheet(lessonPath)}
-      </div>
-    );
-  }
-
-  if (level.free && levelNeedsAccount(level) && status === 'unauthenticated') {
+  function accountGate(body: string) {
     const lessonPath = lessonHref(level, lesson, course.basePath);
     return (
       <div className="flex-1 min-h-0 overflow-y-auto bg-background bg-dot-grid px-4 py-8 sm:py-10">
         <div className="max-w-lg mx-auto rounded-2xl border border-border bg-surface p-5 sm:p-6">
           <UserPlus className="h-5 w-5 text-primary mb-3" />
           <h1 className="display-serif text-xl font-semibold text-light-text mb-2">{lesson.title}</h1>
-          <p className="text-sm text-dark-text mb-4">
-            Levels 1 and 2 are open to everyone. From level 3 you need a free account. It keeps your
-            progress so far, saves it across devices, and gets you ready for the full path.
-          </p>
+          <p className="text-sm text-dark-text mb-4">{body}</p>
           <button
             type="button"
             onClick={() => openAuth('account')}
@@ -311,6 +267,76 @@ export default function LearnPlayer({ course, level, lesson, premiumAccess: init
         </div>
         {authSheet(lessonPath)}
       </div>
+    );
+  }
+
+  const paywalled = lesson.playable && !premiumAccess && !level.free;
+  if (paywalled && status !== 'authenticated') {
+    if (status === 'loading') {
+      return <div className="flex-1 min-h-0 bg-background bg-dot-grid" />;
+    }
+    return accountGate(
+      'Create a free account to open this lesson. Your progress stays on the account, and you continue from here.',
+    );
+  }
+
+  if (!lesson.playable || !unlocked) {
+    const lessonPath = lessonHref(level, lesson, course.basePath);
+    return (
+      <div className="flex-1 min-h-0 overflow-y-auto bg-background bg-dot-grid px-4 py-8 sm:py-10">
+        <div className="max-w-lg mx-auto rounded-2xl border border-border bg-surface p-5 sm:p-6">
+          {paywalled ? (
+            <Crown className="h-5 w-5 text-warning mb-3" />
+          ) : (
+            <Lock className="h-5 w-5 text-dark-text mb-3" />
+          )}
+          <h1 className="display-serif text-xl font-semibold text-light-text mb-2">{lesson.title}</h1>
+          <p className="text-sm text-dark-text mb-4">
+            {paywalled
+              ? `Levels 4–10 are what Paper 2 actually tests: IF and CASE, loops, string handling, arrays, procedures and functions, files, and full exam-style problems. ${studentUnlockPitch()}`
+              : 'Complete the previous lesson to unlock this one.'}
+          </p>
+          {paywalled && (
+            <div className="flex flex-wrap items-center gap-3 mb-4">
+              <Link
+                href={studentCheckoutHref('learn_paywall')}
+                onClick={() =>
+                  captureLearn('learn_upgrade_clicked', learnLessonProps(level, lesson, { source: 'paywall' }))
+                }
+                className="inline-flex items-center gap-1.5 min-h-10 px-3 rounded-lg bg-warning/15 text-warning text-sm font-medium hover:bg-warning/25"
+              >
+                <Crown size={14} />
+                {studentCheckoutLabel()}
+              </Link>
+              <Link
+                href="/pricing?view=student&from=learn_paywall"
+                onClick={() =>
+                  captureLearn('learn_upgrade_clicked', learnLessonProps(level, lesson, { source: 'paywall_compare' }))
+                }
+                className="text-sm text-dark-text hover:text-light-text hover:underline"
+              >
+                Compare plans and passes
+              </Link>
+            </div>
+          )}
+          <Link
+            href={course.basePath}
+            className="text-sm text-primary hover:underline"
+            onClick={() =>
+              captureLearn('learn_path_clicked', learnLessonProps(level, lesson, { source: 'gate' }))
+            }
+          >
+            Back to the path
+          </Link>
+        </div>
+        {authSheet(lessonPath)}
+      </div>
+    );
+  }
+
+  if (level.free && levelNeedsAccount(level) && status === 'unauthenticated') {
+    return accountGate(
+      'Levels 1 and 2 are open to everyone. From level 3 you need a free account. It keeps your progress so far, saves it across devices, and gets you ready for the full path.',
     );
   }
 

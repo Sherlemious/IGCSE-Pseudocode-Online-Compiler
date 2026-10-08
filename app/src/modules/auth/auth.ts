@@ -222,6 +222,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       return token;
     },
     async session({ session, token }) {
+      if (typeof token.email === 'string' && token.email) session.user.email = token.email;
       session.user.id = token.id as string;
       session.user.plan = token.plan as string;
       session.user.role = token.role as string;

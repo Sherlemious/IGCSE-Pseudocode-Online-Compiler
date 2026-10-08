@@ -38,6 +38,7 @@ import { formatOutputEntries } from '@/modules/compiler/formatOutputEntries';
 import { LEARN_FIRST_START_FLAG } from '@/modules/telemetry/experiments';
 import SaveProgramSheet from './SaveProgramSheet';
 import { suggestLearnPath } from '@/modules/learn/learnNudge';
+import { suggestPlaygroundPractice } from '@/modules/practice/playgroundPractice';
 import LearnFirstStart, { LEARN_FIRST_SEEN_KEY } from '@/modules/learn/LearnFirstStart';
 import { loadProgress } from '@/modules/learn/progress';
 import {
@@ -670,6 +671,8 @@ const CompilerPage: React.FC = () => {
     ) {
       markSavePromptShown();
       setSaveSheetOpen(true);
+    } else if (outcome === 'success' && learnFirst === 'off' && suggestPlaygroundPractice()) {
+      // The easy-question toast owns this run. The Paper 2 Path toast waits for a later success.
     } else if (outcome === 'success') {
       setTimeout(() => suggestLearnPath('playground'), 1500);
     }
@@ -854,7 +857,10 @@ const CompilerPage: React.FC = () => {
       {showFeedback && <FeedbackSurvey onDismiss={() => setShowFeedback(false)} />}
       {saveSheetOpen && (
         <SaveProgramSheet
-          onClose={() => setSaveSheetOpen(false)}
+          onClose={() => {
+            setSaveSheetOpen(false);
+            if (learnFirst === 'off') suggestPlaygroundPractice();
+          }}
           onFlushBeforeOAuth={() => {
             try {
               localStorage.setItem(AUTOSAVE_KEY, mainTabContent);
@@ -866,6 +872,7 @@ const CompilerPage: React.FC = () => {
             setSaveSheetOpen(false);
             await putPlaygroundSnapshot(mainTabContent);
             toast.success('Program saved to your account');
+            if (learnFirst === 'off') suggestPlaygroundPractice();
           }}
         />
       )}

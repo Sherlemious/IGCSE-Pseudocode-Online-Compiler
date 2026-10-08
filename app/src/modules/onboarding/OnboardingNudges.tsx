@@ -10,8 +10,13 @@
  *    dismissed across devices and browser clears.
  *
  * Timeline:
+ *  - 90 s cumulative usage, flowchart maker not opened yet: "Draw and run flowcharts"
  *  - 15 min cumulative usage, no Learn progress: "Follow the Paper 2 Path"
  *  - 2nd+ session, anyone:                    "Try an Exam"
+ *
+ * One card at a time. A card that is already up is left alone until it is
+ * dismissed or the visitor lands on a quiet page, so a later threshold
+ * doesn't swap it out from under them.
  *
  * The 90 s sign-up card is retired. Anonymous playground visitors get the
  * save-program sheet after their first successful run instead.
@@ -19,16 +24,17 @@
  * Trimmed Sept 2026 (30-day PostHog): the 25-min "share" card was clicked by
  * 0.3% and the 15-min "Try Practice" card led to no solves, so share is gone
  * and that slot now points at Learn, where students convert. Nothing shows
- * on Learn, pricing, checkout, sign-in or exam pages (QUIET_PATHS) so the
- * lesson and upgrade prompts aren't competing with a corner card.
+ * on Learn, the flowchart maker, pricing, checkout, sign-in or exam pages
+ * (QUIET_PATHS) so those prompts aren't competing with a corner card.
  */
 
 import { useEffect, useRef, useCallback, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { usePostHog } from 'posthog-js/react';
 import { usePathname, useRouter } from 'next/navigation';
-import { UserPlus, Map as MapIcon } from 'lucide-react';
+import { UserPlus, Map as MapIcon, Workflow } from 'lucide-react';
 import { authHref } from '@/modules/auth/callback';
+import { FLOWCHART_VISITED_KEY } from '@/modules/flowchart/constants';
 import NudgeCard from './NudgeCard';
 import ExamNudgeCard from './ExamNudgeCard';
 import { loadProgress } from '@/modules/learn/progress';
@@ -36,20 +42,22 @@ import { loadProgress } from '@/modules/learn/progress';
 const LS = {
   usageMs: 'nudge_usage_ms',
   sessionCount: 'nudge_sessions',
+  flowchart: 'nudge_shown_flowchart',
   learn: 'nudge_shown_learn',
   exam: 'nudge_shown_exam',
 } as const;
 
-type NudgeKey = 'signup' | 'learn' | 'exam';
+type NudgeKey = 'signup' | 'learn' | 'exam' | 'flowchart';
 type ActiveNudge = NudgeKey | null;
 
 const THRESHOLDS = {
+  flowchartMs: 90_000,
   learnMs: 15 * 60_000,
   examSession: 2,
 } as const;
 
-/** Pages with their own prompts (lessons, paywall, checkout) or no room for a card. */
-const QUIET_PATHS = ['/learn', '/pricing', '/welcome', '/onboarding', '/auth', '/exam', '/e/'];
+/** Pages with their own prompts (lessons, paywall, checkout, the maker) or no room for a card. */
+const QUIET_PATHS = ['/learn', '/flowchart', '/pricing', '/welcome', '/onboarding', '/auth', '/exam', '/e/'];
 
 function isQuietPath(pathname: string | null): boolean {
   return !!pathname && QUIET_PATHS.some((p) => pathname === p || pathname.startsWith(p.endsWith('/') ? p : `${p}/`));
@@ -57,6 +65,10 @@ function isQuietPath(pathname: string | null): boolean {
 
 function hasLearnProgress(): boolean {
   return Object.keys(loadProgress()).length > 0;
+}
+
+function hasOpenedFlowchart(): boolean {
+  return lsGet(FLOWCHART_VISITED_KEY) === '1';
 }
 
 function lsGet(key: string) { return localStorage.getItem(key); }
@@ -73,6 +85,7 @@ export default function OnboardingNudges() {
   const startRef = useRef<number>(Date.now());
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const dbSyncedRef = useRef(false);
+  const cardUp = useRef(false);
   const [activeNudge, setActiveNudge] = useState<ActiveNudge>(null);
 
   const markShown = useCallback(
@@ -91,6 +104,8 @@ export default function OnboardingNudges() {
 
   const triggerNudge = useCallback(
     (key: NudgeKey, delay = 0) => {
+      if (cardUp.current) return;
+      cardUp.current = true;
       markShown(key);
       ph?.capture('nudge_shown', { nudge: key });
       setTimeout(() => setActiveNudge(key), delay);
@@ -100,6 +115,7 @@ export default function OnboardingNudges() {
 
   const dismissNudge = useCallback(
     (key: NudgeKey) => {
+      cardUp.current = false;
       ph?.capture('nudge_dismissed', { nudge: key });
       setActiveNudge(null);
     },
@@ -108,11 +124,15 @@ export default function OnboardingNudges() {
 
   // Moving onto a quiet page hides a card that's already up.
   useEffect(() => {
-    if (isQuietPath(pathname)) setActiveNudge(null);
+    if (isQuietPath(pathname)) {
+      cardUp.current = false;
+      setActiveNudge(null);
+    }
   }, [pathname]);
 
   const handleCta = useCallback(
     (key: NudgeKey, action: () => void) => {
+      cardUp.current = false;
       ph?.capture('nudge_clicked', { nudge: key });
       setActiveNudge(null);
       action();
@@ -123,7 +143,11 @@ export default function OnboardingNudges() {
   const checkNudges = useCallback(
     (totalMs: number, sessions: number) => {
       // Not marked as shown: it waits until they're back on a normal page.
-      if (quietRef.current) return;
+      if (quietRef.current || cardUp.current) return;
+      if (totalMs >= THRESHOLDS.flowchartMs && !lsGet(LS.flowchart) && !hasOpenedFlowchart()) {
+        triggerNudge('flowchart');
+        return;
+      }
       if (totalMs >= THRESHOLDS.learnMs && !lsGet(LS.learn) && !hasLearnProgress()) {
         triggerNudge('learn');
         return;
@@ -142,6 +166,10 @@ export default function OnboardingNudges() {
     if (params.get('exam_nudge') === '1') setActiveNudge('exam');
     if (params.get('signup_nudge') === '1') setActiveNudge('signup');
     if (params.get('learn_nudge') === '1') setActiveNudge('learn');
+    if (params.get('flowchart_nudge') === '1' && !quietRef.current) {
+      cardUp.current = true;
+      setActiveNudge('flowchart');
+    }
   }, []);
 
   // Sync DB nudge state → localStorage on first authenticated load
@@ -189,6 +217,19 @@ export default function OnboardingNudges() {
         ctaLabel="Sign up free"
         onCta={() => handleCta('signup', () => router.push(authHref('signup', window.location.pathname + window.location.search)))}
         onDismiss={() => dismissNudge('signup')}
+      />
+    );
+  }
+
+  if (activeNudge === 'flowchart') {
+    return (
+      <NudgeCard
+        icon={Workflow}
+        title="Draw and run a flowchart"
+        description="The flowchart maker uses the Cambridge symbols. Draw a program, run it with real input, or turn code you already have into a diagram."
+        ctaLabel="Open the flowchart maker"
+        onCta={() => handleCta('flowchart', () => router.push('/flowchart?from=nudge_flowchart'))}
+        onDismiss={() => dismissNudge('flowchart')}
       />
     );
   }

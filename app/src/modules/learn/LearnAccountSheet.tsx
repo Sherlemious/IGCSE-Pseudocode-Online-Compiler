@@ -12,6 +12,8 @@ interface Props {
   gate: LearnAuthGate;
   /** Lesson path Google returns to. */
   returnPath: string;
+  /** Replaces the default copy for this gate. Paid lessons ask for an account before the paywall. */
+  copy?: { header: string; title: string; description: string };
   onClose: () => void;
   onAuthenticated: () => void | Promise<void>;
 }
@@ -35,8 +37,8 @@ const COPY: Record<LearnAuthGate, { header: string; title: string; description: 
  * In-page auth for the Paper 2 Path. Never navigates to /auth/signin: Google
  * round-trips back to this lesson and email signs in in place.
  */
-export default function LearnAccountSheet({ gate, returnPath, onClose, onAuthenticated }: Props) {
-  const copy = COPY[gate];
+export default function LearnAccountSheet({ gate, returnPath, copy: copyOverride, onClose, onAuthenticated }: Props) {
+  const copy = copyOverride ?? COPY[gate];
   return (
     <AuthSheet
       ariaLabel={copy.title}

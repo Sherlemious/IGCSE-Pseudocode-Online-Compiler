@@ -3,6 +3,7 @@
 import { useEffect, useRef } from 'react';
 import { useSession } from 'next-auth/react';
 import { usePostHog } from 'posthog-js/react';
+import { identifyAccount } from './identifyAccount';
 
 /**
  * Runs inside both PostHogProvider and SessionWrapper.
@@ -15,6 +16,7 @@ export default function SessionIdentifier() {
   const { data: session, status } = useSession();
   const ph = usePostHog();
   const prevUserIdRef = useRef<string | undefined>(undefined);
+  const prevEmailRef = useRef<string | null>(null);
   const prevRoleRef = useRef<string | undefined>(undefined);
 
   useEffect(() => {
@@ -23,13 +25,10 @@ export default function SessionIdentifier() {
     const userId = session?.user?.id;
 
     if (userId && prevUserIdRef.current !== userId) {
-      // Identify the person so anonymous pre-auth events merge with the user
-      ph.identify(userId, {
-        email: session.user.email ?? undefined,
-        name: session.user.name ?? undefined,
-        plan: session.user.plan,
-        role: session.user.role,
-      });
+      // Identify the person so anonymous pre-auth events merge with the user.
+      // Email has to be on the person before a workflow trigger, or the mail never sends.
+      identifyAccount(session.user);
+      prevEmailRef.current = session.user.email ?? null;
 
       // Fire conversion event once per browser session (not on every page reload)
       const storageKey = `ph_authed_${userId}`;
@@ -46,7 +45,12 @@ export default function SessionIdentifier() {
       ph.capture('user_signed_out');
       ph.reset();
       prevUserIdRef.current = undefined;
+      prevEmailRef.current = null;
       prevRoleRef.current = undefined;
+    } else if (userId && session.user.email && prevEmailRef.current !== session.user.email) {
+      // The first identify can land before the session has an email. Set it as soon as it arrives.
+      identifyAccount(session.user);
+      prevEmailRef.current = session.user.email;
     }
 
     // Role can change mid-session (the /onboarding role pick), after identify ran.

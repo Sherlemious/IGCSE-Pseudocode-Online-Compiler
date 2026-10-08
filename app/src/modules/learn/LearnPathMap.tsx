@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, type CSSProperties, type ReactNode } from 'react';
 import Link from 'next/link';
+import { useSession } from 'next-auth/react';
 import { ArrowRight, Check, Crown, Flag, Lock } from 'lucide-react';
 import { lessonHref } from './path';
 import {
@@ -22,6 +23,8 @@ import {
   type ProgressMap,
 } from './progress';
 import { captureLearn, learnLessonProps, learnLevelProps } from './telemetry';
+import { paywallPersonProps } from './paywallLevel';
+import { identifyAccount } from '@/modules/telemetry/identifyAccount';
 import type { LearnCourse, LearnLesson, LearnLevel } from './types';
 
 type NodeState = 'complete' | 'current' | 'open' | 'gated' | 'paywall';
@@ -477,6 +480,7 @@ function LessonNode({
   /** Render as a full-width row: node on the left, label inline (mobile). */
   row?: boolean;
 }) {
+  const { data: session, status } = useSession();
   const meta = lessonTypeMeta(lesson);
   const Icon = meta.icon;
   const boss = isBossLesson(lesson);
@@ -567,15 +571,26 @@ function LessonNode({
         aria-current={state === 'current' ? 'step' : undefined}
         aria-label={
           paywalled
-            ? `${lesson.title} (needs a plan)`
+            ? `${lesson.title} (${status === 'authenticated' ? 'needs a plan' : 'needs a free account'})`
             : `${lesson.title}, ${meta.label}, ${lesson.minutes} minutes`
         }
-        onClick={() =>
-          captureLearn(
-            paywalled ? 'learn_gate_blocked' : 'learn_lesson_clicked',
-            learnLessonProps(level, lesson, { source: paywalled ? 'paywall' : 'node' }),
-          )
-        }
+        onClick={() => {
+          if (!paywalled) {
+            captureLearn('learn_lesson_clicked', learnLessonProps(level, lesson, { source: 'node' }));
+            return;
+          }
+          // Signed-out clicks open the lesson, where the account gate runs.
+          // Recording the paywall here would email nobody.
+          if (status !== 'authenticated') return;
+          identifyAccount(session?.user);
+          captureLearn('learn_gate_blocked', {
+            ...learnLessonProps(level, lesson, { source: 'paywall' }),
+            $set: {
+              ...paywallPersonProps(level, basePath),
+              ...(session?.user?.email ? { email: session.user.email } : {}),
+            },
+          });
+        }}
         className={`${shell} ${focus} ${row ? 'hover:bg-surface/70' : ''} ${shape}`}
       >
         {face}
@@ -588,7 +603,7 @@ function LessonNode({
         )}
         {row && paywalled && (
           <span className="mono-label text-warning shrink-0 inline-flex items-center gap-1">
-            Plan
+            {status === 'authenticated' ? 'Plan' : 'Account'}
             <ArrowRight size={11} />
           </span>
         )}

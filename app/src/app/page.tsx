@@ -23,6 +23,7 @@ const FEATURE_TAGS = [
   'Classes & OOP',
   'Dyslexia Friendly',
   'Autograded Paper 2 practice',
+  'Draw and run flowcharts',
   'No install',
 ] as const;
 

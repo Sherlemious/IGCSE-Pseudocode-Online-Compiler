@@ -34,6 +34,7 @@ export default async function ClassesPage() {
   ]);
 
   const canCreate = owned.length < entitlements.limits.maxClasses;
+  const studentCount = owned.reduce((total, cls) => total + cls._count.memberships, 0);
 
   return (
     <div className="flex-1 overflow-y-auto bg-background bg-dot-grid p-6 relative scrollbar-pretty">
@@ -71,7 +72,13 @@ export default async function ClassesPage() {
         {/* Create a class */}
         <div className="bg-surface/80 backdrop-blur-sm rounded-xl border border-border p-5 mb-8 card-glow animate-fade-in-up" style={{ animationDelay: '80ms' }}>
           <h2 className="mono-label text-light-text mb-3">Create a class</h2>
-          <CreateClassForm canCreate={canCreate} maxClasses={entitlements.limits.maxClasses} tier={entitlements.tier} />
+          <CreateClassForm
+            canCreate={canCreate}
+            maxClasses={entitlements.limits.maxClasses}
+            classCount={owned.length}
+            studentCount={studentCount}
+            tier={entitlements.tier}
+          />
         </div>
 
         {/* Teaching */}

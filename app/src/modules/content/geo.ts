@@ -103,7 +103,7 @@ export const PLAN_FEATURE_ROWS: PlanFeatureRow[] = [
     teacher: 'Yes',
   },
   {
-    feature: 'Trace table, flowchart, Python view',
+    feature: 'Trace table, flowchart maker, Python view',
     free: 'Yes',
     student: 'Yes',
     teacher: 'Yes',
@@ -150,7 +150,7 @@ export const GEO_FEATURE_LIST = [
   'Progress analytics: solved status, best score, topic and difficulty breakdown',
   'A Level 9618: records, enums, pointers, SET OF, DATE, random-access files, CLASS / INHERITS / SUPER',
   'Student-friendly parse errors (Python, Portugol, BASIC → IGCSE equivalents)',
-  'Flowchart view and pseudocode → Python view',
+  'Flowchart maker: draw with the Cambridge symbols, run it, and turn it into pseudocode',
   'Dyslexia-friendly editor (OpenDyslexic)',
   'Share programs via URL without an account',
 ] as const;

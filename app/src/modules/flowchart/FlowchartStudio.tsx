@@ -27,7 +27,8 @@ import Modal, { ConfirmDialog } from '@/shared/ui/Modal';
 import FlowchartBuilder from './FlowchartBuilder';
 import FlowchartTerminal from './FlowchartTerminal';
 import { FLOWCHART_EXAMPLES } from './examples';
-import { FLOWCHART_IMPORT_KEY } from './constants';
+import { FLOWCHART_IMPORT_KEY, FLOWCHART_VISITED_KEY } from './constants';
+import FlowchartUseSurvey from './FlowchartUseSurvey';
 import { flowchartFromCode } from './importCode';
 import { useFlowchartRun } from './useFlowchartRun';
 
@@ -110,6 +111,11 @@ export default function FlowchartStudio() {
     const saved = imported ? null : readSaved();
     if (saved) load(saved);
     setLoaded(true);
+    try {
+      localStorage.setItem(FLOWCHART_VISITED_KEY, '1');
+    } catch {
+      // private mode
+    }
     captureEvent('flowchart_opened', { from, restored: !!saved, imported });
   }, [load]);
 
@@ -168,6 +174,7 @@ export default function FlowchartStudio() {
 
   return (
     <div className="flex-1 min-h-0 flex flex-col">
+      <FlowchartUseSurvey />
       <div className="shrink-0 flex items-center gap-1.5 px-2 sm:px-3 py-2 border-b border-border bg-surface overflow-x-auto scrollbar-none">
         {!isRunning ? (
           <>

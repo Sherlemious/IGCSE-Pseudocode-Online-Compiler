@@ -230,15 +230,16 @@ npm run antlr:generate  # regenerate parser from grammar
 | `teacher_identified` | `plan` — once per browser when the session role is TEACHER (incl. right after the `/onboarding` role pick; `SessionIdentifier`). Triggers the PostHog workflow "Teacher onboarding: what you can do" (email 1 at once; email 2 after 3 days unless `class_progress_viewed`; `utm_campaign=teacher_onboarding`) |
 | `nudge_shown` | `nudge` |
 | `nudge_clicked` | `nudge` |
-| `nudge_dismissed` | `nudge` — timed corner cards (`onboarding/OnboardingNudges.tsx`): `learn` (15 min, no Learn progress → `/learn?from=nudge_learn`), `exam` (2nd session). The 90 s `signup` card was retired Oct 2026 when the save-program sheet won (`playground-save-prompt`); signed-out playground visitors get that sheet after their first successful run. `share` and the 15-min `practice` card were removed Sept 2026 (0.3% clicks / no solves). None show on `/learn`, `/pricing`, `/welcome`, `/onboarding`, `/auth`, `/exam`, `/e/` |
+| `nudge_dismissed` | `nudge` — timed corner cards (`onboarding/OnboardingNudges.tsx`): `flowchart` (90 s, maker not opened yet → `/flowchart?from=nudge_flowchart`), `learn` (15 min, no Learn progress → `/learn?from=nudge_learn`), `exam` (2nd session). One card at a time. The 90 s `signup` card was retired Oct 2026 when the save-program sheet won (`playground-save-prompt`); signed-out playground visitors get that sheet after their first successful run. `share` and the 15-min `practice` card were removed Sept 2026 (0.3% clicks / no solves). None show on `/learn`, `/flowchart`, `/pricing`, `/welcome`, `/onboarding`, `/auth`, `/exam`, `/e/` |
 | `learn_first_start_shown` / `learn_first_start_clicked` | `choice` (`learn`\|`compiler`) on click — experiment `learn-first-start` (PostHog 467173), test arm only: a brand-new playground visitor (no autosave, tour not done, no Learn progress, no `?code`) gets a start card with the Paper 2 Path as the default (→ `/learn?from=first_visit`) instead of the tour. The flag is read only for eligible visitors, so `$feature_flag_called` is the exposure |
 | `nav_clicked` | `destination`, `from` |
 | `feedback_submitted` | — |
 | `bug_reported` | `category`, `has_code`, `page` |
 | `paste_cleaned` | `looks_ai`, `stripped_prose`, `blocks` — fired when a pasted AI/Markdown answer is stripped to just its fenced code |
 | `nudge_shown` / `nudge_clicked` / `nudge_dismissed` (Learn path) | `nudge` (`learn_path_playground`\|`learn_path_practice`), `surface` — one-time toast after a successful run / passed question (`learn/learnNudge.tsx`); the link lands on `/learn?from=<nudge>` so `learn_opened.from` attributes it |
+| `nudge_shown` / `nudge_clicked` / `nudge_dismissed` (`nudge: playground_practice`) | `surface: playground` — once per browser, on the day of the first successful playground run (`practice/playgroundPractice.tsx`), after the save sheet if that opened instead. Links to `/practice?from=playground_practice`, where the start-here card is the one easy question. The day-7 "random question" email is retired; this toast replaces it. A later success still gets the Paper 2 Path toast |
 
-Paywall follow-up: PostHog workflow "Nudge if they hit the Learn paywall and don't buy" emails anyone with an email one day after their first `learn_gate_blocked` (`source: paywall`) unless they bought. Open/click tracking is on; links carry `utm_campaign=learn_paywall` (pricing) and `?from=paywall_email` (learn). The "Student conversion & checkout friction" dashboard tracks payment-method failures, school vs personal accounts at checkout, the weekly Learn funnel, and paywall hitters who haven't bought.
+Paywall follow-up: PostHog workflow "Nudge if they hit the Learn paywall and don't buy" emails anyone with an email one hour after their first `learn_gate_blocked` (`source: paywall`) unless they bought. A signed-out open of a paid lesson shows the account gate and does not record that event; the map click and the player both wait until the student is signed in. `SessionIdentifier` sets `person.email` at sign-in, and the paywall capture calls `identifyAccount` first and `$set`s `email`, because the workflow drops the event when the person has no email. Open/click tracking is on; links carry `utm_campaign=learn_paywall` (pricing) and `?from=paywall_email` (learn). The "Student conversion & checkout friction" dashboard tracks payment-method failures, school vs personal accounts at checkout, the weekly Learn funnel, and paywall hitters who haven't bought.
 
 ### Flowchart builder (`/flowchart`)
 
@@ -251,6 +252,9 @@ Paywall follow-up: PostHog workflow "Nudge if they hit the Learn paywall and don
 | `flowchart_exported` | `surface`, `node_count` (PNG download) |
 | `flowchart_example_loaded` | `example` |
 | `flowchart_edit_clicked` | `from: playground` — "Edit as flowchart" on the editor's Flowchart tab (code handed over in sessionStorage `flowchart_import_code`) |
+| `flowchart_survey_shown` | `from` — once per browser, ~20 s after the maker opens (`?flowchart_survey=1` skips the wait) |
+| `flowchart_survey_dismissed` | `from` |
+| `flowchart_survey_submitted` | `from`, `uses` (`draw_and_run` \| `from_code` \| `practice` \| `teach` \| `looking` \| `other`, multi), optional `comment` |
 
 Runs from the builder send `code_run` with `feature_context: flowchart`. On flowchart questions, `practice_opened` / `practice_graded` / `practice_solved` and `learn_check_submitted` carry `answer_format: flowchart`.
 
@@ -283,6 +287,7 @@ Page-side events fire via `captureEvent` (same path as `class_joined` / `assignm
 | `class_student_progress_clicked` | `class_id`, `source` (`roster`\|`assignment_results`) |
 | `class_student_progress_viewed` | `class_id`, `solved_count`, `attempted_count`, `assignments_submitted`, `assignment_count`, `has_practice` |
 | `class_student_code_expanded` | `class_id`, `surface` (`assigned_work`\|`practice`) |
+| `nudge_shown` (`nudge: class_limit`) | `class_count`, `student_count`, `max_classes`, `tier` — locked “create a class” card (`CreateClassForm`). The later teacher email sends only when `tier` is `free` and `student_count` ≥ 1, and says the free plan is one class and five students |
 
 ### Pricing / subscription funnel (`/pricing` + Paddle checkout)
 
@@ -309,7 +314,7 @@ Page-side events fire from `PricingClient`; the `checkout_*` events are bridged 
 | `checkout_failed` | `paddle_env` + last-known context (terminal failure, distinct from a dismissed error dialog) |
 | `checkout_error` | `paddle_env` + last-known context + `error_name`, `error_type`, `error_code`, `error_detail`. Error events carry no `data`, so price/tier come from the remembered context. |
 | `checkout_success_viewed` | `transaction` (`_ptxn`) — fired on `/welcome` |
-| `checkout_opened` | webhook (`transaction.created`, signed-in web checkouts only) — `transaction_id`, `price_id`, `tier`, `sku_type`, `currency`, `total`, `role`, `paddle_env`; `$set`s `email`/`name`. Server-side so ad-blocked buyers still count; triggers the "checkout not finished" follow-up email (skipped once they buy) |
+| `checkout_opened` | webhook (`transaction.created`, signed-in web checkouts only) — `transaction_id`, `price_id`, `tier`, `sku_type`, `currency`, `total`, `role`, `paddle_env`; `$set`s `email`/`name`. Server-side so ad-blocked buyers still count. Together with `subscribe_clicked` and `pass_clicked` (person email set), it triggers the "checkout not finished" follow-up (skipped once they buy; once per person per 30 days so a click and a later open don't double-send) |
 | `subscription_plan_granted` | webhook — `plan`, `plan_tier`, `price_id`, `paddle_env`, `subscription_id`, `status` |
 | `subscription_plan_revoked` | webhook — `reason` (Paddle status), `paddle_env`, `subscription_id` |
 | `student_pass_granted` | webhook — `pass_kind`, `plan_tier`, `paddle_env`, `transaction_id` |
@@ -323,7 +328,7 @@ Progress is localStorage; these fire from the path map and the lesson player. In
 | `learn_opened` | `course`, `from`, `signed_in`, `completed_count`, `playable_count`, `next_lesson` |
 | `learn_continue_clicked` | lesson props + `source: continue` |
 | `learn_lesson_clicked` | lesson props + `source: node` |
-| `learn_gate_blocked` | lesson/level props + `source` (`node` on a gated map node, `roadmap` on a coming-level row, `paywall` in the player). The player's paywall hit also `$set`s `learn_paywall_level` / `_level_name` / `_topics` / `_path` (level-start URL) and stores the level in localStorage `learn_paywall_level` (`learn/paywallLevel.ts`) |
+| `learn_gate_blocked` | lesson/level props + `source` (`node` on a gated map node, `roadmap` on a coming-level row, `paywall` in the player or on a paywalled map node). A paywall hit `$set`s `email` (when the session has one) plus `learn_paywall_level` / `_level_name` / `_topics` / `_path` (level-start URL) and stores the level in localStorage `learn_paywall_level` (`learn/paywallLevel.ts`). `identifyAccount` runs first so the person email exists before the workflow evaluates |
 | `learn_gate_viewed` | landed on a locked/unplayable lesson URL |
 | `learn_lesson_started` | lesson props + `already_complete` |
 | `learn_check_submitted` | lesson props + `ok`, `reason` (`passed`\|`must_contain`\|`forbidden`\|`runtime`\|`wrong_output`\|…), `error_category` (error slug when `reason: runtime`), `attempts`, `message` |
@@ -336,7 +341,7 @@ Progress is localStorage; these fire from the path map and the lesson player. In
 | `learn_prev_clicked` | `prev_lesson` |
 | `learn_docs_clicked` | `docs_anchor` |
 | `learn_pane_changed` | mobile `pane` `lesson`\|`editor`, `source` `tab`\|`cta` |
-| `learn_signup_gate_shown` | lesson props + `gate: account` — signed-out student opened a level-3+ free lesson (`ACCOUNT_REQUIRED_FROM_LEVEL` in `learn/progress.ts`); the in-page sheet auto-opens |
+| `learn_signup_gate_shown` | lesson props + `gate: account` — signed-out student opened a level-3+ free lesson (`ACCOUNT_REQUIRED_FROM_LEVEL` in `learn/progress.ts`) or any paid lesson; the in-page sheet auto-opens. The paywall event waits until they are signed in |
 | `learn_signup_gate_opened` | lesson props + `gate` (`account`\|`paywall`) — sheet opened from the gate button |
 | `learn_signup_gate_dismissed` | lesson props + `gate` |
 | `learn_signup_gate_completed` | lesson props + `gate`, `method` (`email`\|`google`; Google is detected on return via sessionStorage `learn_pending_auth`) |

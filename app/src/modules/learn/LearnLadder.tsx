@@ -7,7 +7,7 @@ import { useSession } from 'next-auth/react';
 import { ArrowRight, Crown, Play, Trophy } from 'lucide-react';
 import CourseChooser from './CourseChooser';
 import LearnPathMap from './LearnPathMap';
-import { findLesson, flattenLessons } from './path';
+import { findLesson, flattenLessons, lessonHref } from './path';
 import { formatMinutes } from './pathTheme';
 import { isComplete, loadProgress, nextIncomplete, type ProgressMap } from './progress';
 import { hydrateLearnProgress } from './progressSync';
@@ -37,6 +37,10 @@ export default function LearnLadder({
       ? `Levels ${paidLevels[0]!.number}–${paidLevels[paidLevels.length - 1]!.number}`
       : null;
   const freeLessons = playable.filter((item) => item.level.free);
+  const firstPaid = playable.find((item) => !item.level.free);
+  const firstPaidHref = firstPaid
+    ? lessonHref(firstPaid.level, firstPaid.lesson, course.basePath)
+    : null;
   const searchParams = useSearchParams();
   const { status } = useSession();
   const [progress, setProgress] = useState<ProgressMap>({});
@@ -196,7 +200,7 @@ export default function LearnLadder({
           </div>
         )}
 
-        {showUpgrade && (
+        {showUpgrade && status === 'authenticated' && (
           <div className="mt-6 sm:mt-8 flex items-center gap-3.5 px-4 py-3.5 rounded-2xl border border-warning/30 bg-warning/[0.07]">
             <span className="shrink-0 w-10 h-10 rounded-xl bg-warning/15 border border-warning/30 text-warning flex items-center justify-center">
               <Crown size={16} />
@@ -212,6 +216,25 @@ export default function LearnLadder({
               className="shrink-0 text-sm font-semibold text-warning hover:underline"
             >
               See plans
+            </Link>
+          </div>
+        )}
+        {showUpgrade && status === 'unauthenticated' && firstPaidHref && (
+          <div className="mt-6 sm:mt-8 flex items-center gap-3.5 px-4 py-3.5 rounded-2xl border border-primary/30 bg-primary/[0.07]">
+            <span className="shrink-0 w-10 h-10 rounded-xl bg-primary/15 border border-primary/30 text-primary flex items-center justify-center">
+              <Crown size={16} />
+            </span>
+            <div className="min-w-0 flex-1">
+              <div className="mono-label text-primary mb-0.5">{freeRange} complete</div>
+              <div className="text-sm text-light-text">
+                Create a free account to continue into {paidRange}.
+              </div>
+            </div>
+            <Link
+              href={firstPaidHref}
+              className="shrink-0 text-sm font-semibold text-primary hover:underline"
+            >
+              Continue
             </Link>
           </div>
         )}
