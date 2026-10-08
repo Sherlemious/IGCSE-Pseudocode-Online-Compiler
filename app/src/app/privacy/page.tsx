@@ -30,6 +30,14 @@ const sections = [
     ],
   },
   {
+    title: 'Emails',
+    points: [
+      'Account emails, such as your welcome and email-confirmation messages, are sent because you created an account.',
+      'We may also send occasional product emails, such as a reminder, a practice question, or a follow-up after an unfinished checkout.',
+      'Every product email has an unsubscribe link. Unsubscribing stops product emails but not messages about your account or purchases.',
+    ],
+  },
+  {
     title: 'Data Sharing',
     points: [
       'We do not sell your personal data.',
@@ -78,7 +86,7 @@ export default function PrivacyPolicyPage() {
           <p className="mono-label text-primary mb-3">Legal</p>
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-light-text">Privacy Policy</h1>
           <p className="text-sm text-dark-text mt-2">
-            Effective date: March 21, 2026. This policy explains how {SITE_NAME} handles your data.
+            Effective date: October 8, 2026. This policy explains how {SITE_NAME} handles your data.
           </p>
 
           <div className="mt-8 space-y-7">

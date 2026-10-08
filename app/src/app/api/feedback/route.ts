@@ -1,49 +1,29 @@
 import { revalidateTag } from 'next/cache';
-import { NextResponse } from 'next/server';
-import { auth } from '@/modules/auth/auth';
-import { prisma } from '@/shared/db';
-import { limitRequest, requesterKey } from '@/shared/lib/rateLimit';
+import { badRequest } from '@/shared/http/errors';
+import { route } from '@/shared/http/route';
+import { optionalText, readJson, stringList } from '@/shared/http/input';
+import { enforceRateLimit, requesterKey } from '@/shared/http/rateLimit';
+import { optionalUser } from '@/modules/auth/guards';
+import { createFeedback } from '@/modules/feedback/repo';
 import { ADMIN_FEEDBACK_CACHE_TAG } from '@/app/admin/feedback/feedbackQuery';
 
-export async function POST(req: Request) {
-  try {
-    const session = await auth();
-    const limited = limitRequest(
-      `feedback:${requesterKey(req, session?.user?.id)}`,
-      { limit: 5, windowMs: 10 * 60_000 },
-    );
-    if (limited) return limited;
-    const body = await req.json() as {
-      rating?: unknown;
-      tier?: unknown;
-      tags?: unknown;
-      comment?: unknown;
-    };
+export const POST = route(async (req) => {
+  const user = await optionalUser();
+  enforceRateLimit(`feedback:${requesterKey(req, user?.id)}`, { limit: 5, windowMs: 10 * 60_000 });
+  const body = await readJson(req, 'Invalid payload');
 
-    const rating = typeof body.rating === 'number' ? body.rating : null;
-    const tier = typeof body.tier === 'string' ? body.tier : null;
+  const rating = typeof body.rating === 'number' && Number.isInteger(body.rating) ? body.rating : 0;
+  const tier = optionalText(body.tier, 40);
+  if (rating < 1 || rating > 5 || !tier) throw badRequest('Invalid payload');
 
-    if (!rating || rating < 1 || rating > 5 || !tier) {
-      return NextResponse.json({ error: 'Invalid payload' }, { status: 400 });
-    }
-
-    const tags = Array.isArray(body.tags) ? (body.tags as unknown[]).filter((t): t is string => typeof t === 'string') : [];
-    const comment = typeof body.comment === 'string' ? body.comment : null;
-
-    await prisma.feedbackSubmission.create({
-      data: {
-        userId: session?.user?.id ?? null,
-        email: session?.user?.email ?? null,
-        rating,
-        tier,
-        tags,
-        comment,
-      },
-    });
-
-    revalidateTag(ADMIN_FEEDBACK_CACHE_TAG, { expire: 0 });
-    return NextResponse.json({ ok: true });
-  } catch {
-    return NextResponse.json({ error: 'Internal error' }, { status: 500 });
-  }
-}
+  await createFeedback({
+    userId: user?.id ?? null,
+    email: user?.email ?? null,
+    rating,
+    tier,
+    tags: stringList(body.tags).slice(0, 20).map((t) => t.slice(0, 60)),
+    comment: typeof body.comment === 'string' ? body.comment.slice(0, 5000) : null,
+  });
+  revalidateTag(ADMIN_FEEDBACK_CACHE_TAG, { expire: 0 });
+  return { ok: true };
+});

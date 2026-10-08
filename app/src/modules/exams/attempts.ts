@@ -1,11 +1,15 @@
 import { Prisma, type ExamAttempt } from '@prisma/client';
-import { prisma } from '@/shared/db';
+import { prisma, type Db } from '@/shared/db';
+import { HttpError } from '@/shared/http/errors';
 import { gradeTestCases } from '@/modules/practice/autograder';
 import { getQuestionForGrade } from '@/shared/lib/catalogCache';
+import * as repo from './repo';
 
-export class ExamRequestError extends Error {
-  constructor(public readonly status: number, public readonly code: string, message: string) {
-    super(message);
+/** An exam-attempt failure with its HTTP status and machine-readable code. */
+export class ExamRequestError extends HttpError {
+  declare readonly code: string;
+  constructor(status: number, code: string, message: string) {
+    super(status, message, code);
   }
 }
 
@@ -35,26 +39,19 @@ function requireActive(exam: ExamAttempt, now: Date): void {
 function withAttempt<T>(
   examId: string,
   userId: string,
-  work: (tx: Prisma.TransactionClient, exam: ExamAttempt, now: Date) => Promise<T>,
+  work: (tx: Db, exam: ExamAttempt, now: Date) => Promise<T>,
 ): Promise<T> {
   return prisma.$transaction(async (tx) => {
-    const owned = await tx.$queryRaw<{ id: string }[]>`
-      SELECT "id" FROM "ExamAttempt"
-      WHERE "id" = ${examId} AND "userId" = ${userId}
-      FOR UPDATE
-    `;
-    if (owned.length === 0) {
+    if (!(await repo.lockOwnedAttempt(examId, userId, tx))) {
       throw new ExamRequestError(404, 'EXAM_NOT_FOUND', 'Exam not found.');
     }
-    const exam = await tx.examAttempt.findUniqueOrThrow({ where: { id: examId } });
+    const exam = await repo.getAttempt(examId, tx);
     return work(tx, exam, new Date());
   }, { isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted });
 }
 
-async function findAnswer(tx: Prisma.TransactionClient, examId: string, questionId: string) {
-  const answer = await tx.examAnswer.findUnique({
-    where: { examAttemptId_questionId: { examAttemptId: examId, questionId } },
-  });
+async function findAnswer(tx: Db, examId: string, questionId: string) {
+  const answer = await repo.findAnswer(examId, questionId, tx);
   if (!answer) {
     throw new ExamRequestError(404, 'QUESTION_NOT_IN_EXAM', 'This question is not part of the exam.');
   }
@@ -72,13 +69,10 @@ export function saveExamAnswer(examId: string, userId: string, submission: Answe
     requireActive(exam, now);
     const answer = await findAnswer(tx, examId, submission.questionId);
     if (answer.code !== submission.code) {
-      await tx.examAnswer.update({
-        where: { id: answer.id },
-        data: {
-          code: submission.code, graded: false, passCount: 0, totalTests: 0,
-          updatedAt: nextRevision(answer.updatedAt, now),
-        },
-      });
+      await repo.updateAnswer(answer.id, {
+        code: submission.code, graded: false, passCount: 0, totalTests: 0,
+        updatedAt: nextRevision(answer.updatedAt, now),
+      }, tx);
     }
     return { ok: true };
   });
@@ -93,10 +87,7 @@ export async function gradeExamAnswer(examId: string, userId: string, submission
     }
     const revision = nextRevision(answer.updatedAt, now);
     // Claim this grading attempt before execution. A newer save/check supersedes it.
-    await tx.examAnswer.update({
-      where: { id: answer.id },
-      data: { graded: false, passCount: 0, totalTests: 0, updatedAt: revision },
-    });
+    await repo.updateAnswer(answer.id, { graded: false, passCount: 0, totalTests: 0, updatedAt: revision }, tx);
     const question = await getQuestionForGrade(submission.questionId);
     if (!question) {
       throw new ExamRequestError(404, 'QUESTION_NOT_IN_EXAM', 'This question is not part of the exam.');
@@ -113,10 +104,9 @@ export async function gradeExamAnswer(examId: string, userId: string, submission
     if (answer.updatedAt.getTime() !== prepared.revision.getTime() || answer.code !== submission.code) {
       throw new ExamRequestError(409, 'ANSWER_CHANGED', 'The answer changed while it was being checked. Check it again.');
     }
-    await tx.examAnswer.update({
-      where: { id: answer.id },
-      data: { passCount, totalTests: prepared.testCases.length, graded: true, updatedAt: nextRevision(answer.updatedAt, now) },
-    });
+    await repo.updateAnswer(answer.id, {
+      passCount, totalTests: prepared.testCases.length, graded: true, updatedAt: nextRevision(answer.updatedAt, now),
+    }, tx);
     return {
       passCount,
       totalTests: prepared.testCases.length,
@@ -136,15 +126,12 @@ export function submitExamAttempt(examId: string, userId: string) {
     if (exam.status !== 'IN_PROGRESS') {
       return { score: exam.score, totalTests: exam.totalTests, timedOut: exam.status === 'TIMED_OUT' };
     }
-    const answers = await tx.examAnswer.findMany({
-      where: { examAttemptId: examId }, select: { graded: true, passCount: true, totalTests: true },
-    });
+    const answers = await repo.listAnswerScores(examId, tx);
     const score = answers.filter((answer) => answer.graded && answer.totalTests > 0 && answer.passCount === answer.totalTests).length;
     const timedOut = now.getTime() >= examDeadline(exam);
-    await tx.examAttempt.update({
-      where: { id: examId },
-      data: { status: timedOut ? 'TIMED_OUT' : 'COMPLETED', score, totalTests: answers.length, completedAt: now },
-    });
+    await repo.completeAttempt(examId, {
+      status: timedOut ? 'TIMED_OUT' : 'COMPLETED', score, totalTests: answers.length, completedAt: now,
+    }, tx);
     return { score, totalTests: answers.length, timedOut };
   });
 }

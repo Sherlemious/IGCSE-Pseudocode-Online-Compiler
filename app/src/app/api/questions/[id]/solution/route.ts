@@ -1,51 +1,22 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/shared/db';
-import { auth } from '@/modules/auth/auth';
+import { notFound } from '@/shared/http/errors';
+import { route } from '@/shared/http/route';
+import { requireUser } from '@/modules/auth/guards';
+import { findProgress } from '@/modules/practice/repo';
 import { getQuestionSolution } from '@/shared/lib/catalogCache';
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
-) {
+/** The model answer, once the student has solved it, tried twice, or given up. */
+export const GET = route(async (req, { params }: RouteContext<'/api/questions/[id]/solution'>) => {
+  const user = await requireUser('Sign in to view solutions');
   const { id } = await params;
-  const session = await auth();
+  const giveUp = new URL(req.url).searchParams.get('giveUp') === 'true';
 
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: 'Sign in to view solutions' }, { status: 401 });
+  const question = await getQuestionSolution(id);
+  if (!question) throw notFound('Question not found');
+
+  const progress = await findProgress(user.id, id);
+  const attempts = progress?.attempts ?? 0;
+  if (!(progress?.status === 'SOLVED' || attempts >= 2 || giveUp)) {
+    return { locked: true, attemptsNeeded: Math.max(0, 2 - attempts) };
   }
-
-  const giveUp = request.nextUrl.searchParams.get('giveUp') === 'true';
-
-  try {
-    const question = await getQuestionSolution(id);
-
-    if (!question) {
-      return NextResponse.json({ error: 'Question not found' }, { status: 404 });
-    }
-
-    const progress = await prisma.progress.findUnique({
-      where: { userId_questionId: { userId: session.user.id, questionId: id } },
-      select: { status: true, attempts: true },
-    });
-
-    const isSolved = progress?.status === 'SOLVED';
-    const attempts = progress?.attempts ?? 0;
-    const canView = isSolved || attempts >= 2 || giveUp;
-
-    if (!canView) {
-      return NextResponse.json({
-        locked: true,
-        attemptsNeeded: Math.max(0, 2 - attempts),
-      });
-    }
-
-    return NextResponse.json({
-      locked: false,
-      solution: question.solution,
-      explanation: question.solutionExplanation,
-    });
-  } catch (error) {
-    console.error('Failed to fetch solution:', error);
-    return NextResponse.json({ error: 'Failed to fetch solution' }, { status: 500 });
-  }
-}
+  return { locked: false, solution: question.solution, explanation: question.solutionExplanation };
+});

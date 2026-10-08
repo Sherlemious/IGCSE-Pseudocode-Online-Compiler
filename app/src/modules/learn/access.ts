@@ -6,6 +6,7 @@ type SessionUser = {
   id?: string;
   email?: string | null;
   role?: string | null;
+  emailTrusted?: boolean;
 };
 
 /**
@@ -18,6 +19,6 @@ export async function resolveLearnPremiumAccess(
 ): Promise<boolean> {
   if (!PREMIUM_GATING_ENABLED) return true;
   if (!user?.id) return false;
-  if (isAdmin(user.email, user.role)) return true;
+  if (isAdmin(user.email, user.role, user.emailTrusted)) return true;
   return getPremiumAccess(user.id);
 }

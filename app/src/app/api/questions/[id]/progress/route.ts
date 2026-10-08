@@ -1,33 +1,21 @@
-import { NextResponse } from 'next/server';
-import { auth } from '@/modules/auth/auth';
+import { route } from '@/shared/http/route';
+import { requireUser } from '@/modules/auth/guards';
 import { PREMIUM_GATING_ENABLED } from '@/modules/billing/featureFlags';
 import { getPremiumAccess } from '@/modules/billing/entitlements';
-import { prisma } from '@/shared/db';
+import { findProgress } from '@/modules/practice/repo';
 
-interface Props {
-  params: Promise<{ id: string }>;
-}
-
-export async function GET(_request: Request, { params }: Props) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
+export const GET = route(async (_req, { params }: RouteContext<'/api/questions/[id]/progress'>) => {
+  const user = await requireUser();
   const { id } = await params;
   const [row, premiumAccess] = await Promise.all([
-    prisma.progress.findUnique({
-      where: { userId_questionId: { userId: session.user.id, questionId: id } },
-      select: { lastCode: true, lastFlowchart: true, status: true, attempts: true },
-    }),
-    PREMIUM_GATING_ENABLED ? getPremiumAccess(session.user.id) : Promise.resolve(true),
+    findProgress(user.id, id),
+    PREMIUM_GATING_ENABLED ? getPremiumAccess(user.id) : Promise.resolve(true),
   ]);
-
-  return NextResponse.json({
+  return {
     lastCode: row?.lastCode ?? null,
     lastFlowchart: row?.lastFlowchart ?? null,
     status: row?.status ?? null,
     attempts: row?.attempts ?? 0,
     premiumAccess,
-  });
-}
+  };
+});

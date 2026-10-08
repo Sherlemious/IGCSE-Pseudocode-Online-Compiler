@@ -1,89 +1,46 @@
-import { NextResponse } from 'next/server';
-import { auth } from '@/modules/auth/auth';
-import { prisma } from '@/shared/db';
-import {
-  parseCustomColors,
-  parseThemeName,
-  MAX_NAME_LEN,
-} from '@/theme/validation';
+import { badRequest, notFound, unprocessable } from '@/shared/http/errors';
+import { route } from '@/shared/http/route';
+import { readJson } from '@/shared/http/input';
+import { requireUser } from '@/modules/auth/guards';
+import { MAX_NAME_LEN, parseCustomColors, parseThemeName } from '@/theme/validation';
+import { deleteTheme, findOwnedTheme, updateTheme } from '@/theme/repo';
 
-interface Context {
-  params: Promise<{ id: string }>;
+type Ctx = RouteContext<'/api/themes/[id]'>;
+
+async function requireOwnedTheme(id: string, userId: string) {
+  if (!(await findOwnedTheme(id, userId))) throw notFound('Theme not found');
 }
 
-// PATCH /api/themes/[id] — rename and/or recolour an existing theme
-export async function PATCH(req: Request, { params }: Context) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
+/** Rename and/or recolour a theme you own. */
+export const PATCH = route(async (req, { params }: Ctx) => {
+  const user = await requireUser();
   const { id } = await params;
+  await requireOwnedTheme(id, user.id);
+  const body = await readJson(req);
 
-  const existing = await prisma.customTheme.findFirst({
-    where: { id, userId: session.user.id },
-    select: { id: true },
-  });
-  if (!existing) {
-    return NextResponse.json({ error: 'Theme not found' }, { status: 404 });
-  }
-
-  const body = (await req.json()) as { name?: unknown; colors?: unknown };
   const data: { name?: string; colors?: string } = {};
-
   if (body.name !== undefined) {
     const name = parseThemeName(body.name);
-    if (!name) {
-      return NextResponse.json({ error: `Name must be 1–${MAX_NAME_LEN} characters` }, { status: 422 });
-    }
+    if (!name) throw unprocessable(`Name must be 1–${MAX_NAME_LEN} characters`);
     data.name = name;
   }
-
   if (body.colors !== undefined) {
     const colors = parseCustomColors(body.colors);
-    if (!colors) {
-      return NextResponse.json({ error: 'Invalid theme colours' }, { status: 422 });
-    }
+    if (!colors) throw unprocessable('Invalid theme colours');
     data.colors = JSON.stringify(colors);
   }
+  if (data.name === undefined && data.colors === undefined) throw badRequest('Nothing to update');
 
-  if (data.name === undefined && data.colors === undefined) {
-    return NextResponse.json({ error: 'Nothing to update' }, { status: 400 });
-  }
+  const updated = await updateTheme(id, data);
+  return {
+    theme: { id: updated.id, name: updated.name, colors: parseCustomColors(JSON.parse(updated.colors) as unknown) },
+  };
+});
 
-  const updated = await prisma.customTheme.update({
-    where: { id },
-    data,
-    select: { id: true, name: true, colors: true },
-  });
-
-  return NextResponse.json({
-    theme: {
-      id: updated.id,
-      name: updated.name,
-      colors: parseCustomColors(JSON.parse(updated.colors) as unknown),
-    },
-  });
-}
-
-// DELETE /api/themes/[id] — remove a theme
-export async function DELETE(_req: Request, { params }: Context) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
+export const DELETE = route(async (_req, { params }: Ctx) => {
+  const user = await requireUser();
   const { id } = await params;
-
-  const existing = await prisma.customTheme.findFirst({
-    where: { id, userId: session.user.id },
-    select: { id: true },
-  });
-  if (!existing) {
-    return NextResponse.json({ error: 'Theme not found' }, { status: 404 });
-  }
-
-  await prisma.customTheme.delete({ where: { id } });
-
-  return NextResponse.json({ ok: true });
-}
+  await requireOwnedTheme(id, user.id);
+  await deleteTheme(id);
+  return { ok: true };
+});

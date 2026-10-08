@@ -1,23 +1,10 @@
-import { NextResponse } from 'next/server';
-import { auth } from '@/modules/auth/auth';
+import { route } from '@/shared/http/route';
+import { requireUser } from '@/modules/auth/guards';
 import { saveExamAnswer } from '@/modules/exams/attempts';
-import { readAnswerSubmission, examErrorResponse } from '@/modules/exams/requests';
+import { readAnswerSubmission } from '@/modules/exams/requests';
 
-interface Context {
-  params: Promise<{ examId: string }>;
-}
-
-export async function POST(req: Request, { params }: Context) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
-  try {
-    const { examId } = await params;
-    const submission = await readAnswerSubmission(req);
-    return NextResponse.json(await saveExamAnswer(examId, session.user.id, submission));
-  } catch (error) {
-    return examErrorResponse(error);
-  }
-}
+export const POST = route(async (req, { params }: RouteContext<'/api/exam/[examId]/save'>) => {
+  const user = await requireUser();
+  const { examId } = await params;
+  return saveExamAnswer(examId, user.id, await readAnswerSubmission(req));
+});

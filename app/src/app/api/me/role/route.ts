@@ -1,41 +1,20 @@
-import { NextResponse } from 'next/server';
-import { auth } from '@/modules/auth/auth';
-import { prisma } from '@/shared/db';
+import { badRequest } from '@/shared/http/errors';
+import { route } from '@/shared/http/route';
+import { oneOf, readJson } from '@/shared/http/input';
+import { requireUser } from '@/modules/auth/guards';
+import { findUserRole, setRole } from '@/modules/auth/userRepo';
 
 /**
- * Set the signed-in user's role (student/teacher). Used both by the one-time
- * onboarding step (OAuth signups) and the "change role" control in the profile.
- * Marks roleChosen so onboarding never re-prompts.
+ * Set the signed-in user's role (student/teacher), from onboarding or the
+ * profile's "change role". Marks roleChosen so onboarding never re-prompts.
  */
-export async function POST(req: Request) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: 'Not signed in.' }, { status: 401 });
-  }
-
-  let body: unknown;
-  try {
-    body = await req.json();
-  } catch {
-    return NextResponse.json({ error: 'Invalid request.' }, { status: 400 });
-  }
-
-  const { role } = (body ?? {}) as { role?: string };
-  if (role !== 'STUDENT' && role !== 'TEACHER') {
-    return NextResponse.json({ error: 'Pick student or teacher.' }, { status: 400 });
-  }
-
+export const POST = route(async (req) => {
+  const user = await requireUser('Not signed in.');
+  const role = oneOf((await readJson(req)).role, ['STUDENT', 'TEACHER'] as const);
+  if (!role) throw badRequest('Pick student or teacher.');
   // Never let this endpoint change an ADMIN's role — just mark them as chosen.
-  const current = await prisma.user.findUnique({
-    where: { id: session.user.id },
-    select: { role: true },
-  });
+  const current = await findUserRole(user.id);
   const nextRole = current?.role === 'ADMIN' ? 'ADMIN' : role;
-
-  await prisma.user.update({
-    where: { id: session.user.id },
-    data: { role: nextRole, roleChosen: true },
-  });
-
-  return NextResponse.json({ ok: true, role: nextRole });
-}
+  await setRole(user.id, nextRole, { markChosen: true });
+  return { ok: true, role: nextRole };
+});

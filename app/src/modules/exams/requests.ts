@@ -1,4 +1,3 @@
-import { NextResponse } from 'next/server';
 import { MAX_GRADE_CODE_CHARS } from '@/modules/practice/autograder';
 import { ExamRequestError, type AnswerSubmission } from './attempts';
 
@@ -13,11 +12,4 @@ export async function readAnswerSubmission(req: Request): Promise<AnswerSubmissi
     throw new ExamRequestError(413, 'ANSWER_TOO_LONG', 'This answer is too long to save.');
   }
   return { questionId: body.questionId, code: body.code };
-}
-
-export function examErrorResponse(error: unknown): NextResponse {
-  if (error instanceof ExamRequestError) {
-    return NextResponse.json({ error: error.message, code: error.code }, { status: error.status });
-  }
-  throw error;
 }

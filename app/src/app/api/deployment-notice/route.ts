@@ -1,8 +1,7 @@
-import { Prisma } from '@prisma/client';
 import { NextResponse } from 'next/server';
 import { FROM_ADDRESS, getResend } from '@/modules/auth/resend';
 import { hostToReport } from '@/modules/telemetry/officialHost';
-import { prisma } from '@/shared/db';
+import { recordHostSighting } from '@/modules/telemetry/repo';
 import { logger } from '@/shared/lib/logger';
 import { clientIp, rateLimit } from '@/shared/lib/rateLimit';
 
@@ -63,18 +62,10 @@ export async function POST(req: Request) {
   if (!host) return done();
 
   try {
-    await prisma.hostSighting.create({ data: { host } });
+    // Only the first sighting of a host is worth an email.
+    if (!(await recordHostSighting(host))) return done();
   } catch (error) {
-    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
-      await prisma.hostSighting.update({
-        where: { host },
-        data: { hits: { increment: 1 } },
-      }).catch((updateError: unknown) => {
-        logger.error('Host sighting update failed', { host, error: String(updateError) });
-      });
-      return done();
-    }
-    logger.error('Host sighting create failed', { host, error: String(error) });
+    logger.error('Host sighting record failed', { host, error: String(error) });
     return done();
   }
 

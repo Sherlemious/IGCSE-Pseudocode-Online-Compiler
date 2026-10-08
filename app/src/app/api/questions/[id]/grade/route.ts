@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import type { Prisma } from '@prisma/client';
-import { prisma } from '@/shared/db';
+import { recordGradedAttempt } from '@/modules/practice/repo';
 import { gradeTestCases, MAX_GRADE_CODE_CHARS } from '@/modules/practice/autograder';
 import { auth } from '@/modules/auth/auth';
 import { PREMIUM_GATING_ENABLED } from '@/modules/billing/featureFlags';
@@ -168,44 +168,15 @@ export async function POST(request: NextRequest, { params }: Props) {
 
   const passCount = results.filter((r) => r.passed).length;
   const totalCount = results.length;
-  const allPassed = passCount === totalCount;
 
   // Save progress if authenticated
   if (session?.user?.id) {
     try {
-      await prisma.progress.upsert({
-        where: {
-          userId_questionId: { userId: session.user.id, questionId: id },
-        },
-        create: {
-          userId: session.user.id,
-          questionId: id,
-          status: allPassed ? 'SOLVED' : 'ATTEMPTED',
-          bestScore: passCount,
-          totalTests: totalCount,
-          attempts: 1,
-          lastCode: code,
-          ...(submittedFlowchart ? { lastFlowchart: submittedFlowchart as unknown as Prisma.InputJsonValue } : {}),
-        },
-        update: {
-          status: allPassed ? 'SOLVED' : undefined, // only upgrade, never downgrade
-          totalTests: totalCount,
-          attempts: { increment: 1 },
-          lastCode: code,
-          ...(submittedFlowchart ? { lastFlowchart: submittedFlowchart as unknown as Prisma.InputJsonValue } : {}),
-        },
-      });
-
-      // Raise bestScore only when the new passCount is higher.
-      await prisma.progress.updateMany({
-        where: {
-          userId: session.user.id,
-          questionId: id,
-          bestScore: { lt: passCount },
-        },
-        data: {
-          bestScore: passCount,
-        },
+      await recordGradedAttempt(session.user.id, id, {
+        passCount,
+        totalCount,
+        code,
+        flowchart: submittedFlowchart ? (submittedFlowchart as unknown as Prisma.InputJsonValue) : null,
       });
     } catch (e) {
       // Progress save failure shouldn't block grade response

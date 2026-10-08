@@ -1,41 +1,19 @@
-import { NextResponse } from 'next/server';
-import { auth } from '@/modules/auth/auth';
-import { prisma } from '@/shared/db';
-import { isAdmin } from '@/modules/admin/isAdmin';
 import type { Role } from '@prisma/client';
+import { badRequest, forbidden } from '@/shared/http/errors';
+import { route } from '@/shared/http/route';
+import { oneOf, readJson } from '@/shared/http/input';
+import { requireAdmin } from '@/modules/auth/guards';
+import { setRole } from '@/modules/auth/userRepo';
 
-const VALID_ROLES: Role[] = ['STUDENT', 'TEACHER', 'ADMIN'];
+const ROLES: readonly Role[] = ['STUDENT', 'TEACHER', 'ADMIN'];
 
-export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-  if (!isAdmin(session.user.email, session.user.role)) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-  }
-
+export const PATCH = route(async (req, { params }: RouteContext<'/api/admin/users/[id]/role'>) => {
+  const admin = await requireAdmin();
   const { id } = await params;
-  const body = await req.json() as { role?: unknown };
-  const newRole = body.role;
-
-  if (!newRole || typeof newRole !== 'string' || !VALID_ROLES.includes(newRole as Role)) {
-    return NextResponse.json({ error: 'Invalid role' }, { status: 400 });
-  }
-
-  if (newRole === 'ADMIN' && session.user.role !== 'ADMIN') {
-    return NextResponse.json({ error: 'Only DB admins can promote to ADMIN' }, { status: 403 });
-  }
-
-  if (id === session.user.id) {
-    return NextResponse.json({ error: 'Cannot change your own role' }, { status: 400 });
-  }
-
-  const updated = await prisma.user.update({
-    where: { id },
-    data: { role: newRole as Role },
-    select: { id: true, role: true },
-  });
-
-  return NextResponse.json({ user: updated });
-}
+  const role = oneOf((await readJson(req)).role, ROLES);
+  if (!role) throw badRequest('Invalid role');
+  // An ADMIN_EMAILS admin can manage roles but can't mint new admins.
+  if (role === 'ADMIN' && admin.role !== 'ADMIN') throw forbidden('Only DB admins can promote to ADMIN');
+  if (id === admin.id) throw badRequest('Cannot change your own role');
+  return { user: await setRole(id, role) };
+});

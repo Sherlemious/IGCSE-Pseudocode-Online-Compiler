@@ -14,7 +14,7 @@ export const metadata: Metadata = {
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
   if (!session?.user?.email) redirect('/auth/signin');
-  if (!isAdmin(session.user.email, session.user.role)) redirect('/');
+  if (!isAdmin(session.user.email, session.user.role, session.user.emailTrusted)) redirect('/');
 
   return (
     <div className="flex h-dvh flex-col md:flex-row overflow-hidden bg-background text-light-text">

@@ -66,7 +66,9 @@ export default function AuthForm({ mode, callbackUrl, onAuthenticated, role: rol
 
       if (result?.error) {
         setError(
-          mode === 'signin' ? 'Invalid email or password' : 'Account created but sign in failed. Try signing in.'
+          result.code === 'rate_limited'
+            ? 'Too many sign-in attempts. Wait 15 minutes and try again.'
+            : mode === 'signin' ? 'Invalid email or password' : 'Account created but sign in failed. Try signing in.'
         );
         setLoading(false);
         return;

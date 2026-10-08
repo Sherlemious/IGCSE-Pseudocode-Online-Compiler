@@ -1,37 +1,16 @@
-import { NextResponse } from 'next/server';
-import { auth } from '@/modules/auth/auth';
-import { prisma } from '@/shared/db';
-import { isAdmin } from '@/modules/admin/isAdmin';
 import type { ContactStatus } from '@prisma/client';
+import { badRequest } from '@/shared/http/errors';
+import { route } from '@/shared/http/route';
+import { oneOf, readJsonOrEmpty } from '@/shared/http/input';
+import { requireAdmin } from '@/modules/auth/guards';
+import { setContactStatus } from '@/modules/feedback/repo';
 
-const VALID: ContactStatus[] = ['NEW', 'IN_PROGRESS', 'RESOLVED', 'ARCHIVED'];
-const RESOLVED: ContactStatus[] = ['RESOLVED', 'ARCHIVED'];
+const STATUSES: readonly ContactStatus[] = ['NEW', 'IN_PROGRESS', 'RESOLVED', 'ARCHIVED'];
 
-export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-  if (!isAdmin(session.user.email, session.user.role)) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-  }
-
+export const PATCH = route(async (req, { params }: RouteContext<'/api/admin/contact/[id]/status'>) => {
+  await requireAdmin();
   const { id } = await params;
-  const body = (await req.json().catch(() => ({}))) as { status?: unknown };
-  const status = body.status;
-
-  if (typeof status !== 'string' || !VALID.includes(status as ContactStatus)) {
-    return NextResponse.json({ error: 'Invalid status' }, { status: 400 });
-  }
-
-  const updated = await prisma.contactMessage.update({
-    where: { id },
-    data: {
-      status: status as ContactStatus,
-      resolvedAt: RESOLVED.includes(status as ContactStatus) ? new Date() : null,
-    },
-    select: { id: true, status: true },
-  });
-
-  return NextResponse.json({ message: updated });
-}
+  const status = oneOf((await readJsonOrEmpty(req)).status, STATUSES);
+  if (!status) throw badRequest('Invalid status');
+  return { message: await setContactStatus(id, status) };
+});

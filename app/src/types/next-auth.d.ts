@@ -17,6 +17,8 @@ declare module 'next-auth' {
       roleChosen?: boolean;
       hasPaddleCustomer?: boolean;
       hasPaddleSubscription?: boolean;
+      /** The email is proven (verified, or an OAuth-only account); gates ADMIN_EMAILS. */
+      emailTrusted?: boolean;
     };
   }
 
@@ -41,5 +43,6 @@ declare module 'next-auth/jwt' {
     refreshedAt?: number; // epoch ms of the last DB re-read of plan/role/planTier
     hasPaddleCustomer?: boolean;
     hasPaddleSubscription?: boolean;
+    emailTrusted?: boolean;
   }
 }

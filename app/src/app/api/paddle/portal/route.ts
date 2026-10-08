@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import { auth } from '@/modules/auth/auth';
-import { prisma } from '@/shared/db';
+import { optionalUser } from '@/modules/auth/guards';
+import { findPaddleIds } from '@/modules/billing/repo';
 import { getPaddleServer } from '@/modules/billing/paddle/server';
 import {
   isPaddleForbidden,
@@ -22,15 +22,12 @@ export const dynamic = 'force-dynamic';
  * sign-in) when set, otherwise /pricing?portal=error.
  */
 export async function GET(req: Request) {
-  const session = await auth();
-  if (!session?.user?.id) {
+  const sessionUser = await optionalUser();
+  if (!sessionUser) {
     return NextResponse.redirect(new URL('/auth/signin', req.url));
   }
 
-  const user = await prisma.user.findUnique({
-    where: { id: session.user.id },
-    select: { paddleCustomerId: true, paddleSubscriptionId: true },
-  });
+  const user = await findPaddleIds(sessionUser.id);
 
   const paddle = getPaddleServer();
   if (!paddle || !user?.paddleCustomerId) {

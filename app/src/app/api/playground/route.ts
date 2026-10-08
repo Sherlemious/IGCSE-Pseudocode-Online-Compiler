@@ -1,71 +1,25 @@
-import { NextResponse } from 'next/server';
-import { auth } from '@/modules/auth/auth';
-import { prisma } from '@/shared/db';
-import { rateLimit } from '@/shared/lib/rateLimit';
+import { unprocessable } from '@/shared/http/errors';
+import { route } from '@/shared/http/route';
+import { readJson } from '@/shared/http/input';
+import { enforceRateLimit } from '@/shared/http/rateLimit';
+import { requireUser } from '@/modules/auth/guards';
 import { MAX_PLAYGROUND_CODE_CHARS, parsePlaygroundCode } from '@/modules/compiler/playgroundSnapshot';
+import { findPlaygroundSnapshot, savePlaygroundSnapshot } from '@/modules/compiler/playgroundRepo';
 
-const PUT_RATE_LIMIT = 40;
-const PUT_RATE_WINDOW_MS = 60_000;
+/** The signed-in user's latest playground snapshot. */
+export const GET = route(async () => {
+  const user = await requireUser();
+  const row = await findPlaygroundSnapshot(user.id);
+  return { code: row?.code ?? null, updatedAt: row?.updatedAt ?? null };
+});
 
-// GET /api/playground — the signed-in user's latest playground snapshot
-export async function GET() {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
-  const row = await prisma.playgroundSnapshot.findUnique({
-    where: { userId: session.user.id },
-    select: { code: true, updatedAt: true },
-  });
-
-  return NextResponse.json({
-    code: row?.code ?? null,
-    updatedAt: row?.updatedAt ?? null,
-  });
-}
-
-// PUT /api/playground — upsert the signed-in user's playground snapshot
-export async function PUT(req: Request) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
-  const limit = rateLimit(`playground:${session.user.id}`, {
-    limit: PUT_RATE_LIMIT,
-    windowMs: PUT_RATE_WINDOW_MS,
-  });
-  if (!limit.ok) {
-    return NextResponse.json(
-      { error: `Saving too fast. Please wait ${limit.retryAfterSec}s.` },
-      { status: 429, headers: { 'Retry-After': String(limit.retryAfterSec) } },
-    );
-  }
-
-  let body: unknown;
-  try {
-    body = await req.json();
-  } catch {
-    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
-  }
-
-  const code = parsePlaygroundCode(
-    body && typeof body === 'object' && 'code' in body ? (body as { code: unknown }).code : undefined,
-  );
-  if (code === null) {
-    return NextResponse.json(
-      { error: `Code must be a string of at most ${MAX_PLAYGROUND_CODE_CHARS} characters` },
-      { status: 422 },
-    );
-  }
-
-  const row = await prisma.playgroundSnapshot.upsert({
-    where: { userId: session.user.id },
-    create: { userId: session.user.id, code },
-    update: { code },
-    select: { updatedAt: true },
-  });
-
-  return NextResponse.json({ ok: true, updatedAt: row.updatedAt });
-}
+/** Save the signed-in user's playground snapshot. */
+export const PUT = route(async (req) => {
+  const user = await requireUser();
+  enforceRateLimit(`playground:${user.id}`, { limit: 40, windowMs: 60_000 },
+    (s) => `Saving too fast. Please wait ${s}s.`);
+  const code = parsePlaygroundCode((await readJson(req, 'Invalid JSON')).code);
+  if (code === null) throw unprocessable(`Code must be a string of at most ${MAX_PLAYGROUND_CODE_CHARS} characters`);
+  const row = await savePlaygroundSnapshot(user.id, code);
+  return { ok: true, updatedAt: row.updatedAt };
+});

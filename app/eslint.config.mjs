@@ -128,6 +128,24 @@ const eslintConfig = [
     },
   },
   {
+    // API routes are the HTTP layer: guards + input + a service call. Data
+    // access goes through a module's repo.ts (see shared/http/route.ts).
+    files: ['src/app/api/**/route.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: '@/shared/db',
+              message: 'Route handlers do not query the database. Call a service or a module repo.ts.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
     // Feature pages reuse the editor kit (compiler/editor), not the playground page.
     files: ['src/modules/{practice,exams,learn,flowchart}/**/*.{ts,tsx}'],
     rules: {

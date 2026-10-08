@@ -1,31 +1,17 @@
-import { NextResponse } from 'next/server';
-import { auth } from '@/modules/auth/auth';
+import { route } from '@/shared/http/route';
+import { requireUser } from '@/modules/auth/guards';
 import { PREMIUM_GATING_ENABLED } from '@/modules/billing/featureFlags';
 import { getPremiumAccess } from '@/modules/billing/entitlements';
-import { prisma } from '@/shared/db';
+import { listProgress } from '@/modules/practice/repo';
 
-export async function GET() {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
+export const GET = route(async () => {
+  const user = await requireUser();
   const [progress, premiumAccess] = await Promise.all([
-    prisma.progress.findMany({
-      where: { userId: session.user.id },
-      select: { questionId: true, status: true, bestScore: true, totalTests: true, updatedAt: true },
-    }),
-    PREMIUM_GATING_ENABLED ? getPremiumAccess(session.user.id) : Promise.resolve(true),
+    listProgress(user.id),
+    PREMIUM_GATING_ENABLED ? getPremiumAccess(user.id) : Promise.resolve(true),
   ]);
-
-  return NextResponse.json({
+  return {
     premiumAccess,
-    progress: progress.map((row) => ({
-      questionId: row.questionId,
-      status: row.status,
-      bestScore: row.bestScore,
-      totalTests: row.totalTests,
-      updatedAt: row.updatedAt.toISOString(),
-    })),
-  });
-}
+    progress: progress.map((row) => ({ ...row, updatedAt: row.updatedAt.toISOString() })),
+  };
+});

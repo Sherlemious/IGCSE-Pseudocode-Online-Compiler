@@ -1,5 +1,5 @@
 import { SpanStatusCode, trace } from '@opentelemetry/api';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, type Prisma } from '@prisma/client';
 
 const tracer = trace.getTracer('prisma');
 
@@ -51,3 +51,9 @@ const globalForPrisma = globalThis as unknown as { prisma: PrismaClient };
 export const prisma = globalForPrisma.prisma ?? createPrisma();
 
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
+
+/**
+ * What repositories take as their database handle: the client itself or the
+ * `tx` of an open transaction, so a service can run several repo calls atomically.
+ */
+export type Db = Prisma.TransactionClient;

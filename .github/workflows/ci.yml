@@ -33,6 +33,8 @@ jobs:
 
       - run: npm ci
       - run: npx prisma generate
+      # Route handlers type `params` with the generated RouteContext<'/api/...'>.
+      - run: npx next typegen
       - name: Type-check
         run: npx tsc --noEmit
       - name: Lint

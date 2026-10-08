@@ -1,96 +1,57 @@
-import { NextResponse } from 'next/server';
-import { prisma } from '@/shared/db';
+import { badRequest } from '@/shared/http/errors';
+import { route } from '@/shared/http/route';
+import { oneOf, optionalText, readJson } from '@/shared/http/input';
+import { clientIp, enforceRateLimit } from '@/shared/http/rateLimit';
 import { logger } from '@/shared/lib/logger';
-import { clientIp, limitRequest } from '@/shared/lib/rateLimit';
 import { sanitizeForSampling } from '@/modules/interpreter/sanitizeSample';
+import { createErrorSample, pruneErrorSamples } from '@/modules/telemetry/repo';
 
 // Only the vague parse buckets are worth collecting — see interpreter/errorSampling.ts.
-const CATEGORIES = new Set(['no_viable_alternative', 'mismatched_input', 'other_parse']);
-const FEATURES = new Set(['playground', 'practice', 'exam', 'docs']);
+const CATEGORIES = ['no_viable_alternative', 'mismatched_input', 'other_parse'] as const;
+const FEATURES = ['playground', 'practice', 'exam', 'docs'] as const;
 
 // Cost guardrails (keep Neon usage negligible):
-//  - kill switch: set ERROR_SAMPLING_ENABLED=false to stop all writes instantly
-//    (no redeploy needed — just change the env var).
+//  - kill switch: ERROR_SAMPLING_ENABLED=false stops all writes (no redeploy needed).
 //  - retention: samples older than this are pruned opportunistically, so the
-//    table stays bounded (~a few MB) forever instead of growing without limit.
+//    table stays bounded (~a few MB) instead of growing without limit.
 const SAMPLING_ENABLED = process.env.ERROR_SAMPLING_ENABLED !== 'false';
 const RETENTION_DAYS = 30;
 const PRUNE_PROBABILITY = 0.02; // ~1 in 50 requests triggers a cheap cleanup
 
-/** Trim a value to a string capped at `max` chars, or null if not usable. */
-function cappedString(value: unknown, max: number): string | null {
-  if (typeof value !== 'string') return null;
-  const trimmed = value.trim();
-  return trimmed ? trimmed.slice(0, max) : null;
-}
-
-function intOrNull(value: unknown): number | null {
-  return typeof value === 'number' && Number.isFinite(value) ? Math.trunc(value) : null;
-}
+const intOrNull = (value: unknown) =>
+  typeof value === 'number' && Number.isFinite(value) ? Math.trunc(value) : null;
 
 /**
  * Store an anonymized, sanitized snapshot of code that hit a parse error we
  * can't yet explain. Deliberately anonymous: no user id or email is attached,
- * and the code is re-sanitized here (defence-in-depth) so no student-typed text
- * is ever persisted even if a client skips its own sanitization.
+ * and the code is re-sanitized here so no student-typed text is persisted even
+ * if a client skips its own sanitization.
  */
-export async function POST(req: Request) {
-  try {
-    if (!SAMPLING_ENABLED) {
-      return NextResponse.json({ ok: true, skipped: true });
-    }
-    // Anonymous by design, so keyed by IP; sampling is already sparse client-side.
-    const limited = limitRequest(`error-sample:${clientIp(req)}`, { limit: 60, windowMs: 60_000 });
-    if (limited) return limited;
+export const POST = route(async (req) => {
+  if (!SAMPLING_ENABLED) return { ok: true, skipped: true };
+  // Anonymous by design, so keyed by IP; sampling is already sparse client-side.
+  enforceRateLimit(`error-sample:${clientIp(req)}`, { limit: 60, windowMs: 60_000 });
+  const body = await readJson(req, 'Invalid payload');
 
-    const body = (await req.json()) as {
-      category?: unknown;
-      errorType?: unknown;
-      code?: unknown;
-      rawMessage?: unknown;
-      line?: unknown;
-      codeLines?: unknown;
-      feature?: unknown;
-    };
+  const category = oneOf(body.category, CATEGORIES);
+  const rawCode = optionalText(body.code, 5000);
+  if (!category || !rawCode) throw badRequest('Invalid payload');
+  const code = sanitizeForSampling(rawCode).slice(0, 5000);
+  if (!code.trim()) throw badRequest('Invalid payload');
 
-    const category = typeof body.category === 'string' && CATEGORIES.has(body.category) ? body.category : null;
-    const rawCode = cappedString(body.code, 5000);
-    if (!category || !rawCode) {
-      return NextResponse.json({ error: 'Invalid payload' }, { status: 400 });
-    }
+  await createErrorSample({
+    category,
+    errorType: body.errorType === 'runtime' ? 'runtime' : 'parse',
+    code,
+    rawMessage: optionalText(body.rawMessage, 500),
+    line: intOrNull(body.line),
+    codeLines: intOrNull(body.codeLines),
+    feature: oneOf(body.feature, FEATURES),
+  });
 
-    // Re-sanitize server-side; never trust the client to have stripped text.
-    const code = sanitizeForSampling(rawCode).slice(0, 5000);
-    if (!code.trim()) {
-      return NextResponse.json({ error: 'Invalid payload' }, { status: 400 });
-    }
-
-    const errorType = body.errorType === 'runtime' ? 'runtime' : 'parse';
-    const feature = typeof body.feature === 'string' && FEATURES.has(body.feature) ? body.feature : null;
-
-    await prisma.errorSample.create({
-      data: {
-        category,
-        errorType,
-        code,
-        rawMessage: cappedString(body.rawMessage, 500),
-        line: intOrNull(body.line),
-        codeLines: intOrNull(body.codeLines),
-        feature,
-      },
-    });
-
-    // Opportunistically prune old rows so the table stays bounded without a cron.
-    if (Math.random() < PRUNE_PROBABILITY) {
-      const cutoff = new Date(Date.now() - RETENTION_DAYS * 86_400_000);
-      prisma.errorSample
-        .deleteMany({ where: { createdAt: { lt: cutoff } } })
-        .catch((e) => logger.warn('Error-sample prune failed', { error: String(e) }));
-    }
-
-    return NextResponse.json({ ok: true });
-  } catch (e) {
-    logger.error('Error-sample store failed', { error: String(e) });
-    return NextResponse.json({ error: 'Internal error' }, { status: 500 });
+  if (Math.random() < PRUNE_PROBABILITY) {
+    pruneErrorSamples(new Date(Date.now() - RETENTION_DAYS * 86_400_000))
+      .catch((e) => logger.warn('Error-sample prune failed', { error: String(e) }));
   }
-}
+  return { ok: true };
+});

@@ -44,14 +44,14 @@ describe('learn progress API', () => {
 
   it('GET returns 401 when signed out', async () => {
     auth.mockResolvedValue(null);
-    const res = await GET();
+    const res = await GET(new Request('http://localhost/api/learn/progress'));
     expect(res.status).toBe(401);
     expect(findMany).not.toHaveBeenCalled();
   });
 
   it('GET includes premiumAccess', async () => {
     auth.mockResolvedValue(session());
-    const res = await GET();
+    const res = await GET(new Request('http://localhost/api/learn/progress'));
     expect(res.status).toBe(200);
     const body = (await res.json()) as { premiumAccess: boolean; lessons: object };
     expect(body.premiumAccess).toBe(true);

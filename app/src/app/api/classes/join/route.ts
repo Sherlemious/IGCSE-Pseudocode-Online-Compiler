@@ -1,24 +1,19 @@
-import { NextResponse } from 'next/server';
-import { auth } from '@/modules/auth/auth';
-import { revalidatePremiumAccess } from '@/modules/billing/entitlements';
-import { ClassRequestError, joinClass } from '@/modules/classes/service';
+import { badRequest } from '@/shared/http/errors';
+import { route } from '@/shared/http/route';
+import { readJsonOrEmpty } from '@/shared/http/input';
+import { enforceRateLimit } from '@/shared/http/rateLimit';
+import { requireUser } from '@/modules/auth/guards';
+import { joinClass } from '@/modules/classes/service';
 
-export async function POST(req: Request) {
-  const session = await auth();
-  if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  const body: unknown = await req.json().catch(() => null);
-  if (!body || typeof body !== 'object' || !('joinCode' in body) || typeof body.joinCode !== 'string' || !body.joinCode.trim() ||
-    ('assignmentId' in body && (typeof body.assignmentId !== 'string' || !body.assignmentId.trim()))) {
-    return NextResponse.json({ error: 'Enter a class code.' }, { status: 400 });
+export const POST = route(async (req) => {
+  const user = await requireUser();
+  // Join codes are short; slow anyone trying to guess them.
+  enforceRateLimit(`class-join:${user.id}`, { limit: 20, windowMs: 10 * 60_000 });
+  const body = await readJsonOrEmpty(req);
+  const { joinCode, assignmentId } = body;
+  if (typeof joinCode !== 'string' || !joinCode.trim() ||
+      (assignmentId !== undefined && (typeof assignmentId !== 'string' || !assignmentId.trim()))) {
+    throw badRequest('Enter a class code.');
   }
-  try {
-    const result = await joinClass(session.user.id, body.joinCode, 'assignmentId' in body ? body.assignmentId as string : undefined);
-    // Joining a premium teacher's class grants entitlement; drop the cached
-    // answer now rather than letting the student wait out the TTL.
-    if (!result.alreadyMember) revalidatePremiumAccess(session.user.id);
-    return NextResponse.json(result);
-  } catch (error) {
-    if (error instanceof ClassRequestError) return NextResponse.json({ error: error.message, code: error.code }, { status: error.status });
-    throw error;
-  }
-}
+  return joinClass(user.id, joinCode, assignmentId);
+});

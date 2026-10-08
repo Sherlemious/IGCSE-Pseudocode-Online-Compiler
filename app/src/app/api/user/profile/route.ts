@@ -1,28 +1,14 @@
-import { NextResponse } from 'next/server';
-import { auth } from '@/modules/auth/auth';
-import { prisma } from '@/shared/db';
+import { badRequest, unprocessable } from '@/shared/http/errors';
+import { route } from '@/shared/http/route';
+import { readJson } from '@/shared/http/input';
+import { requireUser } from '@/modules/auth/guards';
+import { setName } from '@/modules/auth/userRepo';
 
-export async function PATCH(req: Request) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
-  const body = await req.json() as { name?: unknown };
-  const name = typeof body.name === 'string' ? body.name.trim() : undefined;
-
-  if (name === undefined) {
-    return NextResponse.json({ error: 'Nothing to update' }, { status: 400 });
-  }
-  if (name.length === 0 || name.length > 60) {
-    return NextResponse.json({ error: 'Name must be 1–60 characters' }, { status: 422 });
-  }
-
-  const updated = await prisma.user.update({
-    where: { id: session.user.id },
-    data: { name },
-    select: { id: true, name: true },
-  });
-
-  return NextResponse.json({ user: updated });
-}
+export const PATCH = route(async (req) => {
+  const user = await requireUser();
+  const body = await readJson(req);
+  if (typeof body.name !== 'string') throw badRequest('Nothing to update');
+  const name = body.name.trim();
+  if (name.length === 0 || name.length > 60) throw unprocessable('Name must be 1–60 characters');
+  return { user: await setName(user.id, name) };
+});

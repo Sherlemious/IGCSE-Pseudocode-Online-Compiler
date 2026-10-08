@@ -21,6 +21,14 @@ Modular monolith. `src/app/` is a thin routing layer (pages + API route handlers
 
 **Next.js backend** — API routes handle auth, practice/exam CRUD, AI grading, and nudge state. Database access goes through Prisma (`src/shared/db.ts`).
 
+**Server layers** — every API route is a thin HTTP adapter; ESLint forbids `@/shared/db` in `src/app/api/**/route.ts`.
+- **Route** (`app/api/**/route.ts`): `export const POST = route(async (req, { params }: RouteContext<'/api/...'>) => …)` — run a guard, parse input, call a service, return data. Never build error responses by hand.
+- **HTTP** (`shared/http/`): `route()` turns a returned value into 200 JSON, an `HttpError` (`badRequest`, `notFound`, `tooManyRequests`, …) into `{ error, code? }` with its status, and anything else into a logged generic 500. `input.ts` reads JSON and caps/validates fields; `rateLimit.ts` has `enforceRateLimit` (throws 429 with `Retry-After`).
+- **Auth** (`modules/auth/guards.ts`): `requireUser()`, `optionalUser()`, `requireAdmin()`. Auth is checked in each handler, not in `proxy.ts` (Next's guidance, and no extra function call per request on Vercel).
+- **Service** (`modules/<domain>/service.ts`, `exams/definitions.ts`, `exams/attempts.ts`, `auth/signup.ts`, `billing/paddle/webhookHandlers.ts`): business rules — ownership, plan limits, premium gating — throwing `HttpError` subclasses (`ClassRequestError`, `ExamRequestError`).
+- **Repository** (`modules/<domain>/repo.ts`, `auth/userRepo.ts`, `theme/repo.ts`, `compiler/playgroundRepo.ts`): Prisma only. Functions used inside a transaction take `db: Db` (the client or a `tx`), so services own the transaction and row locks.
+- CI runs `next typegen` before `tsc` so `RouteContext` resolves. Pages under `app/` still query Prisma directly; move them to repos when you touch them.
+
 **Caching / Vercel limits** — questions, examples and pricing tiers only change on seed, so catalog-derived ISR pages and routes revalidate daily (`revalidate = 86400`), not hourly. `shared/lib/catalogCache.ts` layers instance memory (5 min) → Data Cache (1 day, keyed per deployment) → Postgres, and loads a light list plus per-question entries — never the whole bank for one question. After seeding without a redeploy, `POST /api/admin/revalidate-catalog` (admin session) refreshes. `outputFileTracingExcludes` in `next.config.ts` keeps Prisma's unused wasm runtimes and sharp out of function bundles, since Hobby caps total deployment function storage (10 GB across retained deployments).
 
 ### Module map

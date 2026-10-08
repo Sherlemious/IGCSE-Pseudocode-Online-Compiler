@@ -1,78 +1,33 @@
-import { NextResponse } from 'next/server';
-import { auth } from '@/modules/auth/auth';
-import { prisma } from '@/shared/db';
+import { badRequest } from '@/shared/http/errors';
+import { route } from '@/shared/http/route';
+import { readJsonOrEmpty } from '@/shared/http/input';
+import { requireUser } from '@/modules/auth/guards';
+import { getOwnedClassWithRoster, updateClass } from '@/modules/classes/service';
 
-interface Context {
-  params: Promise<{ classId: string }>;
-}
+type Ctx = RouteContext<'/api/classes/[classId]'>;
 
 /** Class detail + roster. Owner-only. */
-export async function GET(_req: Request, { params }: Context) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+export const GET = route(async (_req, { params }: Ctx) => {
+  const user = await requireUser();
   const { classId } = await params;
+  return getOwnedClassWithRoster(classId, user.id);
+});
 
-  const cls = await prisma.class.findUnique({
-    where: { id: classId },
-    select: {
-      id: true,
-      ownerId: true,
-      name: true,
-      joinCode: true,
-      archived: true,
-      createdAt: true,
-      memberships: {
-        orderBy: { joinedAt: 'asc' },
-        select: {
-          userId: true,
-          joinedAt: true,
-          user: { select: { name: true, email: true, image: true } },
-        },
-      },
-    },
-  });
-
-  if (!cls || cls.ownerId !== session.user.id) {
-    return NextResponse.json({ error: 'Not found' }, { status: 404 });
-  }
-
-  return NextResponse.json(cls);
-}
-
-interface PatchBody {
-  name?: unknown;
-  archived?: unknown;
-}
-
-/** Rename or archive a class. Owner-only. */
-export async function PATCH(req: Request, { params }: Context) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+/** Rename, archive or restore a class. Owner-only. */
+export const PATCH = route(async (req, { params }: Ctx) => {
+  const user = await requireUser();
   const { classId } = await params;
+  const body = await readJsonOrEmpty(req);
 
-  const cls = await prisma.class.findUnique({ where: { id: classId }, select: { ownerId: true } });
-  if (!cls || cls.ownerId !== session.user.id) {
-    return NextResponse.json({ error: 'Not found' }, { status: 404 });
-  }
-
-  const body = (await req.json().catch(() => ({}))) as PatchBody;
   const data: { name?: string; archived?: boolean } = {};
   if (typeof body.name === 'string') {
     const name = body.name.trim().slice(0, 80);
-    if (!name) return NextResponse.json({ error: 'Class name cannot be empty.' }, { status: 400 });
+    if (!name) throw badRequest('Class name cannot be empty.');
     data.name = name;
   }
-  if (typeof body.archived === 'boolean') {
-    data.archived = body.archived;
-  }
-  if (Object.keys(data).length === 0) {
-    return NextResponse.json({ error: 'Nothing to update.' }, { status: 400 });
-  }
+  if (typeof body.archived === 'boolean') data.archived = body.archived;
+  if (Object.keys(data).length === 0) throw badRequest('Nothing to update.');
 
-  await prisma.class.update({ where: { id: classId }, data });
-  return NextResponse.json({ ok: true });
-}
+  await updateClass(classId, user.id, data);
+  return { ok: true };
+});

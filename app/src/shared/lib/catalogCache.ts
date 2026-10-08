@@ -176,8 +176,9 @@ export function listQuestionTopics(
   return Array.from(topics).sort((a, b) => a.localeCompare(b));
 }
 
+/** The ids a teacher may put in an exam: known questions, minus FLOWCHART ones (exams take code only). */
 export function existingQuestionIds(catalog: QuestionCatalogItem[], ids: string[]): string[] {
-  const known = new Set(catalog.map((question) => question.id));
+  const known = new Set(catalog.filter((question) => question.answerFormat !== 'FLOWCHART').map((question) => question.id));
   return ids.filter((id) => known.has(id));
 }
 

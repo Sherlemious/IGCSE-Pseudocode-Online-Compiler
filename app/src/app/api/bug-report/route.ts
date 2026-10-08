@@ -1,67 +1,27 @@
-import { NextResponse } from 'next/server';
-import { auth } from '@/modules/auth/auth';
-import { prisma } from '@/shared/db';
-import { limitRequest, requesterKey } from '@/shared/lib/rateLimit';
+import { route } from '@/shared/http/route';
+import { oneOf, optionalText, readJson, requiredText } from '@/shared/http/input';
+import { enforceRateLimit, requesterKey } from '@/shared/http/rateLimit';
+import { optionalUser } from '@/modules/auth/guards';
+import { createBugReport } from '@/modules/feedback/repo';
 
 const CATEGORIES = ['bug', 'suggestion', 'other'] as const;
 
-/** Trim a value to a string capped at `max` chars, or null if not a usable string. */
-function cappedString(value: unknown, max: number): string | null {
-  if (typeof value !== 'string') return null;
-  const trimmed = value.trim();
-  return trimmed ? trimmed.slice(0, max) : null;
-}
+export const POST = route(async (req) => {
+  const user = await optionalUser();
+  enforceRateLimit(`bug-report:${requesterKey(req, user?.id)}`, { limit: 5, windowMs: 10 * 60_000 },
+    "You've sent several reports already. Please wait a few minutes before sending another.");
+  const body = await readJson(req, 'Invalid payload');
 
-export async function POST(req: Request) {
-  try {
-    const session = await auth();
-    const limited = limitRequest(
-      `bug-report:${requesterKey(req, session?.user?.id)}`,
-      { limit: 5, windowMs: 10 * 60_000 },
-      "You've sent several reports already. Please wait a few minutes before sending another.",
-    );
-    if (limited) return limited;
-    const body = await req.json() as {
-      description?: unknown;
-      category?: unknown;
-      code?: unknown;
-      output?: unknown;
-      pageUrl?: unknown;
-      userAgent?: unknown;
-      email?: unknown;
-    };
-
-    const description = cappedString(body.description, 5000);
-    if (!description) {
-      return NextResponse.json({ error: 'Invalid payload' }, { status: 400 });
-    }
-
-    const category = typeof body.category === 'string' && (CATEGORIES as readonly string[]).includes(body.category)
-      ? body.category
-      : 'bug';
-    const code = cappedString(body.code, 20000);
-    const output = cappedString(body.output, 20000);
-    const pageUrl = cappedString(body.pageUrl, 500);
-    const userAgent = cappedString(body.userAgent, 500);
-
-    // Prefer the authenticated email; fall back to an email typed by a logged-out user.
-    const email = session?.user?.email ?? cappedString(body.email, 320);
-
-    await prisma.bugReport.create({
-      data: {
-        userId: session?.user?.id ?? null,
-        email,
-        category,
-        description,
-        code,
-        output,
-        pageUrl,
-        userAgent,
-      },
-    });
-
-    return NextResponse.json({ ok: true });
-  } catch {
-    return NextResponse.json({ error: 'Internal error' }, { status: 500 });
-  }
-}
+  await createBugReport({
+    userId: user?.id ?? null,
+    // Prefer the account email; fall back to one typed by a signed-out visitor.
+    email: user?.email ?? optionalText(body.email, 320),
+    category: oneOf(body.category, CATEGORIES) ?? 'bug',
+    description: requiredText(body.description, 5000, 'Invalid payload'),
+    code: optionalText(body.code, 20000),
+    output: optionalText(body.output, 20000),
+    pageUrl: optionalText(body.pageUrl, 500),
+    userAgent: optionalText(body.userAgent, 500),
+  });
+  return { ok: true };
+});

@@ -24,7 +24,7 @@ describe('practice progress API', () => {
 
   it('returns 401 when signed out', async () => {
     auth.mockResolvedValue(null);
-    const res = await GET();
+    const res = await GET(new Request('http://localhost/api/practice/progress'));
     expect(res.status).toBe(401);
     expect(findMany).not.toHaveBeenCalled();
   });
@@ -42,7 +42,7 @@ describe('practice progress API', () => {
     ]);
     getPremiumAccess.mockResolvedValue(true);
 
-    const res = await GET();
+    const res = await GET(new Request('http://localhost/api/practice/progress'));
     expect(res.status).toBe(200);
     await expect(res.json()).resolves.toEqual({
       premiumAccess: true,

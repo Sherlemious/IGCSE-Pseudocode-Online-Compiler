@@ -1,130 +1,183 @@
 import { Prisma } from '@prisma/client';
 import { prisma } from '@/shared/db';
-import { normalizeShareCode } from '@/shared/lib/shareCode';
+import { HttpError, conflict, notFound } from '@/shared/http/errors';
+import { generateShareCode, normalizeShareCode } from '@/shared/lib/shareCode';
 import {
+  getEntitlements,
   getPremiumAccess,
   isAtStudentCap,
   limitsForUser,
-  OWNER_PLAN_SELECT,
+  revalidatePremiumAccess,
 } from '@/modules/billing/entitlements';
 import { PREMIUM_GATING_ENABLED } from '@/modules/billing/featureFlags';
+import { findOwnedExam } from '@/modules/exams/repo';
+import { promoteToTeacher } from '@/modules/auth/userRepo';
+import * as repo from './repo';
 
-export class ClassRequestError extends Error {
-  constructor(public readonly status: number, public readonly code: string, message: string) {
-    super(message);
+/** A class/assignment failure with its HTTP status and machine-readable code. */
+export class ClassRequestError extends HttpError {
+  constructor(status: number, code: string, message: string) {
+    super(status, message, code);
   }
 }
 
 const unavailable = () => new ClassRequestError(404, 'ASSIGNMENT_UNAVAILABLE', 'This assignment is no longer available.');
+const plural = (n: number) => `${n} class${n === 1 ? '' : 'es'}`;
+const isUniqueViolation = (err: unknown) =>
+  err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002';
 
-export function joinClass(userId: string, code: string, assignmentId?: string) {
-  const joinCode = normalizeShareCode(code);
-  return prisma.$transaction(async (tx) => {
-    // Every join locks the class before counting seats, including legacy join links.
-    const locked = await tx.$queryRaw<{ id: string }[]>`
-      SELECT "id" FROM "Class" WHERE "joinCode" = ${joinCode} AND "archived" = false FOR UPDATE
-    `;
-    if (!locked.length) throw new ClassRequestError(404, 'CLASS_NOT_FOUND', 'No class found for that code.');
-    const cls = await tx.class.findUniqueOrThrow({
-      where: { id: locked[0].id },
-      select: {
-        id: true, name: true, ownerId: true,
-        owner: { select: OWNER_PLAN_SELECT },
-      },
-    });
-    if (assignmentId) {
-      const assignment = await tx.assignment.findFirst({
-        where: { id: assignmentId, classId: cls.id, exam: { isPublished: true, questions: { some: {} } } },
-        select: { id: true },
-      });
-      if (!assignment) throw unavailable();
+/** Throws a 404 unless `userId` owns the class. Same answer for "missing" and "not yours". */
+async function requireOwnedClass(classId: string, userId: string) {
+  const cls = await repo.findClassOwnership(classId);
+  if (!cls || cls.ownerId !== userId) throw notFound();
+  return cls;
+}
+
+// ── Teacher: classes ───────────────────────────────────────────────────────
+
+/** Create a class within the plan's class limit. The first class makes a student a teacher. */
+export async function createClass(user: { id: string; role: string }, name: string) {
+  const { limits } = await getEntitlements(user.id);
+  if ((await repo.countActiveClasses(user.id)) >= limits.maxClasses) {
+    throw new ClassRequestError(403, 'LIMIT_CLASSES', `Your plan allows ${plural(limits.maxClasses)}. Upgrade to add more.`);
+  }
+  for (let attempt = 0; attempt < 5; attempt++) {
+    try {
+      const created = await repo.createClass({ ownerId: user.id, name, joinCode: generateShareCode() });
+      if (user.role !== 'ADMIN') await promoteToTeacher(user.id);
+      return created;
+    } catch (err) {
+      if (isUniqueViolation(err)) continue; // joinCode collision — regenerate
+      throw err;
     }
+  }
+  throw new HttpError(500, 'Could not generate a unique join code. Please try again.');
+}
+
+export async function listClasses(userId: string) {
+  const [owned, enrolled] = await Promise.all([repo.listOwnedClasses(userId), repo.listEnrolledClasses(userId)]);
+  return { owned, enrolled };
+}
+
+export async function getOwnedClassWithRoster(classId: string, userId: string) {
+  const cls = await repo.findClassWithRoster(classId);
+  if (!cls || cls.ownerId !== userId) throw notFound();
+  return cls;
+}
+
+/**
+ * Rename and/or archive a class. Archived classes don't count toward the plan
+ * limits, so restoring one is checked like creating a class and adding its students.
+ */
+export async function updateClass(classId: string, userId: string, data: { name?: string; archived?: boolean }) {
+  const cls = await requireOwnedClass(classId, userId);
+  if (data.archived === false && cls.archived) {
+    const { limits } = await getEntitlements(userId);
+    const [activeClasses, activeStudents] = await Promise.all([
+      repo.countActiveClasses(userId),
+      repo.countActiveStudents(userId),
+    ]);
+    if (activeClasses >= limits.maxClasses) {
+      throw new ClassRequestError(
+        403,
+        'LIMIT_CLASSES',
+        `Your plan allows ${plural(limits.maxClasses)}. Archive another class or upgrade to restore this one.`,
+      );
+    }
+    if (activeStudents + cls._count.memberships > limits.maxStudentsTotal) {
+      throw new ClassRequestError(403, 'LIMIT_STUDENTS', 'Restoring this class would go over your plan’s student limit.');
+    }
+  }
+  await repo.updateClass(classId, data);
+}
+
+export async function removeStudent(classId: string, ownerId: string, studentId: string) {
+  await requireOwnedClass(classId, ownerId);
+  await repo.removeMember(classId, studentId);
+}
+
+// ── Teacher: assignments ───────────────────────────────────────────────────
+
+/** Assign one of the teacher's own exams to a class they own. */
+export async function assignExam(classId: string, userId: string, examId: string, dueDate: Date | null) {
+  await requireOwnedClass(classId, userId);
+  if (!(await findOwnedExam(examId, userId))) throw notFound('That exam could not be found.');
+  try {
+    return await repo.createAssignment({ classId, examId, dueDate });
+  } catch (err) {
+    if (isUniqueViolation(err)) throw conflict('That exam is already assigned to this class.', 'ALREADY_ASSIGNED');
+    throw err;
+  }
+}
+
+/** Remove an assignment. Student attempts survive (assignmentId is set null). */
+export async function unassignExam(classId: string, userId: string, assignmentId: string) {
+  const assignment = await repo.findAssignmentOwnership(assignmentId);
+  if (!assignment || assignment.classId !== classId || assignment.class.ownerId !== userId) throw notFound();
+  await repo.deleteAssignment(assignmentId);
+}
+
+// ── Student: joining and starting ──────────────────────────────────────────
+
+export async function joinClass(userId: string, code: string, assignmentId?: string) {
+  const joinCode = normalizeShareCode(code);
+  const result = await prisma.$transaction(async (tx) => {
+    // Every join locks the class before counting seats, including legacy join links.
+    const classId = await repo.lockClassByJoinCode(joinCode, tx);
+    if (!classId) throw new ClassRequestError(404, 'CLASS_NOT_FOUND', 'No class found for that code.');
+    const cls = await repo.findClassForJoin(classId, tx);
+    if (assignmentId && !(await repo.findJoinableAssignment(assignmentId, cls.id, tx))) throw unavailable();
     if (cls.ownerId === userId) {
       throw new ClassRequestError(400, 'OWN_CLASS', "That's your own class — you already manage it.");
     }
-    const member = await tx.classMembership.findUnique({
-      where: { classId_userId: { classId: cls.id, userId } }, select: { id: true },
-    });
-    if (member) return { classId: cls.id, name: cls.name, alreadyMember: true };
+    if (await repo.findMembership(cls.id, userId, tx)) {
+      return { classId: cls.id, name: cls.name, alreadyMember: true };
+    }
     const [studentsInClass, studentsAcrossClasses] = await Promise.all([
-      tx.classMembership.count({ where: { classId: cls.id } }),
-      tx.classMembership.count({ where: { class: { ownerId: cls.ownerId, archived: false } } }),
+      repo.countClassMembers(cls.id, tx),
+      repo.countActiveStudents(cls.ownerId, tx),
     ]);
-    if (
-      isAtStudentCap({
-        limits: limitsForUser(cls.owner),
-        studentsInClass,
-        studentsAcrossClasses,
-      })
-    ) {
+    if (isAtStudentCap({ limits: limitsForUser(cls.owner), studentsInClass, studentsAcrossClasses })) {
       throw new ClassRequestError(403, 'LIMIT_STUDENTS', 'This class is full. Ask your teacher to make room.');
     }
-    await tx.classMembership.create({ data: { classId: cls.id, userId } });
+    await repo.addMember(cls.id, userId, tx);
     return { classId: cls.id, name: cls.name, alreadyMember: false };
   }, { isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted });
+  // Joining a premium teacher's class grants entitlement; drop the cached
+  // answer now rather than letting the student wait out the TTL.
+  if (!result.alreadyMember) revalidatePremiumAccess(userId);
+  return result;
 }
 
 export function startAssignment(userId: string, assignmentId: string) {
   return prisma.$transaction(async (tx) => {
     // Serialize duplicate launches across tabs/instances before looking for an attempt.
-    const locked = await tx.$queryRaw<{ id: string }[]>`
-      SELECT "id" FROM "Assignment" WHERE "id" = ${assignmentId} FOR UPDATE
-    `;
-    if (!locked.length) throw unavailable();
-    const assignment = await tx.assignment.findUniqueOrThrow({
-      where: { id: assignmentId },
-      select: {
-        classId: true, class: { select: { archived: true } },
-        exam: { select: {
-          id: true, isPublished: true, timeLimitMin: true,
-          questions: { orderBy: { sortOrder: 'asc' }, select: { questionId: true, question: { select: { isPremium: true } } } },
-        } },
-      },
-    });
+    if (!(await repo.lockAssignment(assignmentId, tx))) throw unavailable();
+    const assignment = await repo.findAssignmentForStart(assignmentId, tx);
     const exam = assignment.exam;
     if (assignment.class.archived || !exam.isPublished || !exam.questions.length) throw unavailable();
-    const membership = await tx.classMembership.findUnique({
-      where: { classId_userId: { classId: assignment.classId, userId } }, select: { id: true },
-    });
-    if (!membership) throw new ClassRequestError(403, 'NOT_ENROLLED', "You're not a member of this class.");
+    if (!(await repo.findMembership(assignment.classId, userId, tx))) {
+      throw new ClassRequestError(403, 'NOT_ENROLLED', "You're not a member of this class.");
+    }
     if (PREMIUM_GATING_ENABLED && exam.questions.some((q) => q.question.isPremium) && !await getPremiumAccess(userId, tx)) {
       throw new ClassRequestError(403, 'PREMIUM_REQUIRED', 'This assignment includes premium questions. Ask your teacher about class access.');
     }
-    const existing = await tx.examAttempt.findFirst({
-      where: { userId, assignmentId }, orderBy: { createdAt: 'desc' }, select: { id: true },
-    });
     // Completed assignments lead to their results; sharing never creates a retake.
+    const existing = await repo.findLatestAssignmentAttempt(userId, assignmentId, tx);
     if (existing) return { attemptId: existing.id, resumed: true };
-    const attempt = await tx.examAttempt.create({
-      data: {
-        userId, assignmentId, examId: exam.id, questionCount: exam.questions.length,
-        timeLimitMin: exam.timeLimitMin,
-        answers: { create: exam.questions.map((q, sortOrder) => ({ questionId: q.questionId, sortOrder })) },
-      },
-      select: { id: true },
-    });
+    const attempt = await repo.createAssignmentAttempt({
+      userId,
+      assignmentId,
+      examId: exam.id,
+      timeLimitMin: exam.timeLimitMin,
+      questionIds: exam.questions.map((q) => q.questionId),
+    }, tx);
     return { attemptId: attempt.id, resumed: false };
   }, { isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted });
 }
 
 /** Read only invitation metadata and the current student's membership/attempt. */
 export function getAssignmentInvitation(userId: string, code: string, assignmentId: string) {
-  return prisma.assignment.findFirst({
-    where: {
-      id: assignmentId,
-      class: { joinCode: normalizeShareCode(code), archived: false },
-      exam: { isPublished: true, questions: { some: {} } },
-    },
-    select: {
-      id: true, classId: true, dueDate: true,
-      class: { select: {
-        name: true, ownerId: true,
-        owner: { select: OWNER_PLAN_SELECT },
-        _count: { select: { memberships: true } },
-        memberships: { where: { userId }, select: { id: true } },
-      } },
-      exam: { select: { title: true, timeLimitMin: true, _count: { select: { questions: true } } } },
-      attempts: { where: { userId }, orderBy: { createdAt: 'desc' }, take: 1, select: { id: true, status: true } },
-    },
-  });
+  return repo.findAssignmentInvitation(userId, normalizeShareCode(code), assignmentId);
 }
+

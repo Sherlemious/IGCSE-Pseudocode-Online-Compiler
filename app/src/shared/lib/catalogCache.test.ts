@@ -116,6 +116,7 @@ describe('catalogCache mappers', () => {
     const catalog = [
       question({ id: 'a', topic: 'Files' }),
       question({ id: 'b', topic: 'Arrays', isPremium: true }),
+      question({ id: 'f', topic: 'Files', answerFormat: 'FLOWCHART' }),
     ].map((row) => ({
       id: row.id,
       title: row.title,
@@ -137,6 +138,8 @@ describe('catalogCache mappers', () => {
     expect(listQuestionTopics(catalog, false)).toEqual(['Files']);
     expect(listQuestionTopics(catalog, true)).toEqual(['Arrays', 'Files']);
     expect(existingQuestionIds(catalog, ['missing', 'b', 'a', 'b'])).toEqual(['b', 'a', 'b']);
+    // Exams take code only, so a FLOWCHART question can't be added to one.
+    expect(existingQuestionIds(catalog, ['f', 'a'])).toEqual(['a']);
   });
 
   it('builds the public questions API payload with visible-test counts', () => {

@@ -1,4 +1,4 @@
-import NextAuth from 'next-auth';
+import NextAuth, { CredentialsSignin } from 'next-auth';
 import Google from 'next-auth/providers/google';
 import Credentials from 'next-auth/providers/credentials';
 import { PrismaAdapter } from '@auth/prisma-adapter';
@@ -11,6 +11,14 @@ import { parseSignupRole, SIGNUP_ROLE_COOKIE } from './signupRole';
 import { SITE_NAME } from '@/shared/lib/seo';
 import { logger } from '@/shared/lib/logger';
 import { hardenOAuthLink } from './emailVerification';
+import { clientIp, rateLimit } from '@/shared/lib/rateLimit';
+
+/** Shown by AuthForm as "too many attempts" instead of "wrong password". */
+class TooManySignInAttempts extends CredentialsSignin {
+  code = 'rate_limited';
+}
+
+const SIGNIN_WINDOW_MS = 15 * 60_000;
 
 const authSecret =
   process.env.AUTH_SECRET ??
@@ -38,10 +46,16 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         email: { label: 'Email', type: 'email' },
         password: { label: 'Password', type: 'password' },
       },
-      async authorize(credentials) {
+      async authorize(credentials, request) {
         const email = (credentials?.email as string | undefined)?.trim().toLowerCase();
         const password = credentials?.password as string | undefined;
         if (!email || !password) return null;
+
+        // Slow password guessing: per account, and per network (a school can
+        // share one address, so that bucket is wider).
+        const perEmail = rateLimit(`signin:email:${email}`, { limit: 10, windowMs: SIGNIN_WINDOW_MS });
+        const perIp = rateLimit(`signin:ip:${clientIp(request)}`, { limit: 60, windowMs: SIGNIN_WINDOW_MS });
+        if (!perEmail.ok || !perIp.ok) throw new TooManySignInAttempts();
 
         const user = await prisma.user.findUnique({ where: { email } });
         // No password set => the account exists only via OAuth (e.g. Google).
@@ -124,6 +138,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             planExpiresAt: true,
             paddleCustomerId: true,
             paddleSubscriptionId: true,
+            emailVerified: true,
+            password: true,
             _count: { select: { taughtClasses: true } },
           },
         });
@@ -136,6 +152,9 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         token.ownsClass = fresh._count.taughtClasses > 0;
         token.hasPaddleCustomer = Boolean(fresh.paddleCustomerId);
         token.hasPaddleSubscription = Boolean(fresh.paddleSubscriptionId);
+        // A password account proves its address through the welcome-email link;
+        // an OAuth-only account (no password) got its address from Google.
+        token.emailTrusted = Boolean(fresh.emailVerified) || !fresh.password;
         // Existing Google accounts predate the picker — don't trap them on
         // /onboarding. Only brand-new signups (30 min) still get the gate.
         const accountAgeMs = Date.now() - fresh.createdAt.getTime();
@@ -195,7 +214,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       const REFRESH_MS = 60 * 60 * 1000;
       const refreshedAt = typeof token.refreshedAt === 'number' ? token.refreshedAt : 0;
       const stale = Date.now() - refreshedAt > REFRESH_MS;
-      if ((trigger === 'update' || stale) && token.id) {
+      // Tokens issued before emailTrusted existed re-read once so env admins keep access.
+      if ((trigger === 'update' || stale || token.emailTrusted === undefined) && token.id) {
         await loadEntitlements(token.id as string);
         token.refreshedAt = Date.now();
       }
@@ -214,6 +234,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       session.user.hasPaddleCustomer = Boolean(token.hasPaddleCustomer);
       session.user.hasPaddleSubscription =
         typeof token.hasPaddleSubscription === 'boolean' ? token.hasPaddleSubscription : undefined;
+      session.user.emailTrusted = Boolean(token.emailTrusted);
       return session;
     },
   },

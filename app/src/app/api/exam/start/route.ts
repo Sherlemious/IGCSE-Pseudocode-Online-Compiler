@@ -1,61 +1,19 @@
-import { NextResponse } from 'next/server';
-import { auth } from '@/modules/auth/auth';
-import { prisma } from '@/shared/db';
-import { PREMIUM_GATING_ENABLED } from '@/modules/billing/featureFlags';
-import { getPremiumAccess } from '@/modules/billing/entitlements';
-import { getExamQuestionPool } from '@/shared/lib/catalogCache';
 import type { Difficulty } from '@prisma/client';
+import { route } from '@/shared/http/route';
+import { clampedNumber, oneOf, optionalText, readJsonOrEmpty } from '@/shared/http/input';
+import { requireUser } from '@/modules/auth/guards';
+import { startRandomExam } from '@/modules/exams/definitions';
 
-export async function POST(req: Request) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+const DIFFICULTIES: readonly Difficulty[] = ['EASY', 'MEDIUM', 'HARD'];
 
-  const { topic, difficulty, questionCount, timeLimitMin } = await req.json();
-
-  const count = Math.min(Math.max(questionCount || 5, 1), 20);
-  const timeLimit = Math.min(Math.max(timeLimitMin || 60, 10), 180);
-
-  const includePremium =
-    !PREMIUM_GATING_ENABLED || (await getPremiumAccess(session.user.id));
-
-  const allQuestions = await getExamQuestionPool({
-    topic: topic || null,
-    difficulty: difficulty || null,
-    includePremium,
+/** Start a random timed exam from the question bank. */
+export const POST = route(async (req) => {
+  const user = await requireUser();
+  const body = await readJsonOrEmpty(req);
+  return startRandomExam(user.id, {
+    topic: optionalText(body.topic, 100),
+    difficulty: oneOf(body.difficulty, DIFFICULTIES),
+    questionCount: clampedNumber(body.questionCount, 1, 20, 5),
+    timeLimitMin: clampedNumber(body.timeLimitMin, 10, 180, 60),
   });
-
-  if (allQuestions.length === 0) {
-    return NextResponse.json({ error: 'No questions match your criteria' }, { status: 404 });
-  }
-
-  // Shuffle and pick
-  const shuffled = allQuestions.sort(() => Math.random() - 0.5);
-  const selected = shuffled.slice(0, count);
-
-  // Create exam attempt with answers
-  const exam = await prisma.examAttempt.create({
-    data: {
-      userId: session.user.id,
-      topic: topic || null,
-      difficulty: (difficulty as Difficulty) || null,
-      questionCount: selected.length,
-      timeLimitMin: timeLimit,
-      answers: {
-        create: selected.map((q, i) => ({
-          questionId: q.id,
-          sortOrder: i,
-        })),
-      },
-    },
-    include: {
-      answers: {
-        orderBy: { sortOrder: 'asc' },
-        select: { id: true, questionId: true, sortOrder: true },
-      },
-    },
-  });
-
-  return NextResponse.json({ examId: exam.id });
-}
+});
