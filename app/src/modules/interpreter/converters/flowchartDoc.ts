@@ -16,10 +16,18 @@ export interface FlowchartDocNode extends FlowNode {
   blank?: boolean;
 }
 
+/** Which side of a box an arrow leaves or enters (builder only; the converter ignores it). */
+export type HandleSide = 't' | 'r' | 'b' | 'l';
+
+export interface FlowchartDocEdge extends FlowEdge {
+  sourceHandle?: HandleSide;
+  targetHandle?: HandleSide;
+}
+
 export interface FlowchartDoc {
   version: 1;
   nodes: FlowchartDocNode[];
-  edges: FlowEdge[];
+  edges: FlowchartDocEdge[];
 }
 
 export const FLOWCHART_LIMITS = {
@@ -29,8 +37,9 @@ export const FLOWCHART_LIMITS = {
 } as const;
 
 const SHAPES: readonly NodeShape[] = ['terminator', 'process', 'io', 'decision', 'subroutine'];
+const SIDES: readonly string[] = ['t', 'r', 'b', 'l'];
 
-/** A blank canvas: START and STOP, not yet joined. */
+/** A blank canvas: START → STOP. A box added after START slots in between. */
 export function starterFlowchart(): FlowchartDoc {
   return {
     version: 1,
@@ -38,7 +47,7 @@ export function starterFlowchart(): FlowchartDoc {
       { id: 'start', shape: 'terminator', label: 'START', x: 0, y: 0 },
       { id: 'stop', shape: 'terminator', label: 'STOP', x: 0, y: 240 },
     ],
-    edges: [],
+    edges: [{ id: 'e-start', source: 'start', target: 'stop' }],
   };
 }
 
@@ -77,7 +86,7 @@ export function parseFlowchartDoc(value: unknown): FlowchartDoc | null {
     nodes.push(node);
   }
 
-  const edges: FlowEdge[] = [];
+  const edges: FlowchartDocEdge[] = [];
   const edgeIds = new Set<string>();
   for (const raw of v.edges) {
     if (!raw || typeof raw !== 'object') return null;
@@ -87,7 +96,11 @@ export function parseFlowchartDoc(value: unknown): FlowchartDoc | null {
     if (!ids.has(e.source) || !ids.has(e.target)) return null;
     if (e.label != null && (typeof e.label !== 'string' || e.label.length > 64)) return null;
     edgeIds.add(e.id);
-    edges.push({ id: e.id, source: e.source, target: e.target, ...(e.label ? { label: e.label as string } : {}) });
+    const edge: FlowchartDocEdge = { id: e.id, source: e.source, target: e.target };
+    if (e.label) edge.label = e.label as string;
+    if (typeof e.sourceHandle === 'string' && SIDES.includes(e.sourceHandle)) edge.sourceHandle = e.sourceHandle as HandleSide;
+    if (typeof e.targetHandle === 'string' && SIDES.includes(e.targetHandle)) edge.targetHandle = e.targetHandle as HandleSide;
+    edges.push(edge);
   }
   return { version: 1, nodes, edges };
 }

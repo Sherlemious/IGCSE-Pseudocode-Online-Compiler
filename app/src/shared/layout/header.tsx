@@ -18,6 +18,7 @@ import {
   Bug,
   Tag,
   Users,
+  Workflow,
 } from 'lucide-react';
 import { LogoMark, LogoWordmark } from '@/shared/brand';
 import SettingsPanel from './settingsPanel';
@@ -280,6 +281,16 @@ const Header: React.FC = () => {
             >
               <Clock size={14} />
               Exam
+            </Link>
+            <Link
+              href="/flowchart"
+              className={`flex items-center gap-2 hover:text-header-text transition duration-200 py-1.5 px-1 rounded hover:bg-white/10 ${
+                pathname === '/flowchart' ? 'text-primary' : 'text-header-text/70'
+              }`}
+              onClick={() => { setIsMenuOpen(false); trackNav('flowchart'); }}
+            >
+              <Workflow size={14} />
+              Flowchart maker
             </Link>
             {showClasses && (
               <Link

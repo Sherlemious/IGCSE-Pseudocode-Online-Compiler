@@ -85,6 +85,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: 'weekly',
       priority: 0.9,
     },
+    {
+      url: `${SITE_URL}/flowchart`,
+      lastModified: now,
+      changeFrequency: 'monthly',
+      priority: 0.8,
+    },
     ...GUIDE_PAGES.map((page) => ({
       url: `${SITE_URL}${guideHref(page.slug)}`,
       lastModified: now,

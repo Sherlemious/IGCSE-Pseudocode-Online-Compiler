@@ -17,6 +17,7 @@ import OutputDisplay from './outputDisplay';
 import SplitDivider from '@/shared/ui/SplitDivider';
 import type { PythonConversion } from '@/modules/interpreter/converters/pythonConverter';
 import type { FlowchartConversion } from '@/modules/interpreter/converters/flowchartConverter';
+import { FLOWCHART_IMPORT_KEY } from '@/modules/flowchart/constants';
 import { formatPseudocode } from '@/modules/interpreter/formatter';
 import Footer from '@/modules/compiler/footer';
 import OnboardingTour from '@/modules/onboarding/OnboardingTour';
@@ -817,6 +818,15 @@ const CompilerPage: React.FC = () => {
             flowchartErrors={flowchartConversion.errors}
             flowchartStale={flowchartStale}
             onRefreshFlowchart={convertToFlowchartNow}
+            onEditFlowchart={() => {
+              try {
+                sessionStorage.setItem(FLOWCHART_IMPORT_KEY, activeTab.content);
+              } catch {
+                // storage blocked: the builder opens on the autosaved drawing instead
+              }
+              captureEvent('flowchart_edit_clicked', { from: 'playground' });
+              window.location.assign('/flowchart?from=playground');
+            }}
           />
         </div>
 

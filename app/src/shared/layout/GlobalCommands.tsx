@@ -48,6 +48,7 @@ export default function GlobalCommands() {
     { id: 'go-learn', label: 'Go to Learn', group: 'Go to', keywords: 'path levels course paper 2 roadmap', run: () => router.push('/learn') },
     { id: 'go-practice', label: 'Go to Practice', group: 'Go to', keywords: 'questions', run: () => router.push('/practice') },
     { id: 'go-exam', label: 'Go to Exam', group: 'Go to', keywords: 'timed test', run: () => router.push('/exam') },
+    { id: 'go-flowchart', label: 'Go to Flowchart maker', group: 'Go to', keywords: 'flowchart diagram draw builder symbols', run: () => router.push('/flowchart') },
     ...(sessionShowsClasses(session?.user)
       ? [{ id: 'go-classes', label: 'Go to Classes', group: 'Go to', keywords: 'teacher homework roster', run: () => router.push('/classes') } satisfies Command]
       : []),
