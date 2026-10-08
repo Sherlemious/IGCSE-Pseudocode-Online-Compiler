@@ -40,28 +40,28 @@ model User {
   // Paddle billing linkage (set by the subscription webhook). Nullable until the
   // user checks out. plan (above) is the entitlement source of truth; these tie a
   // user to their Paddle records so webhook events can find them.
-  paddleCustomerId     String?   // ctm_…
-  paddleSubscriptionId String?   // sub_… (the current/last subscription)
-  planTier             String?   // marketing slug: student|starter|pro|classroom|department|school|campus|student-*
+  paddleCustomerId     String? // ctm_…
+  paddleSubscriptionId String? // sub_… (the current/last subscription)
+  planTier             String? // marketing slug: student|starter|pro|classroom|department|school|campus|student-*
   planUpdatedAt        DateTime? // last time the billing webhook changed plan
   planExpiresAt        DateTime? // session passes + subs scheduled to cancel; null = no expiry
   // Paid teachers at cutover keep pre-band limits (Starter 3×30/class, Pro unlimited).
   // New checkouts of the capacity bands get false. Never set for student passes.
   legacyCapacity       Boolean   @default(false)
 
-  accounts     Account[]
-  sessions     Session[]
-  progress     Progress[]
-  learnProgress LearnProgress[]
-  examAttempts ExamAttempt[]
-  exams        Exam[]
+  accounts            Account[]
+  sessions            Session[]
+  progress            Progress[]
+  learnProgress       LearnProgress[]
+  examAttempts        ExamAttempt[]
+  exams               Exam[]
   feedbackSubmissions FeedbackSubmission[]
-  bugReports   BugReport[]
-  contactMessages ContactMessage[]
-  customThemes CustomTheme[]
-  playgroundSnapshot PlaygroundSnapshot?
-  taughtClasses    Class[]           @relation("TaughtClasses")
-  classEnrollments ClassMembership[] @relation("ClassEnrollments")
+  bugReports          BugReport[]
+  contactMessages     ContactMessage[]
+  customThemes        CustomTheme[]
+  playgroundSnapshot  PlaygroundSnapshot?
+  taughtClasses       Class[]              @relation("TaughtClasses")
+  classEnrollments    ClassMembership[]    @relation("ClassEnrollments")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -72,11 +72,11 @@ model User {
 }
 
 model CustomTheme {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  name      String
-  colors    String   @db.Text // JSON-serialized CustomColors (13 hex strings)
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name   String
+  colors String @db.Text // JSON-serialized CustomColors (13 hex strings)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -153,29 +153,40 @@ enum Difficulty {
   HARD
 }
 
+/// How a student answers a question: in pseudocode, or by drawing a flowchart
+/// (graded by turning the flowchart into pseudocode and running the same tests).
+enum AnswerFormat {
+  CODE
+  FLOWCHART
+}
+
 model Question {
-  id          String     @id @default(cuid())
-  title       String
-  description String     @db.Text
-  difficulty  Difficulty @default(MEDIUM)
+  id             String       @id @default(cuid())
+  title          String
+  description    String       @db.Text
+  difficulty     Difficulty   @default(MEDIUM)
   year           Int?
-  session        String?   // "May/June" | "Oct/Nov" | "Feb/Mar"
-  variant        Int?      // 1, 2, 3
-  paper          String?   // legacy freeform, e.g. "P12"
+  session        String? // "May/June" | "Oct/Nov" | "Feb/Mar"
+  variant        Int? // 1, 2, 3
+  paper          String? // legacy freeform, e.g. "P12"
   questionNumber Int?
-  part           String?   // "a", "b", "(i)", "(ii)"
+  part           String? // "a", "b", "(i)", "(ii)"
   marks          Int?
   topic          String?
-  tags           String[] @default([])
+  tags           String[]     @default([])
   // Premium gating: when true (and gating is enabled), only entitled students can
   // grade/open this question — a student on a paid plan, or one enrolled in a class
   // whose teacher is on a paid teacher tier. See lib/entitlements hasPremiumAccess.
-  isPremium      Boolean  @default(false)
-  starterCode String?    @db.Text
+  isPremium      Boolean      @default(false)
+  starterCode    String?      @db.Text
+  answerFormat   AnswerFormat @default(CODE)
+  /// FlowchartDoc JSON. CODE: a diagram shown with the question ("flowchart → pseudocode").
+  /// FLOWCHART: the starting canvas; nodes marked `blank` make it "complete the flowchart".
+  flowchart      Json?
 
   hints               String[]
-  solution            String?    @db.Text
-  solutionExplanation String?    @db.Text
+  solution            String?  @db.Text
+  solutionExplanation String?  @db.Text
 
   testCases   TestCase[]
   progress    Progress[]
@@ -212,14 +223,16 @@ enum ProgressStatus {
 }
 
 model Progress {
-  id         String         @id @default(cuid())
-  userId     String
-  questionId String
-  status     ProgressStatus @default(ATTEMPTED)
-  bestScore  Int            @default(0) // best passCount
-  totalTests Int            @default(0)
-  attempts   Int            @default(0)
-  lastCode   String?        @db.Text
+  id            String         @id @default(cuid())
+  userId        String
+  questionId    String
+  status        ProgressStatus @default(ATTEMPTED)
+  bestScore     Int            @default(0) // best passCount
+  totalTests    Int            @default(0)
+  attempts      Int            @default(0)
+  lastCode      String?        @db.Text
+  /// Last flowchart answer (FLOWCHART questions); lastCode holds the pseudocode it became.
+  lastFlowchart Json?
 
   user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
@@ -269,29 +282,29 @@ enum ExamStatus {
 }
 
 model ExamAttempt {
-  id            String      @id @default(cuid())
-  userId        String
-  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   // Null for legacy self-service (random) exams; set when the attempt is a
   // run of a shared Exam definition.
-  examId        String?
-  exam          Exam?       @relation(fields: [examId], references: [id], onDelete: SetNull)
+  examId String?
+  exam   Exam?   @relation(fields: [examId], references: [id], onDelete: SetNull)
 
   // Set when this attempt is a run of a class Assignment (drives the teacher dashboard).
-  assignmentId  String?
-  assignment    Assignment? @relation(fields: [assignmentId], references: [id], onDelete: SetNull)
+  assignmentId String?
+  assignment   Assignment? @relation(fields: [assignmentId], references: [id], onDelete: SetNull)
 
   topic         String?
   difficulty    Difficulty?
   questionCount Int
   timeLimitMin  Int
 
-  status      ExamStatus @default(IN_PROGRESS)
-  score       Int?
-  totalTests  Int?
+  status     ExamStatus @default(IN_PROGRESS)
+  score      Int?
+  totalTests Int?
 
-  startedAt   DateTime @default(now())
+  startedAt   DateTime  @default(now())
   completedAt DateTime?
 
   answers ExamAnswer[]
@@ -310,15 +323,15 @@ model ExamAttempt {
 // ── Shareable Exams (instructor-authored, reusable) ─────────
 
 model Exam {
-  id           String         @id @default(cuid())
-  ownerId      String
-  owner        User           @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  id      String @id @default(cuid())
+  ownerId String
+  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
 
   title        String
-  description  String?        @db.Text
+  description  String? @db.Text
   timeLimitMin Int
-  shareCode    String         @unique
-  isPublished  Boolean        @default(true) // link active / disabled
+  shareCode    String  @unique
+  isPublished  Boolean @default(true) // link active / disabled
 
   questions   ExamQuestion[]
   attempts    ExamAttempt[]
@@ -495,11 +508,11 @@ model ExamAnswer {
   questionId    String
   question      Question    @relation(fields: [questionId], references: [id])
 
-  code       String?  @db.Text
-  passCount  Int      @default(0)
-  totalTests Int      @default(0)
-  graded     Boolean  @default(false)
-  sortOrder  Int      @default(0)
+  code       String? @db.Text
+  passCount  Int     @default(0)
+  totalTests Int     @default(0)
+  graded     Boolean @default(false)
+  sortOrder  Int     @default(0)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

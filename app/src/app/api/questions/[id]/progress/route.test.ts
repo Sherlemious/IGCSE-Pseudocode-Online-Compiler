@@ -42,6 +42,7 @@ describe('question progress API', () => {
     expect(res.status).toBe(200);
     await expect(res.json()).resolves.toEqual({
       lastCode: 'OUTPUT 1',
+      lastFlowchart: null,
       status: 'SOLVED',
       attempts: 2,
       premiumAccess: true,

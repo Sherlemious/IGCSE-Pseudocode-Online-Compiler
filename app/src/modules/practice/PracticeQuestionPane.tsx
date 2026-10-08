@@ -6,6 +6,7 @@ import { useSession } from 'next-auth/react';
 import { Crown, Lock } from 'lucide-react';
 import { authHref } from '@/modules/auth/callback';
 import PracticeWorkspace from './PracticeWorkspace';
+import PracticeFlowchartWorkspace from './PracticeFlowchartWorkspace';
 import FirstSolveShare from './FirstSolveShare';
 
 type Difficulty = 'EASY' | 'MEDIUM' | 'HARD';
@@ -19,6 +20,8 @@ export default function PracticeQuestionPane({
   preloadedFileNames,
   title,
   paperRef,
+  answerFormat = 'CODE',
+  questionFlowchart = null,
 }: {
   questionId: string;
   starterCode: string;
@@ -28,10 +31,14 @@ export default function PracticeQuestionPane({
   preloadedFileNames?: string[];
   title: string;
   paperRef: string | null;
+  answerFormat?: 'CODE' | 'FLOWCHART';
+  /** FLOWCHART questions: the starting canvas or fill-in template. */
+  questionFlowchart?: unknown;
 }) {
   const { status } = useSession();
   const [premiumAccess, setPremiumAccess] = useState(!gatingEnabled);
   const [savedCode, setSavedCode] = useState<string | null>(null);
+  const [savedFlowchart, setSavedFlowchart] = useState<unknown>(null);
   const [initiallySolved, setInitiallySolved] = useState(false);
   const [ready, setReady] = useState(false);
 
@@ -40,6 +47,7 @@ export default function PracticeQuestionPane({
     if (status !== 'authenticated') {
       setPremiumAccess(!gatingEnabled);
       setSavedCode(null);
+      setSavedFlowchart(null);
       setInitiallySolved(false);
       setReady(true);
       return;
@@ -47,10 +55,11 @@ export default function PracticeQuestionPane({
     let cancelled = false;
     void fetch(`/api/questions/${questionId}/progress`)
       .then((res) => (res.ok ? res.json() : null))
-      .then((data: { lastCode?: string | null; premiumAccess?: boolean; status?: string | null; attempts?: number } | null) => {
+      .then((data: { lastCode?: string | null; lastFlowchart?: unknown; premiumAccess?: boolean; status?: string | null; attempts?: number } | null) => {
         if (cancelled) return;
         setPremiumAccess(Boolean(data?.premiumAccess) || !gatingEnabled);
         setSavedCode(typeof data?.lastCode === 'string' ? data.lastCode : null);
+        setSavedFlowchart(data?.lastFlowchart ?? null);
         setInitiallySolved(data?.status === 'SOLVED');
         window.dispatchEvent(
           new CustomEvent('practice:progress', {
@@ -114,13 +123,22 @@ export default function PracticeQuestionPane({
 
   return (
     <div className="flex-1 min-h-0 flex flex-col">
-      <PracticeWorkspace
-        questionId={questionId}
-        starterCode={starterCode}
-        savedCode={savedCode}
-        preloadedFileNames={preloadedFileNames}
-        difficulty={difficulty}
-      />
+      {answerFormat === 'FLOWCHART' ? (
+        <PracticeFlowchartWorkspace
+          questionId={questionId}
+          difficulty={difficulty}
+          questionFlowchart={questionFlowchart}
+          savedFlowchart={savedFlowchart}
+        />
+      ) : (
+        <PracticeWorkspace
+          questionId={questionId}
+          starterCode={starterCode}
+          savedCode={savedCode}
+          preloadedFileNames={preloadedFileNames}
+          difficulty={difficulty}
+        />
+      )}
       <FirstSolveShare
         questionId={questionId}
         title={title}

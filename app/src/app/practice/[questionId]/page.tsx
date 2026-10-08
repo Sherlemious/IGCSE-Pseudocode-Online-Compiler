@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { ChevronLeft, FileText } from 'lucide-react';
+import { ChevronLeft, FileText, Workflow } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { PREMIUM_GATING_ENABLED } from '@/modules/billing/featureFlags';
@@ -9,6 +9,8 @@ import { getPublicQuestion, getQuestionCatalog } from '@/shared/lib/catalogCache
 import PracticeQuestionPane from '@/modules/practice/PracticeQuestionPane';
 import HintsPanel from '@/modules/practice/HintsPanel';
 import SolutionPanel from '@/modules/practice/SolutionPanel';
+import FlowchartDiagram from '@/modules/flowchart/FlowchartDiagram';
+import { isTemplate, parseFlowchartDoc } from '@/modules/interpreter/converters/flowchartDoc';
 import QuestionSolveCount from '@/modules/practice/QuestionSolveCount';
 import {
   absoluteUrl,
@@ -139,6 +141,11 @@ export default async function QuestionPage({ params }: Props) {
     },
   };
 
+  const drawsFlowchart = question.answerFormat === 'FLOWCHART';
+  const fillsIn = drawsFlowchart && isTemplate(parseFlowchartDoc(question.flowchart));
+  // CODE questions can come with a diagram to turn into pseudocode.
+  const diagram = !drawsFlowchart && question.flowchart ? question.flowchart : null;
+
   const anyPreloadedFiles = question.testCases.some((tc) => tc.initialFiles);
   const preloadedFileNames = anyPreloadedFiles
     ? Array.from(new Set(
@@ -198,6 +205,21 @@ export default async function QuestionPage({ params }: Props) {
           )}
         </div>
         <QuestionSolveCount questionId={question.id} />
+        {drawsFlowchart && (
+          <div className="flex items-start gap-2 px-3 py-2 rounded-lg border border-primary/25 bg-primary/5 text-xs text-primary mb-4">
+            <Workflow size={13} className="shrink-0 mt-0.5" />
+            <div>
+              <span className="font-semibold">{fillsIn ? 'Complete the flowchart' : 'Answer with a flowchart'}</span>
+              {' — '}
+              <span className="text-primary/80">
+                {fillsIn
+                  ? 'fill in the dashed boxes.'
+                  : 'draw it with the Cambridge symbols.'}{' '}
+                Checking turns it into pseudocode and runs the tests below.
+              </span>
+            </div>
+          </div>
+        )}
         {anyPreloadedFiles && (
           <div className="flex items-start gap-2 px-3 py-2 rounded-lg border border-info/25 bg-info/5 text-xs text-info mb-4">
             <FileText size={13} className="shrink-0 mt-0.5" />
@@ -269,6 +291,8 @@ export default async function QuestionPage({ params }: Props) {
           </ReactMarkdown>
         </div>
 
+        {diagram != null && <FlowchartDiagram doc={diagram} className="h-96 mt-2" ariaLabel={`${question.title} flowchart`} />}
+
         {/* Sample test cases (always visible — they're a teaser for locked questions) */}
         {question.testCases.length > 0 && (
           <div className="mt-6">
@@ -312,7 +336,7 @@ export default async function QuestionPage({ params }: Props) {
 
         {/* Hints & Solution panels */}
         <HintsPanel questionId={question.id} />
-        <SolutionPanel questionId={question.id} />
+        <SolutionPanel questionId={question.id} showFlowchart={drawsFlowchart} />
       </div>
 
       <PracticeQuestionPane
@@ -324,6 +348,8 @@ export default async function QuestionPage({ params }: Props) {
         preloadedFileNames={preloadedFileNames.length > 0 ? preloadedFileNames : undefined}
         title={question.title}
         paperRef={ref}
+        answerFormat={question.answerFormat}
+        questionFlowchart={drawsFlowchart ? question.flowchart : null}
       />
     </div>
   );

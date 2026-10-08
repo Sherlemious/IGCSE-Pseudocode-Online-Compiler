@@ -26,6 +26,8 @@ function question(overrides: Partial<BankQuestion> = {}): BankQuestion {
     tags: ['IGCSE'],
     isPremium: false,
     starterCode: 'DECLARE n : INTEGER',
+    answerFormat: 'CODE',
+    flowchart: null,
     hints: ['Use a loop'],
     createdAt: '2026-01-01T00:00:00.000Z',
     updatedAt: '2026-01-02T00:00:00.000Z',
@@ -79,6 +81,8 @@ describe('catalogCache mappers', () => {
       question({ id: 'free', topic: 'Arrays', difficulty: 'EASY', isPremium: false }),
       question({ id: 'paid', topic: 'Arrays', difficulty: 'HARD', isPremium: true }),
       question({ id: 'other', topic: 'Files', difficulty: 'EASY', isPremium: false }),
+      // Flowchart-answer questions never go into exams (the exam editor is code only).
+      question({ id: 'drawn', topic: 'Arrays', difficulty: 'EASY', answerFormat: 'FLOWCHART' }),
     ].map((row) => ({
       id: row.id,
       title: row.title,
@@ -93,6 +97,7 @@ describe('catalogCache mappers', () => {
       topic: row.topic,
       tags: row.tags,
       isPremium: row.isPremium,
+      answerFormat: row.answerFormat,
       updatedAt: row.updatedAt,
     }));
 
@@ -125,6 +130,7 @@ describe('catalogCache mappers', () => {
       topic: row.topic,
       tags: row.tags,
       isPremium: row.isPremium,
+      answerFormat: row.answerFormat,
       updatedAt: row.updatedAt,
     }));
 

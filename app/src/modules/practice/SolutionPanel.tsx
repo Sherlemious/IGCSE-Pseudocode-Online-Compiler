@@ -2,11 +2,14 @@
 
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { BookOpen, ChevronDown, ChevronRight, Lock, Eye, Lightbulb, X, Copy, Check } from 'lucide-react';
+import FlowchartDiagram from '@/modules/flowchart/FlowchartDiagram';
 
 interface Props {
   questionId: string;
   isSolved?: boolean;
   attemptCount?: number;
+  /** Flowchart questions: also draw the model answer as a flowchart. */
+  showFlowchart?: boolean;
 }
 
 interface SolutionData {
@@ -18,7 +21,7 @@ interface SolutionData {
 
 const REVEALED_KEY = (id: string) => `solution_revealed:${id}`;
 
-export default function SolutionPanel({ questionId, isSolved = false, attemptCount = 0 }: Props) {
+export default function SolutionPanel({ questionId, isSolved = false, attemptCount = 0, showFlowchart = false }: Props) {
   const [isOpen, setIsOpen] = useState(false);
   const [data, setData] = useState<SolutionData | null>(null);
   const [loading, setLoading] = useState(false);
@@ -155,6 +158,9 @@ export default function SolutionPanel({ questionId, isSolved = false, attemptCou
           {/* Revealed state */}
           {data && !data.locked && !loading && (
             <div className="space-y-3">
+              {showFlowchart && data.solution && (
+                <FlowchartDiagram code={data.solution} className="h-96" ariaLabel="Model answer flowchart" />
+              )}
               {data.solution && (
                 <div className="bg-surface rounded-lg border border-border overflow-hidden">
                   <div className="flex items-center gap-1.5 px-3 py-1.5 border-b border-border/50 bg-primary/5">

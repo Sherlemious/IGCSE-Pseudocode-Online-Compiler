@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import type { Prisma } from '@prisma/client';
 import { prisma } from '@/shared/db';
 import { gradeTestCases, MAX_GRADE_CODE_CHARS } from '@/modules/practice/autograder';
 import { auth } from '@/modules/auth/auth';
@@ -7,6 +8,12 @@ import { getPremiumAccess } from '@/modules/billing/entitlements';
 import { rateLimit, clientIp } from '@/shared/lib/rateLimit';
 import { logger } from '@/shared/lib/logger';
 import { getQuestionForGrade } from '@/shared/lib/catalogCache';
+import { resolveFlowchartAnswer } from '@/modules/practice/flowchartAnswer';
+import type { FlowchartDoc } from '@/modules/interpreter/converters/flowchartDoc';
+import {
+  flowchartToPseudocode,
+  type FlowchartIssue,
+} from '@/modules/interpreter/converters/flowchartToPseudocode';
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -29,16 +36,15 @@ export async function POST(request: NextRequest, { params }: Props) {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }
 
-  const { code } = body as { code?: unknown };
+  const { code: rawCode, flowchart, answers } = (body ?? {}) as { code?: unknown; flowchart?: unknown; answers?: unknown };
+  // A flowchart answer (FLOWCHART questions) arrives as `flowchart` or `answers` instead of `code`.
+  const hasFlowchart = flowchart != null || answers != null;
 
-  if (typeof code !== 'string' || !code.trim()) {
+  if (!hasFlowchart && (typeof rawCode !== 'string' || !rawCode.trim())) {
     return NextResponse.json({ error: '`code` is required' }, { status: 400 });
   }
-  if (code.length > MAX_GRADE_CODE_CHARS) {
-    return NextResponse.json(
-      { error: `Your code is too long to check (over ${MAX_GRADE_CODE_CHARS.toLocaleString('en')} characters).` },
-      { status: 413 },
-    );
+  if (typeof rawCode === 'string' && rawCode.length > MAX_GRADE_CODE_CHARS) {
+    return NextResponse.json({ error: tooLongMessage() }, { status: 413 });
   }
 
   // Session is optional here. Policy (enforced below, once the question is
@@ -94,7 +100,39 @@ export async function POST(request: NextRequest, { params }: Props) {
     }
   }
 
-  const graded = await gradeTestCases(code, question.testCases);
+  // FLOWCHART questions: the drawing becomes pseudocode and runs the same tests.
+  let code = typeof rawCode === 'string' ? rawCode : '';
+  let submittedFlowchart: FlowchartDoc | null = null;
+  let drawingErrors: FlowchartIssue[] = [];
+  if (question.answerFormat === 'FLOWCHART') {
+    const resolved = resolveFlowchartAnswer(question.flowchart, { flowchart, answers });
+    if ('error' in resolved) return NextResponse.json({ error: resolved.error }, { status: 400 });
+    submittedFlowchart = resolved.doc;
+    const program = flowchartToPseudocode(resolved.doc);
+    drawingErrors = program.errors;
+    code = program.code;
+    if (code.length > MAX_GRADE_CODE_CHARS) {
+      return NextResponse.json({ error: tooLongMessage() }, { status: 413 });
+    }
+  } else if (!code.trim()) {
+    return NextResponse.json({ error: '`code` is required' }, { status: 400 });
+  }
+
+  // A drawing that can't become pseudocode fails every test with the drawing problem,
+  // without running anything.
+  const graded = drawingErrors.length
+    ? question.testCases.map(() => ({
+        passed: false,
+        actualOutput: '',
+        executionMs: 0,
+        error: {
+          kind: 'parse' as const,
+          message: drawingErrors[0].message,
+          hint: drawingErrors[0].message,
+          category: drawingErrors[0].category,
+        },
+      }))
+    : await gradeTestCases(code, question.testCases);
 
   const gradeFailures = graded.filter((r) => r.error?.kind === 'unknown');
   if (gradeFailures.length > 0) {
@@ -147,12 +185,14 @@ export async function POST(request: NextRequest, { params }: Props) {
           totalTests: totalCount,
           attempts: 1,
           lastCode: code,
+          ...(submittedFlowchart ? { lastFlowchart: submittedFlowchart as unknown as Prisma.InputJsonValue } : {}),
         },
         update: {
           status: allPassed ? 'SOLVED' : undefined, // only upgrade, never downgrade
           totalTests: totalCount,
           attempts: { increment: 1 },
           lastCode: code,
+          ...(submittedFlowchart ? { lastFlowchart: submittedFlowchart as unknown as Prisma.InputJsonValue } : {}),
         },
       });
 
@@ -173,5 +213,14 @@ export async function POST(request: NextRequest, { params }: Props) {
     }
   }
 
-  return NextResponse.json({ results, passCount, totalCount });
+  return NextResponse.json({
+    results,
+    passCount,
+    totalCount,
+    ...(question.answerFormat === 'FLOWCHART' ? { flowchartErrors: drawingErrors, code } : {}),
+  });
+}
+
+function tooLongMessage(): string {
+  return `Your code is too long to check (over ${MAX_GRADE_CODE_CHARS.toLocaleString('en')} characters).`;
 }

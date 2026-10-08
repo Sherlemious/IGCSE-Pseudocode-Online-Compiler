@@ -371,11 +371,12 @@ function BuilderCanvas({
         if (sel.shape === 'decision') {
           if (outs.length < 2) next = connect(next, sel.id, id, toRight ? 'r' : 'b');
         } else {
-          // Insert between the selected box and whatever it pointed at.
+          // Insert between the selected box and whatever it pointed at. A new
+          // decision starts with no arrows out: its next two boxes become Yes and No.
           const old = outs[0];
           next = connect(next, sel.id, id);
           if (old) {
-            next = connect(next, id, old.target, undefined, old.targetHandle);
+            if (shape !== 'decision') next = connect(next, id, old.target, undefined, old.targetHandle);
             // Make room: push everything at or below the new box down.
             next = {
               ...next,
@@ -590,6 +591,7 @@ function BuilderCanvas({
         >
           <Background color="var(--color-border)" gap={20} size={1} />
           <Controls showInteractive={false} showFitView={mode === 'view'} />
+          {mode !== 'view' && (
           <MiniMap
             pannable
             zoomable
@@ -598,6 +600,7 @@ function BuilderCanvas({
             maskColor="rgba(0,0,0,0.55)"
             style={{ background: 'var(--color-surface)' }}
           />
+          )}
         </ReactFlow>
       </div>
 
