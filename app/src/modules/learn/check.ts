@@ -1,5 +1,7 @@
 import { gradeSubmission } from '@/modules/practice/autograder';
 import type { QuickFix } from '@/modules/interpreter/quickFix';
+import type { FlowchartDoc } from '@/modules/interpreter/converters/flowchartDoc';
+import { flowchartToPseudocode } from '@/modules/interpreter/converters/flowchartToPseudocode';
 import type { LearnLesson } from './types';
 
 export type CheckReason =
@@ -9,7 +11,8 @@ export type CheckReason =
   | 'forbidden'
   | 'no_tests'
   | 'runtime'
-  | 'wrong_output';
+  | 'wrong_output'
+  | 'flowchart';
 
 export type LessonCheckResult = {
   ok: boolean;
@@ -22,6 +25,8 @@ export type LessonCheckResult = {
   line?: number;
   /** One-click edit for that line, when the correction is mechanical. */
   fix?: QuickFix;
+  /** Flowchart lessons: the box the problem is on. */
+  nodeId?: string;
 };
 
 function containsAll(code: string, needles: string[]): string | null {
@@ -223,4 +228,30 @@ export async function checkLessonCode(lesson: LearnLesson, code: string): Promis
     reason: 'passed',
     message: cases.length > 1 ? `All ${cases.length} tests passed.` : 'Output matches.',
   };
+}
+
+/**
+ * Check a flowchart answer: it must turn into pseudocode, which then goes
+ * through the same tests as a code answer. (mustContain / mustNotContain are
+ * about how code is written, so they don't apply to a drawing.)
+ */
+export async function checkLessonFlowchart(lesson: LearnLesson, doc: FlowchartDoc): Promise<LessonCheckResult> {
+  const program = flowchartToPseudocode(doc);
+  if (program.errors.length) {
+    const first = program.errors[0];
+    return {
+      ok: false,
+      reason: 'flowchart',
+      message: first.message,
+      errorCategory: first.category,
+      nodeId: first.nodeId,
+    };
+  }
+  const result = await checkLessonCode(
+    { ...lesson, type: 'grade', mustContain: undefined, mustNotContain: undefined },
+    program.code,
+  );
+  // Line numbers refer to the generated pseudocode; point at the box instead.
+  const nodeId = result.line ? (program.lineToNode[result.line - 1] ?? undefined) : undefined;
+  return { ...result, line: undefined, fix: undefined, nodeId };
 }

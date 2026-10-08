@@ -267,26 +267,18 @@ OUTPUT B`,
       type: 'quiz',
       minutes: 8,
       why: 'Diamond is a condition: IF or a loop test. Rectangles are processes. Parallelograms are INPUT/OUTPUT.',
-      body: `A fragment of a flowchart:
-
-\`\`\`
-        [Start]
-           |
-     / Age < 18? \\
-    |             |
-   yes           no
-    |             |
- OUTPUT         OUTPUT
- "Child"        "Adult"
-    |             |
-     \\           /
-        [End]
-\`\`\`
+      body: `A flowchart from a mark scheme. Follow it from START: the diamond asks a Yes/No question, and each arrow leads to a different OUTPUT.
 
 A diamond with two arrows is selection. A diamond that loops back is iteration.`,
+      diagramCode: `INPUT Age
+IF Age < 18 THEN
+    OUTPUT "Child"
+ELSE
+    OUTPUT "Adult"
+ENDIF`,
       quiz: [
         {
-          prompt: 'The diamond “Age < 18?” becomes which pseudocode?',
+          prompt: 'The diamond “Age < 18” becomes which pseudocode?',
           options: [
             { id: 'if', label: 'IF Age < 18 THEN … ELSE … ENDIF' },
             { id: 'for', label: 'FOR Age <- 1 TO 18' },
@@ -315,6 +307,64 @@ A diamond with two arrows is selection. A diamond that loops back is iteration.`
           correctId: 'loop',
           explanation: 'A back-edge from the decision is iteration. WHERE the test sits (before vs after the body) chooses WHILE vs REPEAT.',
         },
+      ],
+      playable: true,
+    },
+    {
+      id: '10.11',
+      slug: 'draw-flowchart',
+      title: 'Draw a flowchart',
+      type: 'flowchart',
+      minutes: 8,
+      why: 'Paper 2 can ask you to draw the flowchart for an algorithm. The symbols carry the marks: parallelogram for INPUT/OUTPUT, diamond for the decision.',
+      docsAnchor: 'selection',
+      body: `Draw a flowchart that inputs a temperature and outputs \`Hot\` if it is **over 25**, otherwise \`Not hot\`.
+
+Click a box, then pick a shape: it is added after that box. Type in the box. Label the arrows out of the diamond **Yes** and **No**, and join both OUTPUT boxes to STOP.
+
+Run it to try it, then Check.`,
+      trap: 'A decision box holds a question, like `Temp > 25`. Do not write IF or THEN in it.',
+      solutionCode: `INPUT Temp
+IF Temp > 25 THEN
+    OUTPUT "Hot"
+ELSE
+    OUTPUT "Not hot"
+ENDIF`,
+      tests: [
+        { inputs: ['30'], expectedOutput: 'Hot' },
+        { inputs: ['25'], expectedOutput: 'Not hot' },
+        { inputs: ['4'], expectedOutput: 'Not hot' },
+      ],
+      playable: true,
+    },
+    {
+      id: '10.12',
+      slug: 'complete-flowchart',
+      title: 'Complete a flowchart loop',
+      type: 'flowchart',
+      minutes: 8,
+      why: '“Complete the flowchart” questions give you the shapes and blank out the condition or the step that changes a value.',
+      docsAnchor: 'repeat-until',
+      body: `This flowchart inputs **3 numbers** and outputs their total. Two boxes are blank.
+
+- The blank **process** box adds the number to the total.
+- The blank **decision** at the bottom ends the loop once 3 numbers have been counted. Its **No** arrow goes back up.
+
+Click a dashed box and type in it.`,
+      trap: 'A loop whose test is at the bottom always runs once: that is REPEAT … UNTIL.',
+      solutionCode: `Total <- 0
+Count <- 0
+REPEAT
+    INPUT Num
+    Total <- Total + Num
+    Count <- Count + 1
+UNTIL Count = 3
+OUTPUT Total`,
+      flowchartBlanks: ['Total ← Total + Num', 'Count = 3'],
+      tests: [
+        { inputs: ['1', '2', '3'], expectedOutput: '6' },
+        { inputs: ['5', '5', '5'], expectedOutput: '15' },
+        { inputs: ['10', '-4', '0'], expectedOutput: '6' },
       ],
       playable: true,
     },

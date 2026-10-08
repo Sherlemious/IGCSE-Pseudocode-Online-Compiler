@@ -890,6 +890,76 @@ UNTIL Password = "Secret"`}
           />
 
           {/* ──────────────────────────────────────────────── */}
+          {/*  Flowcharts                                      */}
+          {/* ──────────────────────────────────────────────── */}
+          <H2 id="flowcharts">Flowcharts</H2>
+          <p className="text-sm text-dark-text mb-2">
+            Paper 2 uses five flowchart symbols. Each one stands for a kind of pseudocode statement:
+          </p>
+          <div className="overflow-x-auto my-2">
+            <table className="w-full text-sm border border-border rounded">
+              <thead>
+                <tr className="bg-surface text-left">
+                  <th className="px-3 py-1.5 border-b border-border text-light-text font-medium">Symbol</th>
+                  <th className="px-3 py-1.5 border-b border-border text-light-text font-medium">Means</th>
+                  <th className="px-3 py-1.5 border-b border-border text-light-text font-medium">Example</th>
+                </tr>
+              </thead>
+              <tbody className="text-dark-text">
+                <tr className="border-b border-border">
+                  <td className="px-3 py-1 text-light-text">Terminator (rounded)</td>
+                  <td className="px-3 py-1">Where the algorithm starts and stops</td>
+                  <td className="px-3 py-1 font-mono">START, STOP</td>
+                </tr>
+                <tr className="border-b border-border">
+                  <td className="px-3 py-1 text-light-text">Process (rectangle)</td>
+                  <td className="px-3 py-1">An assignment or calculation</td>
+                  <td className="px-3 py-1 font-mono">Total ← Total + Mark</td>
+                </tr>
+                <tr className="border-b border-border">
+                  <td className="px-3 py-1 text-light-text">Input / Output (parallelogram)</td>
+                  <td className="px-3 py-1">INPUT or OUTPUT</td>
+                  <td className="px-3 py-1 font-mono">INPUT Mark</td>
+                </tr>
+                <tr className="border-b border-border">
+                  <td className="px-3 py-1 text-light-text">Decision (diamond)</td>
+                  <td className="px-3 py-1">A Yes/No question: IF, or a loop&apos;s test</td>
+                  <td className="px-3 py-1 font-mono">{'Mark >= 50'}</td>
+                </tr>
+                <tr className="border-b border-border">
+                  <td className="px-3 py-1 text-light-text">Subroutine (double sides)</td>
+                  <td className="px-3 py-1">CALL a procedure</td>
+                  <td className="px-3 py-1 font-mono">CALL Greet(Name)</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p className="text-sm text-dark-text mb-2">
+            A decision whose arrows rejoin lower down is an <Kw>IF</Kw>. A decision <em>before</em> the loop body
+            whose arrow loops back is a <Kw>WHILE</Kw> loop; a decision <em>after</em> the body is 
+            <Kw>REPEAT</Kw> … <Kw>UNTIL</Kw>. A counter set before the loop and increased at the end of the body is
+            a <Kw>FOR</Kw> loop. A diamond <span className="font-mono">{'Mark >= 50'}</span> with{' '}
+            <span className="font-mono">OUTPUT &quot;Pass&quot;</span> on Yes and{' '}
+            <span className="font-mono">OUTPUT &quot;Fail&quot;</span> on No is this code:
+          </p>
+          <CodeBlock
+            code={`INPUT Mark
+IF Mark >= 50 THEN
+    OUTPUT "Pass"
+ELSE
+    OUTPUT "Fail"
+ENDIF`}
+          />
+          <p className="text-sm text-dark-text mb-2">
+            Draw and run flowcharts in the{' '}
+            <Link href="/flowchart" className="text-primary hover:underline">
+              flowchart maker
+            </Link>
+            : it writes the pseudocode as you draw, and steps through the boxes one at a time. In the editor, the
+            Flowchart tab draws any program.
+          </p>
+
+          {/* ──────────────────────────────────────────────── */}
           {/*  Procedures & Functions                          */}
           {/* ──────────────────────────────────────────────── */}
           <H2 id="subroutines">Procedures and Functions</H2>

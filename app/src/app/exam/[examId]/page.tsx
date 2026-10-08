@@ -59,6 +59,8 @@ export default async function ExamActivePage({ params }: Props) {
           description: question.description,
           difficulty: question.difficulty,
           starterCode: question.starterCode ?? '',
+          // "Flowchart → pseudocode" questions show their diagram.
+          flowchart: question.answerFormat === 'CODE' ? (question.flowchart ?? null) : null,
           savedCode: a.code,
           graded: a.graded,
           passCount: a.passCount,

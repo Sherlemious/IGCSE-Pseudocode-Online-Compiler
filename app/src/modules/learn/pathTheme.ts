@@ -1,4 +1,4 @@
-import { Code, Crown, HelpCircle, PenLine, Play, type LucideIcon } from 'lucide-react';
+import { Code, Crown, HelpCircle, PenLine, Play, Workflow, type LucideIcon } from 'lucide-react';
 import { isBossLesson } from './pathLayout';
 import type { LearnLesson, LearnLevel } from './types';
 
@@ -37,6 +37,8 @@ export function lessonTypeMeta(lesson: LearnLesson): LessonTypeMeta {
       return { icon: PenLine, label: 'Edit' };
     case 'grade':
       return { icon: Code, label: 'Write' };
+    case 'flowchart':
+      return { icon: Workflow, label: 'Draw' };
     default:
       return { icon: Play, label: 'Run' };
   }

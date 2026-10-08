@@ -3,6 +3,7 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import ReactMarkdown from 'react-markdown';
+import FlowchartDiagram from '@/modules/flowchart/FlowchartDiagram';
 import remarkGfm from 'remark-gfm';
 import { CodeMirrorEditor, EditorUndoButtons, useEditorHistory } from '@/modules/compiler/editor';
 import { useInterpreter } from '@/modules/interpreter/useInterpreter';
@@ -41,6 +42,8 @@ interface ExamQuestion {
   description: string;
   difficulty: string;
   starterCode: string;
+  /** Diagram to turn into pseudocode (FlowchartDoc JSON), when the question has one. */
+  flowchart?: unknown;
   savedCode: string | null;
   graded: boolean;
   passCount: number;
@@ -455,6 +458,10 @@ export default function ExamWorkspace({ examId, questions, timeLimitMin, started
               {question.description}
             </ReactMarkdown>
           </div>
+
+          {question.flowchart != null && (
+            <FlowchartDiagram doc={question.flowchart} className="h-80 mt-3" ariaLabel={`${question.title} flowchart`} />
+          )}
 
           {question.testCases.length > 0 && (
             <div className="mt-5">

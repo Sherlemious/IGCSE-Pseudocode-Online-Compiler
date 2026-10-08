@@ -8,6 +8,8 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { ArrowLeft, ArrowRight, BookOpen, Check, Code2, Crown, Lock, UserPlus } from 'lucide-react';
 import LearnEditorPane from './LearnEditorPane';
+import LearnFlowchartPane from './LearnFlowchartPane';
+import FlowchartDiagram from '@/modules/flowchart/FlowchartDiagram';
 import { promptLearnUpgrade } from './learnNudge';
 import { paywallPersonProps, rememberPaywallLevel } from './paywallLevel';
 import LearnAccountSheet, { LEARN_PENDING_AUTH_KEY, type LearnAuthGate } from './LearnAccountSheet';
@@ -44,7 +46,8 @@ export default function LearnPlayer({ course, level, lesson, premiumAccess: init
   // Which gate (if any) this tab showed, so a sign-in right after it counts as that gate's conversion.
   const gateShown = useRef<LearnAuthGate | null>(null);
   const isQuiz = lesson.type === 'quiz';
-  const hasEditor = Boolean(lesson.starterCode);
+  const isFlowchart = lesson.type === 'flowchart';
+  const hasEditor = Boolean(lesson.starterCode) || isFlowchart;
   const access = { premium: premiumAccess };
 
   useEffect(() => {
@@ -431,6 +434,9 @@ export default function LearnPlayer({ course, level, lesson, premiumAccess: init
               {lesson.body}
             </ReactMarkdown>
           </div>
+          {lesson.diagramCode && (
+            <FlowchartDiagram code={lesson.diagramCode} className="h-80 mb-3" ariaLabel={`${lesson.title} diagram`} />
+          )}
           {lesson.trap && (
             <p className="mt-3 text-xs text-warning border border-warning/25 bg-warning/5 rounded-lg px-3 py-2">
               {lesson.trap}
@@ -517,7 +523,16 @@ export default function LearnPlayer({ course, level, lesson, premiumAccess: init
             hasEditor ? (showEditor ? 'flex flex-1' : 'hidden lg:flex') : 'hidden lg:flex'
           }`}
         >
-          {hasEditor ? (
+          {isFlowchart ? (
+            <LearnFlowchartPane
+              level={level}
+              lesson={lesson}
+              onPassed={(attempts) => {
+                handlePassed(attempts);
+                setMobilePane('editor');
+              }}
+            />
+          ) : hasEditor ? (
             <LearnEditorPane
               level={level}
               lesson={lesson}
