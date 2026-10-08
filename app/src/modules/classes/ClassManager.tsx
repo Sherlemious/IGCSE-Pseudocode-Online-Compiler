@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Copy, Check, Pencil, Archive, UserMinus, Loader2, Users, ChevronRight } from 'lucide-react';
 import { captureEvent } from '@/modules/interpreter/analytics';
 import { teacherYearlyCheckoutHref } from '@/modules/billing/teacherCheckout';
+import { ConfirmDialog } from '@/shared/ui/Modal';
 import StudentProgressLink from './StudentProgressLink';
 import { formatLastActive, rosterHeadlineStats } from './rosterStats';
 
@@ -78,6 +79,7 @@ export default function ClassManager({
   const [editing, setEditing] = useState(false);
   const [copied, setCopied] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
+  const [archiveOpen, setArchiveOpen] = useState(false);
   const [sort, setSort] = useState<RosterSort>('name');
   const viewedRef = useRef(false);
 
@@ -133,7 +135,6 @@ export default function ClassManager({
   }
 
   async function archive() {
-    if (!confirm('Archive this class? Students will lose access to it.')) return;
     setBusy('archive');
     await fetch(`/api/classes/${classId}`, {
       method: 'PATCH',
@@ -177,7 +178,7 @@ export default function ClassManager({
           </h1>
         )}
         <button
-          onClick={archive}
+          onClick={() => setArchiveOpen(true)}
           disabled={busy === 'archive'}
           className="shrink-0 inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-border text-xs
             text-dark-text hover:text-error hover:border-error/40 transition-colors disabled:opacity-50"
@@ -309,6 +310,16 @@ export default function ClassManager({
           </div>
         )}
       </div>
+      <ConfirmDialog
+        open={archiveOpen}
+        onClose={() => setArchiveOpen(false)}
+        onConfirm={() => void archive()}
+        icon={<Archive size={14} className="text-error shrink-0" />}
+        title="Archive this class?"
+        message="Students will lose access to it."
+        confirmLabel="Archive"
+        tone="danger"
+      />
     </div>
   );
 }

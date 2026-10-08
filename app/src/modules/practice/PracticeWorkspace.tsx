@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { CodeMirrorEditor, EditorUndoButtons, TraceTable, useEditorHistory } from '@/modules/compiler/editor';
 import SplitDivider from '@/shared/ui/SplitDivider';
+import { ConfirmDialog } from '@/shared/ui/Modal';
 import PracticeStartGate from './PracticeStartGate';
 import GradeAuthSheet, { PENDING_GRADE_KEY } from './GradeAuthSheet';
 import { useInterpreter } from '@/modules/interpreter/useInterpreter';
@@ -38,7 +39,6 @@ import {
   FileText,
   LayoutTemplate,
   PenLine,
-  X,
   Flame,
   ArrowRight,
 } from 'lucide-react';
@@ -754,46 +754,19 @@ export default function PracticeWorkspace({ questionId, starterCode, savedCode, 
       </div>
 
       {/* Reset confirm dialog */}
-      {resetConfirmOpen && (
-        <div
-          className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4"
-          onClick={() => setResetConfirmOpen(false)}
-        >
-          <div
-            className="bg-surface border border-border rounded-xl p-5 max-w-sm w-full shadow-2xl animate-scale-in"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-start justify-between mb-3">
-              <h3 className="text-sm font-semibold text-light-text flex items-center gap-2">
-                <RotateCcw size={14} className="text-warning shrink-0" />
-                {mode === 'scratch' ? 'Clear all code?' : 'Reset to starter code?'}
-              </h3>
-              <button onClick={() => setResetConfirmOpen(false)} className="text-dark-text hover:text-light-text transition-colors p-0.5">
-                <X size={14} />
-              </button>
-            </div>
-            <p className="text-xs text-dark-text mb-4 leading-relaxed">
-              {mode === 'scratch'
-                ? 'Your current code will be cleared to an empty editor.'
-                : 'Your current code will be replaced with the starter template.'}
-            </p>
-            <div className="flex gap-2 justify-end">
-              <button
-                onClick={() => setResetConfirmOpen(false)}
-                className="px-3 py-1.5 text-xs text-dark-text hover:text-light-text transition-colors rounded-lg hover:bg-background"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => { setResetConfirmOpen(false); setCode(resetTarget); }}
-                className="px-3 py-1.5 text-xs font-medium text-warning bg-warning/10 hover:bg-warning/20 rounded-lg border border-warning/30 transition-colors"
-              >
-                {mode === 'scratch' ? 'Clear' : 'Reset'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmDialog
+        open={resetConfirmOpen}
+        onClose={() => setResetConfirmOpen(false)}
+        onConfirm={() => setCode(resetTarget)}
+        icon={<RotateCcw size={14} className="text-warning shrink-0" />}
+        title={mode === 'scratch' ? 'Clear all code?' : 'Reset to starter code?'}
+        message={
+          mode === 'scratch'
+            ? 'Your current code will be cleared to an empty editor.'
+            : 'Your current code will be replaced with the starter template.'
+        }
+        confirmLabel={mode === 'scratch' ? 'Clear' : 'Reset'}
+      />
 
       {/* Grade auth sheet — Medium/Hard, signed out */}
       {sheetOpen && (

@@ -19,7 +19,6 @@ import {
   ConnectionMode,
   useReactFlow,
   getNodesBounds,
-  getViewportForBounds,
   type Connection,
   type Edge,
   type EdgeChange,
@@ -27,7 +26,7 @@ import {
   type NodeChange,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { toBlob } from 'html-to-image';
+import { toCanvas } from 'html-to-image';
 import { ArrowLeftRight, Download, LayoutGrid, Maximize, Redo2, Trash2, Undo2 } from 'lucide-react';
 import type { NodeShape } from '@/modules/interpreter/converters/flowchartConverter';
 import type { FlowchartDoc, FlowchartDocEdge, FlowchartDocNode, HandleSide } from '@/modules/interpreter/converters/flowchartDoc';
@@ -35,6 +34,8 @@ import type { FlowchartIssue } from '@/modules/interpreter/converters/flowchartT
 import { EDGE_STYLE, nodeSize } from '@/modules/compiler/flowchartLayout';
 import { downloadBlob } from '@/modules/compiler/exportImage';
 import { captureEvent } from '@/modules/interpreter/analytics';
+import { BRAND } from '@/shared/brand';
+import { SITE_URL } from '@/shared/lib/seo';
 import { flowchartCanvasTheme, flowchartNodeTypes, MINIMAP_COLORS, SHAPE_INFO, type ShapeData } from './shapes';
 import { tidyDoc, withPositions } from './docLayout';
 
@@ -434,20 +435,10 @@ function BuilderCanvas({
   }, [commit, rf]);
 
   const exportPng = useCallback(async () => {
-    const viewport = wrapperRef.current?.querySelector<HTMLElement>('.react-flow__viewport');
-    if (!viewport || !exportName) return;
-    const bounds = getNodesBounds(rf.getNodes());
-    const width = Math.min(Math.max(bounds.width + 80, 400), 2400);
-    const height = Math.min(Math.max(bounds.height + 80, 300), 3200);
-    const vp = getViewportForBounds(bounds, width, height, 0.2, 2, 0.05);
-    const bg = getComputedStyle(wrapperRef.current!).getPropertyValue('--color-background') || '#282c34';
-    const blob = await toBlob(viewport, {
-      backgroundColor: bg.trim() || '#282c34',
-      width,
-      height,
-      style: { width: `${width}px`, height: `${height}px`, transform: `translate(${vp.x}px, ${vp.y}px) scale(${vp.zoom})` },
-      filter: (el) => !(el instanceof HTMLElement && el.classList.contains('react-flow__handle')),
-    });
+    const wrapper = wrapperRef.current;
+    const viewport = wrapper?.querySelector<HTMLElement>('.react-flow__viewport');
+    if (!wrapper || !viewport || !exportName) return;
+    const blob = await renderFlowchartPng(wrapper, viewport, getNodesBounds(rf.getNodes()));
     if (blob) {
       downloadBlob(blob, `${exportName}.png`);
       captureEvent('flowchart_exported', { surface, node_count: docRef.current.nodes.length });
@@ -708,6 +699,85 @@ function BuilderCanvas({
       )}
     </div>
   );
+}
+
+// ─── PNG export ──────────────────────────────────────────────────────────────
+
+const EXPORT_PAD = 48; // room around the drawing, so loop-back arrows and labels aren't cut off
+const EXPORT_MARGIN = 28; // between the frame and the image edge
+const EXPORT_FOOTER = 36;
+const EXPORT_MAX = { width: 2400, height: 3200 };
+const EXPORT_RATIO = 2;
+
+/**
+ * The drawing at its natural size (shrunk only if huge), framed on the app's
+ * surface colour with a rounded accent border and a small credit line.
+ */
+async function renderFlowchartPng(
+  wrapper: HTMLElement,
+  viewport: HTMLElement,
+  bounds: { x: number; y: number; width: number; height: number },
+): Promise<Blob | null> {
+  const css = getComputedStyle(wrapper);
+  const token = (name: string, fallback: string) => css.getPropertyValue(name).trim() || fallback;
+  const background = token('--color-background', '#282C34');
+  const surface = token('--color-surface', '#21252B');
+  const accent = token('--color-primary', '#61AFEF');
+  const muted = token('--color-dark-text', '#828997');
+
+  const scale = Math.min(
+    1,
+    EXPORT_MAX.width / (bounds.width + EXPORT_PAD * 2),
+    EXPORT_MAX.height / (bounds.height + EXPORT_PAD * 2),
+  );
+  const width = Math.round((bounds.width + EXPORT_PAD * 2) * scale);
+  const height = Math.round((bounds.height + EXPORT_PAD * 2) * scale);
+  const drawing = await toCanvas(viewport, {
+    backgroundColor: background,
+    width,
+    height,
+    pixelRatio: EXPORT_RATIO,
+    style: {
+      width: `${width}px`,
+      height: `${height}px`,
+      transform: `translate(${(EXPORT_PAD - bounds.x) * scale}px, ${(EXPORT_PAD - bounds.y) * scale}px) scale(${scale})`,
+    },
+    filter: (el) => !(el instanceof HTMLElement && el.classList.contains('react-flow__handle')),
+  });
+
+  const outW = width + EXPORT_MARGIN * 2;
+  const outH = height + EXPORT_MARGIN + EXPORT_FOOTER;
+  const out = document.createElement('canvas');
+  out.width = outW * EXPORT_RATIO;
+  out.height = outH * EXPORT_RATIO;
+  const ctx = out.getContext('2d');
+  if (!ctx) return null;
+  ctx.scale(EXPORT_RATIO, EXPORT_RATIO);
+  ctx.fillStyle = surface;
+  ctx.fillRect(0, 0, outW, outH);
+
+  const frame = new Path2D();
+  frame.roundRect(EXPORT_MARGIN, EXPORT_MARGIN, width, height, 14);
+  ctx.save();
+  ctx.clip(frame);
+  ctx.drawImage(drawing, EXPORT_MARGIN, EXPORT_MARGIN, width, height);
+  ctx.restore();
+  ctx.globalAlpha = 0.55;
+  ctx.strokeStyle = accent;
+  ctx.lineWidth = 1.5;
+  ctx.stroke(frame);
+  ctx.globalAlpha = 1;
+
+  const footerY = EXPORT_MARGIN + height + EXPORT_FOOTER / 2;
+  ctx.font = '600 12px ui-sans-serif, system-ui, sans-serif';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = muted;
+  ctx.textAlign = 'left';
+  ctx.fillText(`${BRAND.shortName} · Flowchart`, EXPORT_MARGIN + 2, footerY);
+  ctx.textAlign = 'right';
+  ctx.fillText(new URL(SITE_URL).host, EXPORT_MARGIN + width - 2, footerY);
+
+  return new Promise((resolve) => out.toBlob(resolve, 'image/png'));
 }
 
 export default function FlowchartBuilder(props: FlowchartBuilderProps) {

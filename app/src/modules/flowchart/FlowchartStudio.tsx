@@ -18,12 +18,12 @@ import {
   SkipForward,
   Square,
   Terminal,
-  X,
 } from 'lucide-react';
 import { captureEvent } from '@/modules/interpreter/analytics';
 import { parseFlowchartDoc, starterFlowchart, type FlowchartDoc } from '@/modules/interpreter/converters/flowchartDoc';
 import { editorCodeHref } from '@/modules/compiler/editorShare';
 import { AUTOSAVE_DELAY } from '@/shared/lib/persist';
+import Modal, { ConfirmDialog } from '@/shared/ui/Modal';
 import FlowchartBuilder from './FlowchartBuilder';
 import FlowchartTerminal from './FlowchartTerminal';
 import { FLOWCHART_EXAMPLES } from './examples';
@@ -51,6 +51,7 @@ export default function FlowchartStudio() {
   const [tab, setTab] = useState<Tab>('code');
   const [focusRequest, setFocusRequest] = useState<{ nodeId: string; nonce: number } | null>(null);
   const [importOpen, setImportOpen] = useState(false);
+  const [newOpen, setNewOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   // Drawing problems ring their boxes only once the student has tried to run:
   // a half-drawn flowchart shouldn't be covered in red while it's being drawn.
@@ -228,8 +229,8 @@ export default function FlowchartStudio() {
         <button
           type="button"
           onClick={() => {
-            if (doc.nodes.length > 2 && !window.confirm('Start a new flowchart? This one will be cleared.')) return;
-            load(starterFlowchart());
+            if (doc.nodes.length > 2) setNewOpen(true);
+            else load(starterFlowchart());
           }}
           className={ghost}
           title="New flowchart"
@@ -355,60 +356,77 @@ export default function FlowchartStudio() {
         </aside>
       </div>
 
-      {importOpen && (
-        <ImportDialog
-          onClose={() => setImportOpen(false)}
-          onImport={(next) => {
-            load(next);
-            setImportOpen(false);
-            captureEvent('flowchart_converted', { direction: 'from_code', source: 'paste' });
-          }}
-        />
-      )}
+      <ImportDialog
+        open={importOpen}
+        onClose={() => setImportOpen(false)}
+        onImport={(next) => {
+          load(next);
+          setImportOpen(false);
+          captureEvent('flowchart_converted', { direction: 'from_code', source: 'paste' });
+        }}
+      />
+      <ConfirmDialog
+        open={newOpen}
+        onClose={() => setNewOpen(false)}
+        onConfirm={() => load(starterFlowchart())}
+        icon={<FilePlus2 size={14} className="text-warning shrink-0" />}
+        title="Start a new flowchart?"
+        message="This flowchart will be cleared."
+        confirmLabel="Start new"
+      />
     </div>
   );
 }
 
-function ImportDialog({ onClose, onImport }: { onClose: () => void; onImport: (doc: FlowchartDoc) => void }) {
+function ImportDialog({
+  open,
+  onClose,
+  onImport,
+}: {
+  open: boolean;
+  onClose: () => void;
+  onImport: (doc: FlowchartDoc) => void;
+}) {
   const [code, setCode] = useState('');
   const [error, setError] = useState<string | null>(null);
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" role="dialog" aria-modal aria-label="Draw from pseudocode">
-      <div className="w-full max-w-lg rounded-xl border border-border bg-surface p-4 shadow-xl">
-        <div className="flex items-center mb-2">
-          <h2 className="text-sm font-semibold text-light-text">Draw a flowchart from pseudocode</h2>
-          <button type="button" onClick={onClose} className="ml-auto p-1 rounded text-dark-text hover:text-light-text" aria-label="Close">
-            <X size={16} />
-          </button>
-        </div>
-        <p className="text-xs text-dark-text mb-2">Paste a program. It replaces the current flowchart.</p>
-        <textarea
-          value={code}
-          onChange={(e) => setCode(e.target.value)}
-          rows={10}
-          spellCheck={false}
-          autoFocus
-          aria-label="Pseudocode"
-          className="w-full rounded-md border border-border bg-background p-2 font-mono text-xs text-light-text outline-none focus:border-primary"
-        />
-        {error && <p className="mt-2 text-xs text-error">{error}</p>}
-        <div className="mt-3 flex justify-end gap-2">
-          <button type="button" onClick={onClose} className="min-h-9 px-3 rounded-md text-xs text-dark-text hover:text-light-text">
-            Cancel
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              const result = flowchartFromCode(code);
-              if (result.doc) onImport(result.doc);
-              else setError(result.error);
-            }}
-            className="min-h-9 px-3 rounded-md bg-primary text-on-primary text-xs font-semibold hover:opacity-90"
-          >
-            Draw it
-          </button>
-        </div>
+    <Modal
+      open={open}
+      onClose={onClose}
+      title="Draw a flowchart from pseudocode"
+      icon={<FileUp size={14} className="text-primary shrink-0" />}
+      widthClass="max-w-lg"
+    >
+      <p className="text-xs text-dark-text mb-2">Paste a program. It replaces the current flowchart.</p>
+      <textarea
+        value={code}
+        onChange={(e) => {
+          setCode(e.target.value);
+          setError(null);
+        }}
+        rows={10}
+        spellCheck={false}
+        autoFocus
+        aria-label="Pseudocode"
+        className="w-full rounded-md border border-border bg-background p-2 font-mono text-xs text-light-text outline-none focus:border-primary"
+      />
+      {error && <p className="mt-2 text-xs text-error">{error}</p>}
+      <div className="mt-3 flex justify-end gap-2">
+        <button type="button" onClick={onClose} className="min-h-9 px-3 rounded-md text-xs text-dark-text hover:text-light-text">
+          Cancel
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            const result = flowchartFromCode(code);
+            if (result.doc) onImport(result.doc);
+            else setError(result.error);
+          }}
+          className="min-h-9 px-3 rounded-md bg-primary text-on-primary text-xs font-semibold hover:opacity-90"
+        >
+          Draw it
+        </button>
       </div>
-    </div>
+    </Modal>
   );
 }

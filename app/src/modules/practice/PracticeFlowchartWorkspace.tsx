@@ -35,6 +35,7 @@ import FlowchartTerminal from '@/modules/flowchart/FlowchartTerminal';
 import { useFlowchartRun } from '@/modules/flowchart/useFlowchartRun';
 import { suggestLearnPath } from '@/modules/learn/learnNudge';
 import { AUTOSAVE_DELAY } from '@/shared/lib/persist';
+import { ConfirmDialog } from '@/shared/ui/Modal';
 import GradeAuthSheet, { PENDING_GRADE_KEY } from './GradeAuthSheet';
 import { readStreak, recordSolveDay } from './practiceStreak';
 
@@ -101,6 +102,7 @@ export default function PracticeFlowchartWorkspace({ questionId, difficulty, que
   const [gradeResponse, setGradeResponse] = useState<GradeResponse | null>(null);
   const [gradingError, setGradingError] = useState<string | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [resetOpen, setResetOpen] = useState(false);
   const [streakDays, setStreakDays] = useState(0);
   const [focusRequest, setFocusRequest] = useState<{ nodeId: string; nonce: number } | null>(null);
 
@@ -249,12 +251,11 @@ export default function PracticeFlowchartWorkspace({ questionId, difficulty, que
   }, [ready, authStatus, questionId, handleGrade]);
 
   const reset = useCallback(() => {
-    if (!window.confirm(fillIn ? 'Clear your answers?' : 'Start this flowchart again?')) return;
     setDoc(initial());
     setCanvasKey((k) => k + 1);
     setGradeResponse(null);
     setChecked(false);
-  }, [fillIn, initial]);
+  }, [initial]);
 
   const shownIssues: FlowchartIssue[] = gradeResponse?.flowchartErrors?.length
     ? gradeResponse.flowchartErrors
@@ -311,7 +312,7 @@ export default function PracticeFlowchartWorkspace({ questionId, difficulty, que
           <ClipboardCheck size={13} />
           {grading ? 'Checking…' : 'Check my flowchart'}
         </button>
-        <button type="button" onClick={reset} className={`${ghost} ml-auto`} title="Start again">
+        <button type="button" onClick={() => setResetOpen(true)} className={`${ghost} ml-auto`} title="Start again">
           <RotateCcw size={13} />
         </button>
       </div>
@@ -451,6 +452,16 @@ export default function PracticeFlowchartWorkspace({ questionId, difficulty, que
           </div>
         </aside>
       </div>
+
+      <ConfirmDialog
+        open={resetOpen}
+        onClose={() => setResetOpen(false)}
+        onConfirm={reset}
+        icon={<RotateCcw size={14} className="text-warning shrink-0" />}
+        title={fillIn ? 'Clear your answers?' : 'Start this flowchart again?'}
+        message={fillIn ? 'Every box you filled in will be blank again.' : 'Your flowchart will be cleared.'}
+        confirmLabel={fillIn ? 'Clear' : 'Start again'}
+      />
 
       {sheetOpen && (
         <GradeAuthSheet
