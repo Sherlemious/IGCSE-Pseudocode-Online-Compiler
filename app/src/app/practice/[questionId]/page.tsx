@@ -91,7 +91,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         images: [SHARE_IMAGE_WIDE],
       },
     };
-  } catch {
+  } catch (error) {
+    // Cached for a day: a database error must not publish a noindex page.
+    if (process.env.NODE_ENV === 'production') throw error;
     return {
       title: 'Question',
       robots: {
@@ -105,13 +107,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function QuestionPage({ params }: Props) {
   const { questionId } = await params;
 
-  let question;
-  try {
-    question = await getPublicQuestion(questionId);
-  } catch {
-    notFound();
-  }
-
+  // A database error is not a missing question: let it throw, or the cached
+  // page would be a 404 for a day. Only a question that doesn't exist is notFound().
+  const question = await getPublicQuestion(questionId);
   if (!question) notFound();
 
   const isLockedForCrawlers = question.isPremium && PREMIUM_GATING_ENABLED;

@@ -21,7 +21,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: 'monthly',
       priority: 0.7,
     }));
-  } catch {
+  } catch (error) {
+    // Cached for a day: never publish a sitemap without the question pages.
+    if (process.env.NODE_ENV === 'production') throw error;
     questionUrls = [];
   }
 

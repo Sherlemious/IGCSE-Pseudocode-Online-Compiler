@@ -29,8 +29,13 @@ export default async function PracticePage() {
   let questions: Awaited<ReturnType<typeof getQuestionCatalog>> = [];
   try {
     questions = await getQuestionCatalog();
-  } catch {
-    // DB not yet configured — show placeholder
+  } catch (error) {
+    // This page is cached for a day, so an empty list here would be served to
+    // everyone until the next deploy (Oct 2026: a build ran before a schema
+    // push and shipped "All 0"). Throwing fails the build, keeping the old
+    // deployment live, or keeps the last good page on revalidation.
+    if (process.env.NODE_ENV === 'production') throw error;
+    // Local dev without a database: show the empty list.
   }
 
   return <PracticeIndex questions={questions} gatingEnabled={PREMIUM_GATING_ENABLED} />;
