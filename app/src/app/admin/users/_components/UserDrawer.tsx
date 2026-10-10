@@ -1,12 +1,12 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import Image from 'next/image';
 import { BookOpen, BookOpenCheck, Check, Copy, Route } from 'lucide-react';
 import { planBadge } from '@/modules/billing/planDisplay';
 import AdminDrawer, { useHeld } from '../../_components/AdminDrawer';
 import { CopyValue, MetaField, formatAdminDate, nice } from '../../_components/adminUi';
-import StudentLearning, { pathChipValue, useStudentLearning } from './StudentLearning';
+import StudentLearning, { pathMark, useStudentLearning, type StudentPath } from './StudentLearning';
 
 export interface UserRow {
   id: string;
@@ -212,13 +212,19 @@ export default function UserDrawer({
     >
       <div className="space-y-5 md:space-y-6">
         <div className="grid grid-cols-3 gap-2 md:gap-3">
-          <StatChip
-            icon={Route}
-            label="Paths"
-            value={learning ? pathChipValue(learning.paths) : shown._count.learnProgress}
-          />
-          <StatChip icon={BookOpenCheck} label="Practice" value={learning ? learning.practice.solved : shown._count.progress} />
-          <StatChip icon={BookOpen} label="Exams" value={shown._count.examAttempts} />
+          <StatChip icon={Route} label="Paths">
+            {learning && learning.paths.length > 0 ? (
+              learning.paths.map((path) => <PathStat key={path.courseId} path={path} />)
+            ) : (
+              <StatValue>{learning ? 0 : shown._count.learnProgress}</StatValue>
+            )}
+          </StatChip>
+          <StatChip icon={BookOpenCheck} label="Practice">
+            <StatValue>{learning ? learning.practice.solved : shown._count.progress}</StatValue>
+          </StatChip>
+          <StatChip icon={BookOpen} label="Exams">
+            <StatValue>{shown._count.examAttempts}</StatValue>
+          </StatChip>
         </div>
         <p className="text-[11px] text-dark-text font-mono -mt-2">
           Joined {formatAdminDate(shown.createdAt, true)}
@@ -318,17 +324,42 @@ function EmailLine({ email }: { email: string | null }) {
 function StatChip({
   icon: Icon,
   label,
-  value,
+  children,
 }: {
   icon: typeof BookOpen;
   label: string;
-  value: number | string;
+  children: ReactNode;
 }) {
   return (
-    <div className="rounded-xl border border-border bg-background/50 px-2.5 py-2.5 text-center">
-      <Icon size={13} className="mx-auto text-primary mb-1" />
-      <p className="font-mono tabular-nums text-sm font-semibold text-light-text leading-none">{value}</p>
-      <p className="text-[10px] text-dark-text mt-1">{label}</p>
+    <div className="flex h-full flex-col rounded-xl border border-border bg-background/50 px-2 py-2.5 text-center">
+      <Icon size={13} className="mx-auto shrink-0 text-primary" />
+      <div className="flex min-w-0 flex-1 flex-col items-center justify-center gap-1 py-1.5">
+        {children}
+      </div>
+      <p className="text-[10px] text-dark-text">{label}</p>
     </div>
+  );
+}
+
+function StatValue({ children }: { children: ReactNode }) {
+  return (
+    <p className="font-mono text-sm font-semibold tabular-nums leading-none text-light-text">{children}</p>
+  );
+}
+
+function PathStat({ path }: { path: StudentPath }) {
+  return (
+    <p
+      className="flex items-baseline gap-1.5 whitespace-nowrap leading-none"
+      title={`${path.exam} · ${path.paper}: ${path.completedCount} of ${path.playableCount} lessons`}
+    >
+      <span className="w-4 text-right text-[10px] font-semibold tracking-wide text-dark-text">
+        {pathMark(path.exam)}
+      </span>
+      <span className="font-mono text-xs font-semibold tabular-nums text-light-text">
+        {path.completedCount}
+        <span className="font-medium text-dark-text/70">/{path.playableCount}</span>
+      </span>
+    </p>
   );
 }

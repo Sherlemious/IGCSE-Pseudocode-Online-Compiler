@@ -53,14 +53,10 @@ export type StudentLearning = {
   }>;
 };
 
-export function pathChipValue(paths: StudentPath[]) {
-  return paths
-    .map((path) => `${shortExam(path.exam)} ${path.completedCount}/${path.playableCount}`)
-    .join(' · ');
-}
-
-function shortExam(exam: string) {
-  return exam.replace(/ Level$/, '');
+export function pathMark(exam: string) {
+  if (/^O\b/i.test(exam)) return 'OL';
+  if (/^A\b/i.test(exam)) return 'AL';
+  return exam.replace(/\s*Level$/i, '').slice(0, 3);
 }
 
 export function useStudentLearning(userId: string | null, open: boolean) {
