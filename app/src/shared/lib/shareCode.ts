@@ -6,8 +6,16 @@ const CODE_LENGTH = 6;
 /** Generate a random share code (uniqueness is enforced by the DB + retry). */
 export function generateShareCode(length: number = CODE_LENGTH): string {
   let code = '';
+  const buf = new Uint32Array(1);
+  // Rejection sampling keeps the index uniform. `Math.random` is predictable.
+  const limit = Math.floor(0x1_0000_0000 / ALPHABET.length) * ALPHABET.length;
   for (let i = 0; i < length; i++) {
-    code += ALPHABET[Math.floor(Math.random() * ALPHABET.length)];
+    let value = 0;
+    do {
+      crypto.getRandomValues(buf);
+      value = buf[0];
+    } while (value >= limit);
+    code += ALPHABET[value % ALPHABET.length];
   }
   return code;
 }

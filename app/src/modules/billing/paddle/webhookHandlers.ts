@@ -241,31 +241,56 @@ export async function recordCheckoutOpened(data: TransactionData) {
   });
 }
 
+/**
+ * Who this verified event belongs to.
+ *
+ * `customData.app_user_id` is set in the browser, so it is only a hint. An
+ * already-linked Paddle customer wins. Otherwise the id is accepted only when
+ * the Paddle customer's email is that account's email. A mismatched id must
+ * not overwrite someone else's plan or customer link.
+ */
 async function resolveUser(data: SubscriptionData, paddle: Paddle) {
-  const appUserId = readAppUserId(data);
-  if (appUserId) {
-    const byId = await repo.findBillingUserById(appUserId);
-    if (byId) return byId;
-  }
   if (data.customerId) {
     const byCustomer = await repo.findBillingUserByCustomer(data.customerId);
     if (byCustomer) return byCustomer;
   }
-  if (data.customerId) {
-    try {
-      const customer = await paddle.customers.get(data.customerId);
-      const email = customer?.email?.toLowerCase();
-      if (email) {
-        const byEmail = await repo.findBillingUserByEmail(email);
-        if (byEmail) return byEmail;
-      }
-    } catch (err) {
-      logger.error('Paddle webhook: customer email lookup failed', { error: String(err) });
+
+  const payerEmail = await lookupCustomerEmail(paddle, data.customerId);
+  const appUserId = readAppUserId(data);
+  if (appUserId) {
+    const byId = await repo.findBillingUserById(appUserId);
+    if (byId && emailsMatch(byId.email, payerEmail)) return byId;
+    if (byId) {
+      logger.warn('Paddle webhook: ignored custom data that does not match the payer', {
+        app_user_id: appUserId,
+        customer_id: data.customerId ?? null,
+      });
     }
+  }
+
+  if (payerEmail) {
+    const byEmail = await repo.findBillingUserByEmail(payerEmail);
+    if (byEmail) return byEmail;
   }
   return null;
 }
 
+async function lookupCustomerEmail(paddle: Paddle, customerId: string | null | undefined): Promise<string | null> {
+  if (!customerId) return null;
+  try {
+    const customer = await paddle.customers.get(customerId);
+    return customer?.email?.trim().toLowerCase() || null;
+  } catch (err) {
+    logger.error('Paddle webhook: customer email lookup failed', { error: String(err) });
+    return null;
+  }
+}
+
+function emailsMatch(accountEmail: string | null, payerEmail: string | null): boolean {
+  return Boolean(accountEmail && payerEmail && accountEmail.toLowerCase() === payerEmail);
+}
+
+/** A cancel or pause only affects the account already tied to that subscription or customer. */
 async function findLinkedUser(data: SubscriptionData) {
   if (data.id) {
     const bySub = await repo.findBillingUserBySubscription(data.id);
@@ -275,8 +300,6 @@ async function findLinkedUser(data: SubscriptionData) {
     const byCustomer = await repo.findBillingUserByCustomer(data.customerId);
     if (byCustomer) return byCustomer;
   }
-  const appUserId = readAppUserId(data);
-  if (appUserId) return repo.findBillingUserById(appUserId);
   return null;
 }
 

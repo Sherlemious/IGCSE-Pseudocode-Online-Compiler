@@ -13,11 +13,12 @@ type FakeUser = {
   paddleSubscriptionId: string | null;
 };
 
-const { users, events, failNextUpdate, captured } = vi.hoisted(() => ({
+const { users, events, failNextUpdate, captured, customerEmail } = vi.hoisted(() => ({
   users: new Map<string, FakeUser>(),
   events: new Set<string>(),
   failNextUpdate: { value: false },
   captured: [] as Array<{ distinctId: string; event: string; properties: Record<string, unknown> }>,
+  customerEmail: { value: null as string | null },
 }));
 
 vi.mock('@/shared/db', () => {
@@ -56,7 +57,7 @@ vi.mock('@/shared/db', () => {
 vi.mock('@/modules/billing/paddle/server', () => ({
   getPaddleServer: () => ({
     webhooks: { unmarshal: async (raw: string) => JSON.parse(raw) },
-    customers: { get: async () => ({ email: null }) },
+    customers: { get: async () => ({ email: customerEmail.value }) },
   }),
 }));
 vi.mock('@/modules/billing/paddle/env', () => ({ getPaddleEnv: () => 'sandbox' }));
@@ -113,6 +114,7 @@ beforeEach(() => {
   events.clear();
   failNextUpdate.value = false;
   captured.length = 0;
+  customerEmail.value = null;
   process.env.PADDLE_WEBHOOK_SECRET = 'secret';
 });
 
@@ -179,6 +181,61 @@ describe('paddle webhook', () => {
         properties: expect.objectContaining({ transaction_id: 'txn_9', tier: 'starter', email: 'ada@example.com', $set: { email: 'ada@example.com' } }),
       }),
     ]);
+  });
+
+  it('does not apply a checkout whose custom data names a different account', async () => {
+    users.set('victim', {
+      id: 'victim',
+      email: 'victim@example.com',
+      role: 'STUDENT',
+      plan: 'STARTER',
+      planTier: 'starter',
+      planExpiresAt: null,
+      planUpdatedAt: null,
+      paddleCustomerId: 'ctm_victim',
+      paddleSubscriptionId: 'sub_real',
+    });
+    customerEmail.value = 'attacker@example.com';
+    await deliver('evt_forge', 'subscription.created', '2026-10-02T10:00:00Z', {
+      ...subscription('sub_attacker', 'active'),
+      customerId: 'ctm_attacker',
+      customData: { app_user_id: 'victim' },
+    });
+    expect(users.get('victim')).toMatchObject({
+      plan: 'STARTER',
+      paddleCustomerId: 'ctm_victim',
+      paddleSubscriptionId: 'sub_real',
+    });
+  });
+
+  it('grants a first purchase when the payer email matches the claimed account', async () => {
+    addUser({ plan: 'FREE', paddleCustomerId: null });
+    customerEmail.value = 'ada@example.com';
+    await deliver('evt_first', 'subscription.created', '2026-10-02T10:00:00Z', {
+      ...subscription('sub_new', 'active'),
+      customerId: 'ctm_new',
+    });
+    expect(users.get('u1')).toMatchObject({ plan: 'STARTER', paddleCustomerId: 'ctm_new', paddleSubscriptionId: 'sub_new' });
+  });
+
+  it('does not downgrade an account named only in custom data', async () => {
+    users.set('victim', {
+      id: 'victim',
+      email: 'victim@example.com',
+      role: 'TEACHER',
+      plan: 'STARTER',
+      planTier: 'starter',
+      planExpiresAt: null,
+      planUpdatedAt: null,
+      paddleCustomerId: 'ctm_victim',
+      paddleSubscriptionId: 'sub_real',
+    });
+    await deliver('evt_cancel', 'subscription.canceled', '2026-10-02T10:00:00Z', {
+      ...subscription('sub_attacker', 'canceled'),
+      customerId: 'ctm_attacker',
+      customData: { app_user_id: 'victim' },
+    });
+    expect(users.get('victim')).toMatchObject({ plan: 'STARTER', paddleSubscriptionId: 'sub_real' });
   });
 
   it('skips signed-out checkouts and renewals', async () => {

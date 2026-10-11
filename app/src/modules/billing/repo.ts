@@ -5,6 +5,7 @@ import { prisma } from '@/shared/db';
 
 const BILLING_USER_SELECT = {
   id: true,
+  email: true,
   role: true,
   plan: true,
   planExpiresAt: true,
