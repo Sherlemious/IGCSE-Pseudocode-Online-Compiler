@@ -10,6 +10,8 @@
  *    dismissed across devices and browser clears.
  *
  * Timeline:
+ *  - 60 s cumulative usage, signed-in student who hasn't said which sitting they
+ *    are preparing for: "Which exam are you preparing for?" (see sittings.ts)
  *  - 90 s cumulative usage, flowchart maker not opened yet: "Draw and run flowcharts"
  *  - 15 min cumulative usage, no Learn progress: "Follow the Paper 2 Path"
  *  - 2nd+ session, anyone:                    "Try an Exam"
@@ -37,6 +39,8 @@ import { authHref } from '@/modules/auth/callback';
 import { FLOWCHART_VISITED_KEY } from '@/modules/flowchart/constants';
 import NudgeCard from './NudgeCard';
 import ExamNudgeCard from './ExamNudgeCard';
+import SittingCard from './SittingCard';
+import { isSitting, type Sitting } from './sittings';
 import { loadProgress } from '@/modules/learn/progress';
 
 const LS = {
@@ -45,12 +49,14 @@ const LS = {
   flowchart: 'nudge_shown_flowchart',
   learn: 'nudge_shown_learn',
   exam: 'nudge_shown_exam',
+  sitting: 'nudge_shown_sitting',
 } as const;
 
-type NudgeKey = 'signup' | 'learn' | 'exam' | 'flowchart';
+type NudgeKey = 'signup' | 'learn' | 'exam' | 'flowchart' | 'sitting';
 type ActiveNudge = NudgeKey | null;
 
 const THRESHOLDS = {
+  sittingMs: 60_000,
   flowchartMs: 90_000,
   learnMs: 15 * 60_000,
   examSession: 2,
@@ -86,6 +92,9 @@ export default function OnboardingNudges() {
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const dbSyncedRef = useRef(false);
   const cardUp = useRef(false);
+  // Only a signed-in student who hasn't answered yet is asked; 'unknown' until the DB answers.
+  const sittingStateRef = useRef<'unknown' | 'answered' | 'unanswered'>('unknown');
+  const sittingAnsweredRef = useRef(false);
   const [activeNudge, setActiveNudge] = useState<ActiveNudge>(null);
 
   const markShown = useCallback(
@@ -116,8 +125,25 @@ export default function OnboardingNudges() {
   const dismissNudge = useCallback(
     (key: NudgeKey) => {
       cardUp.current = false;
-      ph?.capture('nudge_dismissed', { nudge: key });
+      // The sitting card closes itself after an answer; that isn't a dismissal.
+      if (!(key === 'sitting' && sittingAnsweredRef.current)) ph?.capture('nudge_dismissed', { nudge: key });
       setActiveNudge(null);
+    },
+    [ph],
+  );
+
+  const saveSitting = useCallback(
+    (sitting: Sitting) => {
+      sittingAnsweredRef.current = true;
+      sittingStateRef.current = 'answered';
+      ph?.capture('nudge_clicked', { nudge: 'sitting' });
+      ph?.capture('exam_sitting_set', { sitting, source: 'card' });
+      ph?.setPersonProperties({ exam_sitting: sitting });
+      fetch('/api/me/sitting', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sitting }),
+      }).catch(() => {});
     },
     [ph],
   );
@@ -144,6 +170,10 @@ export default function OnboardingNudges() {
     (totalMs: number, sessions: number) => {
       // Not marked as shown: it waits until they're back on a normal page.
       if (quietRef.current || cardUp.current) return;
+      if (sittingStateRef.current === 'unanswered' && totalMs >= THRESHOLDS.sittingMs && !lsGet(LS.sitting)) {
+        triggerNudge('sitting');
+        return;
+      }
       if (totalMs >= THRESHOLDS.flowchartMs && !lsGet(LS.flowchart) && !hasOpenedFlowchart()) {
         triggerNudge('flowchart');
         return;
@@ -166,6 +196,7 @@ export default function OnboardingNudges() {
     if (params.get('exam_nudge') === '1') setActiveNudge('exam');
     if (params.get('signup_nudge') === '1') setActiveNudge('signup');
     if (params.get('learn_nudge') === '1') setActiveNudge('learn');
+    if (params.get('sitting_nudge') === '1') setActiveNudge('sitting');
     if (params.get('flowchart_nudge') === '1' && !quietRef.current) {
       cardUp.current = true;
       setActiveNudge('flowchart');
@@ -182,6 +213,20 @@ export default function OnboardingNudges() {
         for (const key of nudgesShown) lsSet(`nudge_shown_${key}`, '1');
       })
       .catch(() => {});
+    if (session?.user?.role !== 'STUDENT') return;
+    fetch('/api/me/sitting')
+      .then((r) => r.json())
+      .then(({ sitting }: { sitting: string | null }) => {
+        if (isSitting(sitting)) {
+          sittingStateRef.current = 'answered';
+          lsSet(LS.sitting, '1');
+          ph?.setPersonProperties({ exam_sitting: sitting });
+        } else {
+          sittingStateRef.current = 'unanswered';
+        }
+      })
+      .catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status]);
 
   // Usage accumulator + threshold checks
@@ -219,6 +264,10 @@ export default function OnboardingNudges() {
         onDismiss={() => dismissNudge('signup')}
       />
     );
+  }
+
+  if (activeNudge === 'sitting') {
+    return <SittingCard onPick={saveSitting} onDismiss={() => dismissNudge('sitting')} />;
   }
 
   if (activeNudge === 'flowchart') {

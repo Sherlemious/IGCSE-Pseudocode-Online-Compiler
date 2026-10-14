@@ -35,6 +35,8 @@ model User {
   role          Role      @default(STUDENT)
   roleChosen    Boolean   @default(false) // has the user explicitly picked student/teacher yet
   nudgesShown   String[]  @default([])
+  examSitting   String? // which sitting they are preparing for (modules/onboarding/sittings.ts); null = not asked/answered
+  examSittingAt DateTime? // when they answered, for reminder timing and stale answers
   trialEndsAt   DateTime? // teacher-tier trial; null unless a trial is active
 
   // Paddle billing linkage (set by the subscription webhook). Nullable until the

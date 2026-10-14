@@ -54,6 +54,19 @@ export function addNudgeShown(userId: string, nudge: string) {
   });
 }
 
+export async function findExamSitting(userId: string): Promise<string | null> {
+  const user = await prisma.user.findUnique({ where: { id: userId }, select: { examSitting: true } });
+  return user?.examSitting ?? null;
+}
+
+export function setExamSitting(userId: string, examSitting: string) {
+  return prisma.user.update({
+    where: { id: userId },
+    data: { examSitting, examSittingAt: new Date() },
+    select: { id: true },
+  });
+}
+
 /** Admin plan edit. Dropping to FREE clears billing fields so the shown plan matches the entitlement. */
 export function setPlanByAdmin(userId: string, plan: Plan) {
   return prisma.user.update({
