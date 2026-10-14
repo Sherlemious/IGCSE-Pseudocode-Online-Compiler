@@ -196,7 +196,7 @@ export async function gradeSubmission(
         error: {
           kind: 'runtime',
           message: e.message,
-          hint: humanizeRuntimeError(e.message),
+          hint: humanizeRuntimeError(e.message, { lines: code.split('\n'), line: e.line }),
           category: categorizeRuntimeError(e.message),
           line: e.line ?? undefined,
         },

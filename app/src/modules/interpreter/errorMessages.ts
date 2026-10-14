@@ -7,6 +7,15 @@
  */
 
 import { BUILTIN_NAMES, BUILTIN_SIGNATURES } from './builtinSignatures';
+import {
+  diagnoseOutOfBounds,
+  diagnoseStrayBlock,
+  diagnoseUndeclared,
+  type Diagnosis,
+  type SourceContext,
+} from './errorDiagnosis';
+
+export type { SourceContext } from './errorDiagnosis';
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -353,6 +362,8 @@ function closerSuggestion(sourceLine: string | undefined): string | null {
 interface LineDiagnosis {
   category: string;
   message: string;
+  /** Which explanation was given within the category (analytics). */
+  detail?: string;
 }
 
 /** Python written where pseudocode was expected (else:/elif/for..in range/input()). */
@@ -496,15 +507,18 @@ const STRAY_CLOSER_OPENER: Record<string, { category: string; opener: string }> 
   ENDCLASS: { category: 'stray_endclass', opener: 'CLASS Name' },
 };
 
-function strayCloserHint(line: string): LineDiagnosis | null {
+function strayCloserHint(line: string, ctx?: SourceContext): LineDiagnosis | null {
   const t = line.trim();
   // A lone ELSE that ANTLR rejected — there is no open (or no well-formed) IF
   // above it. (ELSE is not a block *closer*, so it is not in the map below.)
   // NB: ELSE IF / ELSEIF are valid in this grammar, so they are deliberately not
   // matched here — a flagged ELSEIF line has some *other* error on it.
   if (/^ELSE$/i.test(t)) {
+    const why = diagnoseStrayBlock('ELSE', ctx);
+    if (why) return { category: 'stray_else', message: why.message, detail: why.detail };
     return {
       category: 'stray_else',
+      detail: 'no_if',
       message:
         'ELSE must sit inside an IF … THEN … ELSE … ENDIF block.\n' +
         '  Check the IF above it has THEN, and that this block ends with ENDIF.\n' +
@@ -523,6 +537,10 @@ function strayCloserHint(line: string): LineDiagnosis | null {
   const meta = STRAY_CLOSER_OPENER[t.toUpperCase()];
   if (!meta) return null;
   const kw = t.toUpperCase();
+  if (kw === 'ENDIF') {
+    const why = diagnoseStrayBlock('ENDIF', ctx);
+    if (why) return { category: meta.category, message: why.message, detail: why.detail };
+  }
   return {
     category: meta.category,
     message:
@@ -1493,13 +1511,13 @@ function typeAsVariableHint(ctx: ParseErrorContext, sourceLine: string | undefin
 }
 
 /** Shared source-line diagnosis used by both the humanizer and the categorizer. */
-function sourceLineHint(sourceLine: string | undefined): LineDiagnosis | null {
+function sourceLineHint(sourceLine: string | undefined, ctx?: SourceContext): LineDiagnosis | null {
   if (!sourceLine || !sourceLine.trim()) return null;
   return (
     pythonHint(sourceLine) ??
     stringLiteralHint(sourceLine) ??
     basicBlockHint(sourceLine) ??
-    strayCloserHint(sourceLine) ??
+    strayCloserHint(sourceLine, ctx) ??
     arrayDeclareHint(sourceLine) ??
     declareHint(sourceLine) ??
     procedureReturnsHint(sourceLine) ??
@@ -1657,7 +1675,7 @@ function explainParseError(
   // Source-line pattern match (Python syntax, BASIC closers, FOR `:`/`=`, OUTPUT
   // missing comma). Non-IGCSE shapes recognised straight from the line, so they
   // beat ANTLR's generic message for the same mistake.
-  const lineHint = sourceLineHint(sourceLine);
+  const lineHint = sourceLineHint(sourceLine, context);
   if (lineHint) return lineHint.message;
 
   // Whole-program checks (unclosed block reported at the end, misplaced THEN).
@@ -1900,7 +1918,39 @@ function unknownFunctionHint(name: string): string | null {
 
 // ── Runtime error humanization ──────────────────────────────────────────────
 
-export function humanizeRuntimeError(rawMessage: string): string {
+/**
+ * A runtime error explained against the program when `ctx` is given: a likely
+ * typo for an undeclared variable, an off-by-one loop for an out-of-range
+ * index. `detail` names the explanation (analytics); `fix` is a one-click edit.
+ */
+export function diagnoseRuntimeError(
+  rawMessage: string,
+  ctx?: SourceContext,
+): { message: string; detail: string | null; fix?: Diagnosis['fix'] } {
+  const notDefined = rawMessage.match(/Variable '([^']+)' is not defined/);
+  if (notDefined && notDefined[1].toLowerCase() !== 'console') {
+    const d = diagnoseUndeclared(notDefined[1], ctx);
+    if (d) return d;
+    return { message: baseRuntimeMessage(rawMessage), detail: 'undeclared' };
+  }
+  const oob = rawMessage.match(/Array index (-?\d+) out of bounds \[(-?\d+):(-?\d+)\]/);
+  if (oob) {
+    const d = diagnoseOutOfBounds(Number(oob[1]), Number(oob[2]), Number(oob[3]), ctx);
+    if (d) return d;
+  }
+  return { message: baseRuntimeMessage(rawMessage), detail: null };
+}
+
+export function humanizeRuntimeError(rawMessage: string, ctx?: SourceContext): string {
+  return diagnoseRuntimeError(rawMessage, ctx).message;
+}
+
+/** Which explanation a parse hint gave (e.g. stray ELSE → `inner_block_open`). */
+export function parseHintDetail(sourceLine: string | undefined, ctx?: SourceContext): string | null {
+  return sourceLineHint(sourceLine, ctx)?.detail ?? null;
+}
+
+function baseRuntimeMessage(rawMessage: string): string {
   // Variable not defined
   const notDefined = rawMessage.match(/Variable '([^']+)' is not defined/);
   if (notDefined) {

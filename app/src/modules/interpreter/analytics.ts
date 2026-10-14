@@ -17,6 +17,13 @@ export interface RunContext {
   examId?: string;
 }
 
+/**
+ * Bump when a hint's wording or detection changes. Every hint event carries it,
+ * so "did this change help?" is a before/after comparison of hint_shown →
+ * hint_resolved (and the next run's outcome) split by `hint_version`.
+ */
+export const HINT_VERSION = '2026-10-14.1';
+
 export type RunOutcome = 'success' | 'parse_error' | 'runtime_error' | 'aborted';
 
 // The v2 error helpers (paste normalization + `=`→`<-` and smart-quote hints)
@@ -52,6 +59,9 @@ export function captureRun(
     usedInput: boolean;
     mode: 'run' | 'debug';
     normalized: boolean;
+    /** Hint category / explanation shown on the previous (errored) run. */
+    prevHint?: string | null;
+    prevHintDetail?: string | null;
   } & RerunInfo,
   ctx: RunContext | undefined,
 ) {
@@ -66,6 +76,9 @@ export function captureRun(
     after_error: data.afterError,
     code_changed: data.codeChanged,
     error_streak: data.errorStreak,
+    prev_hint_id: data.prevHint ?? null,
+    prev_hint_detail: data.prevHintDetail ?? null,
+    hint_version: HINT_VERSION,
     ...baseProps(ctx),
   });
 }
@@ -100,6 +113,8 @@ export function captureHintShown(
     errorType: 'parse' | 'runtime';
     line: number | null | undefined;
     fixId: string | null;
+    /** Which explanation within the hint was given (e.g. `typo`, `off_by_one_loop`). */
+    detail?: string | null;
     /** Same error category on the same line as the previous errored run. */
     repeat: boolean;
     /** The code is unchanged since that previous errored run. */
@@ -114,6 +129,8 @@ export function captureHintShown(
     line: data.line ?? null,
     has_fix: data.fixId != null,
     fix_id: data.fixId,
+    hint_detail: data.detail ?? null,
+    hint_version: HINT_VERSION,
     repeat: data.repeat,
     unchanged: data.unchanged,
     error_streak: data.errorStreak,
@@ -127,7 +144,7 @@ export function captureHintShown(
  */
 export function captureHintResolved(
   hintId: string,
-  data: { runsToFix: number; secsToFix: number; usedFix: boolean },
+  data: { runsToFix: number; secsToFix: number; usedFix: boolean; detail?: string | null },
   ctx: RunContext | undefined,
 ) {
   captureRaw('hint_resolved', {
@@ -135,6 +152,8 @@ export function captureHintResolved(
     runs_to_fix: data.runsToFix,
     secs_to_fix: Math.round(data.secsToFix),
     used_fix: data.usedFix,
+    hint_detail: data.detail ?? null,
+    hint_version: HINT_VERSION,
     ...baseProps(ctx),
   });
 }

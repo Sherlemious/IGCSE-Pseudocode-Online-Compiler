@@ -12,6 +12,8 @@ export const MAX_TERMINAL_LINES = 10_000;
 import {
   humanizeParseError,
   humanizeRuntimeError,
+  diagnoseRuntimeError,
+  parseHintDetail,
   categorizeParseError,
   categorizeRuntimeError,
   resolveOffendingLine,
@@ -183,6 +185,7 @@ export function useInterpreter(runContext?: RunContext) {
     reported: boolean;
     runtimeErrorRecorded: boolean;
     primaryHint: string | null;
+    primaryDetail: string | null;
     primaryLine: number | null;
     mode: 'run' | 'debug';
     codeLines: number;
@@ -198,8 +201,16 @@ export function useInterpreter(runContext?: RunContext) {
   // Category of the primary error shown on the previous errored run, so a later
   // successful run can be attributed to that hint (hint_resolved).
   const lastHintRef = useRef<string | null>(null);
+  // Which explanation within that hint was shown (see errorDiagnosis.ts).
+  const lastHintDetailRef = useRef<string | null>(null);
   // The previous run, for code_changed / repeat detection.
-  const prevRunRef = useRef<{ rawSource: string; errored: boolean; hint: string | null; line: number | null } | null>(null);
+  const prevRunRef = useRef<{
+    rawSource: string;
+    errored: boolean;
+    hint: string | null;
+    hintDetail: string | null;
+    line: number | null;
+  } | null>(null);
   const errorStreakRef = useRef(0);
   // The current error episode: from the first failed run to the next success.
   const episodeRef = useRef<{ startedAt: number; runs: number; usedFix: boolean } | null>(null);
@@ -221,6 +232,8 @@ export function useInterpreter(runContext?: RunContext) {
         mode: m.mode,
         normalized: m.normalized,
         ...m.rerun,
+        prevHint: m.rerun.afterError ? prevRunRef.current?.hint ?? null : null,
+        prevHintDetail: m.rerun.afterError ? prevRunRef.current?.hintDetail ?? null : null,
       },
       runContextRef.current,
     );
@@ -230,15 +243,22 @@ export function useInterpreter(runContext?: RunContext) {
       if (lastHintRef.current && episode) {
         captureHintResolved(
           lastHintRef.current,
-          { runsToFix: episode.runs, secsToFix: (m.startedAt - episode.startedAt) / 1000, usedFix: episode.usedFix },
+          {
+            runsToFix: episode.runs,
+            secsToFix: (m.startedAt - episode.startedAt) / 1000,
+            usedFix: episode.usedFix,
+            detail: lastHintDetailRef.current,
+          },
           runContextRef.current,
         );
       }
       lastHintRef.current = null;
+      lastHintDetailRef.current = null;
       episodeRef.current = null;
       errorStreakRef.current = 0;
     } else if (errored) {
       lastHintRef.current = m.primaryHint;
+      lastHintDetailRef.current = m.primaryDetail;
       if (episode) episode.runs += 1;
       else episodeRef.current = { startedAt: m.startedAt, runs: 1, usedFix: false };
       errorStreakRef.current += 1;
@@ -247,7 +267,7 @@ export function useInterpreter(runContext?: RunContext) {
     prevRunRef.current =
       outcome === 'aborted' && prevRunRef.current
         ? { ...prevRunRef.current, rawSource: m.rawSource }
-        : { rawSource: m.rawSource, errored, hint: m.primaryHint, line: m.primaryLine };
+        : { rawSource: m.rawSource, errored, hint: m.primaryHint, hintDetail: m.primaryDetail, line: m.primaryLine };
   }, []);
 
   // Capture one interpreter_error (enriched with category + offending line) and,
@@ -285,17 +305,23 @@ export function useInterpreter(runContext?: RunContext) {
         const unchanged = m.rerun.afterError && m.rerun.codeChanged === false;
         const repeat = !!prev?.errored && prev.hint === category && prev.line === (line ?? null);
         let fix: QuickFix | null = null;
-        if (errorType === 'parse' && line != null) {
-          fix = findQuickFix(m.source, line);
-          // The editor holds the raw text: the fix is stale once that line changes.
-          if (fix) fix = { ...fix, original: m.rawSource.split('\n')[fix.line - 1] ?? fix.original };
+        const ctx = { lines: sourceLines, line };
+        if (errorType === 'parse') {
+          m.primaryDetail = parseHintDetail(sourceLine, ctx);
+          if (line != null) fix = findQuickFix(m.source, line);
+        } else {
+          const d = diagnoseRuntimeError(message, ctx);
+          m.primaryDetail = d.detail;
+          fix = d.fix ?? null;
         }
+        // The editor holds the raw text: the fix is stale once that line changes.
+        if (fix) fix = { ...fix, original: m.rawSource.split('\n')[fix.line - 1] ?? fix.original };
         if (line != null && display) {
           setErrorInfo({ errorType, category, line, message: display, fix, unchanged });
         }
         captureHintShown(
           category,
-          { errorType, line, fixId: fix?.id ?? null, repeat, unchanged, errorStreak: m.rerun.errorStreak },
+          { errorType, line, fixId: fix?.id ?? null, detail: m.primaryDetail, repeat, unchanged, errorStreak: m.rerun.errorStreak },
           runContextRef.current,
         );
         // For the vague parse buckets, keep a sanitized copy of the code so we
@@ -361,6 +387,7 @@ export function useInterpreter(runContext?: RunContext) {
       // numbers stay aligned.
       const normalized = normalizeSource(sourceCode);
       const source = normalized.code;
+      const runtimeCtx = (line: number | null | undefined) => ({ lines: source.split('\n'), line });
       const prevRun = prevRunRef.current;
       runMetaRef.current = {
         startedAt: performance.now(),
@@ -368,6 +395,7 @@ export function useInterpreter(runContext?: RunContext) {
         reported: false,
         runtimeErrorRecorded: false,
         primaryHint: null,
+        primaryDetail: null,
         primaryLine: null,
         mode: stepMode ? 'debug' : 'run',
         codeLines: source.split('\n').length,
@@ -476,7 +504,7 @@ export function useInterpreter(runContext?: RunContext) {
           onError(error: PseudocodeError) {
             flushOutputSync();
             flushTraceSync();
-            recordError('runtime', error.message, error.line, source.split('\n'), undefined, humanizeRuntimeError(error.message));
+            recordError('runtime', error.message, error.line, source.split('\n'), undefined, humanizeRuntimeError(error.message, runtimeCtx(error.line)));
             if (error.line != null) {
               setErrorLine(error.line);
               setErrorFocusKey((k) => k + 1);
@@ -487,8 +515,8 @@ export function useInterpreter(runContext?: RunContext) {
               {
                 kind: 'error',
                 text: error.line
-                  ? `Line ${error.line} — ${humanizeRuntimeError(error.message)}`
-                  : humanizeRuntimeError(error.message),
+                  ? `Line ${error.line} — ${humanizeRuntimeError(error.message, runtimeCtx(error.line))}`
+                  : humanizeRuntimeError(error.message, runtimeCtx(error.line)),
               },
             ]);
             finish('runtime_error');
@@ -534,7 +562,7 @@ export function useInterpreter(runContext?: RunContext) {
         flushTraceSync();
 
         if (e instanceof PseudocodeError) {
-          recordError('runtime', e.message, e.line, source.split('\n'), undefined, humanizeRuntimeError(e.message));
+          recordError('runtime', e.message, e.line, source.split('\n'), undefined, humanizeRuntimeError(e.message, runtimeCtx(e.line)));
           if (e.line != null) {
             setErrorLine(e.line);
             setErrorFocusKey((k) => k + 1);
@@ -545,8 +573,8 @@ export function useInterpreter(runContext?: RunContext) {
             {
               kind: 'error',
               text: e.line
-                ? `Line ${e.line} — ${humanizeRuntimeError(e.message)}`
-                : humanizeRuntimeError(e.message),
+                ? `Line ${e.line} — ${humanizeRuntimeError(e.message, runtimeCtx(e.line))}`
+                : humanizeRuntimeError(e.message, runtimeCtx(e.line)),
             },
           ]);
           finish('runtime_error');
