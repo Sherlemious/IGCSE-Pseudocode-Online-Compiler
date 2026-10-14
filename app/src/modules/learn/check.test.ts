@@ -127,3 +127,34 @@ describe('checkLessonCode feedback', () => {
     expect(result.message).toContain('you wrote `for`');
   });
 });
+
+describe('checkLessonCode extra-output explanations', () => {
+  const lesson = (expectedOutput: string, inputs: string[] = []): LearnLesson => ({
+    id: 't.extra',
+    slug: 'extra',
+    title: 'Extra',
+    type: 'grade',
+    minutes: 1,
+    why: 'test',
+    body: 'test',
+    playable: true,
+    solutionCode: '',
+    tests: [{ inputs, expectedOutput }],
+  });
+
+  it('says to print only the number when a label surrounds it', async () => {
+    const result = await checkLessonCode(lesson('32'), 'OUTPUT "It is ", 32, " F"');
+    expect(result.reason).toBe('wrong_output');
+    expect(result.message).toContain('only the answer `32`');
+  });
+
+  it('explains missing spaces from comma OUTPUT', async () => {
+    const result = await checkLessonCode(lesson('Ada is 36'), 'OUTPUT "Ada", "is", 36');
+    expect(result.message).toContain('wrong spacing');
+  });
+
+  it('explains extra lines from an OUTPUT inside a loop', async () => {
+    const result = await checkLessonCode(lesson('80'), 'OUTPUT 80\nOUTPUT "Not Found"');
+    expect(result.message).toContain('extra line');
+  });
+});

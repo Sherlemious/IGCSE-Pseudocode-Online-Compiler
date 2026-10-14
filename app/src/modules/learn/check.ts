@@ -137,6 +137,48 @@ function explainOutputLines(expectedRaw: string, actualRaw: string, code: string
   return { message, line };
 }
 
+/**
+ * Two near-misses that dominate Learn dead-ends: the right answer wrapped in
+ * extra text or lines, and `OUTPUT a, b` gluing words together (commas add no
+ * space). Both are explained with the student's own output.
+ */
+function explainExtraOutput(expectedRaw: string, actualRaw: string): string | null {
+  const expected = outputLines(expectedRaw);
+  const actual = outputLines(actualRaw);
+  if (expected.length === 0 || actual.length === 0) return null;
+  const squash = (text: string) => text.replace(/\s+/g, '').toLowerCase();
+
+  // Same text once spaces are ignored → spaces are missing (or extra).
+  if (squash(expectedRaw) === squash(actualRaw) && expected.length === actual.length) {
+    return (
+      `Right words, wrong spacing. You printed \`${oneLine(actualRaw.trim())}\`. ` +
+      'A comma in OUTPUT adds no space — put the space inside the quotes, like `OUTPUT Name, " is ", Age`.'
+    );
+  }
+
+  // Same number of lines, but a line holds the answer plus extra words.
+  if (expected.length > 1 && expected.length === actual.length) {
+    const bad = expected.findIndex((line, i) => line !== actual[i]);
+    if (bad >= 0 && actual[bad].toLowerCase().includes(expected[bad].toLowerCase())) {
+      return `Line ${bad + 1} should be only \`${expected[bad]}\`, but you printed \`${actual[bad]}\`. Print just that part on its own line.`;
+    }
+  }
+
+  // The answer is in the output but surrounded by extra lines.
+  if (expected.length === 1 && actual.length > 1 && actual.includes(expected[0])) {
+    return (
+      `The answer \`${expected[0]}\` is there, but you also printed ${actual.length - 1} extra line(s): \`${oneLine(actualRaw.trim())}\`. ` +
+      'Print it once — if an OUTPUT sits inside a loop or an ELSE, it runs for every pass.'
+    );
+  }
+
+  // One line: the number/word is inside a longer sentence.
+  if (expected.length === 1 && actual.length === 1 && actual[0].toLowerCase().includes(expected[0].toLowerCase())) {
+    return `Print only the answer \`${expected[0]}\` — no label or extra words. You printed \`${actual[0]}\`.`;
+  }
+  return null;
+}
+
 const oneLine = (text: string) => text.replace(/\n/g, ' / ');
 const sameOutput = (a: string, b: string) => a.trim().replace(/\s+/g, ' ') === b.trim().replace(/\s+/g, ' ');
 
@@ -217,7 +259,10 @@ export async function checkLessonCode(lesson: LearnLesson, code: string): Promis
             line: explained.line,
           };
         }
-        message = `${label}${expected}, got \`${oneLine(result.actualOutput)}\`.`;
+        const extra = explainExtraOutput(test.expectedOutput, result.actualOutput);
+        message = extra
+          ? `${label}${extra}`
+          : `${label}${expected}, got \`${oneLine(result.actualOutput)}\`.`;
       }
       return { ok: false, reason: 'wrong_output', message, actualOutput: result.actualOutput };
     }

@@ -32,7 +32,9 @@ export function useEditorHistory() {
 
 /**
  * Visible undo. CodeMirror already undoes with Ctrl+Z; students who delete
- * their program do not know that, so the word is always on the button.
+ * their program do not know that, so the word stays on the button from `sm` up.
+ * On phones the toolbar is tight: Undo is icon-only and Redo only appears once
+ * there is something to redo.
  */
 export function EditorUndoButtons({
   canUndo,
@@ -59,14 +61,14 @@ export function EditorUndoButtons({
         title="Undo the last change (Ctrl+Z)"
         aria-label="Undo the last change"
       >
-        <Undo2 className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-        Undo
+        <Undo2 className="h-4 w-4 shrink-0 sm:h-3.5 sm:w-3.5" aria-hidden="true" />
+        <span className="hidden sm:inline">Undo</span>
       </button>
       <button
         type="button"
         onClick={onRedo}
         disabled={disabled || !canRedo}
-        className={`${item} text-dark-text hover:text-light-text hover:bg-background`}
+        className={`${item} text-dark-text hover:text-light-text hover:bg-background ${canRedo ? '' : 'max-sm:hidden'}`}
         title="Redo (Ctrl+Y)"
         aria-label="Redo"
       >

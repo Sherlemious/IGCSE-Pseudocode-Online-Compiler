@@ -393,9 +393,9 @@ OUTPUT 10 MOD 3`,
 
 **F = C × 9 DIV 5 + 32**
 
-Output the Fahrenheit value as an integer.
+Output the Fahrenheit value as an integer — **only the number**, no words like "degrees". Exam answers are marked on the value alone.
 
-Example: input \`100\` → output \`212\`.`,
+Example: input \`100\` → output \`212\` (just \`OUTPUT Fahrenheit\`).`,
           trap: 'Use DIV, not /. Parentheses: \`(Celsius * 9) DIV 5 + 32\`.',
           starterCode: `DECLARE Celsius : INTEGER
 DECLARE Fahrenheit : INTEGER

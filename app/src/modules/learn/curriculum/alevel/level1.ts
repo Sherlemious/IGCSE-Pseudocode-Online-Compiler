@@ -117,7 +117,13 @@ OUTPUT Pupil2.Name`,
       docsAnchor: 'alevel-types',
       body: `The array is already filled. Read a name. Output that student's mark, or \`Not found\` if the name is not there.
 
-Example: input \`Ada\` → \`80\`. Input \`Zed\` → \`Not found\`.`,
+Example: input \`Ada\` → \`80\`. Input \`Zed\` → \`Not found\`.
+
+**Plan it in three steps:**
+1. Set a flag \`Found <- FALSE\` before the loop.
+2. Inside the \`FOR\` loop, \`IF\` the name matches: \`OUTPUT\` the mark and set \`Found <- TRUE\`. No \`ELSE\` here — it would print "Not found" for every non-match.
+3. After \`NEXT\`, \`IF Found = FALSE\` then \`OUTPUT "Not found"\`.`,
+      trap: 'Put "Not found" after the loop, never in an ELSE inside it — otherwise it prints once per non-matching student.',
       starterCode: `${RECORD}
 
 DECLARE Group : ARRAY[1:3] OF Student
@@ -129,9 +135,13 @@ Group[3].Name <- "Cy"
 Group[3].Mark <- 91
 
 DECLARE Target : STRING
+DECLARE Found : BOOLEAN
+Found <- FALSE
 INPUT Target
 
-// OUTPUT the matching Mark, or "Not found"`,
+// 1. FOR Index <- 1 TO 3 ... NEXT Index
+//    IF Group[Index].Name = Target THEN OUTPUT the Mark, set Found <- TRUE
+// 2. After the loop: IF Found = FALSE THEN OUTPUT "Not found"`,
       solutionCode: `${RECORD}
 
 DECLARE Group : ARRAY[1:3] OF Student
