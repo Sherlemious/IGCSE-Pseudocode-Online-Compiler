@@ -12,6 +12,7 @@ describe('parseUserQuery', () => {
       plan: null,
       access: null,
       activity: null,
+      sitting: null,
       sort: 'newest',
     });
   });
@@ -24,6 +25,7 @@ describe('parseUserQuery', () => {
       plan: 'PRO',
       access: 'expiring',
       activity: 'quiet',
+      sitting: 'oct_nov_2026',
       sort: 'name',
     })).toEqual({
       page: 2,
@@ -32,6 +34,7 @@ describe('parseUserQuery', () => {
       plan: 'PRO',
       access: 'expiring',
       activity: 'quiet',
+      sitting: 'oct_nov_2026',
       sort: 'name',
     });
   });
@@ -43,6 +46,7 @@ describe('parseUserQuery', () => {
       plan: 'CAMPUS',
       access: 'vip',
       activity: 'sleeping',
+      sitting: 'summer',
       sort: 'random',
     })).toMatchObject({
       page: 1,
@@ -50,6 +54,7 @@ describe('parseUserQuery', () => {
       plan: null,
       access: null,
       activity: null,
+      sitting: null,
       sort: 'newest',
     });
   });
@@ -96,6 +101,17 @@ describe('usersWhere', () => {
         },
       ],
     });
+  });
+
+  it('filters by chosen sitting, and "none" means students who have not answered', () => {
+    expect(usersWhere(parseUserQuery({ sitting: 'may_jun_2027' }), NOW)).toEqual({
+      AND: [{ examSitting: 'may_jun_2027' }],
+    });
+    expect(usersWhere(parseUserQuery({ sitting: 'none' }), NOW)).toEqual({
+      AND: [{ role: 'STUDENT', examSitting: null }],
+    });
+    expect(usersHref({ sitting: 'oct_nov_2026' })).toBe('/admin/users?sitting=oct_nov_2026');
+    expect(usersFiltering(parseUserQuery({ sitting: 'later' }))).toBe(true);
   });
 
   it('can require a quiet teacher by name', () => {

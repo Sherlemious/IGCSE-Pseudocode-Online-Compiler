@@ -10,6 +10,9 @@ import {
 import { classesHref } from './classes/classesQuery';
 import { Panel, SectionHeading } from './analytics/_components/charts';
 import { formatAdminDate, formatAdminNumber } from './_components/adminFormat';
+import { SITTINGS } from '@/modules/onboarding/sittings';
+import { getSittingCounts } from './users/loadUsers';
+import { usersHref } from './users/usersQuery';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Admin — Overview' };
@@ -18,7 +21,7 @@ export default async function AdminOverviewPage() {
   const [
     session, userCount, feedbackCount, examCount, questionCount, learnLearnerCount,
     feedbackAgg, recentFeedback, recentUsers, newContactCount, recentContact,
-    classCount, teacherCount, recentJoins,
+    classCount, teacherCount, recentJoins, sittings,
   ] =
     await Promise.all([
       auth(),
@@ -62,6 +65,7 @@ export default async function AdminOverviewPage() {
           },
         },
       }),
+      getSittingCounts(),
     ]);
 
   const firstName = session?.user?.name?.split(' ')[0] ?? 'Admin';
@@ -150,6 +154,34 @@ export default async function AdminOverviewPage() {
           </Link>
         ))}
       </div>
+
+      {/* ── Exam sittings ── */}
+      <Panel>
+        <SectionHeading
+          eyebrow="Students"
+          title="Exam sittings"
+          meta={
+            <span className="font-mono tabular-nums">
+              {formatAdminNumber(sittings.students - sittings.unanswered)} of {formatAdminNumber(sittings.students)} answered
+            </span>
+          }
+        />
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 mt-3">
+          {[
+            ...SITTINGS.map((s) => ({ key: s.value, label: s.label, count: sittings.bySitting[s.value] })),
+            { key: 'none', label: 'Not asked yet', count: sittings.unanswered },
+          ].map(({ key, label, count }) => (
+            <Link
+              key={key}
+              href={usersHref({ sitting: key })}
+              className="rounded-xl border border-border px-3.5 py-3 hover:border-primary/40 transition-colors"
+            >
+              <p className="font-mono tabular-nums text-xl font-semibold text-light-text leading-none">{formatAdminNumber(count)}</p>
+              <p className="text-xs text-dark-text mt-1.5">{label}</p>
+            </Link>
+          ))}
+        </div>
+      </Panel>
 
       {/* ── Recent activity ── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

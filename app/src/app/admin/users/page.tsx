@@ -5,7 +5,8 @@ import { AdminPager } from '../_components/AdminPager';
 import ScrollMain from '../_components/ScrollMain';
 import { AdminPageHeader, ChipRow, EmptyState, FilterLink } from '../_components/adminUi';
 import { formatAdminNumber } from '../_components/adminFormat';
-import { getUserFacets } from './loadUsers';
+import { SITTINGS } from '@/modules/onboarding/sittings';
+import { getSittingCounts, getUserFacets } from './loadUsers';
 import UserSearch from './_components/UserSearch';
 import UsersTable from './_components/UsersTable';
 import {
@@ -32,15 +33,17 @@ export default async function AdminUsersPage({
     plan?: string;
     access?: string;
     activity?: string;
+    sitting?: string;
     sort?: string;
   }>;
 }) {
   const query = parseUserQuery(await searchParams);
   const where = usersWhere(query, new Date());
-  const [session, total, facets] = await Promise.all([
+  const [session, total, facets, sittings] = await Promise.all([
     auth(),
     prisma.user.count({ where }),
     getUserFacets(),
+    getSittingCounts(),
   ]);
 
   const pageCount = Math.max(1, Math.ceil(total / USERS_PAGE_SIZE));
@@ -80,7 +83,7 @@ export default async function AdminUsersPage({
 
   return (
     <div className="space-y-5 max-w-6xl">
-      <ScrollMain token={`${page}:${query.q}:${query.role}:${query.plan}:${query.access}:${query.activity}:${query.sort}`} />
+      <ScrollMain token={`${page}:${query.q}:${query.role}:${query.plan}:${query.access}:${query.activity}:${query.sitting}:${query.sort}`} />
       <AdminPageHeader
         title="Users"
         description={
@@ -90,7 +93,7 @@ export default async function AdminUsersPage({
         }
       />
 
-      <UserFilters query={query} facets={facets} />
+      <UserFilters query={query} facets={facets} sittings={sittings} />
 
       {users.length === 0 ? (
         <EmptyState>
@@ -116,9 +119,11 @@ export default async function AdminUsersPage({
 function UserFilters({
   query,
   facets,
+  sittings,
 }: {
   query: UserQuery;
   facets: Awaited<ReturnType<typeof getUserFacets>>;
+  sittings: Awaited<ReturnType<typeof getSittingCounts>>;
 }) {
   const href = (patch: Partial<UserQuery>) => usersHref({ ...query, page: 1, ...patch });
   const free = Math.max(0, facets.total - facets.paid);
@@ -177,6 +182,17 @@ function UserFilters({
         </FilterLink>
         <FilterLink href={href({ activity: 'quiet' })} active={query.activity === 'quiet'} title="No path, practice, or exam yet">
           Quiet · {formatAdminNumber(facets.quiet)}
+        </FilterLink>
+      </ChipRow>
+      <ChipRow label="Sitting">
+        <FilterLink href={href({ sitting: null })} active={query.sitting == null}>All</FilterLink>
+        {SITTINGS.map((s) => (
+          <FilterLink key={s.value} href={href({ sitting: s.value })} active={query.sitting === s.value}>
+            {s.label} · {formatAdminNumber(sittings.bySitting[s.value])}
+          </FilterLink>
+        ))}
+        <FilterLink href={href({ sitting: 'none' })} active={query.sitting === 'none'} title="Students who have not said which sitting">
+          Not asked · {formatAdminNumber(sittings.unanswered)}
         </FilterLink>
       </ChipRow>
       <ChipRow label="Plan">

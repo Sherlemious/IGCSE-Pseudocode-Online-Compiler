@@ -1,4 +1,5 @@
 import type { Prisma } from '@prisma/client';
+import { SITTING_VALUES, type Sitting } from '@/modules/onboarding/sittings';
 
 /** One screen of accounts. The old list stopped at 500 and hid everyone older. */
 export const USERS_PAGE_SIZE = 40;
@@ -12,12 +13,15 @@ const PLANS = ['FREE', 'STUDENT', 'STARTER', 'PRO', 'SCHOOL'] as const;
 const ACCESS = ['paid', 'free', 'trial', 'expiring'] as const;
 const ACTIVITY = ['path', 'practice', 'exams', 'quiet'] as const;
 const SORTS = ['newest', 'oldest', 'name'] as const;
+/** A sitting they chose, or `none` for students who have not answered yet. */
+const SITTING_FILTERS = [...SITTING_VALUES, 'none'] as const;
 
 export type UserRole = (typeof ROLES)[number];
 export type UserPlan = (typeof PLANS)[number];
 export type UserAccess = (typeof ACCESS)[number];
 export type UserActivity = (typeof ACTIVITY)[number];
 export type UserSort = (typeof SORTS)[number];
+export type UserSittingFilter = Sitting | 'none';
 
 export type UserQuery = {
   page: number;
@@ -26,6 +30,7 @@ export type UserQuery = {
   plan: UserPlan | null;
   access: UserAccess | null;
   activity: UserActivity | null;
+  sitting: UserSittingFilter | null;
   sort: UserSort;
 };
 
@@ -42,6 +47,7 @@ export function parseUserQuery(raw: {
   plan?: string;
   access?: string;
   activity?: string;
+  sitting?: string;
   sort?: string;
 }): UserQuery {
   const pageNum = Number(raw.page);
@@ -52,6 +58,7 @@ export function parseUserQuery(raw: {
     plan: oneOf(raw.plan, PLANS),
     access: oneOf(raw.access, ACCESS),
     activity: oneOf(raw.activity, ACTIVITY),
+    sitting: oneOf(raw.sitting, SITTING_FILTERS),
     sort: oneOf(raw.sort, SORTS) ?? 'newest',
   };
 }
@@ -64,6 +71,7 @@ export function usersHref(query: {
   plan?: string | null;
   access?: string | null;
   activity?: string | null;
+  sitting?: string | null;
   sort?: string | null;
 }): string {
   const params = new URLSearchParams();
@@ -72,6 +80,7 @@ export function usersHref(query: {
   if (query.plan) params.set('plan', query.plan);
   if (query.access) params.set('access', query.access);
   if (query.activity) params.set('activity', query.activity);
+  if (query.sitting) params.set('sitting', query.sitting);
   if (query.sort && query.sort !== 'newest') params.set('sort', query.sort);
   if (query.page != null && query.page > 1) params.set('page', String(query.page));
   const search = params.toString();
@@ -79,7 +88,7 @@ export function usersHref(query: {
 }
 
 export function usersFiltering(query: UserQuery): boolean {
-  return Boolean(query.q || query.role || query.plan || query.access || query.activity || query.sort !== 'newest');
+  return Boolean(query.q || query.role || query.plan || query.access || query.activity || query.sitting || query.sort !== 'newest');
 }
 
 /** Currently entitled: a non-free plan that has not passed `planExpiresAt`. */
@@ -118,6 +127,8 @@ export function usersWhere(query: UserQuery, now: Date): Prisma.UserWhereInput {
       },
     });
   }
+  if (query.sitting === 'none') and.push({ role: 'STUDENT', examSitting: null });
+  else if (query.sitting) and.push({ examSitting: query.sitting });
   if (query.activity === 'path') and.push({ learnProgress: { some: {} } });
   if (query.activity === 'practice') and.push({ progress: { some: {} } });
   if (query.activity === 'exams') and.push({ examAttempts: { some: {} } });

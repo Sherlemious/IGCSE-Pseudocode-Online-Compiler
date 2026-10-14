@@ -196,7 +196,10 @@ export default function OnboardingNudges() {
     if (params.get('exam_nudge') === '1') setActiveNudge('exam');
     if (params.get('signup_nudge') === '1') setActiveNudge('signup');
     if (params.get('learn_nudge') === '1') setActiveNudge('learn');
-    if (params.get('sitting_nudge') === '1') setActiveNudge('sitting');
+    if (params.get('sitting_nudge') === '1' && !quietRef.current) {
+      cardUp.current = true; // claim the slot, or the next threshold swaps the card out
+      setActiveNudge('sitting');
+    }
     if (params.get('flowchart_nudge') === '1' && !quietRef.current) {
       cardUp.current = true;
       setActiveNudge('flowchart');

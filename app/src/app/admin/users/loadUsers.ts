@@ -1,5 +1,6 @@
 import { unstable_cache } from 'next/cache';
 import { prisma } from '@/shared/db';
+import { SITTING_VALUES, isSitting, type Sitting } from '@/modules/onboarding/sittings';
 
 export type UserFacets = {
   total: number;
@@ -62,3 +63,30 @@ async function loadUserFacets(): Promise<UserFacets> {
 export const getUserFacets = unstable_cache(loadUserFacets, ['admin-user-facets'], {
   revalidate: FACET_REVALIDATE_SECONDS,
 });
+
+export type SittingCounts = {
+  /** Students per chosen sitting; every listed sitting is present, 0 when nobody picked it. */
+  bySitting: Record<Sitting, number>;
+  /** Students who have not answered. */
+  unanswered: number;
+  students: number;
+};
+
+/** Live (not cached): the overview and the Sitting chips should show answers as they arrive. */
+export async function getSittingCounts(): Promise<SittingCounts> {
+  const [grouped, unanswered] = await Promise.all([
+    prisma.user.groupBy({
+      by: ['examSitting'],
+      where: { role: 'STUDENT', examSitting: { not: null } },
+      _count: { _all: true },
+    }),
+    prisma.user.count({ where: { role: 'STUDENT', examSitting: null } }),
+  ]);
+  const bySitting = Object.fromEntries(SITTING_VALUES.map((v) => [v, 0])) as Record<Sitting, number>;
+  let answered = 0;
+  for (const row of grouped) {
+    if (isSitting(row.examSitting)) bySitting[row.examSitting] += row._count._all;
+    answered += row._count._all;
+  }
+  return { bySitting, unanswered, students: answered + unanswered };
+}
