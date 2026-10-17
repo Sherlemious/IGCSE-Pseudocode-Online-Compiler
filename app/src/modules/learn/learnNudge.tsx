@@ -1,6 +1,6 @@
 'use client';
 
-import Link from 'next/link';
+import Link from '@/shared/ui/HoverPrefetchLink';
 import { toast } from 'sonner';
 import { ArrowRight, Crown, Map as MapIcon, X } from 'lucide-react';
 import { studentCheckoutHref, studentCheckoutLabel } from '@/modules/billing/paddle/passes';

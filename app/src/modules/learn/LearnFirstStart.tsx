@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import Link from 'next/link';
+import Link from '@/shared/ui/HoverPrefetchLink';
 import { ArrowRight, Braces, Map as MapIcon } from 'lucide-react';
 import { captureEvent } from '@/modules/interpreter/analytics';
 

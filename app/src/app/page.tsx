@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import Link from '@/shared/ui/HoverPrefetchLink';
 import CompilerPage from '@/modules/compiler/CompilerPage';
 
 const FEATURE_LINKS = [
