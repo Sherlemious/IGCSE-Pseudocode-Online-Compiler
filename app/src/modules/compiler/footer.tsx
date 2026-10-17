@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useCallback } from 'react';
-import Link from 'next/link';
+import Link from '@/shared/ui/HoverPrefetchLink';
 import { usePathname } from 'next/navigation';
 import { usePostHog } from 'posthog-js/react';
 import { Circle, Loader } from 'lucide-react';

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import Link from 'next/link';
+import Link from '@/shared/ui/HoverPrefetchLink';
 import { useSearchParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { ArrowRight, Crown, Play, Trophy } from 'lucide-react';

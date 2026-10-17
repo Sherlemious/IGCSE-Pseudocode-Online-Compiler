@@ -1,6 +1,6 @@
 'use client';
 
-import Link from 'next/link';
+import Link from '@/shared/ui/HoverPrefetchLink';
 import { ArrowRight } from 'lucide-react';
 import { COURSE_CHOICES, type CourseChoice } from './courseChoice';
 import { captureLearn } from './telemetry';

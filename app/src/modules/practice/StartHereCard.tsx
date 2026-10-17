@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import Link from 'next/link';
+import Link from '@/shared/ui/HoverPrefetchLink';
 import { ArrowRight, Flame, Target } from 'lucide-react';
 import { captureEvent } from '@/modules/interpreter/analytics';
 import { DIFF_META, type PracticeListQuestion } from './filterUtils';
