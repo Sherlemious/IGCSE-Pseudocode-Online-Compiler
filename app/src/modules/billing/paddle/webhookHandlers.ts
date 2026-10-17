@@ -79,6 +79,10 @@ export async function applySubscription(data: SubscriptionData, paddle: Paddle, 
       reason: data.status,
       paddle_env: getPaddleEnv(),
       subscription_id: data.id,
+      // Person `plan` is what workflows filter on. The browser only sets it at
+      // sign-in, which is before this webhook, so a buyer stays FREE forever.
+      $set: { plan: 'FREE' },
+      $unset: ['plan_tier'],
     });
     return;
   }
@@ -120,6 +124,7 @@ export async function applySubscription(data: SubscriptionData, paddle: Paddle, 
     paddle_env: env,
     subscription_id: data.id,
     status: data.status,
+    $set: { plan: update.plan, plan_tier: update.planTier },
   });
 }
 
@@ -156,6 +161,8 @@ export async function downgrade(data: SubscriptionData, occurredAt: Date) {
     reason: data.status,
     paddle_env: getPaddleEnv(),
     subscription_id: data.id,
+    $set: { plan: 'FREE' },
+    $unset: ['plan_tier'],
   });
 }
 
@@ -204,6 +211,7 @@ export async function applyPassPurchase(data: TransactionData, paddle: Paddle, o
     plan_tier: pass.tier,
     paddle_env: env,
     transaction_id: data.id,
+    $set: { plan: 'STUDENT', plan_tier: pass.tier },
   });
 }
 
