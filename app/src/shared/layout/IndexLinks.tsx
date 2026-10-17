@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import Link from '@/shared/ui/HoverPrefetchLink';
 
 const LINKS = [
   { href: '/editor', label: 'Pseudocode editor' },

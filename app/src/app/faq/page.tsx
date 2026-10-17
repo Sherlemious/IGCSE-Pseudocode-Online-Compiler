@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
+import Link from '@/shared/ui/HoverPrefetchLink';
 import IndexLinks from '@/shared/layout/IndexLinks';
 import { faqByGroup, faqItems } from '@/modules/content/faq';
 import { SHARE_IMAGE, SITE_NAME, SITE_URL } from '@/shared/lib/seo';

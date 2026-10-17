@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import Link from 'next/link';
+import Link from '@/shared/ui/HoverPrefetchLink';
 import { ChevronRight, List, X, Search } from 'lucide-react';
 
 import CodeBlock from '@/shared/ui/CodeBlock';

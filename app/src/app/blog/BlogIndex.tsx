@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import Link from '@/shared/ui/HoverPrefetchLink';
 import IndexLinks from '@/shared/layout/IndexLinks';
 import { AnswerLines, PaperGrain } from '@/shared/brand';
 import { SITE_NAME, SITE_URL } from '@/shared/lib/seo';

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, type CSSProperties, type ReactNode } from 'react';
-import Link from 'next/link';
+import Link from '@/shared/ui/HoverPrefetchLink';
 import { useSession } from 'next-auth/react';
 import { ArrowRight, Check, Crown, Flag, Lock } from 'lucide-react';
 import { lessonHref } from './path';

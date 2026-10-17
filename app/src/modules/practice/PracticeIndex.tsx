@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import Link from 'next/link';
+import Link from '@/shared/ui/HoverPrefetchLink';
 import { useSession } from 'next-auth/react';
 import { Lock, CheckCircle, Crown, FileText, ArrowRight, Sparkles } from 'lucide-react';
 import { authHref } from '@/modules/auth/callback';

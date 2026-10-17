@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
+import Link from '@/shared/ui/HoverPrefetchLink';
 import IndexLinks from '@/shared/layout/IndexLinks';
 import { examples, exampleSlug, examplesByCategory } from '@/modules/content/examples';
 import { editorCodeHref } from '@/modules/compiler/editorShare';

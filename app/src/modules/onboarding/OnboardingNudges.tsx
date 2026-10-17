@@ -136,6 +136,7 @@ export default function OnboardingNudges() {
     (sitting: Sitting) => {
       sittingAnsweredRef.current = true;
       sittingStateRef.current = 'answered';
+      lsSet(LS.sitting, '1');
       ph?.capture('nudge_clicked', { nudge: 'sitting' });
       ph?.capture('exam_sitting_set', { sitting, source: 'card' });
       ph?.setPersonProperties({ exam_sitting: sitting });
@@ -206,17 +207,27 @@ export default function OnboardingNudges() {
     }
   }, []);
 
-  // Sync DB nudge state → localStorage on first authenticated load
+  // Sync DB nudge state → localStorage once per browser session (not every page load:
+  // each fetch is a billed function call, and this tab's own writes already hit localStorage).
   useEffect(() => {
     if (status !== 'authenticated' || dbSyncedRef.current) return;
     dbSyncedRef.current = true;
+    const syncKey = `nudges_synced_${session?.user?.id ?? ''}`;
+    const synced = sessionStorage.getItem(syncKey);
+    if (synced) {
+      if (lsGet(LS.sitting) === '1') sittingStateRef.current = 'answered';
+      else if (synced === 'answered' || synced === 'unanswered') sittingStateRef.current = synced;
+      return;
+    }
+    const student = session?.user?.role === 'STUDENT';
     fetch('/api/nudges')
       .then((r) => r.json())
       .then(({ nudgesShown }: { nudgesShown: string[] }) => {
         for (const key of nudgesShown) lsSet(`nudge_shown_${key}`, '1');
+        if (!student) sessionStorage.setItem(syncKey, '1');
       })
       .catch(() => {});
-    if (session?.user?.role !== 'STUDENT') return;
+    if (!student) return;
     fetch('/api/me/sitting')
       .then((r) => r.json())
       .then(({ sitting }: { sitting: string | null }) => {
@@ -227,6 +238,7 @@ export default function OnboardingNudges() {
         } else {
           sittingStateRef.current = 'unanswered';
         }
+        sessionStorage.setItem(syncKey, sittingStateRef.current);
       })
       .catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps

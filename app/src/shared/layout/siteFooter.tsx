@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback } from 'react';
-import Link from 'next/link';
+import Link from '@/shared/ui/HoverPrefetchLink';
 import { usePathname } from 'next/navigation';
 import { usePostHog } from 'posthog-js/react';
 
