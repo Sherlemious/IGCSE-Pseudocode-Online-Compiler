@@ -12,6 +12,7 @@
  */
 import { logs, SeverityNumber } from '@opentelemetry/api-logs';
 
+const onCloudflare = process.env.CLOUDFLARE_BUILD === '1';
 const otelLogger = logs.getLogger('igcse-pseudocode-compiler');
 
 export type LogAttributes = Record<string, string | number | boolean | null | undefined>;
@@ -34,6 +35,13 @@ function emit(
     otelLogger.emit({ severityNumber, severityText, body: message, attributes: attrs });
   } catch {
     /* never let logging break a request */
+  }
+
+  if (onCloudflare) {
+    if (severityText === 'DEBUG') return;
+    const sink = { INFO: console.log, WARN: console.warn, ERROR: console.error }[severityText];
+    sink({ level: severityText.toLowerCase(), message, ...attrs });
+    return;
   }
 
   // Mirror the important levels to stdout/stderr for local dev and platform logs.

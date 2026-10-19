@@ -12,7 +12,11 @@
     "directory": ".open-next/assets",
     "binding": "ASSETS"
   },
-  "observability": { "enabled": true },
+  "observability": {
+    "enabled": true,
+    "logs": { "enabled": true, "invocation_logs": true, "head_sampling_rate": 1 },
+    "traces": { "enabled": true, "head_sampling_rate": 0.1 }
+  },
   "triggers": { "crons": ["0 3 * * *"] },
   "services": [{ "binding": "WORKER_SELF_REFERENCE", "service": "pseudocode-compiler" }],
   "hyperdrive": [{ "binding": "HYPERDRIVE", "id": "cea8d950f61b4d1facd0cb26538a4014" }],
