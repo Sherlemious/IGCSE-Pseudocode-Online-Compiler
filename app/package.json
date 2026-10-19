@@ -16,7 +16,10 @@
     "db:studio": "prisma studio",
     "antlr:generate": "antlr4ng -Dlanguage=TypeScript -o src/modules/interpreter/generated -visitor src/modules/interpreter/grammar/Pseudocode.g4",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "build:cf": "opennextjs-cloudflare build",
+    "preview:cf": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
+    "deploy:cf": "opennextjs-cloudflare build && opennextjs-cloudflare deploy"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
@@ -33,6 +36,7 @@
     "@dagrejs/dagre": "^3.0.0",
     "@lezer/highlight": "^1.2.3",
     "@lezer/lr": "^1.4.8",
+    "@opennextjs/cloudflare": "^1.20.12",
     "@opentelemetry/api": "^1.9.0",
     "@opentelemetry/api-logs": "^0.221.0",
     "@opentelemetry/exporter-logs-otlp-http": "^0.221.0",
@@ -44,6 +48,7 @@
     "@opentelemetry/semantic-conventions": "^1.40.0",
     "@paddle/paddle-js": "^1.6.5",
     "@paddle/paddle-node-sdk": "^3.10.0",
+    "@prisma/adapter-pg": "^6.19.2",
     "@prisma/client": "^6.19.2",
     "@radix-ui/react-popover": "^1.1.15",
     "@tailwindcss/typography": "^0.5.19",
@@ -52,8 +57,9 @@
     "bcryptjs": "^3.0.3",
     "html-to-image": "^1.11.13",
     "lucide-react": "^0.577.0",
-    "next": "^16.3.8",
+    "next": "^16.4.1",
     "next-auth": "^5.0.0-beta.32",
+    "pg": "^8.23.1",
     "posthog-js": "^1.438.7",
     "prisma": "^6.19.2",
     "react": "19.2.3",
@@ -81,6 +87,7 @@
     "@tailwindcss/postcss": "^4",
     "@types/bcryptjs": "^2.4.6",
     "@types/node": "^20",
+    "@types/pg": "^8.23.1",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "antlr4ng-cli": "^2.0.0",
@@ -89,6 +96,7 @@
     "tailwindcss": "^4",
     "tsx": "^4.21.0",
     "typescript": "^5",
-    "vitest": "^4.1.11"
+    "vitest": "^4.1.11",
+    "wrangler": "^4.151.1"
   }
 }

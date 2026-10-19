@@ -14,7 +14,10 @@ import { prisma } from '@/shared/db';
 export const CATALOG_REVALIDATE_SECONDS = 24 * 60 * 60;
 const MEMORY_TTL_MS = 5 * 60 * 1000;
 const CATALOG_GENERATION =
-  process.env.VERCEL_DEPLOYMENT_ID ?? process.env.VERCEL_GIT_COMMIT_SHA ?? 'local';
+  process.env.VERCEL_DEPLOYMENT_ID ??
+  process.env.VERCEL_GIT_COMMIT_SHA ??
+  process.env.CLOUDFLARE_BUILD_STAMP ??
+  'local';
 
 export const CATALOG_TAGS = {
   questions: 'questions',

@@ -1,0 +1,46 @@
+name: Deploy to Cloudflare
+
+on:
+  push:
+    branches: [main]
+    paths: ['app/**', '.github/workflows/deploy-cloudflare.yml']
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-cloudflare
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Build and deploy Worker
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: app
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      # The build pre-renders catalog pages from Postgres; deploy populates the
+      # KV cache through a local Hyperdrive proxy.
+      CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_HYPERDRIVE: ${{ secrets.CF_DIRECT_URL }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+
+      # Server env (DATABASE_URL, auth) and the production NEXT_PUBLIC_* values
+      # plus PREMIUM_GATING_ENABLED, which static pages read at build time.
+      - name: Write build env
+        run: |
+          printf '%s\n' "$CF_ENV" > .env
+          printf '%s\n' "$CF_ENV_PRODUCTION" > .env.production.local
+        env:
+          CF_ENV: ${{ secrets.CF_ENV }}
+          CF_ENV_PRODUCTION: ${{ secrets.CF_ENV_PRODUCTION }}
+
+      - run: npm ci
+      - run: npm run deploy:cf

@@ -24,7 +24,7 @@ const eslintConfig = [
   ...nextVitals,
   ...nextTypeScript,
   {
-    ignores: ['src/modules/interpreter/generated/**'],
+    ignores: ['src/modules/interpreter/generated/**', '.open-next/**', '.wrangler/**'],
   },
   {
     rules: {

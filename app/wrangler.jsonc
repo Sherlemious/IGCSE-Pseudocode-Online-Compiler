@@ -1,0 +1,27 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "pseudocode-compiler",
+  "main": "cloudflare-worker.ts",
+  "compatibility_date": "2026-10-01",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "account_id": "24ac8a3c1a8f1df911fa958d54d945a6",
+  "workers_dev": false,
+  "preview_urls": false,
+  "routes": [{ "pattern": "pseudocode-compiler.sherlemious.com", "custom_domain": true }],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  "observability": { "enabled": true },
+  "triggers": { "crons": ["0 3 * * *"] },
+  "services": [{ "binding": "WORKER_SELF_REFERENCE", "service": "pseudocode-compiler" }],
+  "hyperdrive": [{ "binding": "HYPERDRIVE", "id": "cea8d950f61b4d1facd0cb26538a4014" }],
+  "kv_namespaces": [{ "binding": "NEXT_INC_CACHE_KV", "id": "82384a67f5444b6eb80c4329054ded23" }],
+  "d1_databases": [
+    {
+      "binding": "NEXT_TAG_CACHE_D1",
+      "database_name": "pseudocode-tag-cache",
+      "database_id": "45233a63-833a-43af-a015-164174f90192"
+    }
+  ]
+}
