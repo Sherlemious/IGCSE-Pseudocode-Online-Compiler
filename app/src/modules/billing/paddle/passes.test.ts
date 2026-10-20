@@ -15,6 +15,7 @@ import {
   PASS_CATALOG,
   MONTH_PASS,
   type PassDef,
+  featuredPassOffer,
 } from './passes';
 
 const month = MONTH_PASS;
@@ -63,6 +64,19 @@ describe('session pass visibility (UTC months)', () => {
     expect(visiblePasses(utc(2027, 4, 1)).map((p) => p.kind)).toEqual(['may_june']);
     expect(visiblePasses(utc(2027, 5, 1)).map((p) => p.kind)).toEqual(['oct_nov']);
     expect(visiblePasses(utc(2027, 6, 1)).map((p) => p.kind)).toEqual(['oct_nov']);
+  });
+});
+
+describe('featuredPassOffer', () => {
+  it('prices the May/June pass with the exam date', () => {
+    expect(featuredPassOffer(utc(2026, 9, 20))).toEqual({
+      price: '$13',
+      was: '$20',
+      perMonth: '$1.30',
+      until: '30 June 2027',
+      months: 10,
+      discountPct: 33,
+    });
   });
 });
 

@@ -281,3 +281,29 @@ export function expiryForPurchase(
 export function isTeacherPlan(plan: string | null | undefined): boolean {
   return plan === 'STARTER' || plan === 'PRO' || plan === 'SCHOOL';
 }
+
+/**
+ * What the featured pass costs, for the Learn paywall. USD list price; Paddle
+ * localises the real charge at checkout. Null when no session pass is on sale.
+ */
+export function featuredPassOffer(now: Date = new Date()): {
+  price: string;
+  was: string;
+  perMonth: string;
+  until: string;
+  months: number;
+  discountPct: number;
+} | null {
+  const pass = featuredPass(now);
+  if (!pass || pass.kind === 'month') return null;
+  const end = seriesEnd(pass.kind, now);
+  const months = pass.kind === 'may_june' ? 10 : 6;
+  return {
+    price: formatMajor(pass.listUsd, 'USD'),
+    was: formatMajor(pass.wasUsd, 'USD'),
+    perMonth: formatMajor(pass.listUsd / months, 'USD'),
+    until: new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }).format(end),
+    months,
+    discountPct: pass.discountPct,
+  };
+}

@@ -25,7 +25,8 @@ import {
   type ProgressMap,
 } from './progress';
 import { hydrateLearnProgress, persistLearnProgress } from './progressSync';
-import { studentCheckoutHref, studentCheckoutLabel, studentUnlockPitch } from '@/modules/billing/paddle/passes';
+import { featuredPassOffer, studentCheckoutHref, studentCheckoutLabel, studentUnlockPitch } from '@/modules/billing/paddle/passes';
+import PassPriceLine from '@/modules/billing/PassPriceLine';
 import { captureLearn, learnCourseProps, learnLessonProps, learnLevelProps } from './telemetry';
 import { ALEVEL_COURSE_ID, type LearnCourse, type LearnLesson, type LearnLevel, type QuizItem } from './types';
 
@@ -271,6 +272,7 @@ export default function LearnPlayer({ course, level, lesson, premiumAccess: init
   }
 
   const paywalled = lesson.playable && !premiumAccess && !level.free;
+  const offer = featuredPassOffer();
   if (paywalled && status !== 'authenticated') {
     if (status === 'loading') {
       return <div className="flex-1 min-h-0 bg-background bg-dot-grid" />;
@@ -296,6 +298,15 @@ export default function LearnPlayer({ course, level, lesson, premiumAccess: init
               ? `Levels 4–10 are what Paper 2 actually tests: IF and CASE, loops, string handling, arrays, procedures and functions, files, and full exam-style problems. ${studentUnlockPitch()}`
               : 'Complete the previous lesson to unlock this one.'}
           </p>
+          {paywalled && offer && (
+            <div className="mb-4 rounded-xl border border-warning/30 bg-warning/5 p-3 text-sm">
+              <PassPriceLine offer={offer} />
+              <p className="mt-1.5 text-dark-text">
+                Level {level.number} ends with: {level.leaveWith}. No subscription to cancel, and you can ask for a
+                full refund within 14 days.
+              </p>
+            </div>
+          )}
           {paywalled && (
             <div className="flex flex-wrap items-center gap-3 mb-4">
               <Link
