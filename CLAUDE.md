@@ -288,9 +288,12 @@ Page-side events fire via `captureEvent` (same path as `class_joined` / `assignm
 | `assignment_started` | `assignment_id`, `class_id`, `source`, `exam_id` (attempt id) |
 | `class_progress_viewed` | `class_id`, `roster_size`, `assignment_count`, `students_with_practice`, `students_active_7d` |
 | `class_roster_sorted` | `class_id`, `sort` (`name`\|`solved`\|`last_active`) |
-| `class_student_progress_clicked` | `class_id`, `source` (`roster`\|`assignment_results`) |
+| `class_student_progress_clicked` | `class_id`, `source` (`roster`\|`assignment_results`\|`mark_book`) |
 | `class_student_progress_viewed` | `class_id`, `solved_count`, `attempted_count`, `assignments_submitted`, `assignment_count`, `has_practice` |
 | `class_student_code_expanded` | `class_id`, `surface` (`assigned_work`\|`practice`) |
+| `class_marks_viewed` | `class_id`, `roster_size`, `assignment_count`, `tier` — mark book (`/classes/[classId]/marks`). No names, emails, or code |
+| `class_marks_exported` | `class_id`, `row_count`, `assignment_count` — CSV download succeeded. Free tier is rejected server-side with 403 `PLAN_REQUIRED` |
+| `nudge_shown` / `nudge_clicked` (`nudge: mark_book_upgrade`) | `class_id` — free teachers on the mark book. The upgrade link is `/pricing?view=teacher&from=mark_book` |
 | `nudge_shown` (`nudge: class_limit`) | `class_count`, `student_count`, `max_classes`, `tier` — locked “create a class” card (`CreateClassForm`). The later teacher email sends only when `tier` is `free` and `student_count` ≥ 1, and says the free plan is one class and five students |
 
 ### Pricing / subscription funnel (`/pricing` + Paddle checkout)

@@ -347,7 +347,7 @@ export const faqItems: FaqItem[] = [
       'Yes. Create a class, share a join link or code, and students sign in with Google. Teacher plans raise class and roster limits; see Pricing.',
       'Assign an exam from the question bank as homework, optionally with a due date. You see how many students have submitted. The same hidden-test autograder used in practice marks the work.',
       'The class roster shows questions solved, last activity, and assignment completion. Open a student to see their report card (topics, difficulty, heatmap) plus assigned work and latest code.',
-      'For a timed mock, publish an exam and share `/e/CODE`. Students sit it against the clock and get a report card on submit. There is no Canvas or Google Classroom gradebook export yet.',
+      'For a timed mock, publish an exam and share `/e/CODE`. Students sit it against the clock and get a report card on submit. Paid teacher plans include a class mark book with CSV export. There is no Canvas or Google Classroom sync.',
     ],
   },
   {

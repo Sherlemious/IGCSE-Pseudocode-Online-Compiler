@@ -12,6 +12,13 @@ import {
 import { PREMIUM_GATING_ENABLED } from '@/modules/billing/featureFlags';
 import { findOwnedExam } from '@/modules/exams/repo';
 import { promoteToTeacher } from '@/modules/auth/userRepo';
+import {
+  buildMarkBook,
+  marksCsvFilename,
+  previewMarkBook,
+  serializeMarkBookCsv,
+  type MarkPreview,
+} from './markBook';
 import * as repo from './repo';
 
 /** A class/assignment failure with its HTTP status and machine-readable code. */
@@ -115,6 +122,69 @@ export async function unassignExam(classId: string, userId: string, assignmentId
   const assignment = await repo.findAssignmentOwnership(assignmentId);
   if (!assignment || assignment.classId !== classId || assignment.class.ownerId !== userId) throw notFound();
   await repo.deleteAssignment(assignmentId);
+}
+
+type MarkBookClass = NonNullable<Awaited<ReturnType<typeof repo.findClassMarkBook>>>;
+
+function toMarkInput(cls: MarkBookClass) {
+  return {
+    students: cls.memberships.map((member) => ({
+      userId: member.userId,
+      name: member.user.name,
+      email: member.user.email,
+    })),
+    assignments: cls.assignments.map((assignment) => ({
+      id: assignment.id,
+      title: assignment.exam.title,
+      dueDate: assignment.dueDate,
+    })),
+    attempts: cls.assignments.flatMap((assignment) =>
+      assignment.attempts.map((attempt) => ({
+        userId: attempt.userId,
+        assignmentId: assignment.id,
+        status: attempt.status,
+        score: attempt.score,
+        totalTests: attempt.totalTests,
+        createdAt: attempt.createdAt,
+        completedAt: attempt.completedAt,
+      })),
+    ),
+  };
+}
+
+async function loadOwnedMarkBook(classId: string, userId: string): Promise<MarkBookClass> {
+  const cls = await repo.findClassMarkBook(classId);
+  if (!cls || cls.archived || cls.ownerId !== userId) throw notFound();
+  return cls;
+}
+
+/** Owner-only grid. Free tier gets a preview with every column after the first removed. */
+export async function getClassMarkBook(classId: string, userId: string): Promise<{
+  className: string;
+  tier: string;
+  exportAllowed: boolean;
+  preview: MarkPreview;
+}> {
+  const cls = await loadOwnedMarkBook(classId, userId);
+  const { tier } = await getEntitlements(userId);
+  const exportAllowed = tier !== 'free';
+  return {
+    className: cls.name,
+    tier,
+    exportAllowed,
+    preview: previewMarkBook(buildMarkBook(toMarkInput(cls)), exportAllowed),
+  };
+}
+
+/** Owner-only CSV. Trial counts as paid; an unpaid teacher gets PLAN_REQUIRED. */
+export async function buildClassMarksCsv(classId: string, userId: string): Promise<{ filename: string; body: string }> {
+  const cls = await loadOwnedMarkBook(classId, userId);
+  const { tier } = await getEntitlements(userId);
+  if (tier === 'free') {
+    throw new ClassRequestError(403, 'PLAN_REQUIRED', 'CSV export is included with Starter.');
+  }
+  const book = buildMarkBook(toMarkInput(cls));
+  return { filename: marksCsvFilename(cls.name), body: serializeMarkBookCsv(book) };
 }
 
 // ── Student: joining and starting ──────────────────────────────────────────

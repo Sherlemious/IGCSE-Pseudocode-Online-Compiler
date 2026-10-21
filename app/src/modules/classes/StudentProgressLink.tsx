@@ -4,7 +4,7 @@ import type { ReactNode } from 'react';
 import Link from 'next/link';
 import { captureEvent } from '@/modules/interpreter/analytics';
 
-export type StudentProgressSource = 'roster' | 'assignment_results';
+export type StudentProgressSource = 'roster' | 'assignment_results' | 'mark_book';
 
 export default function StudentProgressLink({
   classId,

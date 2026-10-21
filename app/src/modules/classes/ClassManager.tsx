@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Copy, Check, Pencil, Archive, UserMinus, Loader2, Users, ChevronRight } from 'lucide-react';
+import { Copy, Check, Pencil, Archive, UserMinus, Loader2, Users, ChevronRight, Table2 } from 'lucide-react';
 import { captureEvent } from '@/modules/interpreter/analytics';
 import { teacherYearlyCheckoutHref } from '@/modules/billing/teacherCheckout';
 import { ConfirmDialog } from '@/shared/ui/Modal';
@@ -157,7 +157,7 @@ export default function ClassManager({
   return (
     <div className="space-y-6">
       {/* Title + actions */}
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         {editing ? (
           <input
             autoFocus
@@ -177,15 +177,25 @@ export default function ClassManager({
             </button>
           </h1>
         )}
-        <button
-          onClick={() => setArchiveOpen(true)}
-          disabled={busy === 'archive'}
-          className="shrink-0 inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-border text-xs
-            text-dark-text hover:text-error hover:border-error/40 transition-colors disabled:opacity-50"
-        >
-          {busy === 'archive' ? <Loader2 size={13} className="animate-spin" /> : <Archive size={13} />}
-          Archive
-        </button>
+        <div className="flex items-center gap-2 shrink-0">
+          <Link
+            href={`/classes/${classId}/marks`}
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-border text-xs
+              text-dark-text hover:text-primary hover:border-primary/40 transition-colors"
+          >
+            <Table2 size={13} />
+            Mark book
+          </Link>
+          <button
+            onClick={() => setArchiveOpen(true)}
+            disabled={busy === 'archive'}
+            className="shrink-0 inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-border text-xs
+              text-dark-text hover:text-error hover:border-error/40 transition-colors disabled:opacity-50"
+          >
+            {busy === 'archive' ? <Loader2 size={13} className="animate-spin" /> : <Archive size={13} />}
+            Archive
+          </button>
+        </div>
       </div>
 
       {offerStarter && (
