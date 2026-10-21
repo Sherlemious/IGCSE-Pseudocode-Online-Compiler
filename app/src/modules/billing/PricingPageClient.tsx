@@ -167,9 +167,9 @@ function PricingViewInner({
               </>
             ) : (
               <>
-                Start with Starter, or tell us how many students you teach — we&apos;ll show the
-                matching plan and how many classes you get. Students on your roster get the
-                library; they don&apos;t buy a pass.
+                A paid plan covers your roster: the full library, the Paper 2 Path, assignments,
+                and your own questions. Start with Starter, or match a larger plan to how many
+                students you teach. They don&apos;t buy a pass.
               </>
             )}
           </p>

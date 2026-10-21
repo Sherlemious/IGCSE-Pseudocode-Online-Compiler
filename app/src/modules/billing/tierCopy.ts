@@ -2,7 +2,26 @@
  * Marketing copy for /pricing cards. Kept in code so a deploy updates the page
  * immediately (the PricingTier table is cached, and is the source of Paddle IDs).
  * `prisma/seedPricing.ts` upserts the same strings into the DB.
+ *
+ * Every paid teacher band includes the same teaching tools. Seat count is the
+ * only difference, and that is shown on the cards — not repeated here.
  */
+export const PAID_TEACHER_INCLUDED = {
+  students: [
+    'Full practice library, including premium questions',
+    'Timed exams',
+    'Paper 2 Path, every level',
+    'A join link is enough — no student checkout',
+  ],
+  teaching: [
+    'Your own autograded questions, with hidden tests',
+    'Assign homework from the question bank, with a due date',
+    'Hidden tests mark the work, and you see who has submitted',
+    'Roster: questions solved, last activity, and assignments done',
+    'Each student’s report card, Paper 2 Path, assigned work, and latest code',
+  ],
+} as const;
+
 export const TIER_COPY: Record<
   string,
   { name: string; description: string; features: string[] }
@@ -21,11 +40,9 @@ export const TIER_COPY: Record<
     name: 'Starter',
     description: 'One teacher, a real class — your students get the full library',
     features: [
-      'Every student in your class unlocks premium practice & exams',
+      ...PAID_TEACHER_INCLUDED.students,
+      ...PAID_TEACHER_INCLUDED.teaching,
       'Up to 3 classes, 30 students in total',
-      'Assignments with autograding',
-      'Write your own autograded questions',
-      'Share a join link — students do not pay',
     ],
   },
   pro: {
