@@ -32,6 +32,41 @@ export function findClassWithRoster(classId: string) {
   });
 }
 
+export function findClassMarkBook(classId: string) {
+  return prisma.class.findUnique({
+    where: { id: classId },
+    select: {
+      id: true,
+      name: true,
+      ownerId: true,
+      archived: true,
+      memberships: {
+        orderBy: { joinedAt: 'asc' },
+        select: { userId: true, user: { select: { name: true, email: true } } },
+      },
+      assignments: {
+        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true,
+          dueDate: true,
+          exam: { select: { title: true } },
+          attempts: {
+            where: { user: { classEnrollments: { some: { classId } } } },
+            select: {
+              userId: true,
+              status: true,
+              score: true,
+              totalTests: true,
+              createdAt: true,
+              completedAt: true,
+            },
+          },
+        },
+      },
+    },
+  });
+}
+
 export function listOwnedClasses(ownerId: string) {
   return prisma.class.findMany({
     where: { ownerId, archived: false },

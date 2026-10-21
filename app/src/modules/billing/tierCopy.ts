@@ -24,6 +24,7 @@ export const TIER_COPY: Record<
       'Every student in your class unlocks premium practice & exams',
       'Up to 3 classes, 30 students in total',
       'Assignments with autograding',
+      'Mark book with CSV export',
       'Share a join link — students do not pay',
     ],
   },
