@@ -15,6 +15,7 @@ export const PAID_TEACHER_INCLUDED = {
   ],
   teaching: [
     'Your own autograded questions, with hidden tests',
+    'Mark book with CSV export',
     'Assign homework from the question bank, with a due date',
     'Hidden tests mark the work, and you see who has submitted',
     'Roster: questions solved, last activity, and assignments done',

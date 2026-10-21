@@ -129,9 +129,9 @@ function TeacherIncluded() {
         <div>
           <h3 className="text-xs font-medium uppercase tracking-wide text-primary">You</h3>
           <p className="mt-1 text-xs text-dark-text">Needs a paid plan</p>
-          <FeatureList items={PAID_TEACHER_INCLUDED.teaching.slice(0, 1)} />
+          <FeatureList items={PAID_TEACHER_INCLUDED.teaching.slice(0, 2)} />
           <p className="mt-4 text-xs text-dark-text">Works on a free class too, within its five students</p>
-          <FeatureList items={PAID_TEACHER_INCLUDED.teaching.slice(1)} />
+          <FeatureList items={PAID_TEACHER_INCLUDED.teaching.slice(2)} />
         </div>
       </div>
     </section>
