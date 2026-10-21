@@ -16,6 +16,7 @@ const productModules = [
   'onboarding',
   'practice',
   'progress',
+  'questions',
   'share',
   'telemetry',
 ];
@@ -147,7 +148,7 @@ const eslintConfig = [
   },
   {
     // Feature pages reuse the editor kit (compiler/editor), not the playground page.
-    files: ['src/modules/{practice,exams,learn,flowchart}/**/*.{ts,tsx}'],
+    files: ['src/modules/{practice,exams,learn,flowchart,questions}/**/*.{ts,tsx}'],
     rules: {
       'no-restricted-imports': [
         'error',

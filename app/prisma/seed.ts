@@ -10675,8 +10675,10 @@ async function main() {
   console.log(`  ✓ ${exampleData.length} examples`);
 
   // ── Questions ─────────────────────────────────────────────────────────────
-  // Upsert by title so existing question IDs (and all linked Progress /
-  // ExamAnswer / ExamAttempt records) are preserved.
+  // Upsert catalog rows by title so existing question IDs (and all linked
+  // Progress / ExamAnswer / ExamAttempt records) are preserved.
+  // ownerId: null is required: a teacher-authored question must not be matched,
+  // updated, or have its tests deleted just because the title matches the bank.
   console.log('Seeding practice questions...');
 
   const testCaseData = (tc: { inputs: string[]; expectedOutput: string; description: string | null; isHidden?: boolean; sortOrder: number; initialFiles?: string | null }) => ({
@@ -10691,7 +10693,7 @@ async function main() {
   for (const [idx, q] of questions.entries()) {
     const { testCases, ...questionData } = q;
 
-    const existing = await prisma.question.findFirst({ where: { title: q.title } });
+    const existing = await prisma.question.findFirst({ where: { title: q.title, ownerId: null } });
 
     if (existing) {
       // Update question fields and refresh test cases
@@ -10707,6 +10709,7 @@ async function main() {
       await prisma.question.create({
         data: {
           ...questionData,
+          ownerId: null,
           testCases: { create: testCases.map(testCaseData) },
         },
       });

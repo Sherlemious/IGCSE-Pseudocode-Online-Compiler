@@ -64,6 +64,7 @@ model User {
   playgroundSnapshot  PlaygroundSnapshot?
   taughtClasses       Class[]              @relation("TaughtClasses")
   classEnrollments    ClassMembership[]    @relation("ClassEnrollments")
+  questions           Question[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -190,6 +191,12 @@ model Question {
   solution            String?  @db.Text
   solutionExplanation String?  @db.Text
 
+  /// Null is the seeded public bank. A set owner is a teacher-authored question:
+  /// those rows stay out of the catalog cache and every public listing. Cascade
+  /// removes them with the teacher; catalog rows have no owner, so they stay.
+  ownerId String?
+  owner   User?   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
   testCases   TestCase[]
   progress    Progress[]
   examAnswers ExamAnswer[]
@@ -201,6 +208,7 @@ model Question {
   @@index([topic])
   @@index([difficulty, isPremium])
   @@index([year, title])
+  @@index([ownerId])
 }
 
 model TestCase {

@@ -282,9 +282,16 @@ function toBankQuestion(row: BankQuestionRow): BankQuestion {
   return { ...row, createdAt: iso(row.createdAt), updatedAt: iso(row.updatedAt) };
 }
 
+/**
+ * Public bank only. Teacher-authored questions have an owner and must never
+ * enter the Data Cache, practice, sitemap, or the random exam pool.
+ */
+const CATALOG_WHERE = { ownerId: null } satisfies Prisma.QuestionWhereInput;
+
 /** List metadata only — no descriptions, starter code, hints or tests. */
 async function loadCatalog(): Promise<QuestionCatalogItem[]> {
   const rows = await prisma.question.findMany({
+    where: CATALOG_WHERE,
     orderBy: QUESTION_ORDER,
     select: {
       id: true,
@@ -308,20 +315,27 @@ async function loadCatalog(): Promise<QuestionCatalogItem[]> {
 }
 
 async function loadQuestion(id: string): Promise<BankQuestion | null> {
-  const row = await prisma.question.findUnique({ where: { id }, select: BANK_QUESTION_SELECT });
+  const row = await prisma.question.findFirst({
+    where: { id, ...CATALOG_WHERE },
+    select: BANK_QUESTION_SELECT,
+  });
   return row ? toBankQuestion(row) : null;
 }
 
 async function loadSolution(id: string): Promise<QuestionSolution | null> {
-  return prisma.question.findUnique({
-    where: { id },
+  return prisma.question.findFirst({
+    where: { id, ...CATALOG_WHERE },
     select: { id: true, solution: true, solutionExplanation: true },
   });
 }
 
 /** `/api/questions` (exam builder): descriptions + visible test counts, still no test data. */
 async function loadQuestionsApiList() {
-  const rows = await prisma.question.findMany({ orderBy: QUESTION_ORDER, select: BANK_QUESTION_SELECT });
+  const rows = await prisma.question.findMany({
+    where: CATALOG_WHERE,
+    orderBy: QUESTION_ORDER,
+    select: BANK_QUESTION_SELECT,
+  });
   return listQuestionsApiPayload(rows.map(toBankQuestion), {});
 }
 

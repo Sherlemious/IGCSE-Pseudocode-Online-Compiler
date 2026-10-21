@@ -41,7 +41,15 @@ interface TierSeed {
 // Shared display copy — identical across environments; only the price IDs differ.
 const COPY = {
   student: { ...TIER_COPY.student, sortOrder: 0, contactOnly: false },
-  starter: { ...TIER_COPY.starter, sortOrder: 1, contactOnly: false },
+  starter: {
+    ...TIER_COPY.starter,
+    features: [
+      ...TIER_COPY.starter.features.filter((feature) => feature !== 'Write your own autograded questions'),
+      'Write your own autograded questions',
+    ],
+    sortOrder: 1,
+    contactOnly: false,
+  },
   pro: { ...TIER_COPY.pro, sortOrder: 2, contactOnly: false },
   department: { ...TIER_COPY.department, sortOrder: 3, contactOnly: false },
   school: { ...TIER_COPY.school, sortOrder: 4, contactOnly: false },

@@ -2,13 +2,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ExamAnswer, ExamAttempt, TestCase } from '@prisma/client';
 import type { GradeResult } from '@/modules/practice/autograder';
 
-const { db, grade, auth, getQuestionForGrade } = vi.hoisted(() => ({
+const { db, grade, auth, getQuestionForGrade, loadOwnedTestCases } = vi.hoisted(() => ({
   db: {
     $transaction: vi.fn(), $queryRaw: vi.fn(),
     examAttempt: { findUniqueOrThrow: vi.fn(), update: vi.fn() },
     examAnswer: { findUnique: vi.fn(), findMany: vi.fn(), update: vi.fn() },
   },
-  grade: vi.fn(), auth: vi.fn(), getQuestionForGrade: vi.fn(),
+  grade: vi.fn(), auth: vi.fn(), getQuestionForGrade: vi.fn(), loadOwnedTestCases: vi.fn(),
 }));
 vi.mock('@/shared/db', () => ({ prisma: db }));
 vi.mock('@/modules/practice/autograder', () => ({
@@ -18,6 +18,7 @@ vi.mock('@/modules/practice/autograder', () => ({
 }));
 vi.mock('@/modules/auth/auth', () => ({ auth }));
 vi.mock('@/shared/lib/catalogCache', () => ({ getQuestionForGrade }));
+vi.mock('@/modules/questions/repo', () => ({ loadOwnedTestCases }));
 
 import { gradeExamAnswer, saveExamAnswer, submitExamAttempt } from './attempts';
 import { POST as saveRoute } from '@/app/api/exam/[examId]/save/route';
@@ -134,9 +135,25 @@ describe('exam answer integrity', () => {
     testCases[0].description = 'private description';
     const result = await gradeExamAnswer(exam.id, exam.userId, submission);
     expect(result).toMatchObject({ passCount: 1, totalTests: 1, results: [{ passed: true, isHidden: true, description: undefined }] });
+    expect(loadOwnedTestCases).not.toHaveBeenCalled();
     expect(answer).toMatchObject({ code: submission.code, graded: true, passCount: 1 });
     expect(db.$queryRaw.mock.calls[0][0].join('?')).toContain('FOR UPDATE');
     expect(db.$queryRaw.mock.calls[0].slice(1)).toEqual([exam.id, exam.userId]);
+  });
+
+  it('grades an owned question from the database when it is not in the catalog', async () => {
+    getQuestionForGrade.mockResolvedValue(null);
+    loadOwnedTestCases.mockResolvedValue(structuredClone(testCases));
+    const result = await gradeExamAnswer(exam.id, exam.userId, submission);
+    expect(loadOwnedTestCases).toHaveBeenCalledWith('q1');
+    expect(result).toMatchObject({ passCount: 1, totalTests: 1 });
+  });
+
+  it('rejects an attempt question that is neither catalog nor owned', async () => {
+    getQuestionForGrade.mockResolvedValue(null);
+    loadOwnedTestCases.mockResolvedValue(null);
+    await expect(gradeExamAnswer(exam.id, exam.userId, submission)).rejects.toMatchObject({ code: 'QUESTION_NOT_IN_EXAM' });
+    expect(grade).not.toHaveBeenCalled();
   });
 
   it.each([false, true])('rejects stale results after edits, including changing back: %s', async (changeBack) => {

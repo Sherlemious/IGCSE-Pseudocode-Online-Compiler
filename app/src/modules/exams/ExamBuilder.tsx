@@ -51,6 +51,8 @@ export default function ExamBuilder({
   const [selectedIds, setSelectedIds] = useState<string[]>(initialQuestionIds);
 
   const [bank, setBank] = useState<BankQuestion[]>([]);
+  const [mine, setMine] = useState<BankQuestion[]>([]);
+  const [source, setSource] = useState<'bank' | 'mine'>('bank');
   const [bankLoading, setBankLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [topicFilter, setTopicFilter] = useState('');
@@ -63,8 +65,12 @@ export default function ExamBuilder({
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch('/api/questions');
-        const data = await res.json();
+        const [bankRes, mineRes] = await Promise.all([
+          fetch('/api/questions'),
+          fetch('/api/questions/mine'),
+        ]);
+        const data = await bankRes.json();
+        const mineData = mineRes.ok ? await mineRes.json() : { questions: [] };
         if (cancelled) return;
         const mapped: BankQuestion[] = (data.questions ?? []).map(
           (q: {
@@ -81,7 +87,19 @@ export default function ExamBuilder({
             testCaseCount: q._count?.testCases ?? 0,
           }),
         );
+        const owned: BankQuestion[] = (mineData.questions ?? []).map(
+          (q: { id: string; title: string; difficulty: 'EASY' | 'MEDIUM' | 'HARD'; topic: string | null; testCount?: number }) => ({
+            id: q.id,
+            title: q.title,
+            difficulty: q.difficulty,
+            topic: q.topic,
+            year: null,
+            paper: null,
+            testCaseCount: q.testCount ?? 0,
+          }),
+        );
         setBank(mapped);
+        setMine(owned);
       } catch {
         if (!cancelled) setError('Failed to load the question bank.');
       } finally {
@@ -91,23 +109,29 @@ export default function ExamBuilder({
     return () => { cancelled = true; };
   }, []);
 
-  const byId = useMemo(() => new Map(bank.map((q) => [q.id, q])), [bank]);
+  const byId = useMemo(() => {
+    const map = new Map<string, BankQuestion>();
+    for (const question of bank) map.set(question.id, question);
+    for (const question of mine) map.set(question.id, question);
+    return map;
+  }, [bank, mine]);
+  const visibleBank = source === 'mine' ? mine : bank;
   const selectedSet = useMemo(() => new Set(selectedIds), [selectedIds]);
 
   const topics = useMemo(
-    () => [...new Set(bank.map((q) => q.topic).filter(Boolean) as string[])].sort(),
-    [bank],
+    () => [...new Set(visibleBank.map((q) => q.topic).filter(Boolean) as string[])].sort(),
+    [visibleBank],
   );
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return bank.filter((item) => {
+    return visibleBank.filter((item) => {
       if (topicFilter && item.topic !== topicFilter) return false;
       if (difficultyFilter && item.difficulty !== difficultyFilter) return false;
       if (q && !item.title.toLowerCase().includes(q)) return false;
       return true;
     });
-  }, [bank, search, topicFilter, difficultyFilter]);
+  }, [visibleBank, search, topicFilter, difficultyFilter]);
 
   const toggle = (id: string) =>
     setSelectedIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
@@ -283,7 +307,19 @@ export default function ExamBuilder({
 
         {/* ── Question bank ───────────────────────────────── */}
         <div className="bg-surface rounded-xl border border-border p-6">
-          <h2 className="mono-label text-light-text mb-4">Question Bank</h2>
+          <div className="flex gap-1 mb-4">
+            {(['bank', 'mine'] as const).map((tab) => (
+              <button
+                key={tab}
+                type="button"
+                onClick={() => { setSource(tab); setSearch(''); setTopicFilter(''); setDifficultyFilter(''); }}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors
+                  ${source === tab ? 'bg-primary/10 text-primary' : 'text-dark-text hover:text-light-text'}`}
+              >
+                {tab === 'bank' ? 'Question bank' : 'My questions'}
+              </button>
+            ))}
+          </div>
 
           <div className="space-y-2.5 mb-4">
             <div className="relative">
@@ -331,6 +367,11 @@ export default function ExamBuilder({
               <div className="flex items-center justify-center py-10 text-dark-text">
                 <Loader2 size={18} className="animate-spin" />
               </div>
+            ) : source === 'mine' && mine.length === 0 ? (
+              <p className="text-xs text-dark-text/60 py-10 text-center">
+                You have not written any questions yet.{' '}
+                <Link href="/questions/new" className="text-primary hover:underline">Write one</Link>
+              </p>
             ) : filtered.length === 0 ? (
               <p className="text-xs text-dark-text/60 py-10 text-center">No questions match.</p>
             ) : (

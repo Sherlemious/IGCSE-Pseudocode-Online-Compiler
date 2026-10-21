@@ -2,6 +2,8 @@ import { Prisma, type Difficulty } from '@prisma/client';
 import { HttpError, badRequest, forbidden, notFound } from '@/shared/http/errors';
 import { generateShareCode } from '@/shared/lib/shareCode';
 import { existingCatalogQuestionIds, getExamQuestionPool } from '@/shared/lib/catalogCache';
+import { acceptedExamQuestionIds } from '@/modules/questions/access';
+import { findOwnedQuestionIds } from '@/modules/questions/repo';
 import { getPremiumAccess } from '@/modules/billing/entitlements';
 import { PREMIUM_GATING_ENABLED } from '@/modules/billing/featureFlags';
 import * as repo from './repo';
@@ -29,10 +31,14 @@ async function withFreshShareCode<T>(create: (shareCode: string) => Promise<T>):
   throw new HttpError(500, 'Could not generate a unique share code. Please try again.');
 }
 
-/** Known, exam-eligible questions in the given order; 400 when none are. */
-async function validQuestionIds(questionIds: string[]): Promise<string[]> {
+/** Catalog ids plus this teacher's own questions, in the given order; 400 when none are. */
+async function validQuestionIds(ownerId: string, questionIds: string[]): Promise<string[]> {
   if (questionIds.length === 0) throw badRequest('Add at least one question.');
-  const valid = await existingCatalogQuestionIds(questionIds);
+  const [catalogIds, ownedIds] = await Promise.all([
+    existingCatalogQuestionIds(questionIds),
+    findOwnedQuestionIds(ownerId, questionIds),
+  ]);
+  const valid = acceptedExamQuestionIds(questionIds, catalogIds, ownedIds);
   if (valid.length === 0) throw badRequest('None of the selected questions could be found.');
   return valid;
 }
@@ -45,7 +51,7 @@ export async function createExam(
   ownerId: string,
   input: { title: string; description: string | null; timeLimitMin: number; questionIds: string[] },
 ) {
-  const questionIds = await validQuestionIds(input.questionIds);
+  const questionIds = await validQuestionIds(ownerId, input.questionIds);
   const exam = await withFreshShareCode((shareCode) =>
     repo.createExam({ ...input, ownerId, shareCode, questionIds }),
   );
@@ -59,7 +65,7 @@ export async function updateExam(
   questionIds: string[] | null,
 ) {
   await requireOwnedExam(examId, ownerId);
-  await repo.updateExam(examId, data, questionIds ? await validQuestionIds(questionIds) : null);
+  await repo.updateExam(examId, data, questionIds ? await validQuestionIds(ownerId, questionIds) : null);
 }
 
 export async function deleteExam(examId: string, ownerId: string) {

@@ -54,6 +54,8 @@ export default async function ClassesPage() {
           <div>
             <h1 className="display-serif text-2xl font-semibold text-light-text">My Classes</h1>
             <p className="text-xs text-dark-text mt-0.5">
+              <Link href="/questions/mine" className="text-primary hover:underline">My questions</Link>
+              {' · '}
               {entitlements.tier === 'free' ? (
                 <>
                   Invite students by link.{' '}
