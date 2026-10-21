@@ -42,6 +42,7 @@ Modular monolith. `src/app/` is a thin routing layer (pages + API route handlers
 | `modules/practice` | Practice UI + autograder |
 | `modules/learn` | Paper 2 Path (`/learn`) — sequenced levels, player, local progress |
 | `modules/exams` | Exam take/author UI |
+| `modules/questions` | Teacher-authored autograded questions (`/questions`) |
 | `modules/classes` | Class/assignment UI |
 | `modules/auth` | NextAuth config, session UI, transactional email |
 | `modules/admin` | Admin gate (`isAdmin`) — pages stay under `app/admin` |
@@ -54,7 +55,7 @@ Dependency rules (enforced by ESLint):
 - `interpreter` ↛ product modules, Prisma, PostHog, Next.js
 - `billing` ↛ interpreter / compiler / practice
 - `shared/ui` + `shared/lib` ↛ product modules (interpreter tokens are allowed). `shared/layout` may compose feature UI (Header → UserMenu).
-- `practice` / `exams` / `learn` / `flowchart` may import `compiler/editor` (CodeMirror + trace table), not `CompilerPage`. They may import `flowchart`
+- `practice` / `exams` / `learn` / `flowchart` / `questions` may import `compiler/editor` (CodeMirror + trace table), not `CompilerPage`. They may import `flowchart`
 
 ## Key Paths
 
@@ -188,7 +189,7 @@ The autograder returns `error.hint` (same text as the Run button) and `error.cat
 ## Database Schema (Prisma)
 
 - `User` / `Account` / `Session` — NextAuth tables
-- `Question` / `TestCase` — practice questions with test cases
+- `Question` / `TestCase` — practice questions with test cases. `Question.ownerId` is null for a catalog question and set for a teacher-authored one (`onDelete: Cascade`, indexed). Owned questions are excluded from every catalog read (`ownerId: null` in `catalogCache`, and the question seed upsert). Apply this column with `npx prisma db push` before deploy — do not `migrate`. Until that push, question queries that select `ownerId` will fail.
 - `Progress` — per-user question completion state
 - `ExamAttempt` / `ExamAnswer` — a student's run of an exam (timed session). `examId` is null for the self-service random simulator; set when the attempt is a run of a shared `Exam`.
 - `Exam` / `ExamQuestion` — instructor-authored, reusable, shareable exam **definitions** (fixed ordered question set, `shareCode`, `isPublished`). Any signed-in user can create one and share it via `/e/[code]`; taking it materializes an `ExamAttempt` (`api/exams/[examId]/start`) so the existing take→grade→results pipeline is reused unchanged.
@@ -198,7 +199,7 @@ The autograder returns `error.hint` (same text as the Run button) and `error.cat
 - `User.examSitting` / `examSittingAt` — which sitting a student is preparing for (`oct_nov_2026` \| `feb_mar_2027` \| `may_jun_2027` \| `later`, list in `onboarding/sittings.ts`). Set from the corner card (`SittingCard`, `POST /api/me/sitting`) and mirrored to the PostHog person property `exam_sitting` so reminder emails can be timed to the paper
 - `User.emailVerified` — set by the welcome-email confirm link (`auth/emailVerification.ts`, `/api/auth/verify-email`) or by linking Google. Linking Google to an account whose password was never verified clears that password (pre-registration takeover guard)
 
-> **DB workflow:** the migration history under `prisma/migrations/` is stale/incomplete — `prisma migrate dev` fails on shadow-DB replay of an older migration. Apply schema changes to the dev DB with `npx prisma db push` (schema-diff, no shadow replay). Purely additive changes are non-destructive.
+> **DB workflow:** the migration history under `prisma/migrations/` is stale/incomplete — `prisma migrate dev` fails on shadow-DB replay of an older migration. Apply schema changes to the dev DB with `npx prisma db push` (schema-diff, no shadow replay). Purely additive changes are non-destructive. `Question.ownerId` (nullable, indexed, cascade on user delete) is one of those: `db push` it before deploying teacher-authored questions.
 
 ## Dev Commands
 
@@ -288,10 +289,24 @@ Page-side events fire via `captureEvent` (same path as `class_joined` / `assignm
 | `assignment_started` | `assignment_id`, `class_id`, `source`, `exam_id` (attempt id) |
 | `class_progress_viewed` | `class_id`, `roster_size`, `assignment_count`, `students_with_practice`, `students_active_7d` |
 | `class_roster_sorted` | `class_id`, `sort` (`name`\|`solved`\|`last_active`) |
-| `class_student_progress_clicked` | `class_id`, `source` (`roster`\|`assignment_results`) |
+| `class_student_progress_clicked` | `class_id`, `source` (`roster`\|`assignment_results`\|`mark_book`) |
 | `class_student_progress_viewed` | `class_id`, `solved_count`, `attempted_count`, `assignments_submitted`, `assignment_count`, `has_practice` |
 | `class_student_code_expanded` | `class_id`, `surface` (`assigned_work`\|`practice`) |
+| `class_marks_viewed` | `class_id`, `roster_size`, `assignment_count`, `tier` — mark book page (`/classes/[classId]/marks`) |
+| `class_marks_exported` | `class_id`, `row_count`, `assignment_count` — CSV download succeeded. Free tier is rejected server-side with 403 `PLAN_REQUIRED` |
+| `nudge_shown` / `nudge_clicked` (`nudge: mark_book_upgrade`) | `class_id` — free-tier preview. The card links to `/pricing?view=teacher&from=mark_book`. Columns after the latest assignment are omitted from the page payload |
 | `nudge_shown` (`nudge: class_limit`) | `class_count`, `student_count`, `max_classes`, `tier` — locked “create a class” card (`CreateClassForm`). The later teacher email sends only when `tier` is `free` and `student_count` ≥ 1, and says the free plan is one class and five students |
+
+### Custom questions (paid teachers)
+
+Page-side events from the question editor (`questions/QuestionEditor.tsx`) and the upgrade card. Never send the title, description, starter, solution, or test data.
+
+| Event | Properties |
+|-------|-----------|
+| `custom_question_created` | `test_count`, `hidden_count`, `difficulty` |
+| `custom_question_updated` | `test_count`, `hidden_count`, `difficulty` |
+| `custom_question_solution_failed` | `failed_count` — the solution did not pass every test (check or save) |
+| `nudge_shown` / `nudge_clicked` (`nudge: custom_questions_upgrade`) | `surface` (`list`\|`editor`) — free teachers see the card; the link is `/pricing?from=custom_questions`. Existing questions stay usable in exams after a plan lapses; create and edit return 403 `PLAN_REQUIRED` |
 
 ### Pricing / subscription funnel (`/pricing` + Paddle checkout)
 

@@ -276,6 +276,9 @@ const BANK_QUESTION_SELECT = {
 
 const QUESTION_ORDER = [{ year: 'desc' }, { title: 'asc' }] satisfies Prisma.QuestionOrderByWithRelationInput[];
 
+/** Every catalog read. Teacher-authored questions (ownerId set) stay out of this cache. */
+export const CATALOG_QUESTION_WHERE = { ownerId: null } as const satisfies Prisma.QuestionWhereInput;
+
 type BankQuestionRow = Prisma.QuestionGetPayload<{ select: typeof BANK_QUESTION_SELECT }>;
 
 function toBankQuestion(row: BankQuestionRow): BankQuestion {
@@ -285,6 +288,7 @@ function toBankQuestion(row: BankQuestionRow): BankQuestion {
 /** List metadata only — no descriptions, starter code, hints or tests. */
 async function loadCatalog(): Promise<QuestionCatalogItem[]> {
   const rows = await prisma.question.findMany({
+    where: CATALOG_QUESTION_WHERE,
     orderBy: QUESTION_ORDER,
     select: {
       id: true,
@@ -308,20 +312,27 @@ async function loadCatalog(): Promise<QuestionCatalogItem[]> {
 }
 
 async function loadQuestion(id: string): Promise<BankQuestion | null> {
-  const row = await prisma.question.findUnique({ where: { id }, select: BANK_QUESTION_SELECT });
+  const row = await prisma.question.findFirst({
+    where: { id, ...CATALOG_QUESTION_WHERE },
+    select: BANK_QUESTION_SELECT,
+  });
   return row ? toBankQuestion(row) : null;
 }
 
 async function loadSolution(id: string): Promise<QuestionSolution | null> {
-  return prisma.question.findUnique({
-    where: { id },
+  return prisma.question.findFirst({
+    where: { id, ...CATALOG_QUESTION_WHERE },
     select: { id: true, solution: true, solutionExplanation: true },
   });
 }
 
 /** `/api/questions` (exam builder): descriptions + visible test counts, still no test data. */
 async function loadQuestionsApiList() {
-  const rows = await prisma.question.findMany({ orderBy: QUESTION_ORDER, select: BANK_QUESTION_SELECT });
+  const rows = await prisma.question.findMany({
+    where: CATALOG_QUESTION_WHERE,
+    orderBy: QUESTION_ORDER,
+    select: BANK_QUESTION_SELECT,
+  });
   return listQuestionsApiPayload(rows.map(toBankQuestion), {});
 }
 

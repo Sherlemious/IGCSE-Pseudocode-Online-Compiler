@@ -3,7 +3,7 @@ import { redirect, notFound } from 'next/navigation';
 import Link from 'next/link';
 import { auth } from '@/modules/auth/auth';
 import { prisma } from '@/shared/db';
-import { getQuestionCatalog } from '@/shared/lib/catalogCache';
+import { loadQuestionLabels } from '@/modules/questions/read';
 import { Clock, ArrowLeft, CheckCircle, XCircle, RotateCcw, Minus } from 'lucide-react';
 import ExamShareButton from '@/modules/share/ExamShareButton';
 
@@ -44,9 +44,9 @@ export default async function ExamResultsPage({ params }: Props) {
   if (!exam) notFound();
   if (exam.status === 'IN_PROGRESS') redirect(`/exam/${examId}`);
 
-  const catalogById = new Map((await getQuestionCatalog()).map((question) => [question.id, question]));
+  const labels = await loadQuestionLabels(exam.answers.map((a) => a.questionId));
   const answers = exam.answers.flatMap((a) => {
-    const question = catalogById.get(a.questionId);
+    const question = labels.get(a.questionId);
     if (!question) return [];
     return [{
       id: a.id,

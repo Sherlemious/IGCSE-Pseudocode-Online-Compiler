@@ -10691,7 +10691,8 @@ async function main() {
   for (const [idx, q] of questions.entries()) {
     const { testCases, ...questionData } = q;
 
-    const existing = await prisma.question.findFirst({ where: { title: q.title } });
+    // Catalog rows only. A teacher-authored question may reuse a bank title and must not be overwritten.
+    const existing = await prisma.question.findFirst({ where: { title: q.title, ownerId: null } });
 
     if (existing) {
       // Update question fields and refresh test cases

@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import {
+  CATALOG_QUESTION_WHERE,
   existingQuestionIds,
   filterExamPool,
   listQuestionTopics,
@@ -152,5 +156,21 @@ describe('catalogCache mappers', () => {
     );
     expect(payload.map((row) => row.id)).toEqual(['easy', 'hard']);
     expect(payload[0]._count.testCases).toBe(1);
+  });
+});
+
+describe('catalog isolation', () => {
+  it('keeps teacher-owned questions out of every catalog query and the seed upsert', () => {
+    expect(CATALOG_QUESTION_WHERE).toEqual({ ownerId: null });
+    const here = dirname(fileURLToPath(import.meta.url));
+    const src = readFileSync(join(here, 'catalogCache.ts'), 'utf8');
+    const finds = src.split('prisma.question.find').slice(1);
+    expect(finds.length).toBe(4);
+    for (const chunk of finds) expect(chunk.slice(0, 400)).toContain('CATALOG_QUESTION_WHERE');
+
+    const seed = readFileSync(join(here, '../../../prisma/seed.ts'), 'utf8');
+    expect(seed).not.toContain('question.deleteMany');
+    const lookup = seed.slice(seed.indexOf('prisma.question.findFirst'));
+    expect(lookup.slice(0, 250)).toContain('ownerId: null');
   });
 });

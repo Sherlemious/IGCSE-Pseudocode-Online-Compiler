@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { redirect, notFound } from 'next/navigation';
 import { auth } from '@/modules/auth/auth';
 import { prisma } from '@/shared/db';
-import { getPublicQuestion } from '@/shared/lib/catalogCache';
+import { loadAttemptQuestionContent } from '@/modules/questions/read';
 import ExamWorkspace from '@/modules/exams/ExamWorkspace';
 
 export const metadata: Metadata = {
@@ -47,34 +47,25 @@ export default async function ExamActivePage({ params }: Props) {
     redirect(`/exam/${examId}/results`);
   }
 
-  const questions = (
-    await Promise.all(
-      exam.answers.map(async (a) => {
-        const question = await getPublicQuestion(a.questionId);
-        if (!question) return null;
-        return {
-          answerId: a.id,
-          questionId: question.id,
-          title: question.title,
-          description: question.description,
-          difficulty: question.difficulty,
-          starterCode: question.starterCode ?? '',
-          // "Flowchart → pseudocode" questions show their diagram.
-          flowchart: question.answerFormat === 'CODE' ? (question.flowchart ?? null) : null,
-          savedCode: a.code,
-          graded: a.graded,
-          passCount: a.passCount,
-          totalTests: a.totalTests,
-          testCases: question.testCases.map((tc) => ({
-            id: tc.id,
-            inputs: tc.inputs,
-            expectedOutput: tc.expectedOutput,
-            description: tc.description,
-          })),
-        };
-      }),
-    )
-  ).filter((q): q is NonNullable<typeof q> => q !== null);
+  const content = await loadAttemptQuestionContent(exam.answers.map((a) => a.questionId));
+  const questions = exam.answers.flatMap((a) => {
+    const question = content.get(a.questionId);
+    if (!question) return [];
+    return [{
+      answerId: a.id,
+      questionId: question.questionId,
+      title: question.title,
+      description: question.description,
+      difficulty: question.difficulty,
+      starterCode: question.starterCode,
+      flowchart: question.flowchart,
+      savedCode: a.code,
+      graded: a.graded,
+      passCount: a.passCount,
+      totalTests: a.totalTests,
+      testCases: question.testCases,
+    }];
+  });
 
   return (
     <ExamWorkspace

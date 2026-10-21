@@ -3,7 +3,7 @@ import { redirect, notFound } from 'next/navigation';
 import Link from 'next/link';
 import { auth } from '@/modules/auth/auth';
 import { prisma } from '@/shared/db';
-import { getQuestionCatalog } from '@/shared/lib/catalogCache';
+import { loadQuestionLabels } from '@/modules/questions/read';
 import { ArrowLeft, Clock, ListChecks, Users, Check } from 'lucide-react';
 import ExamShareCard from '@/modules/exams/ExamShareCard';
 import ExamManageActions from '@/modules/exams/ExamManageActions';
@@ -51,9 +51,9 @@ export default async function ManageExamPage({ params, searchParams }: Props) {
 
   if (!exam) notFound();
 
-  const catalogById = new Map((await getQuestionCatalog()).map((question) => [question.id, question]));
+  const labels = await loadQuestionLabels(exam.questions.map((link) => link.questionId));
   const questions = exam.questions.flatMap((link) => {
-    const question = catalogById.get(link.questionId);
+    const question = labels.get(link.questionId);
     if (!question) return [];
     return [{ question }];
   });

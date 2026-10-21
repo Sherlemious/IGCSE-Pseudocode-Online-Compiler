@@ -4,7 +4,7 @@ import { useSession, signIn, signOut } from 'next-auth/react';
 import { useState, useRef, useEffect } from 'react';
 import { usePostHog } from 'posthog-js/react';
 import Image from 'next/image';
-import { LogIn, LogOut, User, Crown, BarChart3, LayoutDashboard, ChevronRight, GraduationCap } from 'lucide-react';
+import { LogIn, LogOut, User, Crown, BarChart3, LayoutDashboard, ChevronRight, GraduationCap, ListChecks } from 'lucide-react';
 import Link from 'next/link';
 import { planBadge } from '@/modules/billing/planDisplay';
 
@@ -145,6 +145,16 @@ export default function UserMenu() {
               <GraduationCap size={13} />
               Classes
             </Link>
+            {(session.user.role === 'TEACHER' || session.user.role === 'ADMIN') && (
+              <Link
+                href="/questions/mine"
+                onClick={() => setOpen(false)}
+                className="w-full flex items-center gap-2 px-3 py-2 text-xs text-dark-text hover:text-light-text hover:bg-background transition-colors"
+              >
+                <ListChecks size={13} />
+                My questions
+              </Link>
+            )}
             <Link
               href="/profile#account-type"
               onClick={() => setOpen(false)}

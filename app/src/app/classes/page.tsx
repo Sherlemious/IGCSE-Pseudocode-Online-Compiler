@@ -47,26 +47,34 @@ export default async function ClassesPage() {
 
       <div className="max-w-3xl mx-auto relative">
         {/* Header */}
-        <div className="flex items-center gap-4 mb-8 animate-fade-in-up">
-          <div className="w-12 h-12 rounded-2xl bg-surface border border-border flex items-center justify-center animate-glow-pulse">
-            <GraduationCap className="h-5 w-5 text-primary" />
+        <div className="flex flex-wrap items-center justify-between gap-4 mb-8 animate-fade-in-up">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-surface border border-border flex items-center justify-center animate-glow-pulse">
+              <GraduationCap className="h-5 w-5 text-primary" />
+            </div>
+            <div>
+              <h1 className="display-serif text-2xl font-semibold text-light-text">My Classes</h1>
+              <p className="text-xs text-dark-text mt-0.5">
+                {entitlements.tier === 'free' ? (
+                  <>
+                    Invite students by link.{' '}
+                    <Link href={teacherYearlyCheckoutHref('classes')} className="text-primary hover:underline">
+                      Starter is $50 for the year and covers your roster
+                    </Link>
+                    .
+                  </>
+                ) : (
+                  'Students who join get the full practice and exam library included in your plan.'
+                )}
+              </p>
+            </div>
           </div>
-          <div>
-            <h1 className="display-serif text-2xl font-semibold text-light-text">My Classes</h1>
-            <p className="text-xs text-dark-text mt-0.5">
-              {entitlements.tier === 'free' ? (
-                <>
-                  Invite students by link.{' '}
-                  <Link href={teacherYearlyCheckoutHref('classes')} className="text-primary hover:underline">
-                    Starter is $50 for the year and covers your roster
-                  </Link>
-                  .
-                </>
-              ) : (
-                'Students who join get the full practice and exam library included in your plan.'
-              )}
-            </p>
-          </div>
+          <Link
+            href="/questions/mine"
+            className="shrink-0 inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-lg border border-border text-sm text-light-text hover:border-primary/40 hover:text-primary transition-colors"
+          >
+            My questions
+          </Link>
         </div>
 
         {/* Create a class */}

@@ -3,6 +3,7 @@ import { prisma, type Db } from '@/shared/db';
 import { HttpError } from '@/shared/http/errors';
 import { gradeTestCases } from '@/modules/practice/autograder';
 import { getQuestionForGrade } from '@/shared/lib/catalogCache';
+import { findOwnedGradeQuestion } from '@/modules/questions/repo';
 import * as repo from './repo';
 
 /** An exam-attempt failure with its HTTP status and machine-readable code. */
@@ -88,11 +89,15 @@ export async function gradeExamAnswer(examId: string, userId: string, submission
     const revision = nextRevision(answer.updatedAt, now);
     // Claim this grading attempt before execution. A newer save/check supersedes it.
     await repo.updateAnswer(answer.id, { graded: false, passCount: 0, totalTests: 0, updatedAt: revision }, tx);
-    const question = await getQuestionForGrade(submission.questionId);
-    if (!question) {
+    const catalogQuestion = await getQuestionForGrade(submission.questionId);
+    // Owned questions are not in the catalog cache. The attempt membership
+    // check above is what allows this student to grade one.
+    const testCases = catalogQuestion?.testCases
+      ?? (await findOwnedGradeQuestion(submission.questionId))?.testCases;
+    if (!testCases) {
       throw new ExamRequestError(404, 'QUESTION_NOT_IN_EXAM', 'This question is not part of the exam.');
     }
-    return { revision, testCases: question.testCases };
+    return { revision, testCases };
   });
 
   const results = await gradeTestCases(submission.code, prepared.testCases);

@@ -7,6 +7,7 @@ const { db, grade, auth, getQuestionForGrade } = vi.hoisted(() => ({
     $transaction: vi.fn(), $queryRaw: vi.fn(),
     examAttempt: { findUniqueOrThrow: vi.fn(), update: vi.fn() },
     examAnswer: { findUnique: vi.fn(), findMany: vi.fn(), update: vi.fn() },
+    question: { findFirst: vi.fn() },
   },
   grade: vi.fn(), auth: vi.fn(), getQuestionForGrade: vi.fn(),
 }));
@@ -135,8 +136,19 @@ describe('exam answer integrity', () => {
     const result = await gradeExamAnswer(exam.id, exam.userId, submission);
     expect(result).toMatchObject({ passCount: 1, totalTests: 1, results: [{ passed: true, isHidden: true, description: undefined }] });
     expect(answer).toMatchObject({ code: submission.code, graded: true, passCount: 1 });
+    expect(db.question.findFirst).not.toHaveBeenCalled();
     expect(db.$queryRaw.mock.calls[0][0].join('?')).toContain('FOR UPDATE');
     expect(db.$queryRaw.mock.calls[0].slice(1)).toEqual([exam.id, exam.userId]);
+  });
+
+  it('loads an owned question from the database when it is not in the catalog', async () => {
+    getQuestionForGrade.mockResolvedValue(null);
+    db.question.findFirst.mockResolvedValue({ id: 'q1', testCases: structuredClone(testCases) });
+    const result = await gradeExamAnswer(exam.id, exam.userId, submission);
+    expect(result.passCount).toBe(1);
+    expect(db.question.findFirst).toHaveBeenCalledWith(expect.objectContaining({
+      where: { id: 'q1', ownerId: { not: null }, answerFormat: 'CODE' },
+    }));
   });
 
   it.each([false, true])('rejects stale results after edits, including changing back: %s', async (changeBack) => {

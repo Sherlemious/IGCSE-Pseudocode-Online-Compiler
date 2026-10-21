@@ -57,6 +57,7 @@ model User {
   learnProgress       LearnProgress[]
   examAttempts        ExamAttempt[]
   exams               Exam[]
+  ownedQuestions      Question[]
   feedbackSubmissions FeedbackSubmission[]
   bugReports          BugReport[]
   contactMessages     ContactMessage[]
@@ -190,6 +191,10 @@ model Question {
   solution            String?  @db.Text
   solutionExplanation String?  @db.Text
 
+  /// Null = shared catalog. Set = a teacher's question, kept out of every catalog read.
+  ownerId String?
+  owner   User?   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
   testCases   TestCase[]
   progress    Progress[]
   examAnswers ExamAnswer[]
@@ -201,6 +206,7 @@ model Question {
   @@index([topic])
   @@index([difficulty, isPremium])
   @@index([year, title])
+  @@index([ownerId])
 }
 
 model TestCase {

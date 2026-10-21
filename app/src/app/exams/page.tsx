@@ -42,7 +42,7 @@ export default async function MyExamsPage() {
 
       <div className="max-w-3xl mx-auto relative">
         {/* Header */}
-        <div className="flex items-center justify-between gap-4 mb-8 animate-fade-in-up">
+        <div className="flex flex-wrap items-center justify-between gap-4 mb-8 animate-fade-in-up">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 rounded-2xl bg-surface border border-border flex items-center justify-center animate-glow-pulse">
               <FileStack className="h-5 w-5 text-primary" />
@@ -52,15 +52,24 @@ export default async function MyExamsPage() {
               <p className="text-xs text-dark-text mt-0.5">Create reusable exams and share them with your students</p>
             </div>
           </div>
-          <Link
-            href="/exams/new"
-            className="shrink-0 inline-flex items-center gap-1.5 px-4 py-2.5 rounded-lg bg-primary text-on-primary
-              text-sm font-semibold hover:opacity-90 active:scale-[0.98] transition-all
-              shadow-[0_0_20px_-4px_rgba(var(--color-primary-rgb),0.4)]"
-          >
-            <Plus size={15} />
-            New exam
-          </Link>
+          <div className="flex items-center gap-2">
+            <Link
+              href="/questions/mine"
+              className="shrink-0 inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-lg border border-border text-sm
+                text-light-text hover:border-primary/40 hover:text-primary transition-colors"
+            >
+              My questions
+            </Link>
+            <Link
+              href="/exams/new"
+              className="shrink-0 inline-flex items-center gap-1.5 px-4 py-2.5 rounded-lg bg-primary text-on-primary
+                text-sm font-semibold hover:opacity-90 active:scale-[0.98] transition-all
+                shadow-[0_0_20px_-4px_rgba(var(--color-primary-rgb),0.4)]"
+            >
+              <Plus size={15} />
+              New exam
+            </Link>
+          </div>
         </div>
 
         {/* Join an exam */}
