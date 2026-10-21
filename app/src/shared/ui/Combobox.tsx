@@ -96,7 +96,7 @@ export default function Combobox({
         <Popover.Content
           align="start"
           sideOffset={6}
-          className="z-50 w-[var(--radix-popover-trigger-width)] max-h-72 overflow-hidden rounded-lg border border-border bg-surface shadow-intense animate-scale-in"
+          className="z-[80] w-[var(--radix-popover-trigger-width)] max-h-72 overflow-hidden rounded-lg border border-border bg-surface shadow-intense animate-scale-in"
           onOpenAutoFocus={(e) => {
             e.preventDefault();
             (e.currentTarget as HTMLElement).querySelector('input')?.focus();

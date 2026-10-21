@@ -185,6 +185,21 @@ export async function assignQuestions(
   throw new HttpError(500, 'Could not generate a unique share code. Please try again.');
 }
 
+/** Rename the work students see, and set or clear its due date. Owner-only. */
+export async function updateAssignment(
+  classId: string,
+  userId: string,
+  assignmentId: string,
+  data: { title?: string; dueDate?: Date | null },
+) {
+  if (data.title === undefined && data.dueDate === undefined) throw badRequest('Nothing to update.');
+  if (data.title !== undefined && !data.title.trim()) throw badRequest('Give the assignment a name.');
+  const assignment = await repo.findAssignmentOwnership(assignmentId);
+  if (!assignment || assignment.classId !== classId || assignment.class.ownerId !== userId) throw notFound();
+  if (data.title !== undefined && assignment.exam.ownerId !== userId) throw notFound();
+  await repo.saveAssignmentEdits(assignmentId, assignment.examId, data);
+}
+
 /** Remove an assignment. Student attempts survive (assignmentId is set null). */
 export async function unassignExam(classId: string, userId: string, assignmentId: string) {
   const assignment = await repo.findAssignmentOwnership(assignmentId);

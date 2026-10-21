@@ -127,6 +127,7 @@ export default async function ClassDetailPage({ params }: Props) {
 
     const assignmentRows: AssignmentRow[] = cls.assignments.map((a) => ({
       id: a.id,
+      examId: a.exam.id,
       examTitle: a.exam.title,
       dueDate: a.dueDate ? a.dueDate.toISOString() : null,
       questionCount: a.exam._count.questions,
@@ -168,6 +169,7 @@ export default async function ClassDetailPage({ params }: Props) {
             classId={classId}
             className={cls.name}
             joinCode={cls.joinCode}
+            rosterSize={rosterSize}
             assignments={assignmentRows}
             availableExams={availableExams}
             starterQuestions={starters}
