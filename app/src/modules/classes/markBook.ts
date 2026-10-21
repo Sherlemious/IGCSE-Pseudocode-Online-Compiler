@@ -268,12 +268,13 @@ export function formatMarkPercent(percent: number | null): string {
   return `${Math.round(percent)}%`;
 }
 
-/** A leading quote stops a spreadsheet from treating the cell as a formula. */
-const FORMULA_START = /^[=+\-@]/;
+/** A leading quote stops a spreadsheet from treating the cell as a formula (OWASP's list). */
+const FORMULA_START = /^[=+\-@\t\r]/;
 
 export function csvField(value: string): string {
   const safe = FORMULA_START.test(value) ? `'${value}` : value;
-  if (/[",\n\r]/.test(safe)) return `"${safe.replace(/"/g, '""')}"`;
+  // `;` and tab too: semicolon-locale Excel splits on them, starting a new unprefixed cell.
+  if (/[",;\t\n\r]/.test(safe)) return `"${safe.replace(/"/g, '""')}"`;
   return safe;
 }
 
@@ -286,7 +287,7 @@ export function serializeMarkBookCsv(book: MarkBook): string {
   for (const column of book.columns) {
     header.push(`${column.title} ${'%'}`, `${column.title} status`);
   }
-  header.push('Average');
+  header.push('Submitted', 'Average of submitted');
 
   const lines = [csvLine(header)];
   for (const row of book.rows) {
@@ -294,7 +295,7 @@ export function serializeMarkBookCsv(book: MarkBook): string {
     for (const cell of row.cells) {
       fields.push(formatMarkPercent(cell.percent), MARK_STATUS_LABEL[cell.status]);
     }
-    fields.push(formatMarkPercent(row.averagePercent));
+    fields.push(String(row.submittedCount), formatMarkPercent(row.averagePercent));
     lines.push(csvLine(fields));
   }
   return `\uFEFF${lines.join('\r\n')}`;

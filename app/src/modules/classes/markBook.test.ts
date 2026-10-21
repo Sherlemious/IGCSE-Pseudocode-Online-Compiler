@@ -324,7 +324,7 @@ describe('serializeMarkBookCsv', () => {
     expect(csv.charCodeAt(0)).toBe(0xfeff);
     const percent = '%';
     expect(csv.slice(1)).toBe(
-      `Student name,Email,Quiz ${percent},Quiz status,Average\r\nAda,ada@school.com,85${percent},Submitted,85${percent}`,
+      `Student name,Email,Quiz ${percent},Quiz status,Submitted,Average of submitted\r\nAda,ada@school.com,85${percent},Submitted,1,85${percent}`,
     );
   });
 
@@ -334,6 +334,7 @@ describe('serializeMarkBookCsv', () => {
         { userId: 'a', name: 'Smith, Alice', email: 'a"b@school.com' },
         { userId: 'b', name: 'Bob\nJones', email: '+44123' },
         { userId: 'c', name: '=1+1', email: '@cmd' },
+        { userId: 'd', name: "a;=cmd|'/C calc'!A0", email: '\tx@school.com' },
       ],
       assignments: [{ id: 'q', title: '-drop', dueDate: null }],
       attempts: [],
@@ -341,10 +342,11 @@ describe('serializeMarkBookCsv', () => {
     });
     const csv = serializeMarkBookCsv(book).slice(1);
     const percent = '%';
-    expect(csv.split('\r\n')[0]).toBe(`Student name,Email,'-drop ${percent},'-drop status,Average`);
-    expect(csv).toContain('"Smith, Alice","a""b@school.com",,Not started,');
-    expect(csv).toContain('"Bob\nJones",\'+44123,,Not started,');
-    expect(csv).toContain("'=1+1,'@cmd,,Not started,");
+    expect(csv.split('\r\n')[0]).toBe(`Student name,Email,'-drop ${percent},'-drop status,Submitted,Average of submitted`);
+    expect(csv).toContain('"Smith, Alice","a""b@school.com",,Not started,0,');
+    expect(csv).toContain('"Bob\nJones",\'+44123,,Not started,0,');
+    expect(csv).toContain("'=1+1,'@cmd,,Not started,0,");
+    expect(csv).toContain(`"a;=cmd|'/C calc'!A0","'\tx@school.com",,Not started,0,`);
   });
 
   it('sanitizes the download filename', () => {
