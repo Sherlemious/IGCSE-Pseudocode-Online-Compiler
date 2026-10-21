@@ -5,6 +5,7 @@ const { db, repo, exams, catalog } = vi.hoisted(() => ({
   db: { $transaction: vi.fn() },
   repo: {
     findClassOwnership: vi.fn(),
+    lockClass: vi.fn(),
     listAssignmentQuestionIds: vi.fn(),
     createAssignment: vi.fn(),
   },
@@ -64,6 +65,23 @@ describe('assignQuestions', () => {
       message: 'Add at least one question.',
     });
     expect(catalog.existingCatalogQuestionIds).not.toHaveBeenCalled();
+  });
+
+  it('rejects more questions than one assignment holds', async () => {
+    const ids = Array.from({ length: 21 }, (_, i) => `q${i}`);
+    await expect(assignQuestions('class-1', 'teacher', ids, null)).rejects.toMatchObject({
+      status: 400,
+      message: 'Assign at most 20 questions at a time.',
+    });
+    expect(catalog.existingCatalogQuestionIds).not.toHaveBeenCalled();
+  });
+
+  it('locks the class before checking for a duplicate assignment', async () => {
+    await assignQuestions('class-1', 'teacher', ['q1'], null);
+    expect(repo.lockClass).toHaveBeenCalledWith('class-1', {});
+    expect(repo.lockClass.mock.invocationCallOrder[0]).toBeLessThan(
+      repo.listAssignmentQuestionIds.mock.invocationCallOrder[0],
+    );
   });
 
   it('rejects ids the catalog does not accept', async () => {

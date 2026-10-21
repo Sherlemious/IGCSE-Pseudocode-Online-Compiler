@@ -20,7 +20,7 @@ import {
   serializeMarkBookCsv,
   type MarkPreview,
 } from './markBook';
-import { assignmentTimeLimitMin, assignmentTitle, sameQuestionSet } from './assignPlan';
+import { ASSIGN_QUESTIONS_MAX, assignmentTimeLimitMin, assignmentTitle, sameQuestionSet } from './assignPlan';
 import * as repo from './repo';
 
 /** A class/assignment failure with its HTTP status and machine-readable code. */
@@ -133,6 +133,9 @@ export async function assignQuestions(
   const cls = await requireOwnedClass(classId, userId);
   const requested = [...new Set(questionIds.filter((id) => id.trim()))];
   if (requested.length === 0) throw badRequest('Add at least one question.');
+  if (requested.length > ASSIGN_QUESTIONS_MAX) {
+    throw badRequest(`Assign at most ${ASSIGN_QUESTIONS_MAX} questions at a time.`);
+  }
   const validIds = await existingCatalogQuestionIds(requested);
   if (validIds.length === 0) throw badRequest('None of the selected questions could be found.');
 
@@ -148,6 +151,8 @@ export async function assignQuestions(
   for (let attempt = 0; attempt < 5; attempt++) {
     try {
       return await prisma.$transaction(async (tx) => {
+        // Serialises concurrent quick-assigns (two tabs) so the duplicate check below holds.
+        await repo.lockClass(classId, tx);
         const existing = await repo.listAssignmentQuestionIds(classId, tx);
         if (existing.some((row) => sameQuestionSet(row.exam.questions.map((q) => q.questionId), validIds))) {
           throw conflict('Those questions are already assigned to this class.', 'ALREADY_ASSIGNED');

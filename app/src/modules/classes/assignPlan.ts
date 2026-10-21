@@ -2,6 +2,8 @@
 export const ASSIGNMENT_TITLE_MAX = 200;
 export const MINUTES_PER_ASSIGNED_QUESTION = 30;
 export const ASSIGNMENT_TIME_LIMIT_CAP = 120;
+/** One quick assignment holds at most this many questions. */
+export const ASSIGN_QUESTIONS_MAX = 20;
 
 /** 30 minutes per question, never more than two hours. */
 export function assignmentTimeLimitMin(questionCount: number): number {
