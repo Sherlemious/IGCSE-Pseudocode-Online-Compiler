@@ -5,6 +5,7 @@
 // backdrop closes it; focus moves into the dialog and returns when it closes.
 
 import { useEffect, useRef, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 
 type ModalProps = {
@@ -29,12 +30,13 @@ export default function Modal({ open, onClose, title, icon, children, widthClass
     if (!open) return;
     const previous = document.activeElement as HTMLElement | null;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        e.stopPropagation();
-        onCloseRef.current();
-      }
+      if (e.key !== 'Escape') return;
+      // A date or class menu is also listening; let that close first.
+      if (document.querySelector('[data-radix-popper-content-wrapper]')) return;
+      e.stopPropagation();
+      onCloseRef.current();
     };
-    document.addEventListener('keydown', onKey, true);
+    document.addEventListener('keydown', onKey);
     // Focus the first field, else the panel, so Esc and Tab work straight away.
     requestAnimationFrame(() => {
       const panel = panelRef.current;
@@ -42,14 +44,16 @@ export default function Modal({ open, onClose, title, icon, children, widthClass
       (field ?? panel)?.focus();
     });
     return () => {
-      document.removeEventListener('keydown', onKey, true);
+      document.removeEventListener('keydown', onKey);
       previous?.focus?.();
     };
   }, [open]);
 
   if (!open) return null;
 
-  return (
+  // Portaled so `fixed` is the viewport. An ancestor animation (translateY, fill
+  // mode both) would otherwise trap the overlay on the page background.
+  return createPortal(
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
       onMouseDown={(e) => {
@@ -80,7 +84,8 @@ export default function Modal({ open, onClose, title, icon, children, widthClass
         </div>
         {children}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 

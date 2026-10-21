@@ -160,7 +160,28 @@ export function findJoinableAssignment(assignmentId: string, classId: string, db
 export function findAssignmentOwnership(assignmentId: string) {
   return prisma.assignment.findUnique({
     where: { id: assignmentId },
-    select: { classId: true, class: { select: { ownerId: true } } },
+    select: {
+      classId: true,
+      examId: true,
+      class: { select: { ownerId: true } },
+      exam: { select: { ownerId: true } },
+    },
+  });
+}
+
+/** Due date and the exam title students see. Both are optional; an omitted field is left alone. */
+export function saveAssignmentEdits(
+  assignmentId: string,
+  examId: string,
+  data: { title?: string; dueDate?: Date | null },
+) {
+  return prisma.$transaction(async (tx) => {
+    if (data.dueDate !== undefined) {
+      await tx.assignment.update({ where: { id: assignmentId }, data: { dueDate: data.dueDate } });
+    }
+    if (data.title !== undefined) {
+      await tx.exam.update({ where: { id: examId }, data: { title: data.title } });
+    }
   });
 }
 

@@ -1,13 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ClipboardList, Plus, Loader2, X, Users, CalendarClock } from 'lucide-react';
+import { ClipboardList, Plus, Loader2, X, Users, CalendarClock, Pencil } from 'lucide-react';
 import Combobox from '@/shared/ui/Combobox';
 import DatePicker from '@/shared/ui/DatePicker';
 import AssignmentShareActions from './AssignmentShareActions';
 import ClassQuickStart from './ClassQuickStart';
+import type { AssignResult } from './AssignToClass';
 
 function todayISO(): string {
   const d = new Date();
@@ -16,6 +17,7 @@ function todayISO(): string {
 
 export interface AssignmentRow {
   id: string;
+  examId: string;
   examTitle: string;
   dueDate: string | null;
   questionCount: number;
@@ -28,6 +30,7 @@ interface Props {
   classId: string;
   className: string;
   joinCode: string;
+  rosterSize: number;
   assignments: AssignmentRow[];
   availableExams: { id: string; title: string }[];
   starterQuestions?: { id: string; title: string }[];
@@ -39,12 +42,30 @@ function formatDue(iso: string | null): string | null {
   return d.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
-export default function ClassAssignments({ classId, className, joinCode, assignments, availableExams, starterQuestions = [] }: Props) {
+function dueInputValue(iso: string | null): string {
+  return iso ? iso.slice(0, 10) : '';
+}
+
+export default function ClassAssignments({ classId, className, joinCode, rosterSize, assignments, availableExams, starterQuestions = [] }: Props) {
   const router = useRouter();
   const [examId, setExamId] = useState('');
   const [due, setDue] = useState('');
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState('');
+  const [pending, setPending] = useState<AssignmentRow | null>(null);
+  const [edits, setEdits] = useState<Record<string, { examTitle: string; dueDate: string | null }>>({});
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [quickStartOpen, setQuickStartOpen] = useState(false);
+  // The server drops the suggestion list once an assignment exists. Keep it while
+  // the dialog is still open, or that dialog unmounts before the teacher dismisses it.
+  const [rememberedStarters, setRememberedStarters] = useState(starterQuestions);
+  useEffect(() => {
+    if (starterQuestions.length > 0) setRememberedStarters(starterQuestions);
+  }, [starterQuestions]);
+  const starters = starterQuestions.length > 0 ? starterQuestions : rememberedStarters;
+
+  const rows = (pending && !assignments.some((a) => a.id === pending.id) ? [pending, ...assignments] : assignments)
+    .map((row) => (edits[row.id] ? { ...row, ...edits[row.id] } : row));
 
   async function assign() {
     if (!examId || busy) return;
@@ -63,6 +84,46 @@ export default function ClassAssignments({ classId, className, joinCode, assignm
     }
     setExamId('');
     setDue('');
+    router.refresh();
+  }
+
+  function handleQuickAssigned(result: AssignResult, dueDate: string) {
+    setPending({
+      id: result.assignmentId,
+      examId: result.examId,
+      examTitle: result.title,
+      dueDate: dueDate ? new Date(`${dueDate}T00:00:00.000Z`).toISOString() : null,
+      questionCount: result.questionCount,
+      submittedCount: 0,
+      rosterSize,
+      isPublished: true,
+    });
+  }
+
+  async function saveEdit(row: AssignmentRow, title: string, dueDate: string) {
+    const trimmed = title.trim();
+    if (!trimmed || busy) return;
+    setBusy(row.id);
+    setError('');
+    const res = await fetch(`/api/classes/${classId}/assignments/${row.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title: trimmed, dueDate: dueDate || null }),
+    });
+    setBusy(null);
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      setError(data.error || 'Could not save that assignment.');
+      return;
+    }
+    setEdits((prev) => ({
+      ...prev,
+      [row.id]: {
+        examTitle: trimmed,
+        dueDate: dueDate ? new Date(`${dueDate}T00:00:00.000Z`).toISOString() : null,
+      },
+    }));
+    setEditingId(null);
     router.refresh();
   }
 
@@ -119,46 +180,126 @@ export default function ClassAssignments({ classId, className, joinCode, assignm
       </div>
 
       {/* Assignment list */}
-      {assignments.length === 0 ? (
-        starterQuestions.length > 0 ? (
-          <ClassQuickStart classId={classId} className={className} joinCode={joinCode} questions={starterQuestions} />
-        ) : (
-          <p className="text-sm text-dark-text/70 px-1 py-4">No work assigned yet. Assign one of your exams above.</p>
-        )
-      ) : (
+      {(rows.length === 0 || quickStartOpen) && starters.length > 0 && (
+        <div className={rows.length > 0 ? 'hidden' : undefined}>
+          <ClassQuickStart
+            classId={classId}
+            className={className}
+            joinCode={joinCode}
+            questions={starters}
+            onAssigned={handleQuickAssigned}
+            onOpenChange={setQuickStartOpen}
+          />
+        </div>
+      )}
+      {rows.length === 0 && starters.length === 0 ? (
+        <p className="text-sm text-dark-text/70 px-1 py-4">No work assigned yet. Assign one of your exams above.</p>
+      ) : rows.length > 0 ? (
         <div className="space-y-2">
-          {assignments.map((a) => {
+          {rows.map((a) => {
             const dueLabel = formatDue(a.dueDate);
+            const editing = editingId === a.id;
             return (
               <div key={a.id} className="flex flex-wrap items-center justify-between gap-3 bg-surface border border-border rounded-lg px-4 py-3">
-                <div className="min-w-0">
-                  <Link href={`/classes/${classId}/assignments/${a.id}`} className="text-sm font-medium text-light-text truncate hover:text-primary transition-colors block">
-                    {a.examTitle}
-                  </Link>
-                  <div className="flex items-center gap-3 mt-1 text-[10px] text-dark-text font-mono">
-                    <span className="flex items-center gap-1 text-primary/90">
-                      <Users size={11} />{a.submittedCount}/{a.rosterSize} submitted
-                    </span>
-                    {dueLabel && <span className="flex items-center gap-1"><CalendarClock size={11} />due {dueLabel}</span>}
-                  </div>
-                </div>
-                <button
-                  onClick={() => unassign(a.id)}
-                  disabled={busy === a.id}
-                  className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1.5 rounded-md text-[11px] text-dark-text hover:text-error hover:bg-error/10 transition-colors disabled:opacity-50"
-                  aria-label="Unassign"
-                >
-                  {busy === a.id ? <Loader2 size={12} className="animate-spin" /> : <X size={12} />}
-                  Remove
-                </button>
-                <div className="w-full border-t border-border/50 pt-3">
-                  <AssignmentShareActions classId={classId} assignmentId={a.id} joinCode={joinCode} disabled={!a.isPublished || a.questionCount === 0} />
-                </div>
+                {editing ? (
+                  <AssignmentEditForm
+                    row={a}
+                    busy={busy === a.id}
+                    onCancel={() => setEditingId(null)}
+                    onSave={(title, dueDate) => saveEdit(a, title, dueDate)}
+                  />
+                ) : (
+                  <>
+                    <div className="min-w-0">
+                      <Link href={`/classes/${classId}/assignments/${a.id}`} className="text-sm font-medium text-light-text truncate hover:text-primary transition-colors block">
+                        {a.examTitle}
+                      </Link>
+                      <div className="flex items-center gap-3 mt-1 text-[10px] text-dark-text font-mono">
+                        <span className="flex items-center gap-1 text-primary/90">
+                          <Users size={11} />{a.submittedCount}/{a.rosterSize} submitted
+                        </span>
+                        {dueLabel && <span className="flex items-center gap-1"><CalendarClock size={11} />due {dueLabel}</span>}
+                      </div>
+                    </div>
+                    <div className="flex shrink-0 items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => { setEditingId(a.id); setError(''); }}
+                        className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-md text-[11px] text-dark-text hover:text-primary hover:bg-primary/10 transition-colors"
+                        aria-label={`Edit ${a.examTitle}`}
+                      >
+                        <Pencil size={12} />
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => unassign(a.id)}
+                        disabled={busy === a.id}
+                        className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-md text-[11px] text-dark-text hover:text-error hover:bg-error/10 transition-colors disabled:opacity-50"
+                        aria-label="Unassign"
+                      >
+                        {busy === a.id ? <Loader2 size={12} className="animate-spin" /> : <X size={12} />}
+                        Remove
+                      </button>
+                    </div>
+                    <div className="w-full border-t border-border/50 pt-3">
+                      <AssignmentShareActions classId={classId} assignmentId={a.id} joinCode={joinCode} disabled={!a.isPublished || a.questionCount === 0} />
+                    </div>
+                  </>
+                )}
               </div>
             );
           })}
         </div>
-      )}
+      ) : null}
+    </div>
+  );
+}
+
+function AssignmentEditForm({
+  row,
+  busy,
+  onCancel,
+  onSave,
+}: {
+  row: AssignmentRow;
+  busy: boolean;
+  onCancel: () => void;
+  onSave: (title: string, dueDate: string) => void;
+}) {
+  const [title, setTitle] = useState(row.examTitle);
+  const [dueDate, setDueDate] = useState(dueInputValue(row.dueDate));
+  return (
+    <div className="w-full space-y-2">
+      <input
+        autoFocus
+        value={title}
+        onChange={(e) => setTitle(e.target.value)}
+        maxLength={200}
+        aria-label="Assignment name"
+        className="w-full rounded-lg border border-border bg-background px-3.5 py-2.5 text-sm text-light-text focus:outline-none focus:border-primary/50"
+      />
+      <DatePicker value={dueDate || null} onChange={(value) => setDueDate(value ?? '')} min={todayISO()} ariaLabel="Due date" />
+      <div className="flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          onClick={() => onSave(title, dueDate)}
+          disabled={busy || !title.trim()}
+          className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-on-primary hover:opacity-90 disabled:opacity-50"
+        >
+          {busy && <Loader2 size={13} className="animate-spin" />}
+          Save
+        </button>
+        <button
+          type="button"
+          onClick={onCancel}
+          className="rounded-lg px-3 py-2 text-xs text-dark-text hover:text-light-text"
+        >
+          Cancel
+        </button>
+        <Link href={`/exams/${row.examId}/edit`} className="text-xs text-primary hover:underline">
+          Edit questions
+        </Link>
+      </div>
     </div>
   );
 }

@@ -2,18 +2,22 @@
 
 import Link from 'next/link';
 import { Sparkles } from 'lucide-react';
-import AssignToClassButton from './AssignToClass';
+import AssignToClassButton, { type AssignResult } from './AssignToClass';
 
 export default function ClassQuickStart({
   classId,
   className,
   joinCode,
   questions,
+  onAssigned,
+  onOpenChange,
 }: {
   classId: string;
   className: string;
   joinCode: string;
   questions: { id: string; title: string }[];
+  onAssigned?: (result: AssignResult, dueDate: string) => void;
+  onOpenChange?: (open: boolean) => void;
 }) {
   if (questions.length === 0) return null;
   const label = questions.length === 1 ? 'Assign this question' : `Assign these ${questions.length}`;
@@ -41,6 +45,8 @@ export default function ClassQuickStart({
         surface="class_quick_start"
         fixedClass={{ id: classId, name: className, joinCode }}
         label={label}
+        onAssigned={onAssigned}
+        onOpenChange={onOpenChange}
       />
     </div>
   );

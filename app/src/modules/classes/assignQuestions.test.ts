@@ -8,6 +8,8 @@ const { db, repo, exams, catalog } = vi.hoisted(() => ({
     lockClass: vi.fn(),
     listAssignmentQuestionIds: vi.fn(),
     createAssignment: vi.fn(),
+    findAssignmentOwnership: vi.fn(),
+    saveAssignmentEdits: vi.fn(),
   },
   exams: { createExam: vi.fn(), findOwnedExam: vi.fn() },
   catalog: { existingCatalogQuestionIds: vi.fn(), getQuestionCatalog: vi.fn() },
@@ -27,7 +29,7 @@ vi.mock('@/modules/billing/entitlements', () => ({
 vi.mock('@/modules/billing/featureFlags', () => ({ PREMIUM_GATING_ENABLED: false }));
 vi.mock('@/modules/auth/userRepo', () => ({ promoteToTeacher: vi.fn() }));
 
-import { assignQuestions } from './service';
+import { assignQuestions, updateAssignment } from './service';
 
 const owned = { ownerId: 'teacher', archived: false, joinCode: 'ABC234', _count: { memberships: 0 } };
 
@@ -157,5 +159,41 @@ describe('assignQuestions', () => {
     const result = await assignQuestions('class-1', 'teacher', ['q1'], null);
     expect(exams.createExam).toHaveBeenCalledTimes(2);
     expect(result.examId).toBe('exam-2');
+  });
+});
+
+describe('updateAssignment', () => {
+  const ownedAssignment = {
+    classId: 'class-1',
+    examId: 'exam-1',
+    class: { ownerId: 'teacher' },
+    exam: { ownerId: 'teacher' },
+  };
+
+  beforeEach(() => {
+    repo.findAssignmentOwnership.mockResolvedValue(ownedAssignment);
+  });
+
+  it('rejects a class the caller does not own', async () => {
+    repo.findAssignmentOwnership.mockResolvedValue({
+      ...ownedAssignment,
+      class: { ownerId: 'someone-else' },
+    });
+    await expect(updateAssignment('class-1', 'teacher', 'asg-1', { title: 'Week 2' })).rejects.toMatchObject({
+      status: 404,
+    });
+    expect(repo.saveAssignmentEdits).not.toHaveBeenCalled();
+  });
+
+  it('renames the exam students see and can clear the due date', async () => {
+    await updateAssignment('class-1', 'teacher', 'asg-1', { title: 'Week 2', dueDate: null });
+    expect(repo.saveAssignmentEdits).toHaveBeenCalledWith('asg-1', 'exam-1', { title: 'Week 2', dueDate: null });
+  });
+
+  it('refuses a blank name', async () => {
+    await expect(updateAssignment('class-1', 'teacher', 'asg-1', { title: '   ' })).rejects.toMatchObject({
+      status: 400,
+    });
+    expect(repo.saveAssignmentEdits).not.toHaveBeenCalled();
   });
 });

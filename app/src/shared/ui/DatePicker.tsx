@@ -32,6 +32,11 @@ function formatDisplay(s: string): string {
   return `${p.d} ${MONTHS[p.m].slice(0, 3)} ${p.y}`;
 }
 
+function todayISO(): string {
+  const d = new Date();
+  return toISO(d.getFullYear(), d.getMonth(), d.getDate());
+}
+
 export default function DatePicker({ value, onChange, placeholder = 'No due date', ariaLabel, min }: Props) {
   const [open, setOpen] = useState(false);
   const selected = parseISO(value);
@@ -47,8 +52,12 @@ export default function DatePicker({ value, onChange, placeholder = 'No due date
   }
 
   function isDisabled(iso: string): boolean {
-    return !!min && iso < min;
+    // Keep the current value selectable so a due date that has since passed can stay.
+    if (!min || iso >= min || iso === value) return false;
+    return true;
   }
+
+  const today = todayISO();
 
   const cells: (number | null)[] = [
     ...Array<null>(firstWeekday).fill(null),
@@ -90,7 +99,7 @@ export default function DatePicker({ value, onChange, placeholder = 'No due date
         <Popover.Content
           align="start"
           sideOffset={6}
-          className="z-50 w-64 rounded-lg border border-border bg-surface shadow-intense p-3 animate-scale-in"
+          className="z-[80] w-64 rounded-lg border border-border bg-surface shadow-intense p-3 animate-scale-in"
         >
           {/* Month nav */}
           <div className="flex items-center justify-between mb-2">
@@ -117,6 +126,7 @@ export default function DatePicker({ value, onChange, placeholder = 'No due date
               const iso = toISO(view.y, view.m, d);
               const isSelected = iso === value;
               const disabled = isDisabled(iso);
+              const isToday = iso === today;
               return (
                 <button
                   key={i}
@@ -126,12 +136,17 @@ export default function DatePicker({ value, onChange, placeholder = 'No due date
                     onChange(iso);
                     setOpen(false);
                   }}
+                  title={disabled ? 'Already passed' : isToday ? 'Today' : undefined}
+                  aria-label={disabled ? `${d}, already passed` : isToday ? `${d}, today` : undefined}
+                  style={disabled ? { color: 'color-mix(in srgb, var(--color-dark-text) 42%, transparent)' } : undefined}
                   className={`h-8 rounded-md text-xs transition-colors ${
                     isSelected
                       ? 'bg-primary text-on-primary font-semibold'
                       : disabled
-                        ? 'text-dark-text/25 cursor-not-allowed'
-                        : 'text-dark-text hover:bg-primary/10 hover:text-light-text'
+                        ? 'bg-disabled-bg line-through decoration-current cursor-not-allowed'
+                        : isToday
+                          ? 'font-semibold text-light-text ring-1 ring-inset ring-primary/70 hover:bg-primary/10'
+                          : 'text-dark-text hover:bg-primary/10 hover:text-light-text'
                   }`}
                 >
                   {d}
@@ -139,6 +154,9 @@ export default function DatePicker({ value, onChange, placeholder = 'No due date
               );
             })}
           </div>
+          {min && (
+            <p className="mt-2 text-center text-[10px] text-dark-text">Struck-through days have already passed.</p>
+          )}
         </Popover.Content>
       </Popover.Portal>
     </Popover.Root>
