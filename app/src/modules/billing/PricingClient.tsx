@@ -19,6 +19,7 @@ import {
   formatCap,
   teacherBandForStudents,
 } from './limits';
+import { PAID_TEACHER_INCLUDED } from './tierCopy';
 
 export interface PricingTierView {
   slug: string;
@@ -94,6 +95,47 @@ function formatUntil(iso: string): string {
 
 function usd(n: number): string {
   return `$${n}`;
+}
+
+function FeatureList({ items }: { items: readonly string[] }) {
+  return (
+    <ul className="mt-3 space-y-2.5">
+      {items.map((feature) => (
+        <li key={feature} className="flex gap-2 text-sm text-dark-text">
+          <CheckIcon />
+          <span>{feature}</span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function TeacherIncluded() {
+  return (
+    <section className="mx-auto mb-8 max-w-4xl rounded-2xl border border-border bg-surface/80 p-6 backdrop-blur-sm">
+      <h2 className="text-lg font-semibold text-light-text">What a paid plan adds</h2>
+      <p className="mt-1 max-w-3xl text-sm leading-relaxed text-dark-text">
+        Free is one class of five students. Those students stay on the free editor, and you
+        can&apos;t write new questions. A paid plan covers everyone on the roster and unlocks
+        your own questions. Homework, the roster, and student progress work on a free class
+        too. Larger plans add classes and students — the tools stay the same.
+      </p>
+      <div className="mt-5 grid gap-6 sm:grid-cols-2">
+        <div>
+          <h3 className="text-xs font-medium uppercase tracking-wide text-primary">Your students</h3>
+          <p className="mt-1 text-xs text-dark-text">Covered by your plan. They don&apos;t buy one.</p>
+          <FeatureList items={PAID_TEACHER_INCLUDED.students} />
+        </div>
+        <div>
+          <h3 className="text-xs font-medium uppercase tracking-wide text-primary">You</h3>
+          <p className="mt-1 text-xs text-dark-text">Needs a paid plan</p>
+          <FeatureList items={PAID_TEACHER_INCLUDED.teaching.slice(0, 1)} />
+          <p className="mt-4 text-xs text-dark-text">Works on a free class too, within its five students</p>
+          <FeatureList items={PAID_TEACHER_INCLUDED.teaching.slice(1)} />
+        </div>
+      </div>
+    </section>
+  );
 }
 
 function CapacityStats({ maxClasses, maxStudents }: { maxClasses: number; maxStudents: number }) {
@@ -573,6 +615,8 @@ export default function PricingClient({
         </div>
       )}
 
+      {showTeachers && <TeacherIncluded />}
+
       {showTeachers && (
         <div className="mb-8 flex flex-col items-center gap-2">
           <div
@@ -769,7 +813,7 @@ export default function PricingClient({
                 maxStudents={LIMITS.starter.maxStudentsTotal}
               />
               <p className="mt-4 text-sm text-dark-text">
-                Students on your roster get the library — they don&apos;t pay.
+                Same tools as every paid plan. This one is sized for a single class.
               </p>
               {renderTeacherCta(starter, ['starter'], false)}
               {currentTier !== 'starter' && !canManageBilling && (
@@ -855,6 +899,9 @@ export default function PricingClient({
                     maxClasses={selectedLimits.maxClasses}
                     maxStudents={selectedLimits.maxStudentsTotal}
                   />
+                  <p className="mt-4 text-sm text-dark-text">
+                    Same tools as Starter. This plan is a larger roster.
+                  </p>
                 </div>
                 {renderTeacherCta(selected, band.slugs, true)}
               </>
