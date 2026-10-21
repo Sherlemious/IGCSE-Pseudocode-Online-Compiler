@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { auth } from '@/modules/auth/auth';
 import { prisma } from '@/shared/db';
 import { getQuestionCatalog } from '@/shared/lib/catalogCache';
+import { findOwnedQuestionLabels } from '@/modules/questions/repo';
 import { Clock, ArrowLeft, CheckCircle, XCircle, RotateCcw, Minus } from 'lucide-react';
 import ExamShareButton from '@/modules/share/ExamShareButton';
 
@@ -45,8 +46,10 @@ export default async function ExamResultsPage({ params }: Props) {
   if (exam.status === 'IN_PROGRESS') redirect(`/exam/${examId}`);
 
   const catalogById = new Map((await getQuestionCatalog()).map((question) => [question.id, question]));
+  const missingIds = exam.answers.map((a) => a.questionId).filter((id) => !catalogById.has(id));
+  const ownedById = new Map((await findOwnedQuestionLabels(session.user.id, missingIds)).map((question) => [question.id, question]));
   const answers = exam.answers.flatMap((a) => {
-    const question = catalogById.get(a.questionId);
+    const question = catalogById.get(a.questionId) ?? ownedById.get(a.questionId);
     if (!question) return [];
     return [{
       id: a.id,

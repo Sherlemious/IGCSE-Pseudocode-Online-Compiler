@@ -104,6 +104,8 @@ export interface PracticeListQuestion {
   topic: string | null;
   tags: string[];
   isPremium: boolean;
+  /** Present on catalog rows. Flowchart answers cannot be assigned as exam work. */
+  answerFormat?: string;
 }
 
 export interface PracticeProgress {

@@ -1,6 +1,6 @@
 import { Prisma } from '@prisma/client';
 import { prisma } from '@/shared/db';
-import { HttpError, conflict, notFound } from '@/shared/http/errors';
+import { HttpError, badRequest, conflict, notFound } from '@/shared/http/errors';
 import { generateShareCode, normalizeShareCode } from '@/shared/lib/shareCode';
 import {
   getEntitlements,
@@ -10,8 +10,9 @@ import {
   revalidatePremiumAccess,
 } from '@/modules/billing/entitlements';
 import { PREMIUM_GATING_ENABLED } from '@/modules/billing/featureFlags';
-import { findOwnedExam } from '@/modules/exams/repo';
+import { createExam, findOwnedExam } from '@/modules/exams/repo';
 import { promoteToTeacher } from '@/modules/auth/userRepo';
+import { existingCatalogQuestionIds, getQuestionCatalog } from '@/shared/lib/catalogCache';
 import {
   buildMarkBook,
   marksCsvFilename,
@@ -19,6 +20,7 @@ import {
   serializeMarkBookCsv,
   type MarkPreview,
 } from './markBook';
+import { ASSIGN_QUESTIONS_MAX, assignmentTimeLimitMin, assignmentTitle, sameQuestionSet } from './assignPlan';
 import * as repo from './repo';
 
 /** A class/assignment failure with its HTTP status and machine-readable code. */
@@ -115,6 +117,72 @@ export async function assignExam(classId: string, userId: string, examId: string
     if (isUniqueViolation(err)) throw conflict('That exam is already assigned to this class.', 'ALREADY_ASSIGNED');
     throw err;
   }
+}
+
+/**
+ * Assign practice questions by creating a small published exam and handing it
+ * to the class. Exams are the only thing an assignment can point at.
+ */
+export async function assignQuestions(
+  classId: string,
+  userId: string,
+  questionIds: string[],
+  dueDate: Date | null,
+  title?: string | null,
+) {
+  const cls = await requireOwnedClass(classId, userId);
+  const requested = [...new Set(questionIds.filter((id) => id.trim()))];
+  if (requested.length === 0) throw badRequest('Add at least one question.');
+  if (requested.length > ASSIGN_QUESTIONS_MAX) {
+    throw badRequest(`Assign at most ${ASSIGN_QUESTIONS_MAX} questions at a time.`);
+  }
+  const validIds = await existingCatalogQuestionIds(requested);
+  if (validIds.length === 0) throw badRequest('None of the selected questions could be found.');
+
+  const catalog = await getQuestionCatalog();
+  const titles = new Map(catalog.map((question) => [question.id, question.title]));
+  const examTitle = assignmentTitle({
+    questionCount: validIds.length,
+    questionTitles: validIds.map((id) => titles.get(id) ?? ''),
+    requested: title,
+  });
+  const timeLimitMin = assignmentTimeLimitMin(validIds.length);
+
+  for (let attempt = 0; attempt < 5; attempt++) {
+    try {
+      return await prisma.$transaction(async (tx) => {
+        // Serialises concurrent quick-assigns (two tabs) so the duplicate check below holds.
+        await repo.lockClass(classId, tx);
+        const existing = await repo.listAssignmentQuestionIds(classId, tx);
+        if (existing.some((row) => sameQuestionSet(row.exam.questions.map((q) => q.questionId), validIds))) {
+          throw conflict('Those questions are already assigned to this class.', 'ALREADY_ASSIGNED');
+        }
+        const exam = await createExam({
+          ownerId: userId,
+          title: examTitle,
+          description: null,
+          timeLimitMin,
+          shareCode: generateShareCode(),
+          questionIds: validIds,
+          isPublished: true,
+        }, tx);
+        const assignment = await repo.createAssignment({ classId, examId: exam.id, dueDate }, tx);
+        return {
+          assignmentId: assignment.id,
+          examId: exam.id,
+          classId,
+          joinCode: cls.joinCode,
+          title: examTitle,
+          questionCount: validIds.length,
+        };
+      });
+    } catch (err) {
+      if (err instanceof HttpError) throw err;
+      if (isUniqueViolation(err)) continue;
+      throw err;
+    }
+  }
+  throw new HttpError(500, 'Could not generate a unique share code. Please try again.');
 }
 
 /** Remove an assignment. Student attempts survive (assignmentId is set null). */

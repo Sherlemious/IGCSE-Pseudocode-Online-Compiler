@@ -37,3 +37,33 @@ export function recommendNextQuestion(opts: {
   });
   return candidates[0].q;
 }
+
+type StarterQuestion = {
+  id: string;
+  title: string;
+  difficulty: string;
+  isPremium: boolean;
+  answerFormat?: string;
+};
+
+/**
+ * First work for an empty class: easy questions students can actually start.
+ * Premium questions are blocked for a free class, and flowchart answers are not exam questions.
+ */
+export function recommendStarterQuestions<T extends StarterQuestion>(
+  questions: readonly T[],
+  stats: Map<string, { solved: number; firstTryRate: number | null }>,
+  count = 3,
+): T[] {
+  const candidates = questions
+    .map((q, index) => ({ q, index }))
+    .filter(({ q }) => q.difficulty === 'EASY' && !q.isPremium && q.answerFormat !== 'FLOWCHART');
+  candidates.sort((a, b) => {
+    const solved = (stats.get(b.q.id)?.solved ?? 0) - (stats.get(a.q.id)?.solved ?? 0);
+    if (solved !== 0) return solved;
+    const firstTry = (stats.get(b.q.id)?.firstTryRate ?? 0) - (stats.get(a.q.id)?.firstTryRate ?? 0);
+    if (firstTry !== 0) return firstTry;
+    return a.index - b.index;
+  });
+  return candidates.slice(0, count).map((item) => item.q);
+}

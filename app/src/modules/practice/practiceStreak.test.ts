@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { computeStreak, dayKey } from './practiceStreak';
-import { recommendNextQuestion } from './practiceNext';
+import { recommendNextQuestion, recommendStarterQuestions } from './practiceNext';
 import type { PracticeListQuestion } from './filterUtils';
 
 const d = (s: string) => {
@@ -97,5 +97,32 @@ describe('recommendNextQuestion', () => {
       signedIn: false,
     });
     expect(pick).toBeNull();
+  });
+});
+
+describe('recommendStarterQuestions', () => {
+  it('picks the three most-solved easy questions a free class can start', () => {
+    const questions = [
+      q({ id: 'hard', difficulty: 'HARD' }),
+      q({ id: 'premium', isPremium: true }),
+      q({ id: 'flow', answerFormat: 'FLOWCHART' }),
+      q({ id: 'rare' }),
+      q({ id: 'popular' }),
+      q({ id: 'middle' }),
+      q({ id: 'fourth' }),
+    ];
+    const picks = recommendStarterQuestions(
+      questions,
+      new Map([
+        ['popular', { solved: 40, firstTryRate: 10 }],
+        ['middle', { solved: 20, firstTryRate: 80 }],
+        ['fourth', { solved: 20, firstTryRate: 90 }],
+      ]),
+    );
+    expect(picks.map((item) => item.id)).toEqual(['popular', 'fourth', 'middle']);
+  });
+
+  it('returns fewer than three when the bank is short', () => {
+    expect(recommendStarterQuestions([q({ id: 'only' })], new Map())).toHaveLength(1);
   });
 });

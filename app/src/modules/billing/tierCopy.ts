@@ -25,6 +25,7 @@ export const TIER_COPY: Record<
       'Up to 3 classes, 30 students in total',
       'Assignments with autograding',
       'Mark book with CSV export',
+      'Write your own autograded questions',
       'Share a join link — students do not pay',
     ],
   },

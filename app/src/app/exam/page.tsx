@@ -84,10 +84,8 @@ export default async function ExamPage() {
 
         {/* Shareable exams: create or join */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-8 animate-fade-in-up" style={{ animationDelay: '120ms' }}>
-          <Link
-            href="/exams"
-            className="group bg-surface/80 backdrop-blur-sm rounded-xl border border-border p-5 hover:border-primary/30
-              hover:bg-surface transition-all duration-200"
+          <div
+            className="bg-surface/80 backdrop-blur-sm rounded-xl border border-border p-5"
           >
             <div className="flex items-center gap-2 mb-2">
               <FileStack size={14} className="text-primary" />
@@ -96,10 +94,13 @@ export default async function ExamPage() {
             <p className="text-xs text-dark-text leading-relaxed">
               Build a reusable exam from the question bank and share it with your students via a link or code.
             </p>
-            <span className="inline-flex items-center gap-1 text-xs text-primary mt-3 group-hover:gap-1.5 transition-all">
+            <Link href="/exams" className="inline-flex items-center gap-1 text-xs text-primary mt-3 hover:gap-1.5 transition-all">
               My exams <ArrowRight size={12} />
-            </span>
-          </Link>
+            </Link>
+            <Link href="/questions/mine" className="block text-xs text-dark-text hover:text-primary mt-2">
+              My questions
+            </Link>
+          </div>
 
           <div className="bg-surface/80 backdrop-blur-sm rounded-xl border border-border p-5">
             <div className="flex items-center gap-2 mb-3">

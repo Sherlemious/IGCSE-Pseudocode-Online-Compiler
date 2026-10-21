@@ -50,7 +50,10 @@ export default function GlobalCommands() {
     { id: 'go-exam', label: 'Go to Exam', group: 'Go to', keywords: 'timed test', run: () => router.push('/exam') },
     { id: 'go-flowchart', label: 'Go to Flowchart maker', group: 'Go to', keywords: 'flowchart diagram draw builder symbols', run: () => router.push('/flowchart') },
     ...(sessionShowsClasses(session?.user)
-      ? [{ id: 'go-classes', label: 'Go to Classes', group: 'Go to', keywords: 'teacher homework roster', run: () => router.push('/classes') } satisfies Command]
+      ? [
+          { id: 'go-classes', label: 'Go to Classes', group: 'Go to', keywords: 'teacher homework roster', run: () => router.push('/classes') } satisfies Command,
+          { id: 'go-questions', label: 'Go to My questions', group: 'Go to', keywords: 'teacher autograder write questions', run: () => router.push('/questions/mine') } satisfies Command,
+        ]
       : []),
     { id: 'go-compare', label: 'Why this compiler', group: 'Go to', keywords: 'why this compiler best paper 2 practice plans pricing compare', run: () => router.push('/compare') },
     { id: 'go-faq', label: 'Go to FAQ', group: 'Go to', keywords: 'questions help about', run: () => router.push('/faq') },

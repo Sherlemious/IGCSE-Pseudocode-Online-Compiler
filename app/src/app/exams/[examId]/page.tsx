@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { auth } from '@/modules/auth/auth';
 import { prisma } from '@/shared/db';
 import { getQuestionCatalog } from '@/shared/lib/catalogCache';
+import { findOwnedQuestionLabels } from '@/modules/questions/repo';
 import { ArrowLeft, Clock, ListChecks, Users, Check } from 'lucide-react';
 import ExamShareCard from '@/modules/exams/ExamShareCard';
 import ExamManageActions from '@/modules/exams/ExamManageActions';
@@ -52,8 +53,10 @@ export default async function ManageExamPage({ params, searchParams }: Props) {
   if (!exam) notFound();
 
   const catalogById = new Map((await getQuestionCatalog()).map((question) => [question.id, question]));
+  const missingIds = exam.questions.map((link) => link.questionId).filter((id) => !catalogById.has(id));
+  const ownedById = new Map((await findOwnedQuestionLabels(session.user.id, missingIds)).map((question) => [question.id, question]));
   const questions = exam.questions.flatMap((link) => {
-    const question = catalogById.get(link.questionId);
+    const question = catalogById.get(link.questionId) ?? ownedById.get(link.questionId);
     if (!question) return [];
     return [{ question }];
   });

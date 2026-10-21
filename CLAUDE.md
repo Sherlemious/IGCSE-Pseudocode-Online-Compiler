@@ -40,6 +40,7 @@ Modular monolith. `src/app/` is a thin routing layer (pages + API route handlers
 | `modules/flowchart` | Flowchart builder (`/flowchart`), node shapes (shared with the playground's read-only view), `useFlowchartRun`, `FlowchartDiagram` |
 | `modules/billing` | Paddle, plans, entitlements, pricing page |
 | `modules/practice` | Practice UI + autograder |
+| `modules/questions` | Teacher-authored autograded questions (`/questions`) — paid to create or edit; owned rows stay out of the catalog |
 | `modules/learn` | Paper 2 Path (`/learn`) — sequenced levels, player, local progress |
 | `modules/exams` | Exam take/author UI |
 | `modules/classes` | Class/assignment UI |
@@ -54,7 +55,7 @@ Dependency rules (enforced by ESLint):
 - `interpreter` ↛ product modules, Prisma, PostHog, Next.js
 - `billing` ↛ interpreter / compiler / practice
 - `shared/ui` + `shared/lib` ↛ product modules (interpreter tokens are allowed). `shared/layout` may compose feature UI (Header → UserMenu).
-- `practice` / `exams` / `learn` / `flowchart` may import `compiler/editor` (CodeMirror + trace table), not `CompilerPage`. They may import `flowchart`
+- `practice` / `exams` / `learn` / `flowchart` / `questions` may import `compiler/editor` (CodeMirror + trace table), not `CompilerPage`. They may import `flowchart`
 
 ## Key Paths
 
@@ -189,6 +190,7 @@ The autograder returns `error.hint` (same text as the Run button) and `error.cat
 
 - `User` / `Account` / `Session` — NextAuth tables
 - `Question` / `TestCase` — practice questions with test cases
+- `Question.ownerId` — nullable owner (`User`, `onDelete: Cascade`, indexed). **Null is the public catalog.** A set owner is a teacher-authored question: those rows are excluded from `catalogCache` (and therefore `/practice`, `/api/questions`, the random exam pool, the sitemap, SEO and Learn). Creating or editing one requires `tierForUser !== 'free'` (`403 PLAN_REQUIRED`); a lapsed plan cannot create or edit, but questions already saved still run on exams that include them. Students receive no solution and no hidden tests. Deleting the teacher cascades to their questions (and their `ExamQuestion` rows), but `ExamAnswer` restricts, so a teacher whose question has been answered cannot be deleted until those answers are. **Additive column — `npx prisma db push` is required before deploy.** Do not ship this code until that push has run; `prisma migrate` is not used here (shadow-DB replay is broken).
 - `Progress` — per-user question completion state
 - `ExamAttempt` / `ExamAnswer` — a student's run of an exam (timed session). `examId` is null for the self-service random simulator; set when the attempt is a run of a shared `Exam`.
 - `Exam` / `ExamQuestion` — instructor-authored, reusable, shareable exam **definitions** (fixed ordered question set, `shareCode`, `isPublished`). Any signed-in user can create one and share it via `/e/[code]`; taking it materializes an `ExamAttempt` (`api/exams/[examId]/start`) so the existing take→grade→results pipeline is reused unchanged.
@@ -242,6 +244,10 @@ npm run antlr:generate  # regenerate parser from grammar
 | `paste_cleaned` | `looks_ai`, `stripped_prose`, `blocks` — fired when a pasted AI/Markdown answer is stripped to just its fenced code |
 | `nudge_shown` / `nudge_clicked` / `nudge_dismissed` (Learn path) | `nudge` (`learn_path_playground`\|`learn_path_practice`), `surface` — one-time toast after a successful run / passed question (`learn/learnNudge.tsx`); the link lands on `/learn?from=<nudge>` so `learn_opened.from` attributes it |
 | `nudge_shown` / `nudge_clicked` / `nudge_dismissed` (`nudge: playground_practice`) | `surface: playground` — once per browser, on the day of the first successful playground run (`practice/playgroundPractice.tsx`), after the save sheet if that opened instead. Links to `/practice?from=playground_practice`, where the start-here card is the one easy question. The day-7 "random question" email is retired; this toast replaces it. A later success still gets the Paper 2 Path toast |
+| `custom_question_created` | `test_count`, `hidden_count`, `difficulty` — a teacher saved an owned question. Never question text, starter, solution or test data |
+| `custom_question_updated` | `test_count`, `hidden_count`, `difficulty` — same rule: counts only |
+| `custom_question_solution_failed` | `failed_count` — the solution did not pass `gradeTestCases` on save or check |
+| `nudge_shown` / `nudge_clicked` (`nudge: custom_questions_upgrade`) | free or lapsed teacher opened the question editor; the card links to `/pricing?from=custom_questions` |
 
 Paywall follow-up: PostHog workflow "Nudge if they hit the Learn paywall and don't buy" emails anyone with an email one hour after their first `learn_gate_blocked` (`source: paywall`) unless they bought. A signed-out open of a paid lesson shows the account gate and does not record that event; the map click and the player both wait until the student is signed in. `SessionIdentifier` sets `person.email` at sign-in, and the paywall capture calls `identifyAccount` first and `$set`s `email`, because the workflow drops the event when the person has no email. Open/click tracking is on; links carry `utm_campaign=learn_paywall` (pricing) and `?from=paywall_email` (learn). The "Student conversion & checkout friction" dashboard tracks payment-method failures, school vs personal accounts at checkout, the weekly Learn funnel, and paywall hitters who haven't bought.
 
@@ -286,6 +292,8 @@ Page-side events fire via `captureEvent` (same path as `class_joined` / `assignm
 | `assignment_link_opened` | `assignment_id`, `class_id`, `source` (`google_classroom`\|`direct`), `signed_in` |
 | `assignment_link_copied` | `assignment_id`, `class_id` |
 | `assignment_started` | `assignment_id`, `class_id`, `source`, `exam_id` (attempt id) |
+| `assignment_quick_created` | `class_id`, `question_count`, `surface` (`practice_question`\|`practice_list`\|`class_quick_start`) — one-click assign of practice questions. No student names, emails, or `lastCode` |
+| `class_join_slip_printed` | `class_id` — teacher printed the join slip (class name, join URL, join code, QR) |
 | `class_progress_viewed` | `class_id`, `roster_size`, `assignment_count`, `students_with_practice`, `students_active_7d` |
 | `class_roster_sorted` | `class_id`, `sort` (`name`\|`solved`\|`last_active`) |
 | `class_student_progress_clicked` | `class_id`, `source` (`roster`\|`assignment_results`\|`mark_book`) |

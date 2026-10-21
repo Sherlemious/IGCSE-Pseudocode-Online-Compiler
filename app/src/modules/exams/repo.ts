@@ -32,14 +32,16 @@ export function createExam(data: {
   timeLimitMin: number;
   shareCode: string;
   questionIds: string[];
-}) {
-  return prisma.exam.create({
+  isPublished?: boolean;
+}, db: Db = prisma) {
+  return db.exam.create({
     data: {
       ownerId: data.ownerId,
       title: data.title,
       description: data.description,
       timeLimitMin: data.timeLimitMin,
       shareCode: data.shareCode,
+      ...(data.isPublished === undefined ? {} : { isPublished: data.isPublished }),
       questions: { create: data.questionIds.map((questionId, sortOrder) => ({ questionId, sortOrder })) },
     },
     select: { id: true, shareCode: true },

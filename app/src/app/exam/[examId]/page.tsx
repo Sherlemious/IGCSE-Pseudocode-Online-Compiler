@@ -3,6 +3,7 @@ import { redirect, notFound } from 'next/navigation';
 import { auth } from '@/modules/auth/auth';
 import { prisma } from '@/shared/db';
 import { getPublicQuestion } from '@/shared/lib/catalogCache';
+import { findAttemptQuestionViews } from '@/modules/questions/repo';
 import ExamWorkspace from '@/modules/exams/ExamWorkspace';
 
 export const metadata: Metadata = {
@@ -47,10 +48,16 @@ export default async function ExamActivePage({ params }: Props) {
     redirect(`/exam/${examId}/results`);
   }
 
+  const catalogQuestions = await Promise.all(exam.answers.map((a) => getPublicQuestion(a.questionId)));
+  const missingIds = exam.answers.filter((_, index) => !catalogQuestions[index]).map((a) => a.questionId);
+  const ownedById = new Map(
+    (await findAttemptQuestionViews(session.user.id, missingIds)).map((question) => [question.id, question]),
+  );
+
   const questions = (
     await Promise.all(
-      exam.answers.map(async (a) => {
-        const question = await getPublicQuestion(a.questionId);
+      exam.answers.map(async (a, index) => {
+        const question = catalogQuestions[index] ?? ownedById.get(a.questionId);
         if (!question) return null;
         return {
           answerId: a.id,

@@ -1,0 +1,8 @@
+export const QUESTION_TITLE_MAX = 200;
+export const QUESTION_DESCRIPTION_MAX = 10_000;
+export const QUESTION_CODE_MAX = 20_000;
+export const QUESTION_TOPIC_MAX = 80;
+export const QUESTION_TEST_MAX = 30;
+export const QUESTION_INPUTS_MAX = 50;
+export const QUESTION_INPUT_LINE_MAX = 2_000;
+export const QUESTION_EXPECTED_MAX = 10_000;

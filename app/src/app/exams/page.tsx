@@ -52,15 +52,23 @@ export default async function MyExamsPage() {
               <p className="text-xs text-dark-text mt-0.5">Create reusable exams and share them with your students</p>
             </div>
           </div>
-          <Link
-            href="/exams/new"
-            className="shrink-0 inline-flex items-center gap-1.5 px-4 py-2.5 rounded-lg bg-primary text-on-primary
-              text-sm font-semibold hover:opacity-90 active:scale-[0.98] transition-all
-              shadow-[0_0_20px_-4px_rgba(var(--color-primary-rgb),0.4)]"
-          >
-            <Plus size={15} />
-            New exam
-          </Link>
+          <div className="flex items-center gap-2 shrink-0">
+            <Link
+              href="/questions/mine"
+              className="inline-flex items-center gap-1.5 px-3 py-2.5 rounded-lg border border-border text-sm text-light-text hover:border-primary/40 hover:text-primary transition-colors"
+            >
+              My questions
+            </Link>
+            <Link
+              href="/exams/new"
+              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-lg bg-primary text-on-primary
+                text-sm font-semibold hover:opacity-90 active:scale-[0.98] transition-all
+                shadow-[0_0_20px_-4px_rgba(var(--color-primary-rgb),0.4)]"
+            >
+              <Plus size={15} />
+              New exam
+            </Link>
+          </div>
         </div>
 
         {/* Join an exam */}
