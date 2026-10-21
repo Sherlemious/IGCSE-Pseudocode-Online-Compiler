@@ -3,13 +3,15 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from '@/shared/ui/HoverPrefetchLink';
 import { useSession } from 'next-auth/react';
-import { Lock, CheckCircle, Crown, FileText, ArrowRight, Sparkles } from 'lucide-react';
+import { Lock, CheckCircle, Crown, FileText, ArrowRight, Sparkles, School } from 'lucide-react';
 import { authHref } from '@/modules/auth/callback';
 import { PracticeFilters } from './PracticeFilters';
 import { PracticeToolbar } from './PracticeToolbar';
 import { useShallowPracticeUrl } from './useShallowPracticeUrl';
 import SolveCountChip from './SolveCountChip';
 import StartHereCard from './StartHereCard';
+import AssignToClassButton from '@/modules/classes/AssignToClass';
+import { useOwnedClasses } from '@/modules/classes/useOwnedClasses';
 import { recommendNextQuestion } from './practiceNext';
 import { useQuestionSocialStats } from './usePracticeSocialProof';
 import {
@@ -41,10 +43,13 @@ export default function PracticeIndex({
   gatingEnabled: boolean;
 }) {
   const { status: authStatus } = useSession();
+  const { classes: ownedClasses } = useOwnedClasses(authStatus === 'authenticated');
   const signedIn = authStatus === 'authenticated';
   const { queryString, navigate, clearAll } = useShallowPracticeUrl();
   const active = useMemo(() => parsePracticeSearch(queryString), [queryString]);
 
+  const [selecting, setSelecting] = useState(false);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
   const [progressMap, setProgressMap] = useState<Map<string, PracticeProgress>>(new Map());
   const [premiumAccess, setPremiumAccess] = useState(!gatingEnabled);
   const socialStats = useQuestionSocialStats();
@@ -266,6 +271,29 @@ export default function PracticeIndex({
                   onClearAll={clearAll}
                 />
 
+                {ownedClasses.length > 0 && (
+                  <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelecting((on) => !on);
+                        setSelected(new Set());
+                      }}
+                      className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs transition-colors ${
+                        selecting
+                          ? 'border-primary/40 bg-primary/10 text-primary'
+                          : 'border-border text-light-text hover:border-primary/40 hover:text-primary'
+                      }`}
+                    >
+                      <School size={13} aria-hidden="true" />
+                      {selecting ? 'Done selecting' : 'Assign to class'}
+                    </button>
+                    {selecting && (
+                      <span className="text-[11px] text-dark-text">Tick questions, then assign them together.</span>
+                    )}
+                  </div>
+                )}
+
                 {resumeQuestion && (
                   <Link
                     href={`/practice/${resumeQuestion.id}`}
@@ -337,12 +365,22 @@ export default function PracticeIndex({
                               const progress = progressMap.get(q.id);
                               const solved = progress?.status === 'SOLVED';
                               const isLocked = q.isPremium && !hasFullAccess;
+                              const assignable = selecting && ownedClasses.length > 0 && q.answerFormat !== 'FLOWCHART';
+                              const isSelected = selected.has(q.id);
                               const social = socialStats.get(q.id);
                               const attemptPct =
                                 progress && progress.totalTests > 0
                                   ? Math.round((progress.bestScore / progress.totalTests) * 100)
                                   : 0;
                               const revealDelay = Math.min(revealIndex++, 14) * 35;
+                              const toggle = () => {
+                                setSelected((current) => {
+                                  const next = new Set(current);
+                                  if (next.has(q.id)) next.delete(q.id);
+                                  else next.add(q.id);
+                                  return next;
+                                });
+                              };
 
                               const cardContent = (
                                 <>
@@ -360,7 +398,15 @@ export default function PracticeIndex({
                                   )}
 
                                   <div className="relative flex items-center gap-3 min-w-0">
-                                    {isLocked ? (
+                                    {assignable ? (
+                                      <input
+                                        type="checkbox"
+                                        checked={isSelected}
+                                        onChange={toggle}
+                                        aria-label={`Select ${q.title}`}
+                                        className="h-4 w-4 shrink-0 accent-primary"
+                                      />
+                                    ) : isLocked ? (
                                       <Lock className="h-[18px] w-[18px] text-dark-text/40 shrink-0" />
                                     ) : solved ? (
                                       <CheckCircle className="h-[18px] w-[18px] text-success shrink-0" />
@@ -379,9 +425,19 @@ export default function PracticeIndex({
                                     )}
 
                                     <div className="min-w-0">
-                                      <div className="font-medium text-sm text-light-text truncate transition-colors group-hover:text-primary">
-                                        {q.title}
-                                      </div>
+                                      {assignable ? (
+                                        <Link
+                                          href={`/practice/${q.id}`}
+                                          onClick={(event) => event.stopPropagation()}
+                                          className="font-medium text-sm text-light-text truncate transition-colors hover:text-primary block"
+                                        >
+                                          {q.title}
+                                        </Link>
+                                      ) : (
+                                        <div className="font-medium text-sm text-light-text truncate transition-colors group-hover:text-primary">
+                                          {q.title}
+                                        </div>
+                                      )}
                                       {(q.topic || ref || q.tags.length > 0) && (
                                         <div className="flex flex-wrap items-center gap-1.5 mt-1">
                                           {q.topic && (
@@ -425,7 +481,7 @@ export default function PracticeIndex({
                                         {progress.bestScore}/{progress.totalTests}
                                       </span>
                                     )}
-                                    {!isLocked && (
+                                    {!isLocked && !assignable && (
                                       <ArrowRight
                                         size={14}
                                         className="text-primary opacity-0 -translate-x-1 transition-all duration-200 group-hover:opacity-100 group-hover:translate-x-0 shrink-0"
@@ -434,6 +490,20 @@ export default function PracticeIndex({
                                   </div>
                                 </>
                               );
+
+                              if (assignable) {
+                                return (
+                                  <label
+                                    key={q.id}
+                                    className={`group relative flex items-center justify-between gap-3 pl-4 pr-3 py-3 rounded-xl border bg-surface overflow-hidden transition-all duration-200 cursor-pointer animate-fade-in-up ${
+                                      isSelected ? 'border-primary/50' : 'border-border hover:border-primary/40'
+                                    }`}
+                                    style={{ animationDelay: `${revealDelay}ms` }}
+                                  >
+                                    {cardContent}
+                                  </label>
+                                );
+                              }
 
                               return isLocked ? (
                                 <div
@@ -459,6 +529,19 @@ export default function PracticeIndex({
                         </div>
                       );
                     })}
+                  </div>
+                )}
+
+                {selecting && ownedClasses.length > 0 && (
+                  <div className="sticky bottom-3 z-10 mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-surface px-4 py-3 shadow-lg">
+                    <span className="text-sm text-light-text">{selected.size} selected</span>
+                    <AssignToClassButton
+                      questionIds={[...selected]}
+                      classes={ownedClasses}
+                      surface="practice_list"
+                      label={selected.size > 0 ? `Assign ${selected.size}` : 'Assign'}
+                      disabled={selected.size === 0}
+                    />
                   </div>
                 )}
               </>

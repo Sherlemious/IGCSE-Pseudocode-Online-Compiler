@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Copy, Check, Pencil, Archive, UserMinus, Loader2, Users, ChevronRight, Table2 } from 'lucide-react';
+import { Copy, Check, Pencil, Archive, UserMinus, Loader2, Users, ChevronRight, Table2, Printer } from 'lucide-react';
 import { captureEvent } from '@/modules/interpreter/analytics';
 import { teacherYearlyCheckoutHref } from '@/modules/billing/teacherCheckout';
 import { ConfirmDialog } from '@/shared/ui/Modal';
@@ -216,7 +216,7 @@ export default function ClassManager({
       {/* Join link */}
       <div className="bg-surface/80 backdrop-blur-sm rounded-xl border border-border p-5 card-glow">
         <h2 className="mono-label text-light-text mb-3">Invite students</h2>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <code className="flex-1 min-w-0 truncate rounded-lg bg-background border border-border px-3 py-2.5 text-xs text-dark-text font-mono">
             {joinUrl}
           </code>
@@ -228,6 +228,13 @@ export default function ClassManager({
             {copied ? <Check size={13} /> : <Copy size={13} />}
             {copied ? 'Copied' : 'Copy'}
           </button>
+          <Link
+            href={`/classes/${classId}/slip`}
+            className="shrink-0 inline-flex items-center gap-1.5 px-3 py-2.5 rounded-lg border border-border text-xs text-light-text hover:border-primary/40 hover:text-primary transition-colors"
+          >
+            <Printer size={13} aria-hidden="true" />
+            Print join slip
+          </Link>
         </div>
         <p className="text-[11px] text-dark-text/60 mt-2">
           Students open this link, sign in, and are added to the class. Code: <span className="font-mono text-dark-text">{joinCode}</span>

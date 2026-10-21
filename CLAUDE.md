@@ -286,6 +286,8 @@ Page-side events fire via `captureEvent` (same path as `class_joined` / `assignm
 | `assignment_link_opened` | `assignment_id`, `class_id`, `source` (`google_classroom`\|`direct`), `signed_in` |
 | `assignment_link_copied` | `assignment_id`, `class_id` |
 | `assignment_started` | `assignment_id`, `class_id`, `source`, `exam_id` (attempt id) |
+| `assignment_quick_created` | `class_id`, `question_count`, `surface` (`practice_question`\|`practice_list`\|`class_quick_start`) — one-click assign of practice questions. No student names, emails, or `lastCode` |
+| `class_join_slip_printed` | `class_id` — teacher printed the join slip (class name, join URL, join code, QR) |
 | `class_progress_viewed` | `class_id`, `roster_size`, `assignment_count`, `students_with_practice`, `students_active_7d` |
 | `class_roster_sorted` | `class_id`, `sort` (`name`\|`solved`\|`last_active`) |
 | `class_student_progress_clicked` | `class_id`, `source` (`roster`\|`assignment_results`\|`mark_book`) |

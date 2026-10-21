@@ -12,6 +12,7 @@ import SolutionPanel from '@/modules/practice/SolutionPanel';
 import FlowchartDiagram from '@/modules/flowchart/FlowchartDiagram';
 import { isTemplate, parseFlowchartDoc } from '@/modules/interpreter/converters/flowchartDoc';
 import QuestionSolveCount from '@/modules/practice/QuestionSolveCount';
+import AssignToClassButton from '@/modules/classes/AssignToClass';
 import {
   absoluteUrl,
   paperReference,
@@ -203,6 +204,9 @@ export default async function QuestionPage({ params }: Props) {
           )}
         </div>
         <QuestionSolveCount questionId={question.id} />
+        {!drawsFlowchart && (
+          <AssignToClassButton questionIds={[question.id]} surface="practice_question" variant="quiet" />
+        )}
         {drawsFlowchart && (
           <div className="flex items-start gap-2 px-3 py-2 rounded-lg border border-primary/25 bg-primary/5 text-xs text-primary mb-4">
             <Workflow size={13} className="shrink-0 mt-0.5" />

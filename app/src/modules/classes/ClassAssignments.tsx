@@ -7,6 +7,7 @@ import { ClipboardList, Plus, Loader2, X, Users, CalendarClock } from 'lucide-re
 import Combobox from '@/shared/ui/Combobox';
 import DatePicker from '@/shared/ui/DatePicker';
 import AssignmentShareActions from './AssignmentShareActions';
+import ClassQuickStart from './ClassQuickStart';
 
 function todayISO(): string {
   const d = new Date();
@@ -25,9 +26,11 @@ export interface AssignmentRow {
 
 interface Props {
   classId: string;
+  className: string;
   joinCode: string;
   assignments: AssignmentRow[];
   availableExams: { id: string; title: string }[];
+  starterQuestions?: { id: string; title: string }[];
 }
 
 function formatDue(iso: string | null): string | null {
@@ -36,7 +39,7 @@ function formatDue(iso: string | null): string | null {
   return d.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
-export default function ClassAssignments({ classId, joinCode, assignments, availableExams }: Props) {
+export default function ClassAssignments({ classId, className, joinCode, assignments, availableExams, starterQuestions = [] }: Props) {
   const router = useRouter();
   const [examId, setExamId] = useState('');
   const [due, setDue] = useState('');
@@ -117,7 +120,11 @@ export default function ClassAssignments({ classId, joinCode, assignments, avail
 
       {/* Assignment list */}
       {assignments.length === 0 ? (
-        <p className="text-sm text-dark-text/70 px-1 py-4">No work assigned yet. Assign one of your exams above.</p>
+        starterQuestions.length > 0 ? (
+          <ClassQuickStart classId={classId} className={className} joinCode={joinCode} questions={starterQuestions} />
+        ) : (
+          <p className="text-sm text-dark-text/70 px-1 py-4">No work assigned yet. Assign one of your exams above.</p>
+        )
       ) : (
         <div className="space-y-2">
           {assignments.map((a) => {

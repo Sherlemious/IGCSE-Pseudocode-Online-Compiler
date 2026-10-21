@@ -11,6 +11,9 @@ import ClassManager, { type ClassMember } from '@/modules/classes/ClassManager';
 import ClassAssignments, { type AssignmentRow } from '@/modules/classes/ClassAssignments';
 import StartAssignmentButton from '@/modules/classes/StartAssignmentButton';
 import { loadRosterStats } from '@/modules/classes/loadRosterStats';
+import { getQuestionCatalog } from '@/shared/lib/catalogCache';
+import { getQuestionSocialStats } from '@/modules/practice/loadSocialStats';
+import { recommendStarterQuestions } from '@/modules/practice/practiceNext';
 
 export const metadata: Metadata = {
   title: 'Class',
@@ -41,6 +44,19 @@ function Shell({ children, wide }: { children: ReactNode; wide?: boolean }) {
 
 function formatDue(d: Date | null): string | null {
   return d ? d.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) : null;
+}
+
+/** Easy questions a brand-new class can hand out. A catalog miss leaves the card off. */
+async function starterQuestions(): Promise<{ id: string; title: string }[]> {
+  try {
+    const [catalog, stats] = await Promise.all([getQuestionCatalog(), getQuestionSocialStats()]);
+    return recommendStarterQuestions(catalog, new Map(Object.entries(stats))).map((question) => ({
+      id: question.id,
+      title: question.title,
+    }));
+  } catch {
+    return [];
+  }
 }
 
 export default async function ClassDetailPage({ params }: Props) {
@@ -119,6 +135,8 @@ export default async function ClassDetailPage({ params }: Props) {
       isPublished: a.exam.isPublished,
     }));
 
+    const starters = assignmentRows.length === 0 ? await starterQuestions() : [];
+
     const members: ClassMember[] = cls.memberships.map((m) => {
       const stats = rosterStats.get(m.userId);
       return {
@@ -146,7 +164,14 @@ export default async function ClassDetailPage({ params }: Props) {
           offerStarter={tier === 'free'}
         />
         <div className="mt-8">
-          <ClassAssignments classId={classId} joinCode={cls.joinCode} assignments={assignmentRows} availableExams={availableExams} />
+          <ClassAssignments
+            classId={classId}
+            className={cls.name}
+            joinCode={cls.joinCode}
+            assignments={assignmentRows}
+            availableExams={availableExams}
+            starterQuestions={starters}
+          />
         </div>
       </Shell>
     );

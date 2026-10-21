@@ -10,7 +10,15 @@ import { OWNER_PLAN_SELECT } from '@/modules/billing/entitlements';
 export function findClassOwnership(classId: string, db: Db = prisma) {
   return db.class.findUnique({
     where: { id: classId },
-    select: { ownerId: true, archived: true, _count: { select: { memberships: true } } },
+    select: { ownerId: true, archived: true, joinCode: true, _count: { select: { memberships: true } } },
+  });
+}
+
+/** Name and join code for the printable slip. Ownership is checked by the caller. */
+export function findClassSummary(classId: string) {
+  return prisma.class.findUnique({
+    where: { id: classId },
+    select: { ownerId: true, name: true, joinCode: true, archived: true },
   });
 }
 
@@ -151,8 +159,16 @@ export function findAssignmentOwnership(assignmentId: string) {
   });
 }
 
-export function createAssignment(data: { classId: string; examId: string; dueDate: Date | null }) {
-  return prisma.assignment.create({ data, select: { id: true } });
+export function createAssignment(data: { classId: string; examId: string; dueDate: Date | null }, db: Db = prisma) {
+  return db.assignment.create({ data, select: { id: true } });
+}
+
+/** Question ids already handed to this class, one list per assignment. */
+export function listAssignmentQuestionIds(classId: string, db: Db = prisma) {
+  return db.assignment.findMany({
+    where: { classId },
+    select: { exam: { select: { questions: { select: { questionId: true } } } } },
+  });
 }
 
 export function deleteAssignment(assignmentId: string) {
