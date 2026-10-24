@@ -169,22 +169,71 @@ export function diagnoseUndeclared(name: string, ctx: SourceContext | undefined)
 
 // ── array index out of range ─────────────────────────────────────────────────
 
-interface OpenFor {
+interface OpenLoop {
+  kind: 'FOR' | 'WHILE' | 'REPEAT';
   line: number;
+  /** FOR only: the counter, its start and its bound. */
   variable: string;
+  start: string;
   bound: string;
+  /** WHILE only: the condition after WHILE. */
+  condition: string;
 }
 
-/** The innermost FOR still open at `errLine`. */
-function enclosingFor(lines: string[], errLine: number): OpenFor | null {
-  const stack: OpenFor[] = [];
+const FOR_HEADER = /^FOR\s+([A-Za-z_]\w*)\s*(?:<-|←|=)\s*(.+?)\s+TO\s+(.+?)(?:\s+STEP\s+.+)?$/i;
+
+function closeLast(stack: OpenLoop[], kind: OpenLoop['kind']) {
+  for (let i = stack.length - 1; i >= 0; i--) {
+    if (stack[i].kind === kind) {
+      stack.splice(i, 1);
+      return;
+    }
+  }
+}
+
+/** Loops still open at `errLine`, innermost last. */
+function openLoops(lines: string[], errLine: number): OpenLoop[] {
+  const stack: OpenLoop[] = [];
   for (let i = 0; i < errLine - 1 && i < lines.length; i++) {
     const c = codeOf(lines[i]);
-    const m = c.match(/^FOR\s+([A-Za-z_]\w*)\s*(?:<-|←)\s*.+?\s+TO\s+(.+?)(?:\s+STEP\s+.+)?$/i);
-    if (m) stack.push({ line: i + 1, variable: m[1], bound: m[2].trim() });
-    else if (/^NEXT\b/i.test(c)) stack.pop();
+    const m = c.match(FOR_HEADER);
+    if (m) {
+      stack.push({ kind: 'FOR', line: i + 1, variable: m[1], start: m[2].trim(), bound: m[3].trim(), condition: '' });
+    } else if (/^WHILE\b/i.test(c) && !/\bENDWHILE\b/i.test(c)) {
+      const condition = c.replace(/^WHILE\s+/i, '').replace(/\s+DO$/i, '').trim();
+      stack.push({ kind: 'WHILE', line: i + 1, variable: '', start: '', bound: '', condition });
+    } else if (/^REPEAT$/i.test(c)) {
+      stack.push({ kind: 'REPEAT', line: i + 1, variable: '', start: '', bound: '', condition: '' });
+    } else if (/^NEXT\b/i.test(c)) closeLast(stack, 'FOR');
+    else if (/^ENDWHILE\b/i.test(c)) closeLast(stack, 'WHILE');
+    else if (/^UNTIL\b/i.test(c)) closeLast(stack, 'REPEAT');
   }
-  return stack[stack.length - 1] ?? null;
+  return stack;
+}
+
+/** The UNTIL condition that closes the REPEAT opened on `repeatLine`. */
+function untilOf(lines: string[], repeatLine: number): string | null {
+  let depth = 0;
+  for (let i = repeatLine; i < lines.length; i++) {
+    const c = codeOf(lines[i]);
+    if (/^REPEAT$/i.test(c)) depth++;
+    else if (/^UNTIL\b/i.test(c)) {
+      if (depth === 0) return c.replace(/^UNTIL\s+/i, '').trim();
+      depth--;
+    }
+  }
+  return null;
+}
+
+const mentions = (text: string, name: string) => new RegExp(`\\b${name}\\b`).test(text);
+
+/** The line of `Count <- Count + 1` between the loop header and the error line, if any. */
+function increaseBefore(lines: string[], loopLine: number, errLine: number, name: string): number | null {
+  const step = new RegExp(`^${name}\\s*(?:<-|←|=)\\s*${name}\\s*\\+`);
+  for (let i = loopLine; i < errLine - 1 && i < lines.length; i++) {
+    if (step.test(codeOf(lines[i]))) return i + 1;
+  }
+  return null;
 }
 
 export function diagnoseOutOfBounds(
@@ -194,13 +243,29 @@ export function diagnoseOutOfBounds(
   ctx: SourceContext | undefined,
 ): Diagnosis | null {
   const line = ctx?.line ? ctx.lines[ctx.line - 1] : undefined;
-  const arrayName = line ? codeOf(line).match(/\b([A-Za-z_]\w*)\s*\[/)?.[1] : undefined;
+  const code = line ? codeOf(line) : '';
+  const access = code.match(/\b([A-Za-z_]\w*)\s*\[([^\]]*)\]/);
+  const arrayName = access?.[1];
+  const indexNames = access ? (access[2].match(/[A-Za-z_]\w*/g) ?? []) : [];
   const subject = arrayName ? `\`${arrayName}[${index}]\`` : `Index ${index}`;
   const range = `${arrayName ? `\`${arrayName}\`` : 'This array'} runs from ${lo} to ${hi}`;
   const head = `${subject} is out of range — ${range}.`;
 
+  const loops = ctx?.line ? openLoops(ctx.lines, ctx.line) : [];
+  const forLoop = [...loops].reverse().find((l) => l.kind === 'FOR' && mentions(code, l.variable)) ?? null;
+
   if (index < lo) {
     const zeroBased = index === 0 && lo === 1;
+    // Python habit: FOR i <- 0 TO n - 1 over an ARRAY[1:n].
+    if (zeroBased && forLoop && forLoop.start === '0') {
+      return {
+        detail: 'index_zero_loop',
+        message:
+          head +
+          `\n  Cambridge arrays start at 1, but the loop on line ${forLoop.line} starts ${forLoop.variable} at 0.` +
+          `\n  Count from ${lo} to ${hi} instead: FOR ${forLoop.variable} <- ${lo} TO ${hi}`,
+      };
+    }
     return {
       detail: zeroBased ? 'index_zero' : 'below_start',
       message:
@@ -211,18 +276,48 @@ export function diagnoseOutOfBounds(
     };
   }
 
-  const loop = ctx?.line ? enclosingFor(ctx.lines, ctx.line) : null;
-  const usesLoopVar = !!loop && !!line && new RegExp(`\\b${loop.variable}\\b`).test(codeOf(line));
   const extra = index - hi;
   const detail = extra === 1 ? 'off_by_one' : 'past_end';
-  const loopTip =
-    loop && usesLoopVar
-      ? `\n  The loop on line ${loop.line} counts up to ${loop.bound}, so ${loop.variable} reaches ${index}. ` +
-        `Make it stop at ${hi}: FOR ${loop.variable} <- ${lo} TO ${hi}`
-      : extra === 1
+  if (forLoop) {
+    return {
+      detail: `${detail}_loop`,
+      message:
+        head +
+        `\n  The loop on line ${forLoop.line} counts up to ${forLoop.bound}, so ${forLoop.variable} reaches ${index}. ` +
+        `Make it stop at ${hi}: FOR ${forLoop.variable} <- ${lo} TO ${hi}`,
+    };
+  }
+
+  // A WHILE or REPEAT whose condition is about a variable in the index.
+  for (const loop of [...loops].reverse()) {
+    if (loop.kind === 'FOR' || !ctx?.line) continue;
+    const condition = loop.kind === 'WHILE' ? loop.condition : (untilOf(ctx.lines, loop.line) ?? '');
+    const name = indexNames.find((n) => mentions(condition, n));
+    if (!name) continue;
+    const bumped = increaseBefore(ctx.lines, loop.line, ctx.line, name);
+    const where =
+      loop.kind === 'WHILE'
+        ? `The WHILE loop on line ${loop.line} (WHILE ${condition}) lets ${name} reach ${index}.`
+        : `The REPEAT loop on line ${loop.line} only stops at UNTIL ${condition}, so ${name} reaches ${index} first.`;
+    return {
+      detail: `${detail}_${loop.kind.toLowerCase()}`,
+      message:
+        head +
+        `\n  ${where} The last index you can use is ${hi}.` +
+        (bumped
+          ? `\n  ${name} goes up on line ${bumped}, before this line uses it, so it is already one past the item you meant.`
+          : `\n  Make the loop stop once ${name} is ${hi}.`),
+    };
+  }
+
+  return {
+    detail,
+    message:
+      head +
+      (extra === 1
         ? `\n  That is one past the end. Check the last index you use is ${hi}, not ${index}.`
-        : `\n  Check the index you calculate — it must stay between ${lo} and ${hi}.`;
-  return { detail: loop && usesLoopVar ? `${detail}_loop` : detail, message: head + loopTip };
+        : `\n  Check the index you calculate — it must stay between ${lo} and ${hi}.`),
+  };
 }
 
 // ── stray ELSE / ENDIF ───────────────────────────────────────────────────────

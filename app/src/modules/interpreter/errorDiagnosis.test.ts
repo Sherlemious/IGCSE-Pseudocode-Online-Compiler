@@ -82,6 +82,64 @@ NEXT i`;
     expect(d.message).toContain('start at 1');
   });
 
+  it('points at a loop that starts at 0 (the Python habit)', () => {
+    const code = 'DECLARE Names : ARRAY[1:10] OF STRING\nFOR i <- 0 TO 9\n    OUTPUT Names[i]\nNEXT i';
+    const d = diagnoseRuntimeError('Array index 0 out of bounds [1:10]', ctx(code, 3));
+    expect(d.detail).toBe('index_zero_loop');
+    expect(d.message).toContain('line 2 starts i at 0');
+    expect(d.message).toContain('FOR i <- 1 TO 10');
+  });
+
+  it('does not blame the loop start when the index is worked out from it', () => {
+    const code = 'DECLARE A : ARRAY[1:5] OF INTEGER\nFOR i <- 1 TO 5\n    OUTPUT A[i - 1]\nNEXT i';
+    const d = diagnoseRuntimeError('Array index 0 out of bounds [1:5]', ctx(code, 3));
+    expect(d.detail).toBe('index_zero');
+  });
+
+  it('reads a FOR written with = and picks the loop the index uses', () => {
+    const code = [
+      'DECLARE Grid : ARRAY[1:3, 1:3] OF INTEGER',
+      'FOR r = 1 TO 3',
+      '    FOR c = 1 TO 4',
+      '        Grid[r, c] <- 0',
+      '    NEXT c',
+      'NEXT r',
+    ].join('\n');
+    const d = diagnoseRuntimeError('Array index 4 out of bounds [1:3]', ctx(code, 4));
+    expect(d.detail).toBe('off_by_one_loop');
+    expect(d.message).toContain('line 3');
+  });
+
+  it('names the WHILE condition and an increase before the use', () => {
+    const code = [
+      'DECLARE Marks : ARRAY[1:5] OF INTEGER',
+      'Count <- 1',
+      'WHILE Count <= 5',
+      '    Count <- Count + 1',
+      '    Marks[Count] <- 0',
+      'ENDWHILE',
+    ].join('\n');
+    const d = diagnoseRuntimeError('Array index 6 out of bounds [1:5]', ctx(code, 5));
+    expect(d.detail).toBe('off_by_one_while');
+    expect(d.message).toContain('WHILE Count <= 5');
+    expect(d.message).toContain('goes up on line 4');
+  });
+
+  it('names the UNTIL condition of a REPEAT loop', () => {
+    const code = [
+      'DECLARE Marks : ARRAY[1:5] OF INTEGER',
+      'Count <- 1',
+      'REPEAT',
+      '    Marks[Count] <- 0',
+      '    Count <- Count + 1',
+      'UNTIL Count > 6',
+    ].join('\n');
+    const d = diagnoseRuntimeError('Array index 6 out of bounds [1:5]', ctx(code, 4));
+    expect(d.detail).toBe('off_by_one_repeat');
+    expect(d.message).toContain('UNTIL Count > 6');
+    expect(d.message).toContain('Make the loop stop once Count is 5');
+  });
+
   it('falls back to the plain range without context', () => {
     const d = diagnoseRuntimeError('Array index 9 out of bounds [1:5]');
     expect(d.message).toContain('out of range');

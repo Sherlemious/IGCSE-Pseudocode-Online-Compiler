@@ -2014,6 +2014,56 @@ describe('parse hints — sampled student mistakes', () => {
     expect(d.message).toContain('OUTPUT "Plan your name"');
   });
 
+  it('a name with a space in it is called out on INPUT and IF lines', () => {
+    const input = diagnose('INPUT Amount Spent\nOUTPUT AmountSpent');
+    expect(input.category).toBe('space_in_name');
+    expect(input.message).toContain('AmountSpent');
+    expect(input.message).toContain('INPUT Spent');
+    const cond = diagnose('INPUT Mark\nIF Exam Mark >= 50 THEN\n  OUTPUT "Pass"\nENDIF');
+    expect(cond.category).toBe('space_in_name');
+    expect(cond.message).toContain('"Exam Mark"');
+  });
+
+  it('a built-in function without brackets is not read as a spaced name', () => {
+    const d = diagnose('INPUT Password\nIF LENGTH Password <> 10 THEN\n  OUTPUT "No"\nENDIF');
+    expect(d.category).toBe('function_brackets');
+    expect(d.message).toContain('LENGTH(Password)');
+  });
+
+  it('a sentence after INPUT is treated as a prompt', () => {
+    const d = diagnose('INPUT enter two numbers');
+    expect(d.category).toBe('input_prompt');
+    expect(d.message).toContain('OUTPUT "enter two numbers"');
+  });
+
+  it('a line that is only a name, words or text says it does nothing', () => {
+    expect(diagnose('INPUT Age\nAgeNextYear\nOUTPUT Age').category).toBe('bare_line');
+    const words = diagnose('Task 15\nINPUT Distance');
+    expect(words.category).toBe('bare_line');
+    expect(words.message).toContain('// Task 15');
+    const text = diagnose('OUTPUT "Menu"\n"1. Play"\nINPUT Choice');
+    expect(text.category).toBe('bare_line');
+    expect(text.message).toContain('OUTPUT "1. Play"');
+  });
+
+  it('INPUT written as an assignment shows the INPUT line', () => {
+    const d = diagnose('INPUT Action = "go"');
+    expect(d.category).toBe('input_assignment');
+    expect(d.message).toContain('INPUT Action');
+    const both = diagnose('Sum = INPUT Score1');
+    expect(both.category).toBe('input_assignment');
+    expect(both.message).toContain('INPUT Score1');
+    expect(both.message).toContain('Sum <- Score1');
+  });
+
+  it('DECLARE with a value instead of a type gets the type and an assignment', () => {
+    const value = diagnose('DECLARE Password : "secret"');
+    expect(value.category).toBe('declare_syntax');
+    expect(value.message).toContain('DECLARE Password : STRING');
+    expect(value.message).toContain('Password <- "secret"');
+    expect(diagnose('DECLARE Fahrenheit : 3').message).toContain('DECLARE Fahrenheit : INTEGER');
+  });
+
   it('exam-paper line numbers are called out', () => {
     expect(diagnose('DECLARE Mark : INTEGER\n12   INPUT Mark').category).toBe('line_numbers');
   });

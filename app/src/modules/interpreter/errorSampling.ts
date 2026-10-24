@@ -15,8 +15,12 @@
 import { sanitizeForSampling } from './sanitizeSample';
 import type { FeatureContext } from './analytics';
 
-/** The "we don't yet know what went wrong" buckets — the ones worth collecting. */
-const SAMPLE_CATEGORIES = new Set(['no_viable_alternative', 'mismatched_input', 'other_parse']);
+/**
+ * The "we don't yet know what went wrong" buckets — the ones worth collecting.
+ * stray_else / stray_endif are here too: most of them (Oct 2026) got no
+ * context-aware diagnosis, and only the code can say why.
+ */
+const SAMPLE_CATEGORIES = new Set(['no_viable_alternative', 'mismatched_input', 'other_parse', 'stray_else', 'stray_endif']);
 
 /** Store roughly 1 in 5 eligible submissions. */
 const SAMPLE_RATE = 0.2;

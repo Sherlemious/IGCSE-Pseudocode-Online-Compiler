@@ -22,7 +22,7 @@ export interface RunContext {
  * so "did this change help?" is a before/after comparison of hint_shown →
  * hint_resolved (and the next run's outcome) split by `hint_version`.
  */
-export const HINT_VERSION = '2026-10-14.1';
+export const HINT_VERSION = '2026-10-25.1';
 
 export type RunOutcome = 'success' | 'parse_error' | 'runtime_error' | 'aborted';
 

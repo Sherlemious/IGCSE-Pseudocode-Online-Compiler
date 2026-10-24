@@ -7,7 +7,7 @@ import { sanitizeForSampling } from '@/modules/interpreter/sanitizeSample';
 import { createErrorSample, pruneErrorSamples } from '@/modules/telemetry/repo';
 
 // Only the vague parse buckets are worth collecting — see interpreter/errorSampling.ts.
-const CATEGORIES = ['no_viable_alternative', 'mismatched_input', 'other_parse'] as const;
+const CATEGORIES = ['no_viable_alternative', 'mismatched_input', 'other_parse', 'stray_else', 'stray_endif'] as const;
 const FEATURES = ['playground', 'practice', 'exam', 'docs'] as const;
 
 // Cost guardrails (keep Neon usage negligible):

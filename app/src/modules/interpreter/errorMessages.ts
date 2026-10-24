@@ -1102,6 +1102,133 @@ function lineNumberHint(line: string): LineDiagnosis | null {
   };
 }
 
+// ── Oct 2026 generic-bucket leftovers ────────────────────────────────────────
+// The largest shapes left in no_viable_alternative / mismatched_input after
+// replaying 30 days of ErrorSample rows: a name with a space in it, a line that
+// is only a name or only text, INPUT written as an assignment, and DECLARE
+// given a value instead of a type. None is ever valid.
+
+const isKeyword = (word: string) => KEYWORDS.includes(word.toUpperCase());
+
+/** `INPUT Amount Spent`, `IF Amount Spent >= 500 THEN` — two names side by side. */
+function spacedNameHint(line: string): LineDiagnosis | null {
+  const masked = maskNonCode(line);
+  const head = masked.match(/^\s*(INPUT|IF|ELSEIF|WHILE|UNTIL)\s+/i);
+  if (!head) return null;
+  // `INPUT enter two numbers` — a question typed where the variable goes.
+  const rest = masked.slice(head[0].length).trim().split(/\s+/);
+  if (/^INPUT$/i.test(head[1]) && rest.length >= 3 && rest.every((w) => /^[A-Za-z_]\w*$/.test(w) && !isKeyword(w)))
+    return {
+      category: 'input_prompt',
+      message:
+        'INPUT takes one variable name, not a sentence. Show the question with OUTPUT first:\n' +
+        `    OUTPUT "${clip(rest.join(' '), 40)}"\n    INPUT ${rest[rest.length - 1]}`,
+    };
+  const pair = /([A-Za-z_]\w*)\s+(?=([A-Za-z_]\w*))/g;
+  pair.lastIndex = head[0].length;
+  let m: RegExpExecArray | null;
+  while ((m = pair.exec(masked)) !== null) {
+    const [a, b] = [m[1], m[2]];
+    if (isKeyword(a) || isKeyword(b) || masked[m.index - 1] === '.') continue;
+    // `IF LENGTH Password <> 10` — a built-in function without its brackets.
+    if (BUILTIN_SIGNATURES[a.toUpperCase()])
+      return {
+        category: 'function_brackets',
+        message: `${a.toUpperCase()} is a function, so what it works on goes in brackets:  ${a.toUpperCase()}(${b})`,
+      };
+    const joined = `${a}${b[0].toUpperCase()}${b.slice(1)}`;
+    const extra = /^INPUT$/i.test(head[1])
+      ? `\n  To read two separate values, use one INPUT per line:\n    INPUT ${a}\n    INPUT ${b}`
+      : `\n  If ${a} and ${b} are two different values, they need an operator between them (=, +, AND …).`;
+    return {
+      category: 'space_in_name',
+      message:
+        `"${a} ${b}" has a space in it, and a variable name must be one word.\n` +
+        `  Write ${joined} (or ${a}_${b}) here and everywhere else you use it.` +
+        extra,
+    };
+  }
+  return null;
+}
+
+/** `"Enter a number"`, `age_next_year`, `Task 15` — a line that does nothing. */
+function bareLineHint(line: string): LineDiagnosis | null {
+  const t = line.trim();
+  if (/^"[^"]*"\s*,?$/.test(t))
+    return {
+      category: 'bare_line',
+      detail: 'text',
+      message:
+        'This line is only text, so it does nothing on its own.\n' +
+        `  To print it:  OUTPUT ${clip(t.replace(/,$/, ''), 40)}\n` +
+        '  To continue the OUTPUT above, keep it on the same line after a comma:\n' +
+        '    OUTPUT "First part ", "second part"',
+    };
+  const words = t.match(/^([A-Za-z_]\w*)((?:\s+[A-Za-z0-9_]+)*)$/);
+  // `Total MOD 2` is a value missing its statement, not a title.
+  if (!words || t.split(/\s+/).some(isKeyword)) return null;
+  if (!words[2])
+    return {
+      category: 'bare_line',
+      detail: 'name',
+      message:
+        `"${t}" on its own does nothing — a line needs an action.\n` +
+        `  Give it a value:   ${t} <- 0\n` +
+        `  Show it:           OUTPUT ${t}\n` +
+        `  Run a procedure:   CALL ${t}\n` +
+        `  A title or note:   // ${t}`,
+    };
+  return {
+    category: 'bare_line',
+    detail: 'words',
+    message:
+      `"${clip(t, 40)}" is not a statement.\n` +
+      `  If it is a title or a note, start the line with //:   // ${clip(t, 40)}\n` +
+      '  A variable name cannot contain spaces — join the words, e.g. TaskNumber.',
+  };
+}
+
+/** `INPUT Name = ""`, `INPUT = Name`, `Name = INPUT Name` — INPUT stores into the variable itself. */
+function inputAssignmentHint(line: string): LineDiagnosis | null {
+  const t = maskNonCode(line).trim();
+  // `Sum = INPUT Score1` — read Score1, then use it.
+  const both = t.match(/^([A-Za-z_]\w*)\s*(?:=|<-|←)\s*INPUT\s+([A-Za-z_]\w*)\s*$/i);
+  if (both)
+    return {
+      category: 'input_assignment',
+      message:
+        'INPUT is a statement on its own line, not a value. Read the variable first, then use it:\n' +
+        `    INPUT ${both[2]}\n    ${both[1]} <- ${both[2]}`,
+    };
+  const name =
+    t.match(/^INPUT\s+([A-Za-z_]\w*)\s*(?:=|<-|←)/i)?.[1] ??
+    t.match(/^INPUT\s*(?:=|<-|←)\s*([A-Za-z_]\w*)/i)?.[1] ??
+    t.match(/^([A-Za-z_]\w*)\s*(?:=|<-|←)\s*INPUT\b/i)?.[1];
+  if (!name) return null;
+  return {
+    category: 'input_assignment',
+    message:
+      'INPUT puts what the user types straight into the variable — no = or <- needed.\n' +
+      `  Write:  INPUT ${name}\n` +
+      '  To ask a question first, OUTPUT it on the line before:\n' +
+      `    OUTPUT "Enter ${name}"\n    INPUT ${name}`,
+  };
+}
+
+/** `DECLARE Name : "Ali"`, `DECLARE Total : 0` — a type goes after the colon, not a value. */
+function declareTypeHint(line: string): LineDiagnosis | null {
+  const value = line.trim().match(/^DECLARE\s+([A-Za-z_]\w*)\s*:\s*("[^"]*"|-?\d+(?:\.\d+)?)\s*$/i);
+  if (!value) return null;
+  const type = value[2].startsWith('"') ? 'STRING' : value[2].includes('.') ? 'REAL' : 'INTEGER';
+  return {
+    category: 'declare_syntax',
+    detail: 'value_as_type',
+    message:
+      'After the colon, DECLARE needs a type, not a value.\n' +
+      `  Declare it, then give it the value on the next line:\n    DECLARE ${value[1]} : ${type}\n    ${value[1]} <- ${clip(value[2], 30)}`,
+  };
+}
+
 /** `Stars(5)` alone on a line — a procedure is run with CALL. */
 function missingCallHint(line: string): LineDiagnosis | null {
   const m = line.trim().match(/^([A-Za-z_]\w*)\s*\(.*\)$/);
@@ -1519,6 +1646,7 @@ function sourceLineHint(sourceLine: string | undefined, ctx?: SourceContext): Li
     basicBlockHint(sourceLine) ??
     strayCloserHint(sourceLine, ctx) ??
     arrayDeclareHint(sourceLine) ??
+    declareTypeHint(sourceLine) ??
     declareHint(sourceLine) ??
     procedureReturnsHint(sourceLine) ??
     functionHeaderHint(sourceLine) ??
@@ -1535,6 +1663,8 @@ function sourceLineHint(sourceLine: string | undefined, ctx?: SourceContext): Li
     caseComparisonHint(sourceLine) ??
     elseConditionHint(sourceLine) ??
     callInExpressionHint(sourceLine) ??
+    inputAssignmentHint(sourceLine) ??
+    spacedNameHint(sourceLine) ??
     inputTargetHint(sourceLine) ??
     inputPromptHint(sourceLine) ??
     setKeywordHint(sourceLine) ??
@@ -1544,6 +1674,7 @@ function sourceLineHint(sourceLine: string | undefined, ctx?: SourceContext): Li
     assignmentValueHint(sourceLine) ??
     outputSeparatorHint(sourceLine) ??
     plainWordsHint(sourceLine) ??
+    bareLineHint(sourceLine) ??
     missingCallHint(sourceLine)
   );
 }
