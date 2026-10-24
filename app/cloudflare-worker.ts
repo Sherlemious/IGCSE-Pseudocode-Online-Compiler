@@ -5,7 +5,16 @@ import { default as handler } from './.open-next/worker.js';
 type Env = { CRON_SECRET?: string };
 
 const worker = {
-  fetch: handler.fetch,
+  // Workers custom domains answer plain http too (Vercel used to redirect it), so
+  // every page also existed at http://. Send those to https once, permanently.
+  fetch(request: Request, env: unknown, ctx: unknown) {
+    const url = new URL(request.url);
+    if (url.protocol === 'http:') {
+      url.protocol = 'https:';
+      return Response.redirect(url.toString(), 301);
+    }
+    return handler.fetch(request, env as never, ctx as never);
+  },
 
   async scheduled(_event: unknown, env: Env, ctx: { waitUntil(promise: Promise<unknown>): void }) {
     const request = new Request('https://cron.internal/api/cron/expire-passes', {

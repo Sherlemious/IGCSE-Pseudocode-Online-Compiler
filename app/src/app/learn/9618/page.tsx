@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Suspense } from 'react';
 import { PREMIUM_GATING_ENABLED } from '@/modules/billing/featureFlags';
 import LearnLadder from '@/modules/learn/LearnLadder';
+import { CourseLessonIndex } from '@/modules/learn/LessonOutline';
 import { ALEVEL_9618 } from '@/modules/learn/curriculum';
 import { flattenLessons, lessonHref } from '@/modules/learn/path';
 import { SHARE_IMAGE, SITE_NAME, SITE_URL } from '@/shared/lib/seo';
@@ -53,6 +54,7 @@ export default function ALevelLearnPage() {
       <Suspense fallback={<div className="flex-1 bg-background" />}>
         <LearnLadder course={ALEVEL_9618} premiumAccess={!PREMIUM_GATING_ENABLED} />
       </Suspense>
+      <CourseLessonIndex course={ALEVEL_9618} />
     </>
   );
 }

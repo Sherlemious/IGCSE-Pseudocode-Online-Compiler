@@ -118,6 +118,8 @@ const nextConfig: NextConfig = {
         source: "/:path*",
         headers: [
           { key: "X-Content-Type-Options", value: "nosniff" },
+          // Browsers remember to use https after the first visit (the worker redirects http).
+          { key: "Strict-Transport-Security", value: "max-age=31536000" },
           { key: "Vary", value: "Accept" },
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
           {

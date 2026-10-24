@@ -12,6 +12,7 @@ import SolutionPanel from '@/modules/practice/SolutionPanel';
 import FlowchartDiagram from '@/modules/flowchart/FlowchartDiagram';
 import { isTemplate, parseFlowchartDoc } from '@/modules/interpreter/converters/flowchartDoc';
 import QuestionSolveCount from '@/modules/practice/QuestionSolveCount';
+import { relatedQuestions } from '@/modules/practice/relatedQuestions';
 import AssignToClassButton from '@/modules/classes/AssignToClass';
 import {
   absoluteUrl,
@@ -112,6 +113,7 @@ export default async function QuestionPage({ params }: Props) {
   // page would be a 404 for a day. Only a question that doesn't exist is notFound().
   const question = await getPublicQuestion(questionId);
   if (!question) notFound();
+  const related = relatedQuestions(await getQuestionCatalog(), question.id);
 
   const isLockedForCrawlers = question.isPremium && PREMIUM_GATING_ENABLED;
   const ref = paperReference(question);
@@ -339,6 +341,26 @@ export default async function QuestionPage({ params }: Props) {
         {/* Hints & Solution panels */}
         <HintsPanel questionId={question.id} />
         <SolutionPanel questionId={question.id} showFlowchart={drawsFlowchart} />
+
+        {related.length > 0 && (
+          <nav aria-label="More practice questions" className="mt-8 pt-4 border-t border-border">
+            <h2 className="display-serif text-base font-semibold text-light-text mb-2">More practice questions</h2>
+            <ul className="space-y-1.5 text-sm">
+              {related.map((q) => (
+                <li key={q.id}>
+                  <Link href={`/practice/${q.id}`} className="text-primary hover:underline">
+                    {q.title}
+                  </Link>
+                  <span className="text-xs text-dark-text">
+                    {' · '}
+                    {q.difficulty.toLowerCase()}
+                    {q.topic ? ` · ${q.topic}` : ''}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </nav>
+        )}
       </div>
 
       <PracticeQuestionPane

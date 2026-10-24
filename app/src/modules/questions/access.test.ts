@@ -118,6 +118,6 @@ describe('exam question ids', () => {
 
 describe('starter plan copy', () => {
   it('lists writing autograded questions', () => {
-    expect(TIER_COPY.starter.features).toContain('Write your own autograded questions');
+    expect(TIER_COPY.starter.features).toContain('Your own autograded questions, with hidden tests');
   });
 });

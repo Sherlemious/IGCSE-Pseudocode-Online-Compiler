@@ -6,6 +6,7 @@ import { usePathname, useSearchParams } from 'next/navigation';
 import { useEffect, Suspense } from 'react';
 import { setInterpreterCapture } from '@/modules/interpreter/telemetry';
 import { DOM_MUTATION_GUARDED_EVENT } from '@/shared/lib/domMutationGuard';
+import { isNoiseException } from './exceptionNoise';
 
 const key = process.env.NEXT_PUBLIC_POSTHOG_KEY;
 const host = process.env.NEXT_PUBLIC_POSTHOG_HOST ?? 'https://us.i.posthog.com';
@@ -24,6 +25,7 @@ if (typeof window !== 'undefined' && key) {
       capture_unhandled_rejections: true,
       capture_console_errors: false,
     },
+    before_send: (event) => (isNoiseException(event) ? null : event),
     debug: isDev,
     opt_out_capturing_by_default: isDev, // no data collected in dev unless opted in
     // Same-origin fetches (RSC, route handlers) carry the person and session so
