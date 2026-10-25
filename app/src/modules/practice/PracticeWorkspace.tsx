@@ -10,6 +10,7 @@ import PracticeStartGate from './PracticeStartGate';
 import GradeAuthSheet, { PENDING_GRADE_KEY } from './GradeAuthSheet';
 import { useInterpreter } from '@/modules/interpreter/useInterpreter';
 import { captureEvent } from '@/modules/interpreter/analytics';
+import ExamMarkingPanel from './ExamMarkingPanel';
 import { suggestLearnPath } from '@/modules/learn/learnNudge';
 import PracticePassOffer from './PracticePassOffer';
 import { readStreak, recordSolveDay } from './practiceStreak';
@@ -70,6 +71,8 @@ interface Props {
   preloadedFileNames?: string[];
   /** EASY grades anonymously; MEDIUM/HARD open the in-page auth sheet. */
   difficulty: 'EASY' | 'MEDIUM' | 'HARD';
+  /** Offer "Mark it like an examiner" under the results (15-mark questions, flag on). */
+  examMarking?: boolean;
 }
 
 /** How the editor was seeded for a fresh question. */
@@ -98,7 +101,7 @@ function errorHint(error: NonNullable<GradeResultItem['error']>): string {
 
 /* ── Component ──────────────────────────────────────────── */
 
-export default function PracticeWorkspace({ questionId, starterCode, savedCode, preloadedFileNames, difficulty }: Props) {
+export default function PracticeWorkspace({ questionId, starterCode, savedCode, preloadedFileNames, difficulty, examMarking = false }: Props) {
   /* ── Auth (for the LeetCode-style grade gate) ───────── */
   const { status: authStatus, update: updateSession } = useSession();
 
@@ -1032,6 +1035,8 @@ export default function PracticeWorkspace({ questionId, starterCode, savedCode, 
             </div>
           )}
         </div>
+
+        {examMarking && authStatus === 'authenticated' && <ExamMarkingPanel questionId={questionId} code={code} />}
 
         {/* Save-score nudge for anonymous students (Easy grades without sign-in) */}
         {authStatus !== 'authenticated' && (

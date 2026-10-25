@@ -393,6 +393,11 @@ export async function getQuestionForGrade(id: string): Promise<GradeQuestion | n
   return question ? toGradeQuestion(question) : null;
 }
 
+/** The full question (text, tests) for AI marking, which needs the description as well as the tests. */
+export async function getQuestionForMarking(id: string): Promise<BankQuestion | null> {
+  return getBankQuestion(id);
+}
+
 export async function getQuestionHints(id: string): Promise<string[] | null> {
   const question = await getBankQuestion(id);
   return question ? question.hints : null;

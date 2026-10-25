@@ -22,6 +22,7 @@ export default function PracticeQuestionPane({
   paperRef,
   answerFormat = 'CODE',
   questionFlowchart = null,
+  examMarking = false,
 }: {
   questionId: string;
   starterCode: string;
@@ -34,6 +35,8 @@ export default function PracticeQuestionPane({
   answerFormat?: 'CODE' | 'FLOWCHART';
   /** FLOWCHART questions: the starting canvas or fill-in template. */
   questionFlowchart?: unknown;
+  /** 15-mark question with AI examiner marking switched on. */
+  examMarking?: boolean;
 }) {
   const { status } = useSession();
   const [premiumAccess, setPremiumAccess] = useState(!gatingEnabled);
@@ -137,6 +140,7 @@ export default function PracticeQuestionPane({
           savedCode={savedCode}
           preloadedFileNames={preloadedFileNames}
           difficulty={difficulty}
+          examMarking={examMarking}
         />
       )}
       <FirstSolveShare

@@ -336,7 +336,10 @@ Page-side events fire from `PricingClient`; the `checkout_*` events are bridged 
 | `checkout_opened` | webhook (`transaction.created`, signed-in web checkouts only) — `transaction_id`, `price_id`, `tier`, `sku_type`, `currency`, `total`, `role`, `paddle_env`; `$set`s `email`/`name`. Server-side so ad-blocked buyers still count. Together with `subscribe_clicked` and `pass_clicked` (person email set), it triggers the "checkout not finished" follow-up (skipped once they buy; once per person per 30 days so a click and a later open don't double-send) |
 | `subscription_plan_granted` | webhook — `plan`, `plan_tier`, `price_id`, `paddle_env`, `subscription_id`, `status` |
 | `subscription_plan_revoked` | webhook — `reason` (Paddle status), `paddle_env`, `subscription_id` |
-| `student_pass_granted` | webhook — `pass_kind`, `plan_tier`, `paddle_env`, `transaction_id` |
+| `student_pass_granted` | webhook — `pass_kind`, `plan_tier`, `paddle_env`, `transaction_id`, `paid_by` (`self`\|`parent_link`) |
+| `parent_link_created` / `parent_link_shared` | `surface` (`learn_paywall`\|`pricing`); shared adds `method` (`copy`\|`whatsapp`\|`native`) |
+| `parent_pay_viewed` / `parent_pay_clicked` | `pass`, `early_bird` / `price_id`, `discount_code`: the parent on `/pay/<token>` (anonymous) |
+| `parent_checkout_opened` | webhook, on the student: `transaction_id`, `price_id`, `currency`, `total`, `paddle_env` |
 
 ### Paper 2 Path (`/learn`)
 
@@ -376,6 +379,16 @@ After checkout, `/welcome` shows students (non-TEACHER) every paid level at its 
 | `welcome_cta_clicked` | `destination` (`learn_level`\|`learn_path`\|`editor`), `level`, `recommended` (the level they hit the paywall on) |
 
 **Pay without an account (Oct 2026).** The sign-in sheet before checkout (and the "Sign in first" banner) also offers "Pay without an account" (`pricing_guest_checkout_chosen`). Paddle then opens with custom data `{ guest: true, intended_role }` and `successUrl` `/welcome?guest=1`. In the webhook, `resolveOrCreateUser` (`billing/paddle/webhookHandlers.ts`) first matches the payer as before (customer, app_user_id, email), and only for a guest checkout with no account on the payer email creates one (`repo.createBillingUserForPayer`: no password, `roleChosen`), fires `account_created_from_checkout`, and sends the set-password email (`auth/accountClaim.ts`, `auth/emails/claim.ts`). The link (`/auth/claim`, hashed `claim-account:` VerificationToken, 7 days) sets the password and marks the email verified; `POST /api/auth/claim` with `{ resend: true }` mails a fresh link without revealing whether the account exists. Google sign-in on the same address also works (email linking). So a plan still always lands on a user.
+
+**Examiner marking (Oct 2026, OFF by default).** On 15-mark code questions, "Mark it like an examiner" (`practice/ExamMarkingPanel.tsx` under the test results, signed-in only) calls `POST /api/questions/[id]/mark` (`practice/examMarking/service.ts`). It runs the tests free on our interpreter, then makes one Claude call (`EXAM_MARKING_MODEL`, default `claude-haiku-5-5`, structured output). The call marks the answer against that question's 15-point scheme in `examMarking/markSchemes.ts`, keyed by title: our own schemes, written from the model solutions, with a test that every 15-mark seed has one. The total is recomputed from the points and never taken from the model. Cost guards, in order:
+- an identical answer (sha256 of the trimmed code, by anyone) reuses the stored `ExamMarking` row with no call;
+- free accounts get `FREE_MARKINGS` (3) in total, paid ones `PAID_DAILY` (20) a day;
+- a global `EXAM_MARKING_DAILY_CAP` (default 500) stops everyone;
+- 5 markings a minute per user.
+
+To switch it on, all three are required: `npx prisma db push` (additive `ExamMarking` table), the `ANTHROPIC_API_KEY` Worker secret, and `EXAM_MARKING_ENABLED=true`. Validated on real `Progress.lastCode` answers before building: within one mark of a human marker, including bugs that passed every test. Events: `exam_marking_clicked`, `exam_marking_upgrade_clicked` (client), `exam_marking_completed` (server: `total`, `cached`, `plan`, `model`, token counts).
+
+**Ask a parent to pay (Oct 2026).** Many students have no card. "No card? Ask a parent to pay" (`billing/AskParentButton.tsx`, on the Learn paywall and the featured pass card for signed-in students) calls `POST /api/me/parent-link` for `/pay/<token>`. The token is the student id plus an expiry 30 days out, HMAC-signed with `AUTH_SECRET` (`billing/parentPay.ts`). The page (`app/pay/[token]`, noindex, no nudges) sells only the featured pass, with the early bird applied. Its checkout carries custom data `pay_for: <token>` and no prefilled email. In the webhook, `applyPassPurchase` trusts a `pay_for` that verifies **before** any customer or email match, because the payer's email is the parent's. It does not link the parent's Paddle customer to the student, since a parent may pay for two children. `recordCheckoutOpened` sends `parent_checkout_opened` on the student with no `$set`, so the checkout follow-up email never fires for it. Subscriptions ignore `pay_for`.
 
 **May/June early bird.** `EARLY_BIRD` / `earlyBirdFor()` in `billing/paddle/passes.ts` mirrors the Paddle discount `EARLYBIRD20` (20%, restricted to the May/June pass price, expires 2026-10-31 23:59 UTC; to extend, move the Paddle expiry, `endsAt` and `endsLabel` together). Checkout passes `discountCode` automatically for that pass; the pass card and the Learn paywall price line say so. A personal code in `/pricing?checkout=<slug>&code=<CODE>` replaces it for that plan (Paddle validates it). `pass_clicked` carries `discount_code`.
 
@@ -421,3 +434,4 @@ Copy `app/.env.example` → `app/.env`. Required:
 - `AUTH_GITHUB_ID` / `AUTH_GITHUB_SECRET` — GitHub OAuth (unused while the provider is commented out)
 - `RESEND_API_KEY` — email (optional in dev)
 - `NEXT_PUBLIC_POSTHOG_KEY` — analytics (leave blank in dev to disable)
+- `EXAM_MARKING_ENABLED`, `ANTHROPIC_API_KEY` (Cloudflare Worker secret) — examiner marking; off unless both are set. Optional `EXAM_MARKING_MODEL`, `EXAM_MARKING_DAILY_CAP`

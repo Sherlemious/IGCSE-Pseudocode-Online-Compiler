@@ -54,6 +54,7 @@ model User {
   accounts            Account[]
   sessions            Session[]
   progress            Progress[]
+  examMarkings        ExamMarking[]
   learnProgress       LearnProgress[]
   examAttempts        ExamAttempt[]
   exams               Exam[]
@@ -200,6 +201,7 @@ model Question {
 
   testCases   TestCase[]
   progress    Progress[]
+  examMarkings ExamMarking[]
   examAnswers ExamAnswer[]
   examLinks   ExamQuestion[]
 
@@ -231,6 +233,32 @@ model TestCase {
 enum ProgressStatus {
   ATTEMPTED
   SOLVED
+}
+
+/// "Mark it like an examiner" on 15-mark practice questions (practice/examMarking).
+/// One row per AI marking; `cached` rows reused an identical answer's result and
+/// cost nothing, so they don't count toward the free allowance or the daily cap.
+model ExamMarking {
+  id           String   @id @default(cuid())
+  userId       String
+  questionId   String
+  /// sha256 of the trimmed code, so a resubmission reuses the result.
+  codeHash     String
+  total        Int
+  /// { points: [{ id, awarded, note }], fixes: string[], summary: string }
+  result       Json
+  model        String
+  inputTokens  Int      @default(0)
+  outputTokens Int      @default(0)
+  cached       Boolean  @default(false)
+  createdAt    DateTime @default(now())
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([questionId, codeHash])
+  @@index([createdAt])
 }
 
 model Progress {

@@ -7,6 +7,7 @@ import remarkGfm from 'remark-gfm';
 import { PREMIUM_GATING_ENABLED } from '@/modules/billing/featureFlags';
 import { getPublicQuestion, getQuestionCatalog } from '@/shared/lib/catalogCache';
 import PracticeQuestionPane from '@/modules/practice/PracticeQuestionPane';
+import { isMarkable } from '@/modules/practice/examMarking/markSchemes';
 import HintsPanel from '@/modules/practice/HintsPanel';
 import SolutionPanel from '@/modules/practice/SolutionPanel';
 import FlowchartDiagram from '@/modules/flowchart/FlowchartDiagram';
@@ -374,6 +375,7 @@ export default async function QuestionPage({ params }: Props) {
         paperRef={ref}
         answerFormat={question.answerFormat}
         questionFlowchart={drawsFlowchart ? question.flowchart : null}
+        examMarking={isMarkable(question)}
       />
     </div>
   );
