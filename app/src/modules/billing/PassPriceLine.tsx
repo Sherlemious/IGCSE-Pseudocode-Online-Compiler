@@ -68,7 +68,7 @@ function Line({ offer }: { offer: Offer }) {
   const earlyBird = pass ? earlyBirdFor(pass.kind) : null;
   const earlyLine = earlyBird && (
     <span className="mt-1 block text-success">
-      Early bird: {earlyBird.percent}% off until 30 Nov, taken off at checkout.
+      Early bird: {earlyBird.percent}% off until {earlyBird.endsLabel}, taken off at checkout.
     </span>
   );
   if (quote) {

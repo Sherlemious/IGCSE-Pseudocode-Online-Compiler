@@ -54,7 +54,9 @@ function PricingViewInner({
   // Either way, sign them in first, in place, then checkout opens.
   const checkoutFrom = searchParams.get('from');
   const checkoutSlug = searchParams.get('checkout');
-  const checkoutForTeacher = Boolean(checkoutSlug && teacherTiers.some((t) => t.slug === checkoutSlug));
+  const rawCode = searchParams.get('code');
+  const personalCode = rawCode && /^[a-zA-Z0-9]{1,32}$/.test(rawCode) ? rawCode : null;
+  const checkoutForTeacher =Boolean(checkoutSlug && teacherTiers.some((t) => t.slug === checkoutSlug));
   // "Pay without an account": Paddle opens straight away and the webhook puts
   // the plan on the account for the email paid with (made if missing). Since
   // sign-in-first shipped, most signed-out buyers closed the sign-in sheet.
@@ -316,6 +318,7 @@ function PricingViewInner({
               checkoutSource={checkoutFrom}
               onSignInToCheckout={signInToCheckout}
               guestCheckout={guestCheckout && !session}
+              discountCode={personalCode}
             />
           </PaddleProvider>
         )}

@@ -172,10 +172,10 @@ describe('isTeacherPlan', () => {
 });
 
 describe('early-bird May/June code', () => {
-  it('applies to the May/June pass until the end of 30 Nov (UTC)', () => {
+  it('applies to the May/June pass until the end of 31 Oct (UTC)', () => {
     expect(earlyBirdFor('may_june', utc(2026, 9, 25))?.code).toBe('EARLYBIRD20');
-    expect(earlyBirdFor('may_june', new Date(Date.UTC(2026, 10, 30, 23, 59, 0)))?.percent).toBe(20);
-    expect(earlyBirdFor('may_june', utc(2026, 11, 1, 0))).toBeNull();
+    expect(earlyBirdFor('may_june', new Date(Date.UTC(2026, 9, 31, 23, 59, 0)))?.percent).toBe(20);
+    expect(earlyBirdFor('may_june', utc(2026, 10, 1, 0))).toBeNull();
   });
 
   it('never applies to other passes', () => {

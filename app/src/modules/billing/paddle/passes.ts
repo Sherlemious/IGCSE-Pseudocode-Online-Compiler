@@ -202,7 +202,9 @@ export const EARLY_BIRD = {
   code: 'EARLYBIRD20',
   percent: 20,
   kind: 'may_june' as Exclude<PassKind, 'month'>,
-  endsAt: new Date('2026-11-30T23:59:59Z'),
+  endsAt: new Date('2026-10-31T23:59:59Z'),
+  /** Shown as "until …". Keep in step with `endsAt` and the Paddle discount's expiry. */
+  endsLabel: '31 Oct',
 } as const;
 
 export function earlyBirdFor(kind: PassKind, now: Date = new Date()): typeof EARLY_BIRD | null {

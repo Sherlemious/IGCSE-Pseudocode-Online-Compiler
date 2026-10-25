@@ -38,7 +38,7 @@ export default async function SittingSavedPage({ searchParams }: Props) {
 
           {earlyBird && (
             <div className="mt-6 rounded-xl border border-success/30 bg-success/10 p-4 text-left text-sm">
-              <p className="font-semibold text-success">Early bird: the May/June pass is {earlyBird.percent}% off until 30 Nov</p>
+              <p className="font-semibold text-success">Early bird: the May/June pass is {earlyBird.percent}% off until {earlyBird.endsLabel}</p>
               <p className="mt-1 text-dark-text">
                 One payment opens every level of the Paper 2 Path, the full practice library and timed exams until 30 June.
               </p>

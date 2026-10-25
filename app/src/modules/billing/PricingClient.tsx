@@ -175,6 +175,7 @@ export default function PricingClient({
   checkoutSource,
   onSignInToCheckout,
   guestCheckout = false,
+  discountCode,
 }: {
   teacherTiers: PricingTierView[];
   studentMonthly: StudentMonthlyView | null;
@@ -211,6 +212,11 @@ export default function PricingClient({
    * creating it if needed (custom data `guest`, `intended_role`).
    */
   guestCheckout?: boolean;
+  /**
+   * `?code=`: a personal Paddle discount code (offered one to one by email).
+   * Replaces the early bird on the `autoCheckout` plan only; Paddle validates it.
+   */
+  discountCode?: string | null;
 }) {
   const paddle = usePaddle();
   const ph = usePostHog();
@@ -333,6 +339,7 @@ export default function PricingClient({
     if (!paddle || !opts.priceId) return;
     const passKind = studentPasses.find((p) => p.slug === opts.slug)?.kind;
     const earlyBird = passKind ? earlyBirdFor(passKind) : null;
+    const code = (opts.slug === autoCheckout ? discountCode : null) ?? earlyBird?.code ?? null;
     ph?.capture(opts.interval === 'pass' ? 'pass_clicked' : 'subscribe_clicked', {
       tier: opts.slug,
       interval: opts.interval,
@@ -342,7 +349,7 @@ export default function PricingClient({
       source: checkoutSource ?? 'pricing',
       auto_opened: Boolean(opts.auto),
       signed_in: Boolean(appUserId),
-      discount_code: earlyBird?.code ?? null,
+      discount_code: code,
     });
     if (!appUserId && onSignInToCheckout && !guestCheckout) {
       onSignInToCheckout({ slug: opts.slug, interval: opts.interval });
@@ -350,7 +357,7 @@ export default function PricingClient({
     }
     paddle.Checkout.open({
       items: [{ priceId: opts.priceId, quantity: 1 }],
-      ...(earlyBird ? { discountCode: earlyBird.code } : {}),
+      ...(code ? { discountCode: code } : {}),
       ...(customerEmail ? { customer: { email: customerEmail } } : {}),
       ...(appUserId
         ? { customData: { app_user_id: appUserId } }
@@ -527,7 +534,7 @@ export default function PricingClient({
         </p>
         {earlyBird && !isCurrent && (
           <p className="mt-3 rounded-lg border border-success/30 bg-success/10 px-3 py-2 text-xs text-success">
-            <span className="font-semibold">Early bird: {earlyBird.percent}% off until 30 Nov</span>
+            <span className="font-semibold">Early bird: {earlyBird.percent}% off until {earlyBird.endsLabel}</span>
             {earlyPrice ? ` — ${earlyPrice} at checkout.` : ' — taken off at checkout.'} No code needed.
           </p>
         )}
