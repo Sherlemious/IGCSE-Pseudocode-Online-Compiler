@@ -55,8 +55,17 @@ function PricingViewInner({
   const checkoutFrom = searchParams.get('from');
   const checkoutSlug = searchParams.get('checkout');
   const checkoutForTeacher = Boolean(checkoutSlug && teacherTiers.some((t) => t.slug === checkoutSlug));
-  const needsSignInForCheckout = Boolean(checkoutSlug) && sessionStatus === 'unauthenticated';
+  // "Pay without an account": Paddle opens straight away and the webhook puts
+  // the plan on the account for the email paid with (made if missing). Since
+  // sign-in-first shipped, most signed-out buyers closed the sign-in sheet.
+  const [guestCheckout, setGuestCheckout] = useState(false);
+  const needsSignInForCheckout = Boolean(checkoutSlug) && sessionStatus === 'unauthenticated' && !guestCheckout;
   const [checkoutAuthOpen, setCheckoutAuthOpen] = useState(false);
+  const payAsGuest = () => {
+    ph?.capture('pricing_guest_checkout_chosen', { source: checkoutFrom ?? 'unknown', tier: checkoutSlug, paddle_env: paddleEnv });
+    setGuestCheckout(true);
+    setCheckoutAuthOpen(false);
+  };
   useEffect(() => {
     if (!needsSignInForCheckout) return;
     setCheckoutAuthOpen(true);
@@ -238,6 +247,13 @@ function PricingViewInner({
               <UserPlus size={14} />
               Sign in to continue
             </button>
+            <button
+              type="button"
+              onClick={payAsGuest}
+              className="mt-3 ml-2 inline-flex items-center min-h-10 px-4 rounded-lg border border-border text-sm font-medium text-light-text hover:bg-surface"
+            >
+              Pay without an account
+            </button>
           </div>
         )}
 
@@ -254,6 +270,11 @@ function PricingViewInner({
             }
             signInSource="pricing_checkout"
             role={checkoutForTeacher ? 'TEACHER' : 'STUDENT'}
+            altAction={{
+              label: 'Pay without an account',
+              hint: 'We put the plan on an account for the email you pay with and email you a link to set a password.',
+              onClick: payAsGuest,
+            }}
             googleCallbackUrl={checkoutReturnPath}
             onClose={() => {
               ph?.capture('pricing_signin_prompt_dismissed', { source: checkoutFrom ?? 'unknown', paddle_env: paddleEnv });
@@ -294,6 +315,7 @@ function PricingViewInner({
               autoInterval={searchParams.get('interval')}
               checkoutSource={checkoutFrom}
               onSignInToCheckout={signInToCheckout}
+              guestCheckout={guestCheckout && !session}
             />
           </PaddleProvider>
         )}

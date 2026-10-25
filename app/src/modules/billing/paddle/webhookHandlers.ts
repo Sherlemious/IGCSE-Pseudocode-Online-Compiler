@@ -7,6 +7,7 @@ import { planUpdateFromPaddle, type PaddleSubscriptionLike } from './subscriptio
 import { isOtherSubscription, isStaleEvent } from './webhookEvents';
 import { captureServerEvent } from '@/modules/telemetry/serverCapture';
 import { revalidatePremiumAccess } from '@/modules/billing/entitlements';
+import { sendClaimEmail } from '@/modules/auth/accountClaim';
 import { logger } from '@/shared/lib/logger';
 
 /**
@@ -35,7 +36,7 @@ export interface TransactionData {
 }
 
 export async function applySubscription(data: SubscriptionData, paddle: Paddle, occurredAt: Date) {
-  const user = await resolveUser(data, paddle);
+  const { user, created } = await resolveOrCreateUser(data, paddle);
   if (!user) {
     logger.warn('Paddle webhook: no app user for subscription', {
       subscription_id: data.id,
@@ -117,6 +118,7 @@ export async function applySubscription(data: SubscriptionData, paddle: Paddle, 
     });
     return;
   }
+  if (created && user.email) await sendClaimEmail(user.email, planLabel(update.plan));
   await captureServerEvent(user.id, 'subscription_plan_granted', {
     plan: update.plan,
     plan_tier: update.planTier,
@@ -179,7 +181,7 @@ export async function applyPassPurchase(data: TransactionData, paddle: Paddle, o
   }
   if (!pass) return;
 
-  const user = await resolveUser(data as unknown as SubscriptionData, paddle);
+  const { user, created } = await resolveOrCreateUser(data as unknown as SubscriptionData, paddle);
   if (!user) {
     logger.warn('Paddle webhook: no app user for pass transaction', {
       transaction_id: data.id,
@@ -206,6 +208,7 @@ export async function applyPassPurchase(data: TransactionData, paddle: Paddle, o
     }),
     customerId: data.customerId,
   });
+  if (created && user.email) await sendClaimEmail(user.email, `${pass.label} pass`);
   await captureServerEvent(user.id, 'student_pass_granted', {
     pass_kind: pass.kind,
     plan_tier: pass.tier,
@@ -250,6 +253,34 @@ export async function recordCheckoutOpened(data: TransactionData) {
 }
 
 /**
+ * `resolveUser`, plus: a buyer who chose "pay without an account" (custom data
+ * `guest: true`) and has no account on the email they paid with gets one, so
+ * the plan always lands on a user. `created` tells the caller to send the
+ * set-your-password email.
+ */
+async function resolveOrCreateUser(data: SubscriptionData, paddle: Paddle) {
+  const user = await resolveUser(data, paddle);
+  if (user || data.customData?.guest !== true) return { user, created: false };
+  const payer = await lookupCustomer(paddle, data.customerId);
+  if (!payer.email) return { user: null, created: false };
+  const role = data.customData?.intended_role === 'TEACHER' ? 'TEACHER' : 'STUDENT';
+  const result = await repo.createBillingUserForPayer({ email: payer.email, name: payer.name, role });
+  if (result.created) {
+    await captureServerEvent(result.user.id, 'account_created_from_checkout', {
+      role,
+      paddle_env: getPaddleEnv(),
+      email: payer.email,
+      $set: { email: payer.email, role, ...(payer.name ? { name: payer.name } : {}) },
+    });
+  }
+  return result;
+}
+
+function planLabel(plan: string): string {
+  return plan === 'STUDENT' ? 'Student plan' : `${plan.charAt(0)}${plan.slice(1).toLowerCase()} plan`;
+}
+
+/**
  * Who this verified event belongs to.
  *
  * `customData.app_user_id` is set in the browser, so it is only a hint. An
@@ -284,13 +315,23 @@ async function resolveUser(data: SubscriptionData, paddle: Paddle) {
 }
 
 async function lookupCustomerEmail(paddle: Paddle, customerId: string | null | undefined): Promise<string | null> {
-  if (!customerId) return null;
+  return (await lookupCustomer(paddle, customerId)).email;
+}
+
+async function lookupCustomer(
+  paddle: Paddle,
+  customerId: string | null | undefined,
+): Promise<{ email: string | null; name: string | null }> {
+  if (!customerId) return { email: null, name: null };
   try {
     const customer = await paddle.customers.get(customerId);
-    return customer?.email?.trim().toLowerCase() || null;
+    return {
+      email: customer?.email?.trim().toLowerCase() || null,
+      name: customer?.name?.trim().slice(0, 60) || null,
+    };
   } catch (err) {
     logger.error('Paddle webhook: customer email lookup failed', { error: String(err) });
-    return null;
+    return { email: null, name: null };
   }
 }
 

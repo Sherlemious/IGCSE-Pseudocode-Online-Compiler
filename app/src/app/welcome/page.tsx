@@ -13,9 +13,15 @@ export const metadata: Metadata = {
   alternates: { canonical: '/welcome' },
 };
 
-export default async function WelcomePage() {
+interface Props {
+  searchParams: Promise<{ guest?: string }>;
+}
+
+export default async function WelcomePage({ searchParams }: Props) {
   const session = await auth();
   const teacher = session?.user?.role === 'TEACHER';
+  // Paid without an account: the webhook made one on the email they paid with.
+  const guest = !session?.user && (await searchParams).guest === '1';
   return (
     <div className="flex-1 min-h-0 overflow-y-auto bg-background bg-dot-grid scrollbar-pretty">
       <WelcomeTracker />
@@ -30,7 +36,23 @@ export default async function WelcomePage() {
       <div className="relative mx-auto flex w-full max-w-lg flex-col items-center px-4 py-16 text-center sm:py-24">
         <div className="w-full rounded-2xl border border-border bg-surface/80 backdrop-blur-sm p-6 sm:p-8 shadow-intense">
           <LogoBadge size={64} animate className="mx-auto mb-4" />
-          {teacher ? (
+          {guest ? (
+            <>
+              <p className="mono-label text-primary mb-3">Payment confirmed</p>
+              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-light-text">Check your email</h1>
+              <p className="mt-3 text-sm text-dark-text leading-relaxed">
+                Your plan is on an account for the email you paid with. We sent that address a link to set a
+                password. It can take a minute or two to arrive.
+              </p>
+              <p className="mt-3 text-sm text-dark-text leading-relaxed">
+                Paid with a Google address? Skip the email and{' '}
+                <Link href="/auth/signin?callbackUrl=%2Fwelcome" className="text-primary hover:text-primary-hover">
+                  continue with Google
+                </Link>
+                .
+              </p>
+            </>
+          ) : teacher ? (
             <>
               <p className="mono-label text-primary mb-3">Subscription confirmed</p>
               <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-light-text">

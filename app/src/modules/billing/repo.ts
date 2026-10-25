@@ -32,6 +32,29 @@ export function findBillingUserBySubscription(paddleSubscriptionId: string) {
   return prisma.user.findFirst({ where: { paddleSubscriptionId }, select: BILLING_USER_SELECT });
 }
 
+/**
+ * The account for a buyer who paid without signing in: no password (they set
+ * one from the claim email, or sign in with Google). If two webhook events race
+ * on the same new email, the loser reads the winner's row.
+ */
+export async function createBillingUserForPayer(input: {
+  email: string;
+  name: string | null;
+  role: 'STUDENT' | 'TEACHER';
+}): Promise<{ user: BillingUser; created: boolean }> {
+  try {
+    const user = await prisma.user.create({
+      data: { email: input.email, name: input.name, role: input.role, roleChosen: true },
+      select: BILLING_USER_SELECT,
+    });
+    return { user, created: true };
+  } catch (err) {
+    const existing = await findBillingUserByEmail(input.email);
+    if (existing) return { user: existing, created: false };
+    throw err;
+  }
+}
+
 /** Who opened a checkout, for the server-side `checkout_opened` capture. */
 export function findCheckoutContact(userId: string) {
   return prisma.user.findUnique({ where: { id: userId }, select: { id: true, email: true, name: true, role: true } });

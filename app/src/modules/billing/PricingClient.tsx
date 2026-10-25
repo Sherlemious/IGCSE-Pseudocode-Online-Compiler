@@ -174,6 +174,7 @@ export default function PricingClient({
   autoInterval,
   checkoutSource,
   onSignInToCheckout,
+  guestCheckout = false,
 }: {
   teacherTiers: PricingTierView[];
   studentMonthly: StudentMonthlyView | null;
@@ -204,6 +205,12 @@ export default function PricingClient({
    * buyers never got past Paddle's email step anyway (0 of 6, Sept 2026).
    */
   onSignInToCheckout?: (target: { slug: string; interval: Interval | 'pass' }) => void;
+  /**
+   * The signed-out buyer chose "pay without an account": open Paddle straight
+   * away. The webhook puts the plan on the account for the email they pay with,
+   * creating it if needed (custom data `guest`, `intended_role`).
+   */
+  guestCheckout?: boolean;
 }) {
   const paddle = usePaddle();
   const ph = usePostHog();
@@ -337,7 +344,7 @@ export default function PricingClient({
       signed_in: Boolean(appUserId),
       discount_code: earlyBird?.code ?? null,
     });
-    if (!appUserId && onSignInToCheckout) {
+    if (!appUserId && onSignInToCheckout && !guestCheckout) {
       onSignInToCheckout({ slug: opts.slug, interval: opts.interval });
       return;
     }
@@ -345,11 +352,18 @@ export default function PricingClient({
       items: [{ priceId: opts.priceId, quantity: 1 }],
       ...(earlyBird ? { discountCode: earlyBird.code } : {}),
       ...(customerEmail ? { customer: { email: customerEmail } } : {}),
-      ...(appUserId ? { customData: { app_user_id: appUserId } } : {}),
+      ...(appUserId
+        ? { customData: { app_user_id: appUserId } }
+        : {
+            customData: {
+              guest: true,
+              intended_role: studentPasses.some((p) => p.slug === opts.slug) || opts.slug === studentMonthly?.slug ? 'STUDENT' : 'TEACHER',
+            },
+          }),
       settings: {
         displayMode: 'overlay',
         variant: 'one-page',
-        successUrl: `${window.location.origin}/welcome`,
+        successUrl: `${window.location.origin}/welcome${appUserId ? '' : '?guest=1'}`,
       },
     });
   };
@@ -360,7 +374,7 @@ export default function PricingClient({
   const autoOpenedRef = useRef(false);
   useEffect(() => {
     if (autoOpenedRef.current || !autoCheckout) return;
-    if (!paddle || !appUserId || currentTier) return;
+    if (!paddle || (!appUserId && !guestCheckout) || currentTier) return;
     const teacherTier = teacherTiers.find((t) => t.slug === autoCheckout && !t.contactOnly);
     const pass = studentPasses.find((p) => p.slug === autoCheckout);
     let target: { slug: string; priceId: string; interval: Interval | 'pass' } | null = null;

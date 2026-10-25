@@ -34,6 +34,8 @@ export interface AuthSheetProps {
   onBeforeGoogle?: () => void;
   /** Optional explicit skip control; backdrop + Escape always close. */
   skipLabel?: string;
+  /** A second way forward without signing in (e.g. pay without an account), shown under the form. */
+  altAction?: { label: string; hint?: string; onClick: () => void };
   /** Controlled signup role. Hides the in-form role picker when set. */
   role?: SignupRole;
 }
@@ -55,6 +57,7 @@ export default function AuthSheet({
   onAuthenticated,
   onBeforeGoogle,
   skipLabel,
+  altAction,
   role,
 }: AuthSheetProps) {
   const ph = usePostHog();
@@ -187,6 +190,19 @@ export default function AuthSheet({
               </>
             )}
           </p>
+
+          {altAction && (
+            <div className="mt-4 border-t border-border pt-4 text-center">
+              <button
+                type="button"
+                onClick={altAction.onClick}
+                className="w-full min-h-10 rounded-lg border border-border px-4 text-sm font-semibold text-light-text hover:bg-surface transition-colors"
+              >
+                {altAction.label}
+              </button>
+              {altAction.hint && <p className="mt-1.5 text-xs text-dark-text">{altAction.hint}</p>}
+            </div>
+          )}
 
           {skipLabel && (
             <button
