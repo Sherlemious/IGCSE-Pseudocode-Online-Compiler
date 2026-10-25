@@ -27,6 +27,7 @@ import {
 import { hydrateLearnProgress, persistLearnProgress } from './progressSync';
 import { featuredPassOffer, studentCheckoutHref, studentCheckoutLabel, studentUnlockPitch } from '@/modules/billing/paddle/passes';
 import PassPriceLine from '@/modules/billing/PassPriceLine';
+import AskParentButton from '@/modules/billing/AskParentButton';
 import { captureLearn, learnCourseProps, learnLessonProps, learnLevelProps } from './telemetry';
 import { ALEVEL_COURSE_ID, type LearnCourse, type LearnLesson, type LearnLevel, type QuizItem } from './types';
 
@@ -328,6 +329,7 @@ export default function LearnPlayer({ course, level, lesson, premiumAccess: init
               >
                 Compare plans and passes
               </Link>
+              <AskParentButton surface="learn_paywall" until={offer?.until} />
             </div>
           )}
           <Link

@@ -21,6 +21,7 @@ import {
   teacherBandForStudents,
 } from './limits';
 import { PAID_TEACHER_INCLUDED } from './tierCopy';
+import AskParentButton from './AskParentButton';
 
 export interface PricingTierView {
   slug: string;
@@ -547,6 +548,12 @@ export default function PricingClient({
           ))}
         </ul>
         <div className="mt-6">{cta}</div>
+        {/* The parent page sells the featured pass, so only that card offers the link. */}
+        {appUserId && !viewerIsTeacher && !isCurrent && pass.featured && (
+          <div className="mt-3">
+            <AskParentButton surface="pricing" until={formatUntil(pass.coversUntil)} />
+          </div>
+        )}
       </div>
     );
   };

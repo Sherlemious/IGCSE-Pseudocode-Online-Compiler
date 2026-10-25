@@ -15,6 +15,7 @@ vi.mock('@/modules/billing/entitlements', () => ({ revalidatePremiumAccess: vi.f
 import * as repo from '@/modules/billing/repo';
 import { sendClaimEmail } from '@/modules/auth/accountClaim';
 import { applyPassPurchase, type TransactionData } from './webhookHandlers';
+import { createPayForToken } from '@/modules/billing/parentPay';
 
 const MAY_JUNE_SANDBOX = 'pri_01m2nqdc16zf8vpt5gb9wdntc9';
 const paddle = {
@@ -75,5 +76,30 @@ describe('pay without an account', () => {
     await applyPassPurchase(txn({ guest: true }), paddle, new Date());
     expect(repo.setPlan).toHaveBeenCalled();
     expect(sendClaimEmail).not.toHaveBeenCalled();
+  });
+});
+
+describe('paid from a parent link', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    process.env.NEXT_PUBLIC_PADDLE_ENV = 'sandbox';
+  });
+
+  it('gives the pass to the student the token names, ignoring the payer account and customer', async () => {
+    vi.mocked(repo.findBillingUserById).mockResolvedValue(student('kid1', 'kid@school.org'));
+    vi.mocked(repo.findBillingUserByCustomer).mockResolvedValue(student('kid2', 'other@school.org'));
+    await applyPassPurchase(txn({ pay_for: createPayForToken('kid1') }), paddle, new Date());
+    expect(repo.findBillingUserById).toHaveBeenCalledWith('kid1');
+    expect(repo.findBillingUserByCustomer).not.toHaveBeenCalled();
+    expect(repo.setPlan).toHaveBeenCalledWith('kid1', expect.objectContaining({ plan: 'STUDENT', customerId: null }));
+  });
+
+  it('falls back to the normal payer match when the token is forged', async () => {
+    vi.mocked(repo.findBillingUserByCustomer).mockResolvedValue(null);
+    vi.mocked(repo.findBillingUserByEmail).mockResolvedValue(null);
+    const [, expiry, signature] = createPayForToken('kid1').split('.');
+    await applyPassPurchase(txn({ pay_for: `kid2.${expiry}.${signature}` }), paddle, new Date());
+    expect(repo.findBillingUserById).not.toHaveBeenCalledWith('kid2');
+    expect(repo.setPlan).not.toHaveBeenCalled();
   });
 });

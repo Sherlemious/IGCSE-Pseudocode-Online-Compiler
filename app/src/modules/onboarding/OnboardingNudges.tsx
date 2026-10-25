@@ -63,7 +63,7 @@ const THRESHOLDS = {
 } as const;
 
 /** Pages with their own prompts (lessons, paywall, checkout, the maker) or no room for a card. */
-const QUIET_PATHS = ['/learn', '/flowchart', '/pricing', '/welcome', '/onboarding', '/auth', '/exam', '/e/'];
+const QUIET_PATHS = ['/learn', '/flowchart', '/pricing', '/welcome', '/onboarding', '/auth', '/exam', '/e/', '/pay/'];
 
 function isQuietPath(pathname: string | null): boolean {
   return !!pathname && QUIET_PATHS.some((p) => pathname === p || pathname.startsWith(p.endsWith('/') ? p : `${p}/`));

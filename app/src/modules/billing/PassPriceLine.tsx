@@ -23,12 +23,13 @@ type Offer = NonNullable<ReturnType<typeof featuredPassOffer>>;
 export default function PassPriceLine({ offer }: { offer: Offer }) {
   return (
     <PaddleProvider>
-      <Line offer={offer} />
+      <PassPriceQuote offer={offer} />
     </PaddleProvider>
   );
 }
 
-function Line({ offer }: { offer: Offer }) {
+/** The same line, for a page that already sits inside a `PaddleProvider`. */
+export function PassPriceQuote({ offer }: { offer: Offer }) {
   const paddle = usePaddle();
   const [quote, setQuote] = useState<{ formatted: string; perMonth: string | null } | null>(null);
 

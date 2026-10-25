@@ -60,6 +60,14 @@ export function findCheckoutContact(userId: string) {
   return prisma.user.findUnique({ where: { id: userId }, select: { id: true, email: true, name: true, role: true } });
 }
 
+/** The student a parent-pay link was made for: who to name on the page, and whether they already have a plan. */
+export function findPayForStudent(userId: string) {
+  return prisma.user.findUnique({
+    where: { id: userId },
+    select: { id: true, name: true, role: true, plan: true, planTier: true, planExpiresAt: true },
+  });
+}
+
 export function findPaddleIds(userId: string) {
   return prisma.user.findUnique({
     where: { id: userId },

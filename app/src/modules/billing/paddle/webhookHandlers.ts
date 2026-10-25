@@ -8,6 +8,7 @@ import { isOtherSubscription, isStaleEvent } from './webhookEvents';
 import { captureServerEvent } from '@/modules/telemetry/serverCapture';
 import { revalidatePremiumAccess } from '@/modules/billing/entitlements';
 import { sendClaimEmail } from '@/modules/auth/accountClaim';
+import { verifyPayForToken } from '@/modules/billing/parentPay';
 import { logger } from '@/shared/lib/logger';
 
 /**
@@ -181,7 +182,13 @@ export async function applyPassPurchase(data: TransactionData, paddle: Paddle, o
   }
   if (!pass) return;
 
-  const { user, created } = await resolveOrCreateUser(data as unknown as SubscriptionData, paddle);
+  // Paid from a parent link: the signed token names the student, whatever
+  // email the payer used. Their Paddle customer is the payer's, so it is not
+  // linked to the student (a parent may pay for two children).
+  const payForId = verifyPayForToken(data.customData?.pay_for);
+  const { user, created } = payForId
+    ? { user: await repo.findBillingUserById(payForId), created: false }
+    : await resolveOrCreateUser(data as unknown as SubscriptionData, paddle);
   if (!user) {
     logger.warn('Paddle webhook: no app user for pass transaction', {
       transaction_id: data.id,
@@ -206,7 +213,7 @@ export async function applyPassPurchase(data: TransactionData, paddle: Paddle, o
       now: new Date(),
       existingExpiresAt: user.planExpiresAt,
     }),
-    customerId: data.customerId,
+    customerId: payForId ? null : data.customerId,
   });
   if (created && user.email) await sendClaimEmail(user.email, `${pass.label} pass`);
   await captureServerEvent(user.id, 'student_pass_granted', {
@@ -214,6 +221,7 @@ export async function applyPassPurchase(data: TransactionData, paddle: Paddle, o
     plan_tier: pass.tier,
     paddle_env: env,
     transaction_id: data.id,
+    paid_by: payForId ? 'parent_link' : 'self',
     $set: { plan: 'STUDENT', plan_tier: pass.tier },
   });
 }
@@ -227,6 +235,20 @@ export async function applyPassPurchase(data: TransactionData, paddle: Paddle, o
  */
 export async function recordCheckoutOpened(data: TransactionData) {
   if (data.origin !== 'web') return;
+  // A parent opened checkout from a student's link. Counted on the student,
+  // without `$set`: the student's email must not drive the "checkout not
+  // finished" follow-up for a checkout they didn't open.
+  const payForId = verifyPayForToken(data.customData?.pay_for);
+  if (payForId) {
+    await captureServerEvent(payForId, 'parent_checkout_opened', {
+      transaction_id: data.id,
+      price_id: data.items?.[0]?.price?.id ?? '',
+      currency: data.currencyCode ?? null,
+      total: data.details?.totals?.total ?? null,
+      paddle_env: getPaddleEnv(),
+    });
+    return;
+  }
   const appUserId = readAppUserId(data as unknown as SubscriptionData);
   if (!appUserId) return;
   const user = await repo.findCheckoutContact(appUserId);
