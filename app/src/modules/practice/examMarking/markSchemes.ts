@@ -1,4 +1,4 @@
-import { EXAM_MARKING_ENABLED } from '@/modules/billing/featureFlags';
+import { EXAM_MARKING_CONFIGURED } from '@/modules/billing/featureFlags';
 
 /**
  * Mark schemes for "Mark it like an examiner", keyed by question title (the
@@ -235,7 +235,7 @@ export function markSchemeFor(title: string): readonly string[] | null {
   return scheme && scheme.length === 15 ? scheme : null;
 }
 
-/** Whether a question offers examiner marking: the feature is on, it is a 15-mark code question, and it has a scheme. */
+/** Whether a question can offer examiner marking: the API key is set, it is a 15-mark code question, and it has a scheme. Who sees it is the PostHog flag. */
 export function isMarkable(question: { title: string; marks: number | null; answerFormat: string }): boolean {
-  return EXAM_MARKING_ENABLED && question.marks === 15 && question.answerFormat === 'CODE' && markSchemeFor(question.title) !== null;
+  return EXAM_MARKING_CONFIGURED && question.marks === 15 && question.answerFormat === 'CODE' && markSchemeFor(question.title) !== null;
 }

@@ -3,7 +3,9 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { CheckCircle, GraduationCap, XCircle } from 'lucide-react';
+import { useFeatureFlagEnabled } from 'posthog-js/react';
 import { captureEvent } from '@/modules/interpreter/analytics';
+import { EXAM_MARKING_FLAG } from '@/modules/billing/featureFlags';
 import { studentCheckoutHref, studentCheckoutLabel } from '@/modules/billing/paddle/passes';
 import type { MarkingResult } from './examMarking/prompt';
 
@@ -24,6 +26,8 @@ export default function ExamMarkingPanel({ questionId, code }: { questionId: str
   const [data, setData] = useState<MarkingResponse | null>(null);
   const [error, setError] = useState<{ message: string; upgrade: boolean } | null>(null);
   const [showPoints, setShowPoints] = useState(false);
+  // PostHog decides who sees it; the route checks the same flag again.
+  const enabled = useFeatureFlagEnabled(EXAM_MARKING_FLAG);
 
   const mark = async () => {
     setState('marking');
@@ -50,6 +54,8 @@ export default function ExamMarkingPanel({ questionId, code }: { questionId: str
       setState('idle');
     }
   };
+
+  if (!enabled) return null;
 
   return (
     <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 text-xs">

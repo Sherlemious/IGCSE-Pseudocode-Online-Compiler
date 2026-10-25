@@ -1,7 +1,8 @@
 import { readFileSync } from 'node:fs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('@/modules/billing/featureFlags', () => ({ EXAM_MARKING_ENABLED: true, PREMIUM_GATING_ENABLED: true }));
+vi.mock('@/modules/billing/featureFlags', () => ({ EXAM_MARKING_CONFIGURED: true, EXAM_MARKING_FLAG: 'exam-marking', PREMIUM_GATING_ENABLED: true }));
+vi.mock('@/modules/telemetry/serverFlags', () => ({ isFlagEnabledFor: vi.fn(async () => true) }));
 vi.mock('@/shared/lib/catalogCache', () => ({ getQuestionForMarking: vi.fn() }));
 vi.mock('@/modules/billing/entitlements', () => ({ getPremiumAccess: vi.fn() }));
 vi.mock('@/modules/telemetry/serverCapture', () => ({ captureServerEvent: vi.fn() }));
@@ -24,6 +25,7 @@ vi.mock('@anthropic-ai/sdk', () => ({
 
 import { getQuestionForMarking } from '@/shared/lib/catalogCache';
 import { getPremiumAccess } from '@/modules/billing/entitlements';
+import { isFlagEnabledFor } from '@/modules/telemetry/serverFlags';
 import * as repo from './repo';
 import { MARK_SCHEMES, markSchemeFor } from './markSchemes';
 import { buildMarkingPrompt, toMarkingResult } from './prompt';
@@ -130,6 +132,13 @@ describe('markAnswer', () => {
     parse.mockResolvedValue({ stop_reason: 'refusal', parsed_output: null, usage: { input_tokens: 1, output_tokens: 1 } });
     await expect(markAnswer('u1', 'q1', 'OUTPUT 1')).rejects.toMatchObject({ status: 502 });
     expect(repo.createMarking).not.toHaveBeenCalled();
+  });
+
+  it('is not found for a user the PostHog flag is off for, before any cost', async () => {
+    vi.mocked(isFlagEnabledFor).mockResolvedValueOnce(false);
+    await expect(markAnswer('u1', 'q1', 'OUTPUT 1')).rejects.toMatchObject({ status: 404 });
+    expect(getQuestionForMarking).not.toHaveBeenCalled();
+    expect(parse).not.toHaveBeenCalled();
   });
 
   it('refuses a question without a scheme', async () => {

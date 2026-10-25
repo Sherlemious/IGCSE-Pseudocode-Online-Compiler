@@ -4,7 +4,8 @@ import { zodOutputFormat } from '@anthropic-ai/sdk/helpers/zod';
 import { badRequest, forbidden, HttpError, notFound, payloadTooLarge, tooManyRequests } from '@/shared/http/errors';
 import { getQuestionForMarking } from '@/shared/lib/catalogCache';
 import { logger } from '@/shared/lib/logger';
-import { EXAM_MARKING_ENABLED, PREMIUM_GATING_ENABLED } from '@/modules/billing/featureFlags';
+import { EXAM_MARKING_CONFIGURED, EXAM_MARKING_FLAG, PREMIUM_GATING_ENABLED } from '@/modules/billing/featureFlags';
+import { isFlagEnabledFor } from '@/modules/telemetry/serverFlags';
 import { getPremiumAccess } from '@/modules/billing/entitlements';
 import { captureServerEvent } from '@/modules/telemetry/serverCapture';
 import { gradeTestCases, MAX_GRADE_CODE_CHARS } from '@/modules/practice/autograder';
@@ -42,7 +43,7 @@ export interface MarkingResponse {
 }
 
 export async function markAnswer(userId: string, questionId: string, rawCode: unknown): Promise<MarkingResponse> {
-  if (!EXAM_MARKING_ENABLED) throw notFound();
+  if (!EXAM_MARKING_CONFIGURED || !(await isFlagEnabledFor(userId, EXAM_MARKING_FLAG))) throw notFound();
   if (typeof rawCode !== 'string' || !rawCode.trim()) throw badRequest('Write an answer first.');
   if (rawCode.length > MAX_GRADE_CODE_CHARS) throw payloadTooLarge('This answer is too long to mark.');
   const code = rawCode;

@@ -11,7 +11,9 @@ function isEnabled(value: string | undefined): boolean {
 // the client bundle (keep it out of NEXT_PUBLIC_* so the toggle stays server-side).
 export const PREMIUM_GATING_ENABLED = isEnabled(process.env.PREMIUM_GATING_ENABLED);
 
-// "Mark it like an examiner" (practice/examMarking) is OFF unless
-// EXAM_MARKING_ENABLED=true and ANTHROPIC_API_KEY is set (a Cloudflare Worker
-// secret in production). Server-only, like the gate above.
-export const EXAM_MARKING_ENABLED = isEnabled(process.env.EXAM_MARKING_ENABLED) && Boolean(process.env.ANTHROPIC_API_KEY);
+// "Mark it like an examiner" (practice/examMarking) is switched per user by the
+// PostHog feature flag below, checked in the browser (button) and again on the
+// server (route). It can only run where ANTHROPIC_API_KEY is set (a Cloudflare
+// Worker secret in production).
+export const EXAM_MARKING_FLAG = 'exam-marking';
+export const EXAM_MARKING_CONFIGURED = Boolean(process.env.ANTHROPIC_API_KEY);
