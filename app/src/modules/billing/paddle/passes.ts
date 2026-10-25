@@ -193,6 +193,22 @@ export function featuredPassKind(now: Date = new Date()): Exclude<PassKind, 'mon
   return null;
 }
 
+/**
+ * Early-bird offer on the May/June pass: Paddle discount `EARLYBIRD20` (live and
+ * sandbox), 20% off, restricted to that pass's price and expiring at `endsAt`.
+ * Checkout applies the code itself, so nobody has to type it.
+ */
+export const EARLY_BIRD = {
+  code: 'EARLYBIRD20',
+  percent: 20,
+  kind: 'may_june' as Exclude<PassKind, 'month'>,
+  endsAt: new Date('2026-11-30T23:59:59Z'),
+} as const;
+
+export function earlyBirdFor(kind: PassKind, now: Date = new Date()): typeof EARLY_BIRD | null {
+  return kind === EARLY_BIRD.kind && now.getTime() <= EARLY_BIRD.endsAt.getTime() ? EARLY_BIRD : null;
+}
+
 export function featuredPass(now: Date = new Date()): PassDef | null {
   const kind = featuredPassKind(now);
   if (!kind) return null;

@@ -9,6 +9,7 @@ import {
   MONTH_PASS_USD,
   amountFromPaddleTotal,
   compareToMonthly,
+  earlyBirdFor,
   formatMajor,
 } from './paddle/passes';
 import {
@@ -323,6 +324,8 @@ export default function PricingClient({
     auto?: boolean;
   }) => {
     if (!paddle || !opts.priceId) return;
+    const passKind = studentPasses.find((p) => p.slug === opts.slug)?.kind;
+    const earlyBird = passKind ? earlyBirdFor(passKind) : null;
     ph?.capture(opts.interval === 'pass' ? 'pass_clicked' : 'subscribe_clicked', {
       tier: opts.slug,
       interval: opts.interval,
@@ -332,6 +335,7 @@ export default function PricingClient({
       source: checkoutSource ?? 'pricing',
       auto_opened: Boolean(opts.auto),
       signed_in: Boolean(appUserId),
+      discount_code: earlyBird?.code ?? null,
     });
     if (!appUserId && onSignInToCheckout) {
       onSignInToCheckout({ slug: opts.slug, interval: opts.interval });
@@ -339,6 +343,7 @@ export default function PricingClient({
     }
     paddle.Checkout.open({
       items: [{ priceId: opts.priceId, quantity: 1 }],
+      ...(earlyBird ? { discountCode: earlyBird.code } : {}),
       ...(customerEmail ? { customer: { email: customerEmail } } : {}),
       ...(appUserId ? { customData: { app_user_id: appUserId } } : {}),
       settings: {
@@ -426,7 +431,13 @@ export default function PricingClient({
     const wasLabel =
       offer && passQuote?.currency ? formatMajor(offer.wasAmount, passQuote.currency) : usd(pass.wasUsd);
     const isCurrent = Boolean(currentTier) && pass.slug === currentTier;
-    const canBuy = Boolean(paddle) && Boolean(pass.priceId) && !viewerIsTeacher && !isCurrent;
+    const earlyBird = earlyBirdFor(pass.kind);
+    // Prices are tax-inclusive, so the percentage of the shown total is what checkout charges.
+    const earlyPrice =
+      earlyBird && passQuote?.amount != null && passQuote.currency
+        ? formatMajor(passQuote.amount * (1 - earlyBird.percent / 100), passQuote.currency)
+        : null;
+    const canBuy =Boolean(paddle) && Boolean(pass.priceId) && !viewerIsTeacher && !isCurrent;
     const price = (
       <>
         {loading && pass.priceId && total === undefined ? (
@@ -500,6 +511,12 @@ export default function PricingClient({
           One-time · covers until {formatUntil(pass.coversUntil)}
           {!quotePending && showDiscount ? ` · ${discountPct}% less than paying monthly` : ''}
         </p>
+        {earlyBird && !isCurrent && (
+          <p className="mt-3 rounded-lg border border-success/30 bg-success/10 px-3 py-2 text-xs text-success">
+            <span className="font-semibold">Early bird: {earlyBird.percent}% off until 30 Nov</span>
+            {earlyPrice ? ` — ${earlyPrice} at checkout.` : ' — taken off at checkout.'} No code needed.
+          </p>
+        )}
         <ul className="mt-6 flex-1 space-y-2.5">
           {pass.features.map((feature) => (
             <li key={feature} className="flex gap-2 text-sm text-dark-text">

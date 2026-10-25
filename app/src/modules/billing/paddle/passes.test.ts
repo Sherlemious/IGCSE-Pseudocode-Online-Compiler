@@ -16,6 +16,7 @@ import {
   MONTH_PASS,
   type PassDef,
   featuredPassOffer,
+  earlyBirdFor,
 } from './passes';
 
 const month = MONTH_PASS;
@@ -167,5 +168,18 @@ describe('isTeacherPlan', () => {
     expect(isTeacherPlan('SCHOOL')).toBe(true);
     expect(isTeacherPlan('STUDENT')).toBe(false);
     expect(isTeacherPlan('FREE')).toBe(false);
+  });
+});
+
+describe('early-bird May/June code', () => {
+  it('applies to the May/June pass until the end of 30 Nov (UTC)', () => {
+    expect(earlyBirdFor('may_june', utc(2026, 9, 25))?.code).toBe('EARLYBIRD20');
+    expect(earlyBirdFor('may_june', new Date(Date.UTC(2026, 10, 30, 23, 59, 0)))?.percent).toBe(20);
+    expect(earlyBirdFor('may_june', utc(2026, 11, 1, 0))).toBeNull();
+  });
+
+  it('never applies to other passes', () => {
+    expect(earlyBirdFor('oct_nov', utc(2026, 9, 25))).toBeNull();
+    expect(earlyBirdFor('month', utc(2026, 9, 25))).toBeNull();
   });
 });

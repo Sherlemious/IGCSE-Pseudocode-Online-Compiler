@@ -3,7 +3,14 @@
 import { useEffect, useState } from 'react';
 import PaddleProvider, { usePaddle } from './PaddleProvider';
 import { getPaddleEnv } from './paddle/env';
-import { amountFromPaddleTotal, featuredPass, formatMajor, priceIdForPass, type featuredPassOffer } from './paddle/passes';
+import {
+  amountFromPaddleTotal,
+  earlyBirdFor,
+  featuredPass,
+  formatMajor,
+  priceIdForPass,
+  type featuredPassOffer,
+} from './paddle/passes';
 
 type Offer = NonNullable<ReturnType<typeof featuredPassOffer>>;
 
@@ -57,11 +64,19 @@ function Line({ offer }: { offer: Offer }) {
     };
   }, [paddle, offer.months]);
 
+  const pass = featuredPass();
+  const earlyBird = pass ? earlyBirdFor(pass.kind) : null;
+  const earlyLine = earlyBird && (
+    <span className="mt-1 block text-success">
+      Early bird: {earlyBird.percent}% off until 30 Nov, taken off at checkout.
+    </span>
+  );
   if (quote) {
     return (
       <p className="text-light-text">
         <span className="text-lg font-semibold">{quote.formatted}</span> once, open until {offer.until}.
         {quote.perMonth && <span className="text-dark-text"> About {quote.perMonth} a month.</span>}
+        {earlyLine}
       </p>
     );
   }
@@ -72,6 +87,7 @@ function Line({ offer }: { offer: Offer }) {
         List price in USD; checkout shows your local price. About {offer.perMonth} a month, {offer.discountPct}% off
         paying monthly (was {offer.was}).
       </span>
+      {earlyLine}
     </p>
   );
 }
