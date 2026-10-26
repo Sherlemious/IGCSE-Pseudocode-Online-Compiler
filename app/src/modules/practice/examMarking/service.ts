@@ -1,30 +1,34 @@
 import { createHash } from 'node:crypto';
-import Anthropic from '@anthropic-ai/sdk';
-import { zodOutputFormat } from '@anthropic-ai/sdk/helpers/zod';
 import { badRequest, forbidden, HttpError, notFound, payloadTooLarge, tooManyRequests } from '@/shared/http/errors';
 import { getQuestionForMarking } from '@/shared/lib/catalogCache';
 import { logger } from '@/shared/lib/logger';
-import { EXAM_MARKING_CONFIGURED, EXAM_MARKING_FLAG, PREMIUM_GATING_ENABLED } from '@/modules/billing/featureFlags';
-import { isFlagEnabledFor } from '@/modules/telemetry/serverFlags';
+import { EXAM_MARKING_FLAG, PREMIUM_GATING_ENABLED } from '@/modules/billing/featureFlags';
 import { getPremiumAccess } from '@/modules/billing/entitlements';
 import { captureServerEvent } from '@/modules/telemetry/serverCapture';
+import { isFlagEnabledFor } from '@/modules/telemetry/serverFlags';
 import { gradeTestCases, MAX_GRADE_CODE_CHARS } from '@/modules/practice/autograder';
 import { isMarkable, markSchemeFor } from './markSchemes';
-import { buildMarkingPrompt, MARKING_SYSTEM, MarkingOutput, toMarkingResult, type MarkingResult } from './prompt';
+import { buildMarkingPrompt, toMarkingResult, type MarkingResult } from './prompt';
+import { FreeAllowanceUsedUp, pickProvider, runClaude, runWorkersAi, workersAiBinding, type ModelRun } from './providers';
 import * as repo from './repo';
 
 /**
  * "Mark it like an examiner" on 15-mark practice questions. The tests run on
- * our interpreter for free; one Claude call then marks the answer against the
- * question's 15-point scheme. Cost control, in order: identical answers reuse
- * the saved result (no call), free accounts get FREE_MARKINGS in total, paid
- * ones PAID_DAILY a day, and a global daily cap stops a runaway bill.
+ * our interpreter for free; one model call then marks the answer against the
+ * question's 15-point scheme (providers.ts: Workers AI for free accounts, Claude
+ * for paid ones once a key exists). Cost control, in order: identical answers
+ * reuse the saved result (no call), free accounts get FREE_MARKINGS in total,
+ * paid ones PAID_DAILY a day, a global daily cap, and for Workers AI a daily
+ * neuron budget kept under Cloudflare's 10,000 free neurons so it never bills.
  */
 
 export const FREE_MARKINGS = 3;
 export const PAID_DAILY = 20;
 const DAILY_CAP = Number(process.env.EXAM_MARKING_DAILY_CAP) || 500;
-const MODEL = process.env.EXAM_MARKING_MODEL || 'claude-haiku-5-5';
+/** Stay under the 10,000 free neurons a day; two requests in flight can overshoot by a marking or so. */
+export const NEURON_BUDGET = Number(process.env.EXAM_MARKING_NEURON_BUDGET) || 8000;
+/** About the most one marking has taken (a long answer, long reasoning). */
+const NEURONS_PER_MARKING_MAX = 250;
 
 export class MarkingError extends HttpError {}
 
@@ -32,7 +36,22 @@ export function codeHash(code: string): string {
   return createHash('sha256').update(code.trim()).digest('hex');
 }
 
+const DAY_MS = 24 * 60 * 60 * 1000;
 const startOfUtcDay = (now: Date) => new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+
+/** The free allowance is gone until 00:00 UTC. The page shows this as "done for today". */
+function doneForToday(now: Date): MarkingError {
+  const resetsAt = new Date(startOfUtcDay(now).getTime() + DAY_MS);
+  return new MarkingError(
+    429,
+    'Examiner marking is done for today: the free allowance is used up. It comes back at 00:00 UTC.',
+    'AI_DONE_FOR_TODAY',
+    {
+      body: { resetsAt: resetsAt.toISOString() },
+      headers: { 'Retry-After': String(Math.ceil((resetsAt.getTime() - now.getTime()) / 1000)) },
+    },
+  );
+}
 
 export interface MarkingResponse {
   result: MarkingResult;
@@ -43,7 +62,7 @@ export interface MarkingResponse {
 }
 
 export async function markAnswer(userId: string, questionId: string, rawCode: unknown): Promise<MarkingResponse> {
-  if (!EXAM_MARKING_CONFIGURED || !(await isFlagEnabledFor(userId, EXAM_MARKING_FLAG))) throw notFound();
+  if (!(await isFlagEnabledFor(userId, EXAM_MARKING_FLAG))) throw notFound();
   if (typeof rawCode !== 'string' || !rawCode.trim()) throw badRequest('Write an answer first.');
   if (rawCode.length > MAX_GRADE_CODE_CHARS) throw payloadTooLarge('This answer is too long to mark.');
   const code = rawCode;
@@ -62,7 +81,7 @@ export async function markAnswer(userId: string, questionId: string, rawCode: un
   const remainingAfter = (spent: number) => Math.max(0, allowance - spent);
   const plan = paid ? 'paid' : 'free';
 
-  // The same answer was marked before (by anyone): show that, for free.
+  // The same answer was marked before (by anyone): show that, for free, even when today's allowance is gone.
   const hash = codeHash(code);
   const previous = await repo.findMarkingByHash(questionId, hash);
   if (previous) {
@@ -87,43 +106,43 @@ export async function markAnswer(userId: string, questionId: string, rawCode: un
     throw tooManyRequests(3600, 'Examiner marking is busy today. Try again later.');
   }
 
+  const provider = pickProvider(paid);
+  if (!provider) {
+    logger.warn('Exam marking: no model available', { question_id: questionId });
+    throw notFound('Examiner marking is not available right now.');
+  }
+  if (provider === 'workers-ai' && (await repo.sumNeuronsSince(startOfUtcDay(now))) + NEURONS_PER_MARKING_MAX > NEURON_BUDGET) {
+    await captureServerEvent(userId, 'exam_marking_done_for_today', { question_id: questionId, plan, source: 'budget' });
+    throw doneForToday(now);
+  }
+
   const graded = await gradeTestCases(code, question.testCases);
   const passCount = graded.filter((r) => r.passed).length;
+  const prompt = buildMarkingPrompt({ question: question.description, scheme, code, passCount, totalCount: graded.length });
 
-  const client = new Anthropic({ timeout: 60_000, maxRetries: 1 });
-  let response;
+  let run: ModelRun;
   try {
-    response = await client.messages.parse({
-      model: MODEL,
-      max_tokens: 8000,
-      system: MARKING_SYSTEM,
-      messages: [
-        {
-          role: 'user',
-          content: buildMarkingPrompt({ question: question.description, scheme, code, passCount, totalCount: graded.length }),
-        },
-      ],
-      output_config: { effort: 'medium', format: zodOutputFormat(MarkingOutput) },
-    });
+    run = provider === 'claude' ? await runClaude(prompt) : await runWorkersAi(workersAiBinding()!, prompt);
   } catch (err) {
-    logger.error('Exam marking: model call failed', { question_id: questionId, error: String(err) });
-    throw new MarkingError(502, "Couldn't mark this right now. Try again in a minute.");
-  }
-  if (response.stop_reason === 'refusal' || !response.parsed_output) {
-    logger.warn('Exam marking: no usable output', { question_id: questionId, stop_reason: response.stop_reason });
+    if (err instanceof FreeAllowanceUsedUp) {
+      await captureServerEvent(userId, 'exam_marking_done_for_today', { question_id: questionId, plan, source: 'cloudflare' });
+      throw doneForToday(now);
+    }
+    logger.error('Exam marking: model call failed', { question_id: questionId, provider, error: String(err) });
     throw new MarkingError(502, "Couldn't mark this right now. Try again in a minute.");
   }
 
-  const result = toMarkingResult(response.parsed_output, scheme);
+  const result = toMarkingResult(run.output, scheme);
   await repo.createMarking({
     userId,
     questionId,
     codeHash: hash,
     total: result.total,
     result: result as unknown as object,
-    model: MODEL,
-    inputTokens: response.usage.input_tokens,
-    outputTokens: response.usage.output_tokens,
+    model: run.model,
+    inputTokens: run.inputTokens,
+    outputTokens: run.outputTokens,
+    neurons: run.neurons,
   });
   await captureServerEvent(userId, 'exam_marking_completed', {
     question_id: questionId,
@@ -132,9 +151,11 @@ export async function markAnswer(userId: string, questionId: string, rawCode: un
     test_count: graded.length,
     cached: false,
     plan,
-    model: MODEL,
-    input_tokens: response.usage.input_tokens,
-    output_tokens: response.usage.output_tokens,
+    provider: run.provider,
+    model: run.model,
+    input_tokens: run.inputTokens,
+    output_tokens: run.outputTokens,
+    neurons: run.neurons,
   });
   return { result, cached: false, remaining: remainingAfter(used + 1), plan };
 }

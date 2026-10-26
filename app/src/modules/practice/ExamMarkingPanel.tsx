@@ -24,7 +24,8 @@ interface MarkingResponse {
 export default function ExamMarkingPanel({ questionId, code }: { questionId: string; code: string }) {
   const [state, setState] = useState<'idle' | 'marking'>('idle');
   const [data, setData] = useState<MarkingResponse | null>(null);
-  const [error, setError] = useState<{ message: string; upgrade: boolean } | null>(null);
+  // `done`: today's free marking allowance is used up (comes back at `resetsAt`).
+  const [error, setError] = useState<{ message: string; kind: 'plain' | 'upgrade' | 'done' } | null>(null);
   const [showPoints, setShowPoints] = useState(false);
   // PostHog decides who sees it; the route checks the same flag again.
   const enabled = useFeatureFlagEnabled(EXAM_MARKING_FLAG);
@@ -41,15 +42,32 @@ export default function ExamMarkingPanel({ questionId, code }: { questionId: str
       });
       const body = await res.json().catch(() => null);
       if (!res.ok) {
+        if (body?.code === 'AI_DONE_FOR_TODAY') {
+          const resets = new Date(body.resetsAt);
+          const when = Number.isNaN(resets.getTime())
+            ? '00:00 UTC'
+            : resets.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+          captureEvent('exam_marking_done_shown', { question_id: questionId });
+          setError({
+            message: `Examiner marking is done for today. The free allowance is used up, and it comes back at ${when} your time.`,
+            kind: 'done',
+          });
+          return;
+        }
         setError({
-          message: typeof body?.error === 'string' ? body.error : "Couldn't mark this right now.",
-          upgrade: body?.code === 'FREE_LIMIT_REACHED',
+          message:
+            res.status === 404
+              ? "Examiner marking isn't available right now."
+              : typeof body?.error === 'string'
+                ? body.error
+                : "Couldn't mark this right now.",
+          kind: body?.code === 'FREE_LIMIT_REACHED' ? 'upgrade' : 'plain',
         });
         return;
       }
       setData(body as MarkingResponse);
     } catch {
-      setError({ message: "Couldn't mark this right now.", upgrade: false });
+      setError({ message: "Couldn't mark this right now.", kind: 'plain' });
     } finally {
       setState('idle');
     }
@@ -69,7 +87,7 @@ export default function ExamMarkingPanel({ questionId, code }: { questionId: str
         )}
       </div>
 
-      {!data && (
+      {!data && error?.kind !== 'done' && (
         <>
           <p className="mt-1.5 text-dark-text">
             Passing the tests isn&apos;t the same as full marks. Get this answer marked against a 15-point scheme, with
@@ -88,8 +106,13 @@ export default function ExamMarkingPanel({ questionId, code }: { questionId: str
 
       {error && (
         <div className="mt-2 text-dark-text">
-          <p className={error.upgrade ? 'text-light-text' : 'text-error'}>{error.message}</p>
-          {error.upgrade && (
+          <p className={error.kind === 'plain' ? 'text-error' : 'text-light-text'}>{error.message}</p>
+          {error.kind === 'done' && (
+            <p className="mt-1 text-[11px]">
+              Answers that were marked before still show straight away. Your test results above don&apos;t depend on it.
+            </p>
+          )}
+          {error.kind === 'upgrade' && (
             <Link
               href={studentCheckoutHref('exam_marking')}
               onClick={() => captureEvent('exam_marking_upgrade_clicked', { question_id: questionId })}

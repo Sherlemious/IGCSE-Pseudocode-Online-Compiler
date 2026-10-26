@@ -73,3 +73,42 @@ export function toMarkingResult(output: MarkingOutput, scheme: readonly string[]
     summary: output.summary.slice(0, 400),
   };
 }
+
+/**
+ * Models without structured-output enforcement (Workers AI) are told the shape
+ * in words as well, and answer in JSON mode against `MARKING_JSON_SCHEMA`.
+ */
+export const JSON_SHAPE = `
+
+Reply with ONLY one JSON object and nothing else (no markdown, no code fence, no table), exactly this shape:
+{"points":[{"id":1,"awarded":true,"note":"short reason"}, ...one entry for each id 1-15...],"fixes":["up to 3 fixes"],"summary":"one sentence for the student"}`;
+
+export const MARKING_JSON_SCHEMA = {
+  type: 'object',
+  properties: {
+    points: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: { id: { type: 'integer' }, awarded: { type: 'boolean' }, note: { type: 'string' } },
+        required: ['id', 'awarded', 'note'],
+      },
+    },
+    fixes: { type: 'array', items: { type: 'string' } },
+    summary: { type: 'string' },
+  },
+  required: ['points', 'fixes', 'summary'],
+} as const;
+
+/** The first JSON object in a model reply (tolerates prose or a code fence around it), validated; null if unusable. */
+export function parseMarkingJson(text: string): MarkingOutput | null {
+  const start = text.indexOf('{');
+  const end = text.lastIndexOf('}');
+  if (start < 0 || end <= start) return null;
+  try {
+    const parsed = MarkingOutput.safeParse(JSON.parse(text.slice(start, end + 1)));
+    return parsed.success ? parsed.data : null;
+  } catch {
+    return null;
+  }
+}

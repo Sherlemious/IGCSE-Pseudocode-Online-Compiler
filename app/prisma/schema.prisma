@@ -250,6 +250,8 @@ model ExamMarking {
   model        String
   inputTokens  Int      @default(0)
   outputTokens Int      @default(0)
+  /// Workers AI neurons this marking took from the account's 10,000 a day free allowance (0 for Claude and cached).
+  neurons      Float    @default(0)
   cached       Boolean  @default(false)
   createdAt    DateTime @default(now())
 

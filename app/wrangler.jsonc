@@ -12,6 +12,7 @@
     "directory": ".open-next/assets",
     "binding": "ASSETS"
   },
+  "ai": { "binding": "AI" },
   "observability": {
     "enabled": true,
     "logs": { "enabled": true, "invocation_logs": true, "head_sampling_rate": 1 },

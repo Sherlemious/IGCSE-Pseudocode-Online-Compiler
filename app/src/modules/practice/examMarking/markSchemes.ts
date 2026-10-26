@@ -1,5 +1,3 @@
-import { EXAM_MARKING_CONFIGURED } from '@/modules/billing/featureFlags';
-
 /**
  * Mark schemes for "Mark it like an examiner", keyed by question title (the
  * seed's natural key). Our own points-based schemes, written from each model
@@ -235,7 +233,12 @@ export function markSchemeFor(title: string): readonly string[] | null {
   return scheme && scheme.length === 15 ? scheme : null;
 }
 
-/** Whether a question can offer examiner marking: the API key is set, it is a 15-mark code question, and it has a scheme. Who sees it is the PostHog flag. */
+/**
+ * Whether a question can be marked: a 15-mark code question with a scheme. Purely
+ * about the question (the practice pages are cached, so nothing per-request goes
+ * here); who sees the button is the PostHog flag, and whether a model is there is
+ * checked when someone marks.
+ */
 export function isMarkable(question: { title: string; marks: number | null; answerFormat: string }): boolean {
-  return EXAM_MARKING_CONFIGURED && question.marks === 15 && question.answerFormat === 'CODE' && markSchemeFor(question.title) !== null;
+  return question.marks === 15 && question.answerFormat === 'CODE' && markSchemeFor(question.title) !== null;
 }

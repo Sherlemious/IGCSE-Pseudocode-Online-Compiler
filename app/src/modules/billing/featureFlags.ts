@@ -13,7 +13,6 @@ export const PREMIUM_GATING_ENABLED = isEnabled(process.env.PREMIUM_GATING_ENABL
 
 // "Mark it like an examiner" (practice/examMarking) is switched per user by the
 // PostHog feature flag below, checked in the browser (button) and again on the
-// server (route). It can only run where ANTHROPIC_API_KEY is set (a Cloudflare
-// Worker secret in production).
+// server (route). Marking itself runs on Cloudflare Workers AI (the Worker's `AI`
+// binding, free) and, for paid accounts, on Claude when ANTHROPIC_API_KEY is set.
 export const EXAM_MARKING_FLAG = 'exam-marking';
-export const EXAM_MARKING_CONFIGURED = Boolean(process.env.ANTHROPIC_API_KEY);

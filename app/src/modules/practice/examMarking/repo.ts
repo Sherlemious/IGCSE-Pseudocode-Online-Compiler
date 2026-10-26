@@ -25,6 +25,15 @@ export function countAllMarkingsSince(since: Date) {
   return prisma.examMarking.count({ where: { cached: false, createdAt: { gte: since } } });
 }
 
+/** Workers AI neurons spent since `since`: the free allowance is per UTC day for the whole account. */
+export async function sumNeuronsSince(since: Date): Promise<number> {
+  const total = await prisma.examMarking.aggregate({
+    _sum: { neurons: true },
+    where: { cached: false, createdAt: { gte: since } },
+  });
+  return total._sum.neurons ?? 0;
+}
+
 export function createMarking(data: {
   userId: string;
   questionId: string;
@@ -34,6 +43,7 @@ export function createMarking(data: {
   model: string;
   inputTokens?: number;
   outputTokens?: number;
+  neurons?: number;
   cached?: boolean;
 }) {
   return prisma.examMarking.create({ data, select: RESULT_SELECT });
