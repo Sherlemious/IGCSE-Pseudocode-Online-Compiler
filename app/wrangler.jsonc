@@ -7,7 +7,11 @@
   "account_id": "24ac8a3c1a8f1df911fa958d54d945a6",
   "workers_dev": false,
   "preview_urls": false,
-  "routes": [{ "pattern": "pseudocode-compiler.sherlemious.com", "custom_domain": true }],
+  "routes": [
+    { "pattern": "pseudocode-compiler.sherlemious.com", "custom_domain": true },
+    // next.config.ts 301s www to the apex
+    { "pattern": "www.pseudocode-compiler.sherlemious.com", "custom_domain": true }
+  ],
   "assets": {
     "directory": ".open-next/assets",
     "binding": "ASSETS"
