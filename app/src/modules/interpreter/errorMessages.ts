@@ -557,7 +557,7 @@ function forLoopHint(line: string): LineDiagnosis | null {
   const t = line.trim();
 
   // Wrong operator between the counter and its start value.
-  const withOp = t.match(/^FOR\s+([A-Za-z_]\w*)\s*(:=|:|=)\s*/i);
+  const withOp = t.match(/^FOR\s+([A-Za-z_]\w*)\s*(:=|:|=|<=|<(?!-))\s*/i);
   if (withOp) {
     const v = withOp[1];
     return {
@@ -565,6 +565,19 @@ function forLoopHint(line: string): LineDiagnosis | null {
       message:
         `Use \`<-\` to set the FOR loop counter, not \`${withOp[2]}\`.\n` +
         `  Example:\n    FOR ${v} <- 1 TO 10\n      OUTPUT ${v}\n    NEXT ${v}`,
+    };
+  }
+
+  // `FOR i <- 1, 5 DO` — the range is written with TO, not a comma (and no DO).
+  const comma = t.match(/^FOR\s+([A-Za-z_]\w*)\s*(?:<-|←)\s*([^\s,]+)\s*,\s*([^\s,]+?)(\s+DO)?\s*$/i);
+  if (comma) {
+    const [, v, from, to, hasDo] = comma;
+    return {
+      category: 'for_range_comma',
+      message:
+        'Write a FOR range with TO, not a comma.\n' +
+        `  Example:\n    FOR ${v} <- ${from} TO ${to}\n      OUTPUT ${v}\n    NEXT ${v}` +
+        (hasDo ? '\n  A FOR loop has no DO either.' : ''),
     };
   }
 
@@ -583,6 +596,95 @@ function forLoopHint(line: string): LineDiagnosis | null {
     };
   }
 
+  return null;
+}
+
+/**
+ * `OUTPUT Total : "points"` / `OUTPUT: "Hi"` / `INPUT Name : "prompt"` — a colon
+ * where the items are separated by commas.
+ */
+function colonSeparatorHint(line: string): LineDiagnosis | null {
+  const t = line.trim();
+  const kw = t.match(/^(OUTPUT|PRINT|INPUT)\b/i)?.[1];
+  if (!kw) return null;
+  // Colons inside strings or brackets (`Grid[1:2]`) are fine, and `:=` is another mistake.
+  const outside = t.replace(/"[^"]*"/g, '""').replace(/\[[^\]]*\]/g, '[]');
+  if (!/:(?!=)/.test(outside)) return null;
+  const isInput = /^INPUT$/i.test(kw);
+  // Show their own line with the first colon swapped: `OUTPUT x : "a"` → `OUTPUT x, "a"`.
+  const rest = t.slice(kw.length);
+  let at = -1;
+  for (let i = 0, quoted = false, depth = 0; i < rest.length && at < 0; i++) {
+    const c = rest[i];
+    if (c === '"') quoted = !quoted;
+    else if (quoted) continue;
+    else if (c === '[') depth++;
+    else if (c === ']') depth = Math.max(0, depth - 1);
+    else if (c === ':' && depth === 0 && rest[i + 1] !== '=') at = i;
+  }
+  const before = at < 0 ? '' : rest.slice(0, at).trim();
+  const after = at < 0 ? '' : rest.slice(at + 1).trim();
+  const fixed = at < 0 ? '' : before ? `${kw} ${before}${after ? ', ' + after : ''}` : `${kw} ${after}`.trim();
+  return {
+    category: isInput ? 'input_colon' : 'output_colon',
+    detail: before ? 'between_items' : 'leading',
+    message: isInput
+      ? 'Put a comma, not a colon, between the INPUT variable and its prompt.\n' +
+        `  You wrote "${clip(t, 60)}".\n` +
+        `  Example:\n    INPUT Name, "Enter your name"`
+      : 'OUTPUT items are separated by commas, not a colon.\n' +
+        `  You wrote "${clip(t, 60)}".\n` +
+        (fixed && fixed !== t ? `  Try:  ${clip(fixed, 60)}\n` : '') +
+        '  Example:\n    OUTPUT "Total: ", Total',
+  };
+}
+
+/** `Scores <- [37, 63, 67]` — Cambridge pseudocode has no list literal. */
+function arrayLiteralHint(line: string): LineDiagnosis | null {
+  const t = line.trim();
+  const m = t.match(/^([A-Za-z_]\w*)\s*(?:\[[^\]]*\])?\s*(?:<-|←|=(?!=))\s*([[{].*)$/);
+  if (!m) return null;
+  const [, target, literal] = m;
+  const name = KEYWORDS.includes(target.toUpperCase()) ? 'Values' : target;
+  const nested = /^[[{]\s*[[{]/.test(literal);
+  const inner = literal.replace(/^[[{]\s*[[{]?/, '').replace(/[\]}]\s*[\]}]?\s*$/, '');
+  const items = inner.split(',').map((s) => s.trim()).filter(Boolean);
+  const type = items.length && items.every((s) => /^-?\d+$/.test(s)) ? 'INTEGER' : items.every((s) => /^-?\d+(\.\d+)?$/.test(s)) && items.length ? 'REAL' : /^"/.test(items[0] ?? '') ? 'STRING' : 'INTEGER';
+  const shown = items.slice(0, 3);
+  while (shown.length < 3) shown.push(type === 'STRING' ? '""' : '0');
+  return {
+    category: 'array_literal',
+    detail: nested ? 'grid' : 'list',
+    message:
+      'Cambridge pseudocode has no list like [1, 2, 3] — an array is declared, then filled one element at a time.\n' +
+      (nested
+        ? `  A grid takes a row and a column:\n    DECLARE ${name} : ARRAY[1:3, 1:3] OF ${type}\n    ${name}[1, 1] <- ${shown[0]}\n    ${name}[1, 2] <- ${shown[1]}`
+        : `  Example:\n    DECLARE ${name} : ARRAY[1:3] OF ${type}\n    ${name}[1] <- ${shown[0]}\n    ${name}[2] <- ${shown[1]}\n    ${name}[3] <- ${shown[2]}`),
+  };
+}
+
+/** `DECLARE: age` (colon straight after DECLARE) and `DECLARE "Pick a number"` (text, not a name). */
+function declareStrayHint(line: string): LineDiagnosis | null {
+  const t = line.trim();
+  const colon = t.match(/^DECLARE\s*:\s*([A-Za-z_]\w*)\s*(?::\s*([A-Za-z]+))?\s*$/i);
+  if (colon) {
+    const type = colon[2] && new RegExp(`^${DECLARE_TYPE}$`, 'i').test(colon[2]) ? colon[2].toUpperCase() : 'INTEGER';
+    return {
+      category: 'declare_syntax',
+      detail: 'colon_after_declare',
+      message:
+        'There is no colon straight after DECLARE — write the name first, then the colon and the type.\n' +
+        `  Example:\n    DECLARE ${colon[1]} : ${type}`,
+    };
+  }
+  if (/^DECLARE\s*"/i.test(t))
+    return {
+      category: 'declare_syntax',
+      detail: 'text_instead_of_name',
+      message:
+        'DECLARE names a variable — it does not show text. To ask a question, declare the variable, then use OUTPUT and INPUT.\n' +
+        '  Example:\n    DECLARE Number : INTEGER\n    OUTPUT "Pick a number"\n    INPUT Number',
+    };
   return null;
 }
 
@@ -988,7 +1090,19 @@ function assignmentValueHint(line: string): LineDiagnosis | null {
 function typeComparisonHint(line: string): LineDiagnosis | null {
   const t = line.trim();
   if (!/^(?:IF|WHILE|UNTIL|ELSE\s*IF)\b/i.test(t)) return null;
-  if (!new RegExp(`(?:=|<>|\\bNOT|\\bIS)\\s*(?:AN?\\s+)?${DATA_TYPES.source}`, 'i').test(t)) return null;
+  const op = t.match(new RegExp(`(<=|>=|<>|=|<|>|\\bNOT|\\bIS)\\s*(?:AN?\\s+)?${DATA_TYPES.source}`, 'i'));
+  if (!op) return null;
+  if (/^[<>]/.test(op[1])) {
+    const subject = t.match(/^(?:IF|WHILE|UNTIL|ELSE\s*IF)\s+([A-Za-z_]\w*)/i)?.[1] ?? 'Age';
+    return {
+      category: 'type_as_value',
+      detail: 'compared_with_type',
+      message:
+        `${op[2].toUpperCase()} is a data type, not a number — a comparison needs a value.\n` +
+        `  Compare with a number:  IF ${subject} ${op[1]} 18 THEN\n` +
+        `  The type goes in DECLARE:  DECLARE ${subject} : ${op[2].toUpperCase()}`,
+    };
+  }
   return {
     category: 'type_as_value',
     message:
@@ -1646,6 +1760,7 @@ function sourceLineHint(sourceLine: string | undefined, ctx?: SourceContext): Li
     basicBlockHint(sourceLine) ??
     strayCloserHint(sourceLine, ctx) ??
     arrayDeclareHint(sourceLine) ??
+    declareStrayHint(sourceLine) ??
     declareTypeHint(sourceLine) ??
     declareHint(sourceLine) ??
     procedureReturnsHint(sourceLine) ??
@@ -1672,6 +1787,8 @@ function sourceLineHint(sourceLine: string | undefined, ctx?: SourceContext): Li
     powerOperatorHint(sourceLine) ??
     typeComparisonHint(sourceLine) ??
     assignmentValueHint(sourceLine) ??
+    arrayLiteralHint(sourceLine) ??
+    colonSeparatorHint(sourceLine) ??
     outputSeparatorHint(sourceLine) ??
     plainWordsHint(sourceLine) ??
     bareLineHint(sourceLine) ??

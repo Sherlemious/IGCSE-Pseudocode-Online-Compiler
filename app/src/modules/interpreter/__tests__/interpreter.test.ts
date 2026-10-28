@@ -4,7 +4,13 @@ import { resolve } from 'node:path';
 import { parse } from '../parser';
 import { Interpreter } from '../core/interpreter';
 import { ServerVirtualFileSystem } from '../core/serverFilesystem';
-import { humanizeParseError, humanizeRuntimeError, categorizeParseError, resolveOffendingLine } from '../errorMessages';
+import {
+  humanizeParseError,
+  humanizeRuntimeError,
+  categorizeParseError,
+  parseHintDetail,
+  resolveOffendingLine,
+} from '../errorMessages';
 import { normalizeSource } from '../normalize';
 import type { PseudocodeError } from '../core/types';
 import { examples } from '@/modules/content/examples';
@@ -608,6 +614,60 @@ describe('humanizeParseError — source-line pattern detectors', () => {
       expect(categorizeParseError(RAW, 'FUNCTION F(h : INTEGER) RETURNS INTEGER')).not.toBe('function_header');
       // A well-formed AND condition (variable repeated) must not be flagged.
       expect(categorizeParseError(RAW, 'IF Age > 12 AND Age < 65 THEN')).not.toBe('missing_operand');
+    });
+  });
+
+  describe('colon, list literal and FOR range slips (Oct 2026 replay)', () => {
+    it('OUTPUT with a colon between items suggests the comma version of their own line', () => {
+      const msg = humanizeParseError(RAW, 'OUTPUT Total : "points"');
+      expect(msg).toContain('separated by commas, not a colon');
+      expect(msg).toContain('Try:  OUTPUT Total, "points"');
+      expect(categorizeParseError(RAW, 'OUTPUT Total : "points"')).toBe('output_colon');
+      expect(humanizeParseError(RAW, 'OUTPUT: "Hi"')).toContain('Try:  OUTPUT "Hi"');
+      expect(parseHintDetail('OUTPUT: "Hi"')).toBe('leading');
+    });
+    it('ignores colons inside strings and brackets', () => {
+      expect(categorizeParseError(RAW, 'OUTPUT "Time: " Time')).toBe('output_missing_comma');
+      expect(categorizeParseError(RAW, 'OUTPUT Grid[1:2] 5')).not.toBe('output_colon');
+    });
+    it('INPUT with a colon before the prompt points at the comma form', () => {
+      expect(categorizeParseError(RAW, 'INPUT Name : "Enter your name"')).toBe('input_colon');
+      expect(humanizeParseError(RAW, 'INPUT Name : "Enter your name"')).toContain('INPUT Name, "Enter your name"');
+    });
+    it('list literals get a declare-then-fill example using their own name and count', () => {
+      const msg = humanizeParseError(RAW, 'Scores <- [37, 63, 67]');
+      expect(msg).toContain('no list like [1, 2, 3]');
+      expect(msg).toContain('DECLARE Scores : ARRAY[1:3] OF INTEGER');
+      expect(msg).toContain('Scores[1] <- 37');
+      expect(categorizeParseError(RAW, 'Scores <- [37, 63, 67]')).toBe('array_literal');
+      expect(parseHintDetail('Grid <- [[1, 2], [3, 4]]')).toBe('grid');
+      // A keyword on the left still gets a usable example.
+      expect(humanizeParseError(RAW, 'INPUT <- [1, 2]')).toContain('DECLARE Values');
+    });
+    it('FOR header with < or <= explains <-; a comma range explains TO', () => {
+      expect(categorizeParseError(RAW, 'FOR name<=1 to 20')).toBe('for_loop_assignment');
+      expect(categorizeParseError(RAW, 'FOR Count < 1 TO 5')).toBe('for_loop_assignment');
+      const msg = humanizeParseError(RAW, 'FOR i <- 1, 5 DO');
+      expect(categorizeParseError(RAW, 'FOR i <- 1, 5 DO')).toBe('for_range_comma');
+      expect(msg).toContain('FOR i <- 1 TO 5');
+      expect(msg).toContain('no DO either');
+    });
+    it('DECLARE: and DECLARE "text" explain what DECLARE takes', () => {
+      expect(humanizeParseError(RAW, 'DECLARE: snack  :INTEGER')).toContain('DECLARE snack : INTEGER');
+      expect(parseHintDetail('DECLARE: age')).toBe('colon_after_declare');
+      expect(parseHintDetail('declare "Pick a number"')).toBe('text_instead_of_name');
+      expect(categorizeParseError(RAW, 'declare"Pick a number"')).toBe('declare_syntax');
+    });
+    it('a type name after < or > says to compare with a number', () => {
+      const msg = humanizeParseError(RAW, 'IF Age < INTEGER');
+      expect(msg).toContain('IF Age < 18 THEN');
+      expect(categorizeParseError(RAW, 'IF Age < INTEGER')).toBe('type_as_value');
+      // = against a type keeps the original whole-number explanation.
+      expect(humanizeParseError(RAW, 'IF Number = INTEGER THEN')).toContain('INT(Number)');
+    });
+    it('does not fire on valid FOR headers', () => {
+      expect(categorizeParseError(RAW, 'FOR i <- 1 TO 5')).not.toBe('for_loop_assignment');
+      expect(categorizeParseError(RAW, 'FOR i <- 1 TO 5')).not.toBe('for_range_comma');
     });
   });
 
