@@ -4,23 +4,10 @@ import { useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { captureEvent } from '@/modules/interpreter/analytics';
-import { featuredPassKind, studentCheckoutHref, studentCheckoutLabel } from '@/modules/billing/paddle/passes';
+import { shouldOfferSessionPass, studentCheckoutHref, studentCheckoutLabel } from '@/modules/billing/paddle/passes';
 
 /** May/June is the long one-time grant. Hide it from teachers and anyone already paid up. */
-export function shouldOfferPracticePass(input: {
-  role?: string | null;
-  plan?: string | null;
-  planExpiresAt?: string | null;
-  now?: Date;
-}): boolean {
-  const now = input.now ?? new Date();
-  if (featuredPassKind(now) !== 'may_june') return false;
-  if (input.role === 'TEACHER') return false;
-  const plan = input.plan ?? 'FREE';
-  if (plan === 'FREE') return true;
-  if (input.planExpiresAt && new Date(input.planExpiresAt).getTime() <= now.getTime()) return true;
-  return false;
-}
+export const shouldOfferPracticePass = shouldOfferSessionPass;
 
 export default function PracticePassOffer({ questionId }: { questionId: string }) {
   const { data: session, status } = useSession();

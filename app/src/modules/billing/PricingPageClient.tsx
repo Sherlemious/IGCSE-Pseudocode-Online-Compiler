@@ -178,9 +178,8 @@ function PricingViewInner({
               </>
             ) : (
               <>
-                A paid plan covers your roster: the full library, the Paper 2 Path, assignments,
-                and your own questions. Start with Starter, or match a larger plan to how many
-                students you teach. They don&apos;t buy a pass.
+                Your students get the full library without paying. You get autograded homework,
+                your own questions and a mark book.
               </>
             )}
           </p>

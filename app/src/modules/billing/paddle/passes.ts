@@ -251,6 +251,26 @@ export function studentUnlockPitch(now: Date = new Date()): string {
   return 'Unlock them with the Student plan, or join a class from a teacher who has one.';
 }
 
+/**
+ * Whether to pitch the May/June pass to this visitor: only while May/June is the
+ * featured pass, never to a teacher, and not to anyone whose plan is still
+ * running. Signed-out visitors count as free.
+ */
+export function shouldOfferSessionPass(input: {
+  role?: string | null;
+  plan?: string | null;
+  planExpiresAt?: string | null;
+  now?: Date;
+}): boolean {
+  const now = input.now ?? new Date();
+  if (featuredPassKind(now) !== 'may_june') return false;
+  if (input.role === 'TEACHER') return false;
+  const plan = input.plan ?? 'FREE';
+  if (plan === 'FREE') return true;
+  if (input.planExpiresAt && new Date(input.planExpiresAt).getTime() <= now.getTime()) return true;
+  return false;
+}
+
 /** Calendar end of the exam series this purchase covers. */
 export function seriesEnd(kind: Exclude<PassKind, 'month'>, now: Date = new Date()): Date {
   const m = utcMonth(now);

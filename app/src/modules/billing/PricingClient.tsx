@@ -20,7 +20,7 @@ import {
   formatCap,
   teacherBandForStudents,
 } from './limits';
-import { PAID_TEACHER_INCLUDED } from './tierCopy';
+import { TEACHER_COMPARE } from './tierCopy';
 import AskParentButton from './AskParentButton';
 
 export interface PricingTierView {
@@ -99,45 +99,84 @@ function usd(n: number): string {
   return `$${n}`;
 }
 
-function FeatureList({ items }: { items: readonly string[] }) {
-  return (
-    <ul className="mt-3 space-y-2.5">
-      {items.map((feature) => (
-        <li key={feature} className="flex gap-2 text-sm text-dark-text">
-          <CheckIcon />
-          <span>{feature}</span>
-        </li>
-      ))}
-    </ul>
+function Mark({ on }: { on: boolean }) {
+  return on ? (
+    <span className="inline-flex justify-center" aria-label="Included">
+      <CheckIcon />
+    </span>
+  ) : (
+    <span className="text-dark-text/50" aria-label="Not included">
+      —
+    </span>
   );
 }
 
-function TeacherIncluded() {
+/** Free class vs any paid plan, one row each. Every paid band has the same tools. */
+function TeacherCompare() {
   return (
-    <section className="mx-auto mb-8 max-w-4xl rounded-2xl border border-border bg-surface/80 p-6 backdrop-blur-sm">
-      <h2 className="text-lg font-semibold text-light-text">What a paid plan adds</h2>
-      <p className="mt-1 max-w-3xl text-sm leading-relaxed text-dark-text">
-        Free is one class of five students. Those students stay on the free editor, and you
-        can&apos;t write new questions. A paid plan covers everyone on the roster and unlocks
-        your own questions. Homework, the roster, and student progress work on a free class
-        too. Larger plans add classes and students — the tools stay the same.
+    <section className="mx-auto mt-10 max-w-4xl">
+      <h2 className="text-center text-lg font-semibold text-light-text">Every paid plan includes</h2>
+      <p className="mt-1 text-center text-sm text-dark-text">
+        Plans differ only in how many classes and students they hold.
       </p>
-      <div className="mt-5 grid gap-6 sm:grid-cols-2">
-        <div>
-          <h3 className="text-xs font-medium uppercase tracking-wide text-primary">Your students</h3>
-          <p className="mt-1 text-xs text-dark-text">Covered by your plan. They don&apos;t buy one.</p>
-          <FeatureList items={PAID_TEACHER_INCLUDED.students} />
-        </div>
-        <div>
-          <h3 className="text-xs font-medium uppercase tracking-wide text-primary">You</h3>
-          <p className="mt-1 text-xs text-dark-text">Needs a paid plan</p>
-          <FeatureList items={PAID_TEACHER_INCLUDED.teaching.slice(0, 2)} />
-          <p className="mt-4 text-xs text-dark-text">Works on a free class too, within its five students</p>
-          <FeatureList items={PAID_TEACHER_INCLUDED.teaching.slice(2)} />
-        </div>
+      <div className="mt-5 overflow-hidden rounded-2xl border border-border bg-surface/80 backdrop-blur-sm">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-border text-xs uppercase tracking-wide text-dark-text">
+              <th className="px-4 py-3 text-left font-medium">
+                <span className="sr-only">Feature</span>
+              </th>
+              <th className="w-20 px-2 py-3 text-center font-medium sm:w-28">Free class</th>
+              <th className="w-20 px-2 py-3 text-center font-medium text-primary sm:w-28">Paid</th>
+            </tr>
+          </thead>
+          <tbody>
+            {TEACHER_COMPARE.map((row) => (
+              <tr key={row.label} className="border-b border-border/60 last:border-0">
+                <td className="px-4 py-2.5 text-light-text/90">
+                  {row.label}
+                  {row.who === 'students' && (
+                    <span className="ml-2 whitespace-nowrap rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">
+                      for students
+                    </span>
+                  )}
+                </td>
+                <td className="px-2 py-2.5 text-center">
+                  {typeof row.free === 'string' ? <span className="text-dark-text">{row.free}</span> : <Mark on={row.free} />}
+                </td>
+                <td className="px-2 py-2.5 text-center">
+                  {typeof row.paid === 'string' ? (
+                    <span className="font-medium text-light-text">{row.paid}</span>
+                  ) : (
+                    <Mark on={row.paid} />
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     </section>
   );
+}
+
+/** Whole-number % saved by paying yearly, from the shown prices (same currency) or the list fallback. */
+function yearlySavingPct(
+  tier: PricingTierView | null | undefined,
+  quotes: Record<string, PriceQuote>,
+): number | null {
+  if (!tier || tier.contactOnly) return null;
+  const m = tier.monthPriceId ? quotes[tier.monthPriceId] : undefined;
+  const y = tier.yearPriceId ? quotes[tier.yearPriceId] : undefined;
+  let month = tier.listUsdMonth ?? null;
+  let year = tier.listUsdYear ?? null;
+  if (m?.amount != null && y?.amount != null && m.currency && m.currency === y.currency) {
+    month = m.amount;
+    year = y.amount;
+  }
+  if (!(month && month > 0) || !(year && year > 0)) return null;
+  const pct = Math.round((1 - year / (month * 12)) * 100);
+  return pct >= 5 ? pct : null;
 }
 
 function CapacityStats({ maxClasses, maxStudents }: { maxClasses: number; maxStudents: number }) {
@@ -423,6 +462,7 @@ export default function PricingClient({
   const selected = findTierView(teacherTiers, band.slugs);
   const selectedLimits = LIMITS[band.tier];
   const seatLabel = seats >= TEACHER_SLIDER_MAX ? '750+' : String(seats);
+  const yearlySaving = yearlySavingPct(starter ?? selected, quotes);
 
   const renderPassCard = (pass: StudentPassView) => {
     const passQuote = pass.priceId ? quotes[pass.priceId] : undefined;
@@ -636,7 +676,21 @@ export default function PricingClient({
           {total ?? (listFallback != null ? usd(listFallback) : '—')}
         </span>
         <span className="text-sm text-dark-text">/{intervalLabel}</span>
+        {interval === 'year' && perMonthLabel(tier)}
       </>
+    );
+  };
+
+  /** "≈ $4.17/mo, billed yearly" beside a yearly price, in the shown currency. */
+  const perMonthLabel = (tier: PricingTierView) => {
+    const q = tier.yearPriceId ? quotes[tier.yearPriceId] : undefined;
+    const amount = q ? q.amount : (tier.listUsdYear ?? null);
+    const currency = q ? q.currency : 'USD';
+    if (amount == null || !currency) return null;
+    return (
+      <span className="ml-2 text-xs text-dark-text">
+        ≈ {formatMajor(amount / 12, currency)}/mo, billed yearly
+      </span>
     );
   };
 
@@ -659,8 +713,6 @@ export default function PricingClient({
           )}
         </div>
       )}
-
-      {showTeachers && <TeacherIncluded />}
 
       {showTeachers && (
         <div className="mb-8 flex flex-col items-center gap-2">
@@ -686,12 +738,18 @@ export default function PricingClient({
                 }`}
               >
                 {value === 'month' ? 'Monthly' : 'Yearly'}
+                {value === 'year' && yearlySaving != null && (
+                  <span
+                    className={`ml-1.5 rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${
+                      interval === 'year' ? 'bg-white/20 text-white' : 'bg-primary/15 text-primary'
+                    }`}
+                  >
+                    Save {yearlySaving}%
+                  </span>
+                )}
               </button>
             ))}
           </div>
-          {interval === 'year' && (
-            <p className="text-xs text-dark-text">One payment for the year.</p>
-          )}
         </div>
       )}
 
@@ -857,9 +915,6 @@ export default function PricingClient({
                 maxClasses={LIMITS.starter.maxClasses}
                 maxStudents={LIMITS.starter.maxStudentsTotal}
               />
-              <p className="mt-4 text-sm text-dark-text">
-                Same tools as every paid plan. This one is sized for a single class.
-              </p>
               {renderTeacherCta(starter, ['starter'], false)}
               {currentTier !== 'starter' && !canManageBilling && (
                 <Link
@@ -876,6 +931,24 @@ export default function PricingClient({
                   Need a school invoice? Email me
                 </Link>
               )}
+              {!currentTier && (
+                <div className="mt-auto pt-6">
+                  <div className="rounded-xl border border-dashed border-border bg-background/40 px-4 py-3">
+                    <p className="text-xs font-medium uppercase tracking-wide text-dark-text">Not sure yet?</p>
+                    <p className="mt-1 text-sm text-light-text/90">
+                      Start a free class of five students. Assign homework and watch their progress, then upgrade when
+                      the rest of the roster joins.
+                    </p>
+                    <Link
+                      href="/classes"
+                      onClick={() => ph?.capture('nav_clicked', { destination: '/classes', from: 'pricing_teacher' })}
+                      className="mt-2 inline-flex items-center gap-1 text-sm font-medium text-primary hover:text-primary-hover"
+                    >
+                      Start a free class →
+                    </Link>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -884,9 +957,6 @@ export default function PricingClient({
               Need more seats
             </span>
             <h2 className="text-lg font-semibold text-light-text">How many students?</h2>
-            <p className="mt-1 text-sm text-dark-text">
-              Drag to match your roster. We&apos;ll show the plan, class cap, and price.
-            </p>
 
             <div className="mt-6">
               <div className="flex items-end justify-between gap-3">
@@ -944,9 +1014,6 @@ export default function PricingClient({
                     maxClasses={selectedLimits.maxClasses}
                     maxStudents={selectedLimits.maxStudentsTotal}
                   />
-                  <p className="mt-4 text-sm text-dark-text">
-                    Same tools as Starter. This plan is a larger roster.
-                  </p>
                 </div>
                 {renderTeacherCta(selected, band.slugs, true)}
               </>
@@ -956,6 +1023,8 @@ export default function PricingClient({
           </div>
         </section>
       )}
+
+      {showTeachers && <TeacherCompare />}
     </div>
   );
 }

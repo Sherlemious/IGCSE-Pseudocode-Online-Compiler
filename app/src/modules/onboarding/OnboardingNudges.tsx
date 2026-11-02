@@ -15,6 +15,9 @@
  *  - 90 s cumulative usage, flowchart maker not opened yet: "Draw and run flowcharts"
  *  - 15 min cumulative usage, no Learn progress: "Follow the Paper 2 Path"
  *  - 2nd+ session, anyone:                    "Try an Exam"
+ *  - 3rd+ session, free student (or signed out), May/June on sale: a small
+ *    May/June pass toast (passToast.tsx). Also right after a student answers
+ *    the sitting card with May/Jun 2027. Once per browser.
  *
  * One card at a time. A card that is already up is left alone until it is
  * dismissed or the visitor lands on a quiet page, so a later threshold
@@ -42,6 +45,8 @@ import ExamNudgeCard from './ExamNudgeCard';
 import SittingCard from './SittingCard';
 import { isSitting, type Sitting } from './sittings';
 import { loadProgress } from '@/modules/learn/progress';
+import { shouldOfferSessionPass } from '@/modules/billing/paddle/passes';
+import { PASS_TOAST_SHOWN_KEY, showPassToast } from './passToast';
 
 const LS = {
   usageMs: 'nudge_usage_ms',
@@ -60,6 +65,7 @@ const THRESHOLDS = {
   flowchartMs: 90_000,
   learnMs: 15 * 60_000,
   examSession: 2,
+  passSession: 3,
 } as const;
 
 /** Pages with their own prompts (lessons, paywall, checkout, the maker) or no room for a card. */
@@ -96,6 +102,18 @@ export default function OnboardingNudges() {
   const sittingStateRef = useRef<'unknown' | 'answered' | 'unanswered'>('unknown');
   const sittingAnsweredRef = useRef(false);
   const [activeNudge, setActiveNudge] = useState<ActiveNudge>(null);
+  const passEligibleRef = useRef(false);
+  passEligibleRef.current =
+    status !== 'loading' &&
+    shouldOfferSessionPass({
+      role: status === 'authenticated' ? session?.user?.role : null,
+      plan: status === 'authenticated' ? session?.user?.plan : 'FREE',
+      planExpiresAt: status === 'authenticated' ? session?.user?.planExpiresAt : null,
+    });
+  const capture = useCallback(
+    (event: string, props: Record<string, unknown>) => ph?.capture(event, props),
+    [ph],
+  );
 
   const markShown = useCallback(
     (key: NudgeKey) => {
@@ -145,8 +163,12 @@ export default function OnboardingNudges() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ sitting }),
       }).catch(() => {});
+      // They just said May/June: the pass is the thing that covers it.
+      if (sitting === 'may_jun_2027' && passEligibleRef.current) {
+        setTimeout(() => showPassToast('sitting', capture), 3_000);
+      }
     },
-    [ph],
+    [ph, capture],
   );
 
   // Moving onto a quiet page hides a card that's already up.
@@ -187,8 +209,12 @@ export default function OnboardingNudges() {
         triggerNudge('exam', 3_000);
         return;
       }
+      // A toast, not a card: it doesn't hold the card slot, so it waits for a session with no card.
+      if (sessions >= THRESHOLDS.passSession && passEligibleRef.current && !lsGet(PASS_TOAST_SHOWN_KEY)) {
+        showPassToast('returning', capture);
+      }
     },
-    [triggerNudge],
+    [triggerNudge, capture],
   );
 
   // Dev shortcuts
@@ -201,10 +227,12 @@ export default function OnboardingNudges() {
       cardUp.current = true; // claim the slot, or the next threshold swaps the card out
       setActiveNudge('sitting');
     }
+    if (params.get('pass_nudge') === '1') showPassToast('returning', capture, { force: true });
     if (params.get('flowchart_nudge') === '1' && !quietRef.current) {
       cardUp.current = true;
       setActiveNudge('flowchart');
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Sync DB nudge state → localStorage once per browser session (not every page load:

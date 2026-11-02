@@ -23,6 +23,23 @@ export const PAID_TEACHER_INCLUDED = {
   ],
 } as const;
 
+/** Free class vs any paid teacher plan, for the comparison table on /pricing. */
+export const TEACHER_COMPARE: readonly {
+  label: string;
+  free: boolean | string;
+  paid: boolean | string;
+  who?: 'students';
+}[] = [
+  { label: 'Students', free: '5', paid: '30 to 750+' },
+  { label: 'Full practice library, premium questions and timed exams', free: false, paid: true, who: 'students' },
+  { label: 'Paper 2 Path, every level', free: false, paid: true, who: 'students' },
+  { label: 'Your own autograded questions, with hidden tests', free: false, paid: true },
+  { label: 'Mark book with CSV export', free: false, paid: true },
+  { label: 'Assign homework, marked by hidden tests', free: true, paid: true },
+  { label: 'Roster and each student’s progress and code', free: true, paid: true },
+  { label: 'Students join with a link, no checkout', free: true, paid: true },
+];
+
 export const TIER_COPY: Record<
   string,
   { name: string; description: string; features: string[] }
