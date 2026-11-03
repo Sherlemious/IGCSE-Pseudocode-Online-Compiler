@@ -46,7 +46,7 @@ import SittingCard from './SittingCard';
 import { isSitting, type Sitting } from './sittings';
 import { loadProgress } from '@/modules/learn/progress';
 import { shouldOfferSessionPass } from '@/modules/billing/paddle/passes';
-import { PASS_TOAST_SHOWN_KEY, showPassToast } from './passToast';
+import { PASS_TOAST_SHOWN_KEY, PHONE_QR_FROM, showPassToast } from './passToast';
 
 const LS = {
   usageMs: 'nudge_usage_ms',
@@ -103,6 +103,8 @@ export default function OnboardingNudges() {
   const sittingAnsweredRef = useRef(false);
   const [activeNudge, setActiveNudge] = useState<ActiveNudge>(null);
   const passEligibleRef = useRef(false);
+  const signedInRef = useRef(false);
+  signedInRef.current = status === 'authenticated';
   passEligibleRef.current =
     status !== 'loading' &&
     shouldOfferSessionPass({
@@ -165,7 +167,7 @@ export default function OnboardingNudges() {
       }).catch(() => {});
       // They just said May/June: the pass is the thing that covers it.
       if (sitting === 'may_jun_2027' && passEligibleRef.current) {
-        setTimeout(() => showPassToast('sitting', capture), 3_000);
+        setTimeout(() => showPassToast('sitting', capture, { signedIn: signedInRef.current }), 3_000);
       }
     },
     [ph, capture],
@@ -211,7 +213,7 @@ export default function OnboardingNudges() {
       }
       // A toast, not a card: it doesn't hold the card slot, so it waits for a session with no card.
       if (sessions >= THRESHOLDS.passSession && passEligibleRef.current && !lsGet(PASS_TOAST_SHOWN_KEY)) {
-        showPassToast('returning', capture);
+        showPassToast('returning', capture, { signedIn: signedInRef.current });
       }
     },
     [triggerNudge, capture],
@@ -227,7 +229,9 @@ export default function OnboardingNudges() {
       cardUp.current = true; // claim the slot, or the next threshold swaps the card out
       setActiveNudge('sitting');
     }
-    if (params.get('pass_nudge') === '1') showPassToast('returning', capture, { force: true });
+    const from = params.get('from');
+    if (from === PHONE_QR_FROM.pay || from === PHONE_QR_FROM.signup) ph?.capture('phone_qr_opened', { from });
+    if (params.get('pass_nudge') === '1') showPassToast('returning', capture, { force: true, signedIn: signedInRef.current });
     if (params.get('flowchart_nudge') === '1' && !quietRef.current) {
       cardUp.current = true;
       setActiveNudge('flowchart');

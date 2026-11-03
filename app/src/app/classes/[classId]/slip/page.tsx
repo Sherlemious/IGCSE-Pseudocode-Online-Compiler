@@ -3,7 +3,7 @@ import { notFound, redirect } from 'next/navigation';
 import { auth } from '@/modules/auth/auth';
 import { SITE_URL } from '@/shared/lib/seo';
 import { findClassSummary } from '@/modules/classes/repo';
-import { qrSvg } from '@/modules/classes/qrCode';
+import { qrSvg } from '@/shared/lib/qrCode';
 import JoinSlip from '@/modules/classes/JoinSlip';
 
 export const metadata: Metadata = {
