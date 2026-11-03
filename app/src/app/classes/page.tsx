@@ -7,6 +7,7 @@ import { getEntitlements } from '@/modules/billing/entitlements';
 import { GraduationCap, Users, ArrowRight, School } from 'lucide-react';
 import CreateClassForm from '@/modules/classes/CreateClassForm';
 import { teacherYearlyCheckoutHref } from '@/modules/billing/teacherCheckout';
+import PartnerAd from '@/modules/partners/PartnerAd';
 
 export const metadata: Metadata = {
   title: 'My Classes',
@@ -35,6 +36,7 @@ export default async function ClassesPage() {
 
   const canCreate = owned.length < entitlements.limits.maxClasses;
   const studentCount = owned.reduce((total, cls) => total + cls._count.memberships, 0);
+  const isTeacher = session.user.role === 'TEACHER' || owned.length > 0;
 
   return (
     <div className="flex-1 overflow-y-auto bg-background bg-dot-grid p-6 relative scrollbar-pretty">
@@ -112,6 +114,12 @@ export default async function ClassesPage() {
             </div>
           )}
         </div>
+
+        {isTeacher && (
+          <div className="mb-8 animate-fade-in-up" style={{ animationDelay: '200ms' }}>
+            <PartnerAd surface="classes" />
+          </div>
+        )}
 
         {/* Enrolled */}
         {enrolled.length > 0 && (

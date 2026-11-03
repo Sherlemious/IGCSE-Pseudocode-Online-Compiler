@@ -6,6 +6,7 @@ import { auth } from '@/modules/auth/auth';
 import { HttpError } from '@/shared/http/errors';
 import { getClassMarkBook } from '@/modules/classes/service';
 import MarkBookTable from '@/modules/classes/MarkBookTable';
+import PartnerAd from '@/modules/partners/PartnerAd';
 
 export const metadata: Metadata = {
   title: 'Mark book',
@@ -50,6 +51,9 @@ export default async function ClassMarksPage({ params }: Props) {
           columns={book.preview.columns}
           rows={book.preview.rows}
         />
+        <div className="mt-8 max-w-xl">
+          <PartnerAd surface="mark_book" />
+        </div>
       </div>
     </div>
   );
