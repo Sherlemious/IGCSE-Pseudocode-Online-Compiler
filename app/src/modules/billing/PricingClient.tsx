@@ -575,7 +575,7 @@ export default function PricingClient({
         </p>
         {earlyBird && !isCurrent && (
           <p className="mt-3 rounded-lg border border-success/30 bg-success/10 px-3 py-2 text-xs text-success">
-            <span className="font-semibold">Early bird: {earlyBird.percent}% off until {earlyBird.endsLabel}</span>
+            <span className="font-semibold">{earlyBird.label}: {earlyBird.percent}% off until {earlyBird.endsLabel}</span>
             {earlyPrice ? ` — ${earlyPrice} at checkout.` : ' — taken off at checkout.'} No code needed.
           </p>
         )}

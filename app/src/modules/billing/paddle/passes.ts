@@ -194,17 +194,21 @@ export function featuredPassKind(now: Date = new Date()): Exclude<PassKind, 'mon
 }
 
 /**
- * Early-bird offer on the May/June pass: Paddle discount `EARLYBIRD20` (live and
- * sandbox), 20% off, restricted to that pass's price and expiring at `endsAt`.
- * Checkout applies the code itself, so nobody has to type it.
+ * Time-limited offer on the May/June pass: Paddle discount `NOVEMBER30` (live),
+ * 30% off, restricted to that pass's price and expiring at `endsAt`.
+ * Checkout applies the code itself, so nobody has to type it. To run a new offer,
+ * create the Paddle discount and change code, percent, label, endsAt and endsLabel together.
+ * (Previous offer: EARLYBIRD20, 20% until 31 Oct 2026.)
  */
 export const EARLY_BIRD = {
-  code: 'EARLYBIRD20',
-  percent: 20,
+  code: 'NOVEMBER30',
+  percent: 30,
+  /** Shown before the percentage, e.g. "November sale: 30% off until 30 Nov". */
+  label: 'November sale',
   kind: 'may_june' as Exclude<PassKind, 'month'>,
-  endsAt: new Date('2026-10-31T23:59:59Z'),
+  endsAt: new Date('2026-11-30T23:59:59Z'),
   /** Shown as "until …". Keep in step with `endsAt` and the Paddle discount's expiry. */
-  endsLabel: '31 Oct',
+  endsLabel: '30 Nov',
 } as const;
 
 export function earlyBirdFor(kind: PassKind, now: Date = new Date()): typeof EARLY_BIRD | null {

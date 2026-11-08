@@ -69,7 +69,7 @@ export function PassPriceQuote({ offer }: { offer: Offer }) {
   const earlyBird = pass ? earlyBirdFor(pass.kind) : null;
   const earlyLine = earlyBird && (
     <span className="mt-1 block text-success">
-      Early bird: {earlyBird.percent}% off until {earlyBird.endsLabel}, taken off at checkout.
+      {earlyBird.label}: {earlyBird.percent}% off until {earlyBird.endsLabel}, taken off at checkout.
     </span>
   );
   if (quote) {
