@@ -195,6 +195,11 @@ function CapacityStats({ maxClasses, maxStudents }: { maxClasses: number; maxStu
   );
 }
 
+/** A real ISO country from the edge header, or null (XX unknown, T1 Tor). */
+function checkoutCountry(code: string | undefined): string | null {
+  return code && /^[A-Z]{2}$/.test(code) && code !== 'XX' && code !== 'T1' ? code : null;
+}
+
 export default function PricingClient({
   teacherTiers,
   studentMonthly,
@@ -398,7 +403,17 @@ export default function PricingClient({
     paddle.Checkout.open({
       items: [{ priceId: opts.priceId, quantity: 1 }],
       ...(code ? { discountCode: code } : {}),
-      ...(customerEmail ? { customer: { email: customerEmail } } : {}),
+      // Email plus the visitor's country (from the edge), so Paddle's one-page
+      // checkout opens on the payment step instead of asking for both again.
+      // Paddle only accepts an address next to an email or customer id.
+      ...(customerEmail
+        ? {
+            customer: {
+              email: customerEmail,
+              ...(checkoutCountry(countryCode) ? { address: { countryCode: checkoutCountry(countryCode)! } } : {}),
+            },
+          }
+        : {}),
       ...(appUserId
         ? { customData: { app_user_id: appUserId } }
         : {
