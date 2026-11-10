@@ -3,18 +3,12 @@
 import { useEffect, useState } from 'react';
 import posthog from 'posthog-js';
 import { usePostHog } from 'posthog-js/react';
+import {
+  PRACTICE_CHECK_HELP_FLAG,
+  PRACTICE_QUESTION_MATCH_FLAG,
+} from '@/modules/telemetry/experiments';
 
-/**
- * Results panel: one sentence on a wrong output, and Fix it on a syntax error.
- * Variants: `control` | `test`. Missing flag ships the change.
- */
-export const PRACTICE_CHECK_HELP_FLAG = 'practice-check-help';
-
-/**
- * Which question the toast and the start-here card open.
- * Variants: `control` | `test`. Missing flag ships the change.
- */
-export const PRACTICE_QUESTION_MATCH_FLAG = 'practice-question-match';
+export { PRACTICE_CHECK_HELP_FLAG, PRACTICE_QUESTION_MATCH_FLAG };
 
 export type PracticeVariant = 'test' | 'control';
 

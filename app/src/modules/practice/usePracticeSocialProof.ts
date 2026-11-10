@@ -75,23 +75,32 @@ function loadQuestionSocialStats(): Promise<Map<string, QuestionSocialStat>> {
   return statsPromise;
 }
 
-export function useQuestionSocialStats(): Map<string, QuestionSocialStat> {
-  const enabled = usePracticeSocialProofEnabled();
+/** Solve counts for a decision that needs them. The list chips stay behind their own flag. */
+export function useQuestionStats(enabled: boolean): { stats: Map<string, QuestionSocialStat>; ready: boolean } {
   const [stats, setStats] = useState<Map<string, QuestionSocialStat>>(new Map());
+  const [ready, setReady] = useState(!enabled);
 
   useEffect(() => {
     if (!enabled) {
       setStats(new Map());
+      setReady(true);
       return;
     }
+    setReady(false);
     let cancelled = false;
     void loadQuestionSocialStats().then((next) => {
-      if (!cancelled) setStats(next);
+      if (cancelled) return;
+      setStats(next);
+      setReady(true);
     });
     return () => {
       cancelled = true;
     };
   }, [enabled]);
 
-  return stats;
+  return { stats, ready };
+}
+
+export function useQuestionSocialStats(): Map<string, QuestionSocialStat> {
+  return useQuestionStats(usePracticeSocialProofEnabled()).stats;
 }

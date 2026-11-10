@@ -13,7 +13,7 @@ import StartHereCard from './StartHereCard';
 import AssignToClassButton from '@/modules/classes/AssignToClass';
 import { useOwnedClasses } from '@/modules/classes/useOwnedClasses';
 import { recommendNextQuestion } from './practiceNext';
-import { useQuestionSocialStats } from './usePracticeSocialProof';
+import { useQuestionSocialStats, useQuestionStats } from './usePracticeSocialProof';
 import { DEFAULT_PRACTICE_TITLE, mistakeByKey } from './mistakeQuestions';
 import { PRACTICE_QUESTION_MATCH_FLAG, usePracticeVariant } from './practiceCoach';
 import {
@@ -54,7 +54,6 @@ export default function PracticeIndex({
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [progressMap, setProgressMap] = useState<Map<string, PracticeProgress>>(new Map());
   const [premiumAccess, setPremiumAccess] = useState(!gatingEnabled);
-  const socialStats = useQuestionSocialStats();
 
   useEffect(() => {
     if (authStatus !== 'authenticated') {
@@ -100,6 +99,10 @@ export default function PracticeIndex({
     setPracticeQuery({ from: params.get('from'), mistake: params.get('mistake') });
   }, []);
 
+  const socialStats = useQuestionSocialStats();
+  const recommendation = useQuestionStats(questionMatch === 'test');
+  const statsForNext = questionMatch === 'test' ? recommendation.stats : socialStats;
+
   const hasFullAccess = !gatingEnabled || premiumAccess;
   const listing = useMemo(
     () => computePracticeListing(questions, active, progressMap),
@@ -137,7 +140,7 @@ export default function PracticeIndex({
   })();
 
   const nextPick = (() => {
-    if (resumeQuestion || questionMatch === 'pending') return null;
+    if (resumeQuestion || questionMatch === 'pending' || (questionMatch === 'test' && !recommendation.ready)) return null;
     const fromToast = practiceQuery.from === 'playground_practice';
     const pinned =
       questionMatch === 'test' && fromToast
@@ -146,7 +149,7 @@ export default function PracticeIndex({
     return recommendNextQuestion({
       questions,
       progress: progressMap,
-      stats: socialStats,
+      stats: statsForNext,
       hasFullAccess,
       signedIn,
       mode: questionMatch === 'test' ? 'coach' : 'classic',
@@ -340,7 +343,7 @@ export default function PracticeIndex({
                     question={nextQuestion}
                     kind={totalSolved === 0 ? 'first' : 'next'}
                     reason={nextPick?.reason}
-                    firstTryRate={socialStats.get(nextQuestion.id)?.firstTryRate ?? null}
+                    firstTryRate={statsForNext.get(nextQuestion.id)?.firstTryRate ?? null}
                   />
                 )}
 
