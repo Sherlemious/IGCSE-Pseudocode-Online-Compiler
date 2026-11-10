@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Camera, ExternalLink, X } from 'lucide-react';
 import { captureEvent } from '@/modules/interpreter/analytics';
 import { PARTNERS, partnerOutHref, type PartnerSurface } from './partners';
@@ -23,12 +23,32 @@ function readDismissed(): boolean {
  */
 export default function PartnerAd({ surface }: { surface: PartnerSurface }) {
   const [visible, setVisible] = useState(false);
+  const ref = useRef<HTMLElement>(null);
 
   useEffect(() => {
-    if (readDismissed()) return;
-    setVisible(true);
-    captureEvent('partner_ad_shown', { partner: PARTNER, surface });
-  }, [surface]);
+    if (!readDismissed()) setVisible(true);
+  }, []);
+
+  // "shown" means half the card was actually on screen, not just mounted
+  // below the fold.
+  useEffect(() => {
+    const el = ref.current;
+    if (!visible || !el) return;
+    if (typeof IntersectionObserver === 'undefined') {
+      captureEvent('partner_ad_shown', { partner: PARTNER, surface });
+      return;
+    }
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (!entries.some((e) => e.isIntersecting)) return;
+        observer.disconnect();
+        captureEvent('partner_ad_shown', { partner: PARTNER, surface });
+      },
+      { threshold: 0.5 },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [visible, surface]);
 
   if (!visible) return null;
 
@@ -44,6 +64,7 @@ export default function PartnerAd({ surface }: { surface: PartnerSurface }) {
 
   return (
     <aside
+      ref={ref}
       aria-label={`Partner: ${PARTNERS[PARTNER].name}`}
       className="relative flex items-start gap-3 rounded-xl border border-border bg-surface/80 p-4 pr-10"
     >

@@ -85,6 +85,12 @@ export default async function ClassesPage() {
           />
         </div>
 
+        {isTeacher && (
+          <div className="mb-8 animate-fade-in-up" style={{ animationDelay: '120ms' }}>
+            <PartnerAd surface="classes" />
+          </div>
+        )}
+
         {/* Teaching */}
         <div className="mb-8 animate-fade-in-up" style={{ animationDelay: '160ms' }}>
           <h2 className="mono-label text-dark-text mb-3 px-1">
@@ -114,12 +120,6 @@ export default async function ClassesPage() {
             </div>
           )}
         </div>
-
-        {isTeacher && (
-          <div className="mb-8 animate-fade-in-up" style={{ animationDelay: '200ms' }}>
-            <PartnerAd surface="classes" />
-          </div>
-        )}
 
         {/* Enrolled */}
         {enrolled.length > 0 && (
