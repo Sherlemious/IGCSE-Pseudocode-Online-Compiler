@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from '@/shared/ui/HoverPrefetchLink';
-import { ArrowRight, Braces, Map as MapIcon } from 'lucide-react';
+import { ArrowRight, Braces, Loader2, Map as MapIcon } from 'lucide-react';
 import { captureEvent } from '@/modules/interpreter/analytics';
 
 export const LEARN_FIRST_SEEN_KEY = 'learn_first_start_seen';
@@ -20,6 +20,16 @@ type Props = {
  */
 export default function LearnFirstStart({ onUseCompiler }: Props) {
   const sent = useRef(false);
+  // The Learn page takes a couple of seconds to arrive on a phone, and with no sign
+  // of progress people tapped the card again and again (3 taps in 2 s was recorded).
+  const [opening, setOpening] = useState(false);
+
+  useEffect(() => {
+    if (!opening) return;
+    // If the navigation never happens, give the card back instead of leaving it stuck.
+    const reset = setTimeout(() => setOpening(false), 8000);
+    return () => clearTimeout(reset);
+  }, [opening]);
 
   useEffect(() => {
     if (sent.current) return;
@@ -57,17 +67,32 @@ export default function LearnFirstStart({ onUseCompiler }: Props) {
 
           <Link
             href="/learn?from=first_visit"
-            onClick={() => captureEvent('learn_first_start_clicked', { choice: 'learn' })}
-            className="mt-5 flex items-center gap-3 rounded-xl border border-primary/30 bg-primary/10 px-4 py-3 text-left transition-colors hover:border-primary/50 hover:bg-primary/15"
+            onClick={(e) => {
+              // A second tap while the page is loading must not fire the event again.
+              if (opening) {
+                e.preventDefault();
+                return;
+              }
+              setOpening(true);
+              captureEvent('learn_first_start_clicked', { choice: 'learn' });
+            }}
+            aria-busy={opening}
+            className={`mt-5 flex items-center gap-3 rounded-xl border border-primary/30 bg-primary/10 px-4 py-3 text-left transition-colors hover:border-primary/50 hover:bg-primary/15 ${opening ? 'opacity-80' : ''}`}
           >
             <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/15 text-primary">
               <MapIcon size={17} aria-hidden="true" />
             </span>
             <span className="min-w-0 flex-1">
-              <span className="block text-sm font-semibold text-light-text">Start the Paper 2 Path</span>
+              <span className="block text-sm font-semibold text-light-text">
+                {opening ? 'Opening the Path…' : 'Start the Paper 2 Path'}
+              </span>
               <span className="block text-xs text-dark-text">Short lessons, checked as you go</span>
             </span>
-            <ArrowRight size={16} className="shrink-0 text-primary" aria-hidden="true" />
+            {opening ? (
+              <Loader2 size={16} className="shrink-0 animate-spin text-primary" aria-hidden="true" />
+            ) : (
+              <ArrowRight size={16} className="shrink-0 text-primary" aria-hidden="true" />
+            )}
           </Link>
 
           <button

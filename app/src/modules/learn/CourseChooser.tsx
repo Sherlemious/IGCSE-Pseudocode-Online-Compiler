@@ -18,21 +18,37 @@ export default function CourseChooser({
   courseId,
   completed,
   total,
+  brandNew,
 }: {
   courseId: CourseId;
   completed: number;
   total: number;
+  /**
+   * No progress yet. Two full cards pushed the lesson map below the fold on a phone,
+   * and visitors with nothing done browsed the course lists and left (Oct 2026
+   * recordings), so they get their course in full and the other as one line.
+   */
+  brandNew: boolean;
 }) {
   const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
+  const choices = brandNew
+    ? [...COURSE_CHOICES].sort((a, b) => Number(b.id === courseId) - Number(a.id === courseId))
+    : COURSE_CHOICES;
 
   return (
     <div>
       <p id="course-choice-label" className="mono-label text-dark-text mb-3">
         Which exam are you sitting?
       </p>
-      <nav aria-labelledby="course-choice-label" className="grid grid-cols-1 sm:grid-cols-2 gap-3 stagger-children">
-        {COURSE_CHOICES.map((choice) => {
+      <nav
+        aria-labelledby="course-choice-label"
+        className={
+          brandNew ? 'flex flex-col gap-1.5 stagger-children' : 'grid grid-cols-1 sm:grid-cols-2 gap-3 stagger-children'
+        }
+      >
+        {choices.map((choice) => {
           const current = choice.id === courseId;
+          if (brandNew && !current) return <SwitchRow key={choice.id} choice={choice} fromCourse={courseId} />;
           return (
             <ChoiceCard
               key={choice.id}
@@ -47,6 +63,25 @@ export default function CourseChooser({
         })}
       </nav>
     </div>
+  );
+}
+
+/** The other course, as one tappable line, while the learner has no progress to show. */
+function SwitchRow({ choice, fromCourse }: { choice: CourseChoice; fromCourse: CourseId }) {
+  return (
+    <Link
+      href={choice.href}
+      onClick={() =>
+        captureLearn('learn_course_switched', {
+          from_course: fromCourse,
+          to_course: choice.id,
+        })
+      }
+      className={`group inline-flex min-h-11 items-center gap-1.5 self-start rounded-lg px-1 text-sm text-dark-text transition-colors hover:text-primary ${FOCUS}`}
+    >
+      Sitting {choice.exam} {choice.paper} instead?
+      <ArrowRight size={13} aria-hidden className="shrink-0" />
+    </Link>
   );
 }
 
@@ -98,6 +133,12 @@ function ChoiceCard({
         <span className="text-light-text font-semibold">{choice.levels} levels</span>
         {' · '}
         first {choice.freeLevels} free
+        {choice.drills > 0 && (
+          <>
+            {' · '}
+            {choice.drills} drills
+          </>
+        )}
         {current && total > 0 && (
           <>
             {' · '}

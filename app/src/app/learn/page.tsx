@@ -12,14 +12,14 @@ export const metadata: Metadata = {
     absolute: 'Paper 2 Path | IGCSE & O Level 2210 Pseudocode Course',
   },
   description:
-    'A sequenced Cambridge O Level 2210 and IGCSE 0478 Paper 2 path. Ten levels of pseudocode — write, run, and check in the browser. Levels 1–3 are free. Start with the written tutorial if you are new.',
+    'A sequenced Cambridge O Level 2210 and IGCSE 0478 Paper 2 path. Ten syllabus levels plus three free drills — write, run, and check in the browser. Levels 1–3 are free. Start with the written tutorial if you are new.',
   alternates: {
     canonical: '/learn',
   },
   openGraph: {
     title: 'Paper 2 Path | IGCSE & O Level 2210 Pseudocode Course',
     description:
-      'Ten levels of Cambridge O Level 2210 and IGCSE 0478 pseudocode. Write, run, and check in the browser. First three levels free.',
+      'Ten syllabus levels of Cambridge O Level 2210 and IGCSE 0478 pseudocode, plus three free drills. Write, run, and check in the browser. First three levels free.',
     url: `${SITE_URL}/learn`,
     type: 'website',
     images: [SHARE_IMAGE],

@@ -108,6 +108,61 @@ OUTPUT Pupil2.Name`,
       playable: true,
     },
     {
+      id: 'as1.7',
+      slug: 'one-mark',
+      title: 'Output the matching mark',
+      type: 'grade',
+      minutes: 7,
+      why: 'The lookup Check fails when "Not found" is printed from inside the loop. First, print the mark for a name that is always there.',
+      docsAnchor: 'alevel-types',
+      body: `The three students are already stored. Read a name — it will be one of them — and output that student's mark.
+
+Example: input \`Ada\` → \`80\`. Input \`Cy\` → \`91\`.
+
+Use \`Group[Index].Mark\`. Do not print anything else.`,
+      trap: 'There is no "Not found" in this lesson. An ELSE inside the loop prints extra lines and the check fails.',
+      starterCode: `${RECORD}
+
+DECLARE Group : ARRAY[1:3] OF Student
+Group[1].Name <- "Ada"
+Group[1].Mark <- 80
+Group[2].Name <- "Bob"
+Group[2].Mark <- 54
+Group[3].Name <- "Cy"
+Group[3].Mark <- 91
+
+DECLARE Target : STRING
+INPUT Target
+
+// FOR Index <- 1 TO 3
+//     IF Group[Index].Name = Target THEN OUTPUT Group[Index].Mark`,
+      solutionCode: `${RECORD}
+
+DECLARE Group : ARRAY[1:3] OF Student
+Group[1].Name <- "Ada"
+Group[1].Mark <- 80
+Group[2].Name <- "Bob"
+Group[2].Mark <- 54
+Group[3].Name <- "Cy"
+Group[3].Mark <- 91
+
+DECLARE Target : STRING
+INPUT Target
+
+FOR Index <- 1 TO 3
+    IF Group[Index].Name = Target THEN
+        OUTPUT Group[Index].Mark
+    ENDIF
+NEXT Index`,
+      tests: [
+        { inputs: ['Ada'], expectedOutput: '80' },
+        { inputs: ['Bob'], expectedOutput: '54' },
+        { inputs: ['Cy'], expectedOutput: '91' },
+      ],
+      mustContain: ['.Mark'],
+      playable: true,
+    },
+    {
       id: 'as1.3',
       slug: 'lookup',
       title: 'Look up one field',

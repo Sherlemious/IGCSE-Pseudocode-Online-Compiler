@@ -5,12 +5,16 @@ import Link from '@/shared/ui/HoverPrefetchLink';
 import { ArrowRight, Flame, Target } from 'lucide-react';
 import { captureEvent } from '@/modules/interpreter/analytics';
 import { DIFF_META, type PracticeListQuestion } from './filterUtils';
+import type { NextPickReason } from './practiceNext';
 import { readStreak, type StreakState } from './practiceStreak';
 
 type Props = {
   question: PracticeListQuestion;
   /** `first`: nothing solved yet. `next`: already solving, here's another. */
   kind: 'first' | 'next';
+  /** Why this question was chosen. Omitted on the previous picker. */
+  reason?: NextPickReason;
+  firstTryRate?: number | null;
 };
 
 /**
@@ -18,7 +22,7 @@ type Props = {
  * the list never solve anything, so we pick an easy, widely-solved question
  * for them instead of leaving them to choose from dozens.
  */
-export default function StartHereCard({ question, kind }: Props) {
+export default function StartHereCard({ question, kind, reason, firstTryRate }: Props) {
   const [streak, setStreak] = useState<StreakState | null>(null);
   const shownFor = useRef<string | null>(null);
   const meta = DIFF_META[question.difficulty as keyof typeof DIFF_META];
@@ -26,16 +30,20 @@ export default function StartHereCard({ question, kind }: Props) {
   useEffect(() => {
     const state = readStreak();
     setStreak(state);
-    if (shownFor.current === question.id) return;
-    shownFor.current = question.id;
+    const shownKey = `${question.id}:${reason ?? ''}`;
+    if (shownFor.current === shownKey) return;
+    shownFor.current = shownKey;
     captureEvent('practice_start_here_shown', {
       question_id: question.id,
       kind,
       difficulty: question.difficulty,
+      topic: question.topic,
+      reason: reason ?? null,
+      first_try_rate: firstTryRate ?? null,
       streak: state.streak,
       solved_today: state.solvedToday,
     });
-  }, [question.id, question.difficulty, kind]);
+  }, [question.id, question.difficulty, question.topic, kind, reason, firstTryRate]);
 
   const streakLine =
     streak && streak.streak > 0
@@ -52,6 +60,9 @@ export default function StartHereCard({ question, kind }: Props) {
           question_id: question.id,
           kind,
           difficulty: question.difficulty,
+          topic: question.topic,
+          reason: reason ?? null,
+          first_try_rate: firstTryRate ?? null,
           streak: streak?.streak ?? 0,
         })
       }

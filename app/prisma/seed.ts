@@ -274,12 +274,8 @@ DECLARE Total : INTEGER
 
 INPUT N
 
-Total <- 0
-FOR i <- 1 TO N
-    Total <- Total + i
-NEXT i
-
-OUTPUT Total`,
+// Write your answer here
+`,
     hints: [
       'You need a running total that accumulates each number from 1 to N.',
       'Use a FOR loop from 1 to N. Inside the loop, add the current value of i to a Total variable.',
@@ -334,9 +330,7 @@ DECLARE i : INTEGER
 
 INPUT N
 
-FOR i <- 1 TO 10
-    OUTPUT N * i
-NEXT i`,
+// Write your answer here`,
     hints: [
       'You need to multiply N by each number from 1 to 10 and output each result.',
       'Use a FOR loop that goes from 1 to 10. Inside the loop, output the product of N and the loop counter.',
@@ -517,13 +511,8 @@ DECLARE Numbers : ARRAY[1:10] OF INTEGER
 
 INPUT N
 
-Total <- 0
-FOR i <- 1 TO N
-    INPUT Numbers[i]
-    Total <- Total + Numbers[i]
-NEXT i
-
-OUTPUT Total`,
+// Write your answer here
+`,
     hints: [
       'You need to read values into an array and keep a running total as you go.',
       'Use a FOR loop to read each element. After reading each one, add it to a Total variable.',
@@ -577,18 +566,9 @@ DECLARE Max : INTEGER
 DECLARE Numbers : ARRAY[1:10] OF INTEGER
 
 INPUT N
-FOR i <- 1 TO N
-    INPUT Numbers[i]
-NEXT i
+// Write your answer here
 
-Max <- Numbers[1]
-FOR i <- 2 TO N
-    IF Numbers[i] > Max THEN
-        Max <- Numbers[i]
-    ENDIF
-NEXT i
-
-OUTPUT Max`,
+`,
     hints: [
       'To find the maximum, you need to compare every element and keep track of the largest one seen so far.',
       'Set Max to the first element, then loop from the second element onward. If any element is greater than Max, update Max.',
@@ -644,18 +624,9 @@ DECLARE Len : INTEGER
 
 INPUT Text
 
-Len <- LENGTH(Text)
-Reversed <- ""
+// Write your answer here
 
-FOR i <- Len TO 1 STEP -1
-    Reversed <- Reversed & SUBSTRING(Text, i, 1)
-NEXT i
-
-IF LCASE(Text) = LCASE(Reversed) THEN
-    OUTPUT "Yes"
-ELSE
-    OUTPUT "No"
-ENDIF`,
+`,
     hints: [
       'A palindrome reads the same forwards and backwards. Think about how you could check this.',
       'Build the reversed version of the string by looping from the last character to the first, appending each character.',
@@ -712,12 +683,8 @@ DECLARE Result : INTEGER
 
 INPUT N
 
-Result <- 1
-FOR i <- 1 TO N
-    Result <- Result * i
-NEXT i
-
-OUTPUT Result`,
+// Write your answer here
+`,
     hints: [
       'Factorial means multiplying all integers from 1 up to N together. Think about using a loop with a running product.',
       'Start with Result = 1 (since 0! = 1 and multiplying by 1 has no effect). Then multiply Result by each number from 1 to N.',
@@ -766,15 +733,8 @@ DECLARE VowelCount : INTEGER
 
 INPUT Text
 
-VowelCount <- 0
-FOR i <- 1 TO LENGTH(Text)
-    Ch <- LCASE(SUBSTRING(Text, i, 1))
-    IF Ch = "a" OR Ch = "e" OR Ch = "i" OR Ch = "o" OR Ch = "u" THEN
-        VowelCount <- VowelCount + 1
-    ENDIF
-NEXT i
-
-OUTPUT VowelCount`,
+// Write your answer here
+`,
     hints: [
       'Loop through each character in the string and check if it is one of the five vowels.',
       'Convert each character to lowercase first so you only need to check against lowercase vowels. Use a counter variable.',
@@ -826,13 +786,8 @@ DECLARE Sum : INTEGER
 
 INPUT N
 
-Sum <- 0
-WHILE N > 0 DO
-    Sum <- Sum + MOD(N, 10)
-    N <- DIV(N, 10)
-ENDWHILE
-
-OUTPUT Sum`,
+// Write your answer here
+`,
     hints: [
       'Think about how you can extract individual digits from a number. The last digit of any number can be found using the remainder when dividing by 10.',
       'Use MOD(N, 10) to get the last digit and add it to a sum. Then use DIV(N, 10) to remove the last digit. Repeat until N becomes 0.',
@@ -890,24 +845,10 @@ DECLARE Temp : INTEGER
 DECLARE Numbers : ARRAY[1:8] OF INTEGER
 
 INPUT N
-FOR i <- 1 TO N
-    INPUT Numbers[i]
-NEXT i
+// Write your answer here
 
 // Bubble sort
-FOR i <- 1 TO N - 1
-    FOR j <- 1 TO N - i
-        IF Numbers[j] > Numbers[j + 1] THEN
-            Temp <- Numbers[j]
-            Numbers[j] <- Numbers[j + 1]
-            Numbers[j + 1] <- Temp
-        ENDIF
-    NEXT j
-NEXT i
-
-FOR i <- 1 TO N
-    OUTPUT Numbers[i]
-NEXT i`,
+`,
     hints: [
       'Bubble sort works by repeatedly comparing adjacent elements and swapping them if they are in the wrong order.',
       'Use two nested loops. The outer loop runs N-1 times. The inner loop compares adjacent pairs and swaps them if the left element is larger than the right.',
@@ -968,21 +909,7 @@ DECLARE IsPrime : BOOLEAN
 
 INPUT N
 
-IF N < 2 THEN
-    OUTPUT "Not Prime"
-ELSE
-    IsPrime <- TRUE
-    FOR i <- 2 TO INT(N / 2)
-        IF MOD(N, i) = 0 THEN
-            IsPrime <- FALSE
-        ENDIF
-    NEXT i
-    IF IsPrime = TRUE THEN
-        OUTPUT "Prime"
-    ELSE
-        OUTPUT "Not Prime"
-    ENDIF
-ENDIF`,
+// Write your answer here`,
     hints: [
       'A prime number has no divisors other than 1 and itself. Think about how you would check if any number between 2 and N divides evenly into N.',
       'Loop from 2 to N/2 and check if MOD(N, i) = 0 for any i. If it does, the number is not prime. Handle the special case where N < 2 separately.',
@@ -1047,22 +974,9 @@ DECLARE i : INTEGER
 
 INPUT N
 
-First <- 0
-Second <- 1
+// Write your answer here
 
-IF N >= 1 THEN
-    OUTPUT First
-ENDIF
-IF N >= 2 THEN
-    OUTPUT Second
-ENDIF
-
-FOR i <- 3 TO N
-    NextTerm <- First + Second
-    OUTPUT NextTerm
-    First <- Second
-    Second <- NextTerm
-NEXT i`,
+`,
     hints: [
       'Each Fibonacci number is the sum of the two preceding ones. You need to keep track of the last two values.',
       'Start with First = 0 and Second = 1. Output these first two values. Then for each subsequent number, compute NextTerm = First + Second, output it, and shift the values.',
@@ -1124,13 +1038,8 @@ INPUT A
 INPUT B
 
 // Euclidean algorithm
-WHILE B <> 0 DO
-    Temp <- B
-    B <- MOD(A, B)
-    A <- Temp
-ENDWHILE
-
-OUTPUT A`,
+// Write your answer here
+`,
     hints: [
       'The Euclidean algorithm repeatedly replaces the larger number with the remainder of dividing the larger by the smaller.',
       'Use a WHILE loop that continues until B becomes 0. In each step, replace A with B and B with MOD(A, B). Use a Temp variable to avoid losing values.',
@@ -1180,12 +1089,8 @@ DECLARE i : INTEGER
 
 INPUT Text
 
-Reversed <- ""
-FOR i <- LENGTH(Text) TO 1 STEP -1
-    Reversed <- Reversed & SUBSTRING(Text, i, 1)
-NEXT i
-
-OUTPUT Reversed`,
+// Write your answer here
+`,
     hints: [
       'To reverse a string, you need to read its characters from back to front.',
       'Start with an empty string. Loop from the last character position to the first (using STEP -1), appending each character.',
@@ -1237,22 +1142,10 @@ DECLARE Position : INTEGER
 DECLARE Numbers : ARRAY[1:10] OF INTEGER
 
 INPUT N
-FOR i <- 1 TO N
-    INPUT Numbers[i]
-NEXT i
-INPUT Target
+// Write your answer here
 
-Found <- FALSE
-Position <- -1
 
-FOR i <- 1 TO N
-    IF Numbers[i] = Target AND Found = FALSE THEN
-        Found <- TRUE
-        Position <- i
-    ENDIF
-NEXT i
-
-OUTPUT Position`,
+`,
     hints: [
       'You need to check each element of the array one by one to see if it matches the target.',
       'Loop through the array. When you find a match, record its position and stop looking (or use a flag to ignore further matches).',
@@ -1314,19 +1207,9 @@ DECLARE Count : INTEGER
 DECLARE Numbers : ARRAY[1:10] OF INTEGER
 
 INPUT N
-FOR i <- 1 TO N
-    INPUT Numbers[i]
-NEXT i
-INPUT Target
+// Write your answer here
 
-Count <- 0
-FOR i <- 1 TO N
-    IF Numbers[i] = Target THEN
-        Count <- Count + 1
-    ENDIF
-NEXT i
-
-OUTPUT Count`,
+`,
     hints: [
       'You need to check every element in the array and count how many match the target.',
       'Use a counter variable initialised to 0. Loop through the array and increment the counter each time an element equals the target.',
@@ -1439,13 +1322,7 @@ Output: Negative
 
 INPUT N
 
-IF N > 0 THEN
-    OUTPUT "Positive"
-ELSEIF N < 0 THEN
-    OUTPUT "Negative"
-ELSE
-    OUTPUT "Zero"
-ENDIF`,
+// Write your answer here`,
     hints: [
       'You need to classify a number into one of three categories. Think about what conditions define each category.',
       'Use IF/ELSEIF/ELSE to check: is the number greater than 0 (positive), less than 0 (negative), or neither (zero)?',
@@ -1495,9 +1372,8 @@ DECLARE Fahrenheit : INTEGER
 
 INPUT Celsius
 
-Fahrenheit <- (Celsius * 9) DIV 5 + 32
-
-OUTPUT Fahrenheit`,
+// Write your answer here
+`,
     hints: [
       'You need to apply the conversion formula. Think about the order of operations: multiply first, then divide, then add.',
       'The formula is F = C * 9 DIV 5 + 32. Use DIV for integer division to get a whole number result.',
@@ -1545,11 +1421,8 @@ Output: 75
     topic: 'Loops',
     starterCode: `DECLARE Score : INTEGER
 
-REPEAT
-    INPUT Score
-UNTIL Score >= 0 AND Score <= 100
-
-OUTPUT Score`,
+// Write your answer here
+`,
     hints: [
       'You need a loop that keeps asking for input until the user enters a valid value. Think about which loop type checks the condition after each iteration.',
       'A REPEAT UNTIL loop runs the body at least once, then checks the condition. The condition should be TRUE when the input is valid (in range 0 to 100).',
@@ -1596,15 +1469,9 @@ Output: 18
     starterCode: `DECLARE Total : INTEGER
 DECLARE N : INTEGER
 
-Total <- 0
-INPUT N
+// Write your answer here
 
-WHILE N <> 0 DO
-    Total <- Total + N
-    INPUT N
-ENDWHILE
-
-OUTPUT Total`,
+`,
     hints: [
       'You need a loop that keeps reading numbers and adding them to a total, stopping when 0 is entered.',
       'Read the first number before the loop. Use a WHILE loop that continues as long as the number is not 0. Inside the loop, add to total and read the next number.',
@@ -1659,15 +1526,8 @@ DECLARE Count : INTEGER
 
 INPUT N
 
-Count <- 0
-FOR i <- 1 TO N
-    INPUT Num
-    IF Num >= 10 AND Num <= 20 THEN
-        Count <- Count + 1
-    ENDIF
-NEXT i
-
-OUTPUT Count`,
+// Write your answer here
+`,
     hints: [
       'You need to read each number and check if it falls within a specific range, keeping a count.',
       'Use a FOR loop to read N numbers. For each one, check if it is >= 10 AND <= 20. If so, increment a counter.',
@@ -1718,13 +1578,8 @@ DECLARE Len : INTEGER
 
 INPUT Username
 
-Len <- LENGTH(Username)
-
-IF Len >= 6 AND Len <= 12 THEN
-    OUTPUT "Valid"
-ELSE
-    OUTPUT "Invalid"
-ENDIF`,
+// Write your answer here
+`,
     hints: [
       'You need to check the length of the string. Think about which built-in function gives you the number of characters.',
       'Use LENGTH() to get the string length, then check if it is between 6 and 12 inclusive using AND.',
@@ -1771,9 +1626,8 @@ DECLARE Result : STRING
 
 INPUT Word
 
-Result <- UCASE(SUBSTRING(Word, 1, 1)) & LCASE(SUBSTRING(Word, 2, LENGTH(Word) - 1))
-
-OUTPUT Result`,
+// Write your answer here
+`,
     hints: [
       'You need to extract the first character and the rest of the string separately, then transform and combine them.',
       'Use UCASE() on the first character and LCASE() on the remaining characters. Use SUBSTRING() to extract parts and & to join them.',
@@ -1828,22 +1682,10 @@ DECLARE Numbers : ARRAY[1:10] OF INTEGER
 
 INPUT N
 
-Sum <- 0
-FOR i <- 1 TO N
-    INPUT Numbers[i]
-    Sum <- Sum + Numbers[i]
-NEXT i
+// Write your answer here
 
-Avg <- Sum DIV N
 
-Count <- 0
-FOR i <- 1 TO N
-    IF Numbers[i] > Avg THEN
-        Count <- Count + 1
-    ENDIF
-NEXT i
-
-OUTPUT Count`,
+`,
     hints: [
       'You need two passes through the data: one to calculate the average, and another to count how many values exceed it.',
       'First, read all values and compute the sum. Calculate the integer average using DIV. Then loop through the array again, counting elements greater than the average.',
@@ -1910,15 +1752,7 @@ Output: Leap Year
 
 INPUT Year
 
-IF MOD(Year, 400) = 0 THEN
-    OUTPUT "Leap Year"
-ELSEIF MOD(Year, 100) = 0 THEN
-    OUTPUT "Not a Leap Year"
-ELSEIF MOD(Year, 4) = 0 THEN
-    OUTPUT "Leap Year"
-ELSE
-    OUTPUT "Not a Leap Year"
-ENDIF`,
+// Write your answer here`,
     hints: [
       'Leap year rules have exceptions to exceptions. The order you check the conditions matters a lot.',
       'Check divisibility by 400 first (leap), then 100 (not leap), then 4 (leap), then everything else (not leap). This order handles all the special cases correctly.',
@@ -1981,28 +1815,10 @@ DECLARE Temp : INTEGER
 DECLARE Numbers : ARRAY[1:8] OF INTEGER
 
 INPUT N
-FOR i <- 1 TO N
-    INPUT Numbers[i]
-NEXT i
+// Write your answer here
 
 // Selection sort
-FOR i <- 1 TO N - 1
-    MinIdx <- i
-    FOR j <- i + 1 TO N
-        IF Numbers[j] < Numbers[MinIdx] THEN
-            MinIdx <- j
-        ENDIF
-    NEXT j
-    IF MinIdx <> i THEN
-        Temp <- Numbers[i]
-        Numbers[i] <- Numbers[MinIdx]
-        Numbers[MinIdx] <- Temp
-    ENDIF
-NEXT i
-
-FOR i <- 1 TO N
-    OUTPUT Numbers[i]
-NEXT i`,
+`,
     hints: [
       'Selection sort works by finding the smallest unsorted element and placing it in its correct position, one at a time.',
       'For each position i, scan the remaining positions (i+1 to N) to find the index of the minimum value. Then swap that minimum into position i.',
@@ -2073,21 +1889,9 @@ DECLARE Len : INTEGER
 
 INPUT Password
 
-Len <- LENGTH(Password)
-HasDigit <- FALSE
+// Write your answer here
 
-FOR i <- 1 TO Len
-    Ch <- SUBSTRING(Password, i, 1)
-    IF Ch >= "0" AND Ch <= "9" THEN
-        HasDigit <- TRUE
-    ENDIF
-NEXT i
-
-IF Len >= 8 AND HasDigit = TRUE THEN
-    OUTPUT "Strong"
-ELSE
-    OUTPUT "Weak"
-ENDIF`,
+`,
     hints: [
       'You need to check two things: the length of the password and whether it contains at least one digit.',
       'Use LENGTH() to check the length. Loop through each character and compare it to "0" and "9" to check for digits. Use a Boolean flag.',
@@ -2151,19 +1955,8 @@ DECLARE Row : INTEGER
 DECLARE Col : INTEGER
 DECLARE RowSum : INTEGER
 
-FOR Row <- 1 TO 3
-    FOR Col <- 1 TO 3
-        INPUT Grid[Row, Col]
-    NEXT Col
-NEXT Row
-
-FOR Row <- 1 TO 3
-    RowSum <- 0
-    FOR Col <- 1 TO 3
-        RowSum <- RowSum + Grid[Row, Col]
-    NEXT Col
-    OUTPUT RowSum
-NEXT Row`,
+// Write your answer here
+`,
     hints: [
       'You need to read values into a 2D array, then calculate the sum for each row separately.',
       'Use nested loops: outer for rows, inner for columns. Read all values first, then use another pair of nested loops to sum each row.',
@@ -2684,14 +2477,8 @@ Output: Accepted
 DECLARE Entry1 : INTEGER
 DECLARE Entry2 : INTEGER
 
-REPEAT
-    INPUT Entry1
-    INPUT Entry2
-UNTIL Entry1 = Entry2
-
-Measurement <- Entry1
-OUTPUT "Accepted"
-OUTPUT Measurement`,
+// Write your answer here
+`,
     hints: [
       'A double-entry check repeats until both entries match. Which loop type is ideal when you always run at least once?',
       'Use REPEAT ... UNTIL with two INPUT statements inside — one for each entry. The condition is Entry1 = Entry2.',
@@ -2748,13 +2535,8 @@ Output: Enter a length between 15 and 35:
     marks: 3,
     starterCode: `DECLARE Length : INTEGER
 
-REPEAT
-    OUTPUT "Enter a length between 15 and 35: "
-    INPUT Length
-UNTIL Length >= 15 AND Length <= 35
-
-OUTPUT "Valid"
-OUTPUT Length`,
+// Write your answer here
+`,
     hints: [
       'Use a REPEAT/UNTIL loop — it always runs at least once, which is perfect for input validation.',
       'The condition after UNTIL should be the valid range check: Length >= 15 AND Length <= 35.',
@@ -2833,12 +2615,7 @@ Charlie
     topic: 'File Handling',
     starterCode: `DECLARE Name : STRING
 
-OPENFILE "names.txt" FOR READ
-WHILE NOT EOF("names.txt") DO
-    READFILE "names.txt", Name
-    OUTPUT Name
-ENDWHILE
-CLOSEFILE "names.txt"`,
+// Write your answer here`,
     hints: [
       'File I/O uses OPENFILE, READFILE, and CLOSEFILE. The EOF() function returns TRUE when there are no more lines to read.',
       'Open the file with OPENFILE "names.txt" FOR READ. Use a WHILE NOT EOF("names.txt") DO loop to repeatedly read a line with READFILE and OUTPUT it.',
@@ -2902,24 +2679,13 @@ Output: ALICE
 DECLARE i : INTEGER
 
 // Write the 3 names to the file
-OPENFILE "output.txt" FOR WRITE
-FOR i <- 1 TO 3
-    INPUT Name
-    WRITEFILE "output.txt", Name
-NEXT i
-CLOSEFILE "output.txt"
+// Write your answer here
 
-// Read back and output in uppercase
-OPENFILE "output.txt" FOR READ
-WHILE NOT EOF("output.txt") DO
-    READFILE "output.txt", Name
-    OUTPUT UCASE(Name)
-ENDWHILE
-CLOSEFILE "output.txt"`,
+// Read back and output in uppercase`,
     hints: [
       'You need two phases: first open FOR WRITE and use WRITEFILE, then CLOSEFILE and reopen FOR READ to use READFILE. Always CLOSEFILE between phases.',
       'Phase 1: OPENFILE FOR WRITE → FOR loop with INPUT + WRITEFILE → CLOSEFILE. Phase 2: OPENFILE FOR READ → WHILE NOT EOF loop with READFILE + OUTPUT UCASE → CLOSEFILE.',
-      'Make sure to CLOSEFILE "output.txt" after writing before reopening for reading. The starter code shows the full structure — focus on filling in each section correctly.',
+      'Make sure to CLOSEFILE "output.txt" after writing before reopening for reading. The two comments split the program into writing, then reading.',
     ],
     solution: `DECLARE Name : STRING
 DECLARE i : INTEGER

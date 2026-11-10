@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { IGCSE_PAPER_2 } from './curriculum';
-import { findLesson, playableLessonIdSet } from './path';
+import { findLesson, playableLessonIdSet, flattenLessons } from './path';
 import {
   isLessonUnlocked,
   mergeProgress,
+  nextIncomplete,
   parseLearnProgressBody,
   progressHasLocalExtras,
   type ProgressMap,
@@ -238,6 +239,30 @@ describe('parseLearnProgressBody', () => {
     );
     expect(result.ok).toBe(true);
     if (result.ok) expect(result.lessons['1.1']?.attempts).toBe(2);
+  });
+});
+
+describe('nextIncomplete', () => {
+  const done = (ids: string[]): ProgressMap => {
+    const map: ProgressMap = {};
+    for (const id of ids) map[id] = { completedAt: '2026-11-01T00:00:00.000Z', attempts: 1 };
+    return map;
+  };
+
+  it('stays on the syllabus while a later level is unfinished', () => {
+    const finishedEarly = flattenLessons(IGCSE_PAPER_2)
+      .filter(({ level }) => level.number <= 3)
+      .map(({ lesson }) => lesson.id);
+    const next = nextIncomplete(IGCSE_PAPER_2, done(finishedEarly));
+    expect(next).toEqual({ levelSlug: '4', lessonSlug: 'if' });
+  });
+
+  it('opens the drills once every syllabus lesson is done', () => {
+    const syllabus = flattenLessons(IGCSE_PAPER_2)
+      .filter(({ level }) => !level.drill)
+      .map(({ lesson }) => lesson.id);
+    const next = nextIncomplete(IGCSE_PAPER_2, done(syllabus));
+    expect(next).toEqual({ levelSlug: '11', lessonSlug: 'space' });
   });
 });
 

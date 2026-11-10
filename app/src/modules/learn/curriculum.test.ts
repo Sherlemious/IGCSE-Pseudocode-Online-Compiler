@@ -13,14 +13,25 @@ describe('learn course choice', () => {
       const choice = COURSE_CHOICES.find((item) => item.id === course.id);
       expect(choice?.href).toBe(course.basePath);
       expect(choice?.levels).toBe(course.levels.length);
-      expect(choice?.freeLevels).toBe(course.levels.filter((level) => level.free).length);
+      expect(choice?.freeLevels).toBe(
+        course.levels.filter((level) => level.free && !level.drill).length,
+      );
+      expect(choice?.drills).toBe(course.levels.filter((level) => level.drill).length);
     }
   });
 });
 
 describe('IGCSE Paper 2 curriculum', () => {
-  it('has ten named levels with unique ids and slugs', () => {
-    expect(IGCSE_PAPER_2.levels).toHaveLength(10);
+  it('has thirteen levels, with the three drills after Input', () => {
+    expect(IGCSE_PAPER_2.levels).toHaveLength(13);
+    expect(IGCSE_PAPER_2.levels.map((level) => level.number)).toEqual([
+      1, 2, 3, 11, 12, 13, 4, 5, 6, 7, 8, 9, 10,
+    ]);
+    expect(IGCSE_PAPER_2.levels.filter((level) => level.drill).map((level) => level.slug)).toEqual([
+      '11',
+      '12',
+      '13',
+    ]);
     const ids = IGCSE_PAPER_2.levels.flatMap((level) => level.lessons.map((lesson) => lesson.id));
     const slugs = flattenLessons(IGCSE_PAPER_2).map(
       ({ level, lesson }) => `${level.slug}/${lesson.slug}`,
@@ -29,10 +40,10 @@ describe('IGCSE Paper 2 curriculum', () => {
     expect(new Set(slugs).size).toBe(slugs.length);
   });
 
-  it('makes levels 1–3 free and every level playable', () => {
+  it('makes levels 1–3 and the drills free, and every level playable', () => {
     for (const level of IGCSE_PAPER_2.levels) {
       expect(level.playable).toBe(true);
-      expect(level.free).toBe(level.number <= 3);
+      expect(level.free).toBe(level.number <= 3 || level.drill === true);
       expect(level.lessons.every((lesson) => lesson.playable === true)).toBe(true);
     }
   });
@@ -43,14 +54,15 @@ describe('IGCSE Paper 2 curriculum', () => {
     expect(lessonHref(found!.level, found!.lesson)).toBe('/learn/2/div-mod');
     expect(previousLesson(IGCSE_PAPER_2, '1.1')).toBeNull();
     expect(nextLesson(IGCSE_PAPER_2, '1.1')?.lesson.id).toBe('1.2');
-    expect(nextLesson(IGCSE_PAPER_2, '3.4')?.lesson.id).toBe('4.1');
+    expect(nextLesson(IGCSE_PAPER_2, '3.4')?.lesson.id).toBe('11.1');
+    expect(nextLesson(IGCSE_PAPER_2, '13.4')?.lesson.id).toBe('4.1');
   });
 
   it('accepts solutionCode for every playable non-quiz lesson', async () => {
     const playable = flattenLessons(IGCSE_PAPER_2).filter(({ lesson }) => lesson.playable);
-    expect(playable.length).toBe(80);
+    expect(playable.length).toBe(93);
     expect(IGCSE_PAPER_2.levels.map((level) => level.lessons.length)).toEqual([
-      6, 8, 6, 8, 10, 7, 9, 7, 7, 12,
+      6, 9, 6, 4, 4, 4, 8, 10, 7, 9, 7, 7, 12,
     ]);
 
     for (const { lesson } of playable) {
@@ -137,7 +149,7 @@ describe('AS & A Level 9618 curriculum', () => {
 
   it('accepts solutionCode for every non-quiz lesson', async () => {
     const playable = flattenLessons(ALEVEL_9618);
-    expect(playable.length).toBe(47);
+    expect(playable.length).toBe(48);
 
     for (const { lesson } of playable) {
       if (lesson.type === 'quiz') {

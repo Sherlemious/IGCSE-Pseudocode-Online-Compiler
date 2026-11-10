@@ -26,7 +26,7 @@ export default function LearnLadder({
     [course],
   );
   const playableMinutes = playable.reduce((sum, item) => sum + item.lesson.minutes, 0);
-  const freeLevels = course.levels.filter((level) => level.free);
+  const freeLevels = course.levels.filter((level) => level.free && !level.drill);
   const freeRange =
     freeLevels.length > 0
       ? `Levels ${freeLevels[0]!.number}–${freeLevels[freeLevels.length - 1]!.number}`
@@ -36,7 +36,7 @@ export default function LearnLadder({
     paidLevels.length > 0
       ? `Levels ${paidLevels[0]!.number}–${paidLevels[paidLevels.length - 1]!.number}`
       : null;
-  const freeLessons = playable.filter((item) => item.level.free);
+  const freeLessons = playable.filter((item) => item.level.free && !item.level.drill);
   const firstPaid = playable.find((item) => !item.level.free);
   const firstPaidHref = firstPaid
     ? lessonHref(firstPaid.level, firstPaid.lesson, course.basePath)
@@ -108,7 +108,14 @@ export default function LearnLadder({
       />
 
       <div className="relative max-w-3xl mx-auto px-4 sm:px-6 pt-8 sm:pt-12 pb-3">
-        <CourseChooser courseId={course.id} completed={completed} total={playable.length} />
+        <CourseChooser
+          courseId={course.id}
+          completed={completed}
+          total={playable.length}
+          // Before progress loads, assume a new visitor unless they are signed in, so a
+          // returning signed-in learner is not shown the compact layout and then a jump.
+          brandNew={ready ? completed === 0 : status !== 'authenticated'}
+        />
 
         <p className="mt-5 text-sm sm:text-[15px] text-dark-text max-w-xl leading-relaxed">
           {course.subtitle}

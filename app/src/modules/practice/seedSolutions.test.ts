@@ -35,3 +35,31 @@ describe('seeded practice questions', () => {
     },
   );
 });
+
+type SeedStarter = { title: string; starterCode?: string | null; testCases: SeedTestCase[] };
+
+const withStarters = (questions as SeedStarter[]).filter((q) => q.starterCode && q.testCases.length > 0);
+
+describe('seeded practice starters', () => {
+  it('has starters to check', () => {
+    expect(withStarters.length).toBeGreaterThan(100);
+  });
+
+  it.each(withStarters.map((q) => [q.title, q] as const))(
+    '%s: the starter does not already pass its tests',
+    async (_title, question) => {
+      const tests = question.testCases.map((tc) => ({
+        inputs: tc.inputs,
+        expectedOutput: tc.expectedOutput,
+        initialFiles:
+          tc.initialFiles == null
+            ? null
+            : typeof tc.initialFiles === 'string'
+              ? tc.initialFiles
+              : JSON.stringify(tc.initialFiles),
+      }));
+      const results = await gradeTestCases(question.starterCode!, tests);
+      expect(results.some((result) => !result.passed)).toBe(true);
+    },
+  );
+});

@@ -154,11 +154,11 @@ export function isLessonUnlocked(
   return index >= 0 && index <= highestReachedPlayableIndex(course, map);
 }
 
-export function nextIncomplete(
-  course: LearnCourse,
+function firstIncomplete(
+  levels: LearnCourse['levels'],
   map: ProgressMap,
 ): { levelSlug: string; lessonSlug: string } | null {
-  for (const level of course.levels) {
+  for (const level of levels) {
     for (const lesson of level.lessons) {
       if (!lesson.playable) continue;
       if (!isComplete(map, lesson.id)) {
@@ -167,6 +167,27 @@ export function nextIncomplete(
     }
   }
   return null;
+}
+
+/**
+ * Continue follows the syllabus. Drill levels are on the map (and are the
+ * Next button inside the player) but they do not pull a student off a
+ * syllabus lesson they have already started. Once the syllabus is done,
+ * Continue moves into the drills.
+ */
+export function nextIncomplete(
+  course: LearnCourse,
+  map: ProgressMap,
+): { levelSlug: string; lessonSlug: string } | null {
+  const syllabus = firstIncomplete(
+    course.levels.filter((level) => !level.drill),
+    map,
+  );
+  if (syllabus) return syllabus;
+  return firstIncomplete(
+    course.levels.filter((level) => level.drill),
+    map,
+  );
 }
 
 export function levelCompletedCount(level: { lessons: LearnLesson[] }, map: ProgressMap): number {

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { CodeMirrorEditor, EditorUndoButtons, TraceTable, useEditorHistory } from '@/modules/compiler/editor';
@@ -8,8 +8,11 @@ import SplitDivider from '@/shared/ui/SplitDivider';
 import { ConfirmDialog } from '@/shared/ui/Modal';
 import PracticeStartGate from './PracticeStartGate';
 import GradeAuthSheet, { PENDING_GRADE_KEY } from './GradeAuthSheet';
-import { useInterpreter } from '@/modules/interpreter/useInterpreter';
-import { captureEvent } from '@/modules/interpreter/analytics';
+import { useInterpreter, type ErrorInfo } from '@/modules/interpreter/useInterpreter';
+import { captureEvent, captureFixApplied } from '@/modules/interpreter/analytics';
+import { findQuickFix } from '@/modules/interpreter/quickFix';
+import { diagnoseOutput } from './outputDiagnosis';
+import { PRACTICE_CHECK_HELP_FLAG, usePracticeVariant } from './practiceCoach';
 import ExamMarkingPanel from './ExamMarkingPanel';
 import { suggestLearnPath } from '@/modules/learn/learnNudge';
 import PracticePassOffer from './PracticePassOffer';
@@ -196,6 +199,36 @@ export default function PracticeWorkspace({ questionId, starterCode, savedCode, 
   /* ── Grading ────────────────────────────────────────── */
   const [isGrading, setIsGrading] = useState(false);
   const [gradeResponse, setGradeResponse] = useState<GradeResponse | null>(null);
+  const [applyFixKey, setApplyFixKey] = useState(0);
+  const checkHelp = usePracticeVariant(PRACTICE_CHECK_HELP_FLAG);
+  const syntaxFix = useMemo((): ErrorInfo | null => {
+    const fail = gradeResponse?.results.find((r) => !r.passed && r.error?.kind === 'parse');
+    const line = fail?.error?.line;
+    if (!fail?.error || line == null) return null;
+    const fix = findQuickFix(code, line);
+    if (!fix) return null;
+    return {
+      errorType: 'parse',
+      category: fail.error.category ?? 'parse',
+      line,
+      message: fail.error.hint ?? fail.error.message,
+      fix,
+      unchanged: false,
+    };
+  }, [gradeResponse, code]);
+  const fixOffered = useRef<string | null>(null);
+  useEffect(() => {
+    if (checkHelp !== 'test' || !syntaxFix?.fix || !gradeResponse) return;
+    const key = `${questionId}:${syntaxFix.line}:${syntaxFix.fix.id}`;
+    if (fixOffered.current === key) return;
+    fixOffered.current = key;
+    captureEvent('practice_fix_offered', {
+      question_id: questionId,
+      hint_id: syntaxFix.category,
+      fix_id: syntaxFix.fix.id,
+      line: syntaxFix.line,
+    });
+  }, [checkHelp, syntaxFix, gradeResponse, questionId]);
   const [gradingError, setGradingError] = useState<string | null>(null);
   const [showFailuresOnly, setShowFailuresOnly] = useState(false);
   // Days in a row with a solve (this browser). Read after mount: localStorage.
@@ -302,6 +335,11 @@ export default function PracticeWorkspace({ questionId, starterCode, savedCode, 
       const allPassed = data.passCount === data.totalCount;
       // Why the first failing test failed — the Check button's equivalent of hint_shown.
       const firstFail = data.results.find((r) => !r.passed);
+      const visibleMiss = data.results.find((r) => !r.passed && !r.error && !r.hidden);
+      const outputDetail = visibleMiss
+        ? diagnoseOutput(visibleMiss.expectedOutput ?? '', visibleMiss.actualOutput ?? '').detail
+        : null;
+      const offeredFix = firstFail?.error?.kind === 'parse' ? findQuickFix(code, firstFail.error.line) : null;
       captureEvent('practice_graded', {
         question_id: questionId,
         pass_count: data.passCount,
@@ -309,7 +347,16 @@ export default function PracticeWorkspace({ questionId, starterCode, savedCode, 
         solved: allPassed,
         fail_kind: firstFail ? (firstFail.error?.kind ?? 'wrong_output') : null,
         error_category: firstFail?.error ? (firstFail.error.category ?? firstFail.error.kind) : null,
+        output_detail: outputDetail,
+        has_fix: !!offeredFix,
+        fix_id: offeredFix?.id ?? null,
       });
+      if (checkHelp === 'test' && outputDetail) {
+        captureEvent('practice_output_diagnosed', {
+          question_id: questionId,
+          detail: outputDetail,
+        });
+      }
       if (allPassed) {
         captureEvent('practice_solved', { question_id: questionId });
         const day = recordSolveDay();
@@ -332,7 +379,7 @@ export default function PracticeWorkspace({ questionId, starterCode, savedCode, 
     } finally {
       setIsGrading(false);
     }
-  }, [code, isGrading, isRunning, questionId]);
+  }, [code, isGrading, isRunning, questionId, checkHelp]);
 
   // "Check My Answer" entry point. Easy grades anonymously; Medium/Hard open the
   // in-page auth sheet when signed out rather than bouncing to /auth/signin. The
@@ -639,13 +686,28 @@ export default function PracticeWorkspace({ questionId, starterCode, savedCode, 
             ariaLabel="Practice Code Editor"
             jumpToLine={jumpToLine}
             onJumpToLineConsumed={() => setJumpToLine(null)}
-            inlineError={errorInfo}
-            onFixApplied={noteFixApplied}
+            inlineError={checkHelp === 'test' && syntaxFix ? syntaxFix : errorInfo}
+            onFixApplied={(surface) => {
+              if (checkHelp === 'test' && syntaxFix?.fix) {
+                captureFixApplied(
+                  {
+                    hintId: syntaxFix.category,
+                    fixId: syntaxFix.fix.id,
+                    errorType: 'parse',
+                    surface: surface === 'terminal' ? 'practice_results' : 'editor',
+                  },
+                  { feature: 'practice', questionId },
+                );
+                return;
+              }
+              noteFixApplied(surface);
+            }}
             onErrorExample={() => noteErrorHelp('show_example')}
             onInlineErrorDismissed={dismissErrorInfo}
             actionsRef={actionsRef}
             onHistoryChange={onHistoryChange}
             historyScope={questionId}
+            applyFixKey={applyFixKey}
           />
         </div>
 
@@ -988,6 +1050,9 @@ export default function PracticeWorkspace({ questionId, starterCode, savedCode, 
     const { results, passCount, totalCount } = gradeResponse;
     const allPassed = passCount === totalCount;
     const visibleResults = showFailuresOnly ? results.filter((r) => !r.passed) : results;
+    const firstFail = results.find((r) => !r.passed);
+    const explained =
+      checkHelp === 'test' && !!firstFail && (firstFail.error?.kind === 'parse' || !firstFail.error);
 
     return (
       <div className="p-3 space-y-2">
@@ -999,7 +1064,7 @@ export default function PracticeWorkspace({ questionId, starterCode, savedCode, 
         }`}>
           <div className="text-lg font-bold">{passCount}/{totalCount}</div>
           <div className="text-xs">{allPassed ? 'All tests passed!' : 'Some tests failed'}</div>
-          {!allPassed && (
+          {!allPassed && !explained && (
             <div className="text-[10px] text-dark-text mt-1.5 flex items-center justify-center gap-1">
               <Lightbulb size={10} className="text-warning" />
               Stuck? Check the <strong className="text-light-text">Hints</strong> in the sidebar.
@@ -1035,6 +1100,24 @@ export default function PracticeWorkspace({ questionId, starterCode, savedCode, 
             </div>
           )}
         </div>
+
+        {checkHelp === 'test' && results.some((r) => !r.passed && r.error?.kind === 'parse') && (
+          <div className="rounded-lg border border-primary/30 bg-primary/10 p-3 text-xs">
+            <p className="text-light-text leading-snug">
+              {results.find((r) => !r.passed && r.error?.kind === 'parse')?.error?.hint
+                ?? 'This program does not run yet, so the tests have not started.'}
+            </p>
+            {syntaxFix?.fix && (
+              <button
+                type="button"
+                onClick={() => setApplyFixKey((key) => key + 1)}
+                className="mt-2 inline-flex items-center rounded-md border border-primary/40 bg-primary/15 px-2.5 py-1 text-[11px] font-semibold text-primary hover:bg-primary/25 transition-colors"
+              >
+                Fix it
+              </button>
+            )}
+          </div>
+        )}
 
         {examMarking && authStatus === 'authenticated' && <ExamMarkingPanel questionId={questionId} code={code} />}
 
@@ -1118,6 +1201,11 @@ export default function PracticeWorkspace({ questionId, starterCode, savedCode, 
                     <span className="text-dark-text/60">Input: </span>
                     <span className="text-info">{r.inputs.join(', ')}</span>
                   </div>
+                )}
+                {checkHelp === 'test' && (
+                  <p className="font-sans text-[11px] leading-snug text-light-text">
+                    {diagnoseOutput(r.expectedOutput ?? '', r.actualOutput ?? '').sentence}
+                  </p>
                 )}
                 <div className="grid grid-cols-2 gap-1.5">
                   <div className="rounded border border-success/30 bg-success/5 overflow-hidden">

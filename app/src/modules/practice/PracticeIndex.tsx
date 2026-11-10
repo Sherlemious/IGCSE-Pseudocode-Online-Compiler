@@ -14,6 +14,8 @@ import AssignToClassButton from '@/modules/classes/AssignToClass';
 import { useOwnedClasses } from '@/modules/classes/useOwnedClasses';
 import { recommendNextQuestion } from './practiceNext';
 import { useQuestionSocialStats } from './usePracticeSocialProof';
+import { DEFAULT_PRACTICE_TITLE, mistakeByKey } from './mistakeQuestions';
+import { PRACTICE_QUESTION_MATCH_FLAG, usePracticeVariant } from './practiceCoach';
 import {
   DIFFICULTIES,
   DIFF_META,
@@ -88,6 +90,16 @@ export default function PracticeIndex({
     };
   }, [authStatus, gatingEnabled]);
 
+  const questionMatch = usePracticeVariant(PRACTICE_QUESTION_MATCH_FLAG);
+  const [practiceQuery, setPracticeQuery] = useState<{ from: string | null; mistake: string | null }>({
+    from: null,
+    mistake: null,
+  });
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    setPracticeQuery({ from: params.get('from'), mistake: params.get('mistake') });
+  }, []);
+
   const hasFullAccess = !gatingEnabled || premiumAccess;
   const listing = useMemo(
     () => computePracticeListing(questions, active, progressMap),
@@ -124,15 +136,24 @@ export default function PracticeIndex({
     return questions.find((q) => q.id === qId) ?? null;
   })();
 
-  const nextQuestion = resumeQuestion
-    ? null
-    : recommendNextQuestion({
-        questions,
-        progress: progressMap,
-        stats: socialStats,
-        hasFullAccess,
-        signedIn,
-      });
+  const nextPick = (() => {
+    if (resumeQuestion || questionMatch === 'pending') return null;
+    const fromToast = practiceQuery.from === 'playground_practice';
+    const pinned =
+      questionMatch === 'test' && fromToast
+        ? (mistakeByKey(practiceQuery.mistake)?.title ?? DEFAULT_PRACTICE_TITLE)
+        : null;
+    return recommendNextQuestion({
+      questions,
+      progress: progressMap,
+      stats: socialStats,
+      hasFullAccess,
+      signedIn,
+      mode: questionMatch === 'test' ? 'coach' : 'classic',
+      pinnedTitle: pinned,
+    });
+  })();
+  const nextQuestion = nextPick?.question ?? null;
 
   const filterProps = {
     topics: listing.topics,
@@ -315,7 +336,12 @@ export default function PracticeIndex({
                 )}
 
                 {nextQuestion && (
-                  <StartHereCard question={nextQuestion} kind={totalSolved === 0 ? 'first' : 'next'} />
+                  <StartHereCard
+                    question={nextQuestion}
+                    kind={totalSolved === 0 ? 'first' : 'next'}
+                    reason={nextPick?.reason}
+                    firstTryRate={socialStats.get(nextQuestion.id)?.firstTryRate ?? null}
+                  />
                 )}
 
                 {listing.filtered.length === 0 ? (

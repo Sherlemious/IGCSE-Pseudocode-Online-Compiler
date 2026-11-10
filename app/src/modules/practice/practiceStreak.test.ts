@@ -62,7 +62,7 @@ describe('recommendNextQuestion', () => {
   ];
   const stats = new Map([['easy-popular', { solved: 40, attempted: 50, firstTryRate: 60 }]]);
 
-  it('picks the easiest, most-solved unsolved question', () => {
+  it('picks an easy question whose first-try rate is at least half', () => {
     const pick = recommendNextQuestion({
       questions,
       progress: new Map(),
@@ -70,10 +70,71 @@ describe('recommendNextQuestion', () => {
       hasFullAccess: true,
       signedIn: true,
     });
-    expect(pick?.id).toBe('easy-popular');
+    expect(pick?.question.id).toBe('easy-popular');
+    expect(pick?.reason).toBe('first_try');
   });
 
-  it('skips solved questions and moves up in difficulty', () => {
+  it('skips a busy easy question that few people finish first time', () => {
+    const pick = recommendNextQuestion({
+      questions,
+      progress: new Map(),
+      stats: new Map([
+        ['easy-popular', { solved: 80, attempted: 200, firstTryRate: 13 }],
+        ['easy-rare', { solved: 12, attempted: 20, firstTryRate: 60 }],
+      ]),
+      hasFullAccess: true,
+      signedIn: true,
+    });
+    expect(pick?.question.id).toBe('easy-rare');
+  });
+
+  it('falls back to the most-solved easy question when no first-try rate is known', () => {
+    const pick = recommendNextQuestion({
+      questions,
+      progress: new Map(),
+      stats: new Map([['easy-popular', { solved: 4, attempted: 4, firstTryRate: null }]]),
+      hasFullAccess: true,
+      signedIn: true,
+    });
+    expect(pick?.question.id).toBe('easy-popular');
+    expect(pick?.reason).toBe('fallback');
+  });
+
+  it('after a solve, stays on the same topic one step up', () => {
+    const solved = { status: 'SOLVED', bestScore: 1, totalTests: 1, updatedAt: '2026-09-23' };
+    const pick = recommendNextQuestion({
+      questions: [
+        q({ id: 'arrays-easy', difficulty: 'EASY', topic: 'Arrays' }),
+        q({ id: 'loops-easy', difficulty: 'EASY', topic: 'Loops' }),
+        q({ id: 'arrays-medium', difficulty: 'MEDIUM', topic: 'Arrays' }),
+        q({ id: 'loops-medium', difficulty: 'MEDIUM', topic: 'Loops' }),
+      ],
+      progress: new Map([['arrays-easy', solved]]),
+      stats: new Map([
+        ['loops-easy', { solved: 40, attempted: 50, firstTryRate: 80 }],
+        ['arrays-medium', { solved: 8, attempted: 10, firstTryRate: 55 }],
+      ]),
+      hasFullAccess: true,
+      signedIn: true,
+    });
+    expect(pick?.question.id).toBe('arrays-medium');
+    expect(pick?.reason).toBe('same_topic');
+  });
+
+  it('opens the pinned playground question while it is unsolved', () => {
+    const pick = recommendNextQuestion({
+      questions: [q({ id: 'sum', title: 'Sum of Two Numbers' }), q({ id: 'easy-popular' })],
+      progress: new Map(),
+      stats,
+      hasFullAccess: true,
+      signedIn: true,
+      pinnedTitle: 'Sum of Two Numbers',
+    });
+    expect(pick?.question.id).toBe('sum');
+    expect(pick?.reason).toBe('mistake');
+  });
+
+  it('skips solved questions and moves up in difficulty when the topic is unknown', () => {
     const solved = { status: 'SOLVED', bestScore: 1, totalTests: 1, updatedAt: '2026-09-23' };
     const pick = recommendNextQuestion({
       questions,
@@ -85,7 +146,8 @@ describe('recommendNextQuestion', () => {
       hasFullAccess: true,
       signedIn: true,
     });
-    expect(pick?.id).toBe('medium');
+    expect(pick?.question.id).toBe('medium');
+    expect(pick?.reason).toBe('fallback');
   });
 
   it('only offers EASY to signed-out students and skips locked questions', () => {

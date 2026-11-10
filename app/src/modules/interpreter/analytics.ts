@@ -160,7 +160,12 @@ export function captureHintResolved(
 
 /** A one-click quick fix was applied to the student's code. */
 export function captureFixApplied(
-  data: { hintId: string; fixId: string; errorType: 'parse' | 'runtime'; surface: 'editor' | 'terminal' },
+  data: {
+    hintId: string;
+    fixId: string;
+    errorType: 'parse' | 'runtime';
+    surface: 'editor' | 'terminal' | 'practice_results';
+  },
   ctx: RunContext | undefined,
 ) {
   captureRaw('error_fix_applied', {

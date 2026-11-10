@@ -359,6 +359,7 @@ function LevelBanner({
               Level {pad2(level.number)}
             </span>
             {level.free && <Chip tone="success">Free</Chip>}
+            {level.drill && <Chip tone="primary">Drill</Chip>}
             {!level.free && (
               <Chip tone="warning">
                 <Crown size={10} />

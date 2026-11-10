@@ -7,6 +7,9 @@ import { level7 } from './curriculum/level7';
 import { level8 } from './curriculum/level8';
 import { level9 } from './curriculum/level9';
 import { level10 } from './curriculum/level10';
+import { level11 } from './curriculum/level11';
+import { level12 } from './curriculum/level12';
+import { level13 } from './curriculum/level13';
 
 export { ALEVEL_9618 };
 
@@ -22,9 +25,9 @@ export const IGCSE_PAPER_2: LearnCourse = {
   kicker: 'IGCSE 0478 / 0984 / 2210 · Paper 2',
   title: 'IGCSE & O Level Paper 2 Path',
   subtitle:
-    'Ten levels of Cambridge O Level 2210 and IGCSE 0478 / 0984 pseudocode. No videos — you write, run, and check in the compiler.',
+    'Ten syllabus levels, then three free drills on the mistakes students make right now: exact lines, formulas, and arrays that start at 1. No videos — you write, run, and check in the compiler.',
   completeNote:
-    'All ten levels done. Rewrite a Paper 2 algorithm on paper next — the hall will not show a syntax error.',
+    'All thirteen levels done. Rewrite a Paper 2 algorithm on paper next — the hall will not show a syntax error.',
   otherPath: {
     href: '/learn/9618',
     label: 'Too easy? The AS & A Level 9618 path starts at records.',
@@ -382,6 +385,36 @@ OUTPUT 10 MOD 3`,
           playable: true,
         },
         {
+          id: '2.9',
+          slug: 'formula',
+          title: 'Build the formula first',
+          type: 'mutate',
+          minutes: 6,
+          why: 'The Celsius check is the one students fail most. Get the number 212 on the screen before INPUT is involved.',
+          docsAnchor: 'arithmetic',
+          body: `Celsius is already **100**. Store the Fahrenheit value with:
+
+**F = C × 9 DIV 5 + 32**
+
+Output the number alone. For 100 that is \`212\`.`,
+          trap: '`100 * 9 / 5 + 32` also prints 212, and the paper still wants DIV. Do not print the word Fahrenheit.',
+          starterCode: `DECLARE Celsius : INTEGER
+DECLARE Fahrenheit : INTEGER
+Celsius <- 100
+
+// Fahrenheit <- (Celsius * 9) DIV 5 + 32
+// OUTPUT Fahrenheit`,
+          solutionCode: `DECLARE Celsius : INTEGER
+DECLARE Fahrenheit : INTEGER
+Celsius <- 100
+
+Fahrenheit <- (Celsius * 9) DIV 5 + 32
+OUTPUT Fahrenheit`,
+          expectedOutput: '212',
+          mustContain: ['DIV'],
+          playable: true,
+        },
+        {
           id: '2.5',
           slug: 'boss',
           title: 'Boss: Celsius to Fahrenheit',
@@ -630,6 +663,9 @@ OUTPUT A + B`,
         },
       ],
     },
+    level11,
+    level12,
+    level13,
     level4,
     level5,
     level6,

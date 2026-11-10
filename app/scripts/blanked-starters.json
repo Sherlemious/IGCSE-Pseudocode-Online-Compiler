@@ -1,0 +1,126 @@
+[
+  {
+    "title": "Sum 1 to N",
+    "starterCode": "DECLARE N : INTEGER\nDECLARE i : INTEGER\nDECLARE Total : INTEGER\n\nINPUT N\n\n// Write your answer here\n"
+  },
+  {
+    "title": "Times Table",
+    "starterCode": "DECLARE N : INTEGER\nDECLARE i : INTEGER\n\nINPUT N\n\n// Write your answer here"
+  },
+  {
+    "title": "Array Sum",
+    "starterCode": "DECLARE N : INTEGER\nDECLARE i : INTEGER\nDECLARE Total : INTEGER\nDECLARE Numbers : ARRAY[1:10] OF INTEGER\n\nINPUT N\n\n// Write your answer here\n"
+  },
+  {
+    "title": "Array Maximum",
+    "starterCode": "DECLARE N : INTEGER\nDECLARE i : INTEGER\nDECLARE Max : INTEGER\nDECLARE Numbers : ARRAY[1:10] OF INTEGER\n\nINPUT N\n// Write your answer here\n\n"
+  },
+  {
+    "title": "Palindrome Check",
+    "starterCode": "DECLARE Text : STRING\nDECLARE Reversed : STRING\nDECLARE i : INTEGER\nDECLARE Len : INTEGER\n\nINPUT Text\n\n// Write your answer here\n\n"
+  },
+  {
+    "title": "Factorial",
+    "starterCode": "DECLARE N : INTEGER\nDECLARE i : INTEGER\nDECLARE Result : INTEGER\n\nINPUT N\n\n// Write your answer here\n"
+  },
+  {
+    "title": "Count Vowels",
+    "starterCode": "DECLARE Text : STRING\nDECLARE i : INTEGER\nDECLARE Ch : STRING\nDECLARE VowelCount : INTEGER\n\nINPUT Text\n\n// Write your answer here\n"
+  },
+  {
+    "title": "Sum of Digits",
+    "starterCode": "DECLARE N : INTEGER\nDECLARE Sum : INTEGER\n\nINPUT N\n\n// Write your answer here\n"
+  },
+  {
+    "title": "Bubble Sort",
+    "starterCode": "DECLARE N : INTEGER\nDECLARE i : INTEGER\nDECLARE j : INTEGER\nDECLARE Temp : INTEGER\nDECLARE Numbers : ARRAY[1:8] OF INTEGER\n\nINPUT N\n// Write your answer here\n\n// Bubble sort\n"
+  },
+  {
+    "title": "Prime Number Checker",
+    "starterCode": "DECLARE N : INTEGER\nDECLARE i : INTEGER\nDECLARE IsPrime : BOOLEAN\n\nINPUT N\n\n// Write your answer here"
+  },
+  {
+    "title": "First N Fibonacci Numbers",
+    "starterCode": "DECLARE N : INTEGER\nDECLARE First : INTEGER\nDECLARE Second : INTEGER\nDECLARE NextTerm : INTEGER\nDECLARE i : INTEGER\n\nINPUT N\n\n// Write your answer here\n\n"
+  },
+  {
+    "title": "Greatest Common Divisor",
+    "starterCode": "DECLARE A : INTEGER\nDECLARE B : INTEGER\nDECLARE Temp : INTEGER\n\nINPUT A\nINPUT B\n\n// Euclidean algorithm\n// Write your answer here\n"
+  },
+  {
+    "title": "Reverse a String",
+    "starterCode": "DECLARE Text : STRING\nDECLARE Reversed : STRING\nDECLARE i : INTEGER\n\nINPUT Text\n\n// Write your answer here\n"
+  },
+  {
+    "title": "Linear Search",
+    "starterCode": "DECLARE N : INTEGER\nDECLARE i : INTEGER\nDECLARE Target : INTEGER\nDECLARE Found : BOOLEAN\nDECLARE Position : INTEGER\nDECLARE Numbers : ARRAY[1:10] OF INTEGER\n\nINPUT N\n// Write your answer here\n\n\n"
+  },
+  {
+    "title": "Count Occurrences",
+    "starterCode": "DECLARE N : INTEGER\nDECLARE i : INTEGER\nDECLARE Target : INTEGER\nDECLARE Count : INTEGER\nDECLARE Numbers : ARRAY[1:10] OF INTEGER\n\nINPUT N\n// Write your answer here\n\n"
+  },
+  {
+    "title": "Number Classifier",
+    "starterCode": "DECLARE N : INTEGER\n\nINPUT N\n\n// Write your answer here"
+  },
+  {
+    "title": "Celsius to Fahrenheit",
+    "starterCode": "DECLARE Celsius : INTEGER\nDECLARE Fahrenheit : INTEGER\n\nINPUT Celsius\n\n// Write your answer here\n"
+  },
+  {
+    "title": "Validated Score Entry",
+    "starterCode": "DECLARE Score : INTEGER\n\n// Write your answer here\n"
+  },
+  {
+    "title": "Sum Until Zero",
+    "starterCode": "DECLARE Total : INTEGER\nDECLARE N : INTEGER\n\n// Write your answer here\n\n"
+  },
+  {
+    "title": "Count Numbers in Range",
+    "starterCode": "DECLARE N : INTEGER\nDECLARE i : INTEGER\nDECLARE Num : INTEGER\nDECLARE Count : INTEGER\n\nINPUT N\n\n// Write your answer here\n"
+  },
+  {
+    "title": "Username Validator",
+    "starterCode": "DECLARE Username : STRING\nDECLARE Len : INTEGER\n\nINPUT Username\n\n// Write your answer here\n"
+  },
+  {
+    "title": "Capitalise First Letter",
+    "starterCode": "DECLARE Word : STRING\nDECLARE Result : STRING\n\nINPUT Word\n\n// Write your answer here\n"
+  },
+  {
+    "title": "Count Above Average",
+    "starterCode": "DECLARE N : INTEGER\nDECLARE i : INTEGER\nDECLARE Sum : INTEGER\nDECLARE Avg : INTEGER\nDECLARE Count : INTEGER\nDECLARE Numbers : ARRAY[1:10] OF INTEGER\n\nINPUT N\n\n// Write your answer here\n\n\n"
+  },
+  {
+    "title": "Leap Year Checker",
+    "starterCode": "DECLARE Year : INTEGER\n\nINPUT Year\n\n// Write your answer here"
+  },
+  {
+    "title": "Selection Sort",
+    "starterCode": "DECLARE N : INTEGER\nDECLARE i : INTEGER\nDECLARE j : INTEGER\nDECLARE MinIdx : INTEGER\nDECLARE Temp : INTEGER\nDECLARE Numbers : ARRAY[1:8] OF INTEGER\n\nINPUT N\n// Write your answer here\n\n// Selection sort\n"
+  },
+  {
+    "title": "Password Strength Checker",
+    "starterCode": "DECLARE Password : STRING\nDECLARE i : INTEGER\nDECLARE Ch : STRING\nDECLARE HasDigit : BOOLEAN\nDECLARE Len : INTEGER\n\nINPUT Password\n\n// Write your answer here\n\n"
+  },
+  {
+    "title": "2D Array Row Sums",
+    "starterCode": "DECLARE Grid : ARRAY[1:3, 1:3] OF INTEGER\nDECLARE Row : INTEGER\nDECLARE Col : INTEGER\nDECLARE RowSum : INTEGER\n\n// Write your answer here\n"
+  },
+  {
+    "title": "Double Entry Validation",
+    "starterCode": "DECLARE Measurement : INTEGER\nDECLARE Entry1 : INTEGER\nDECLARE Entry2 : INTEGER\n\n// Write your answer here\n"
+  },
+  {
+    "title": "Validate Input in Range",
+    "starterCode": "DECLARE Length : INTEGER\n\n// Write your answer here\n"
+  },
+  {
+    "title": "Read Names from File",
+    "starterCode": "DECLARE Name : STRING\n\n// Write your answer here"
+  },
+  {
+    "title": "Write Names to File and Read Back",
+    "starterCode": "DECLARE Name : STRING\nDECLARE i : INTEGER\n\n// Write the 3 names to the file\n// Write your answer here\n\n// Read back and output in uppercase"
+  }
+]

@@ -16,6 +16,8 @@ export type CourseChoice = {
   covers: string;
   levels: number;
   freeLevels: number;
+  /** Extra free levels that drill the mistakes students currently make. */
+  drills: number;
 };
 
 export const COURSE_CHOICES: readonly CourseChoice[] = [
@@ -26,9 +28,10 @@ export const COURSE_CHOICES: readonly CourseChoice[] = [
     codes: '0478 · 0984 · 2210',
     paper: 'Paper 2',
     audience: 'Most students start here.',
-    covers: 'From your first OUTPUT to a full Paper 2 question.',
-    levels: 10,
+    covers: 'From your first OUTPUT to a full Paper 2 question, plus drills for the lines students get wrong.',
+    levels: 13,
     freeLevels: 3,
+    drills: 3,
   },
   {
     id: ALEVEL_COURSE_ID,
@@ -40,6 +43,7 @@ export const COURSE_CHOICES: readonly CourseChoice[] = [
     covers: 'Records, files, pointers, stacks, and classes.',
     levels: 8,
     freeLevels: 3,
+    drills: 0,
   },
 ];
 

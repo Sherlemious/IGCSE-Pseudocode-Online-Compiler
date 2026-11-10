@@ -4,6 +4,9 @@ import Link from 'next/link';
 import { toast } from 'sonner';
 import { ArrowRight, Target, X } from 'lucide-react';
 import { captureEvent } from '@/modules/interpreter/analytics';
+import { readPlaygroundMistake } from '@/modules/interpreter/lastMistake';
+import { DEFAULT_PRACTICE_TITLE, matchMistake } from './mistakeQuestions';
+import { PRACTICE_QUESTION_MATCH_FLAG, readPracticeVariant } from './practiceCoach';
 
 const SHOWN_KEY = 'playground_practice_shown';
 const NUDGE = 'playground_practice';
@@ -17,9 +20,9 @@ function forcedFromUrl(): boolean {
 }
 
 /**
- * Once per browser, after a successful playground run: point at the one easy
- * question the practice list already picks (the start-here card). The day-7
- * email that used to do this reached people a week late and almost none solved.
+ * Once per browser, after a successful playground run: point at one easy
+ * question. The test arm remembers the last playground mistake and opens the
+ * question for it; with no mistake, Sum of Two Numbers stays the default.
  * Returns true when the toast is scheduled.
  */
 export function suggestPlaygroundPractice(): boolean {
@@ -32,7 +35,21 @@ export function suggestPlaygroundPractice(): boolean {
   }
 
   window.setTimeout(() => {
-    captureEvent('nudge_shown', { nudge: NUDGE, surface: 'playground' });
+    const variant = readPracticeVariant(PRACTICE_QUESTION_MATCH_FLAG);
+    const remembered = variant === 'test' ? readPlaygroundMistake() : null;
+    const matched = matchMistake(remembered?.hintId ?? null, remembered?.detail ?? null);
+    const title = variant === 'test' ? (matched?.title ?? DEFAULT_PRACTICE_TITLE) : null;
+    const href = title
+      ? `/practice?from=playground_practice&mistake=${encodeURIComponent(matched?.key ?? 'sum')}`
+      : '/practice?from=playground_practice';
+    const props = {
+      nudge: NUDGE,
+      surface: 'playground',
+      variant,
+      hint_id: matched?.key ?? null,
+      question_title: title ?? DEFAULT_PRACTICE_TITLE,
+    };
+    captureEvent('nudge_shown', props);
     toast.custom(
       (toastId) => (
         <div className="relative flex w-[340px] max-w-[calc(100vw-2rem)] items-start gap-3 overflow-hidden rounded-2xl border border-border/80 bg-surface/95 p-3 pr-8 text-light-text shadow-intense backdrop-blur-md">
@@ -41,27 +58,30 @@ export function suggestPlaygroundPractice(): boolean {
             <Target size={17} aria-hidden="true" />
           </span>
           <span className="min-w-0 flex-1">
-            <span className="block text-xs font-semibold">It ran. Try one easy question.</span>
+            <span className="block text-xs font-semibold">
+              {matched ? 'It ran. Practice that mistake.' : 'It ran. Try one easy question.'}
+            </span>
             <span className="mt-0.5 block text-[11px] leading-snug text-dark-text">
-              Most people who only use the editor never solve a question. Practice has one short easy
-              question picked for you — two numbers in, their sum out.
+              {matched
+                ? matched.blurb
+                : 'Most people who only use the editor never solve a question. Practice has one short easy question picked for you — two numbers in, their sum out.'}
             </span>
             <Link
-              href="/practice?from=playground_practice"
+              href={href}
               onClick={() => {
-                captureEvent('nudge_clicked', { nudge: NUDGE, surface: 'playground' });
+                captureEvent('nudge_clicked', props);
                 toast.dismiss(toastId);
               }}
               className="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-primary/20 bg-primary/10 px-2.5 py-1.5 text-[11px] font-semibold text-primary transition-colors hover:border-primary/40 hover:bg-primary/20"
             >
-              Try the easy one
+              {matched ? 'Try that question' : 'Try the easy one'}
               <ArrowRight size={12} aria-hidden="true" />
             </Link>
           </span>
           <button
             type="button"
             onClick={() => {
-              captureEvent('nudge_dismissed', { nudge: NUDGE, surface: 'playground' });
+              captureEvent('nudge_dismissed', props);
               toast.dismiss(toastId);
             }}
             className="absolute right-2 top-2 rounded-md p-1 text-dark-text hover:bg-background hover:text-light-text"

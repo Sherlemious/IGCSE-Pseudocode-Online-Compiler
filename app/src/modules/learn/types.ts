@@ -66,6 +66,12 @@ export type LearnLevel = {
   syllabus: string;
   free: boolean;
   playable: boolean;
+  /**
+   * Short practice level built from what students actually fail.
+   * Free and open from the map, and it does not sit in the Continue
+   * sequence while a syllabus lesson is still unfinished.
+   */
+  drill?: boolean;
   lessons: LearnLesson[];
 };
 

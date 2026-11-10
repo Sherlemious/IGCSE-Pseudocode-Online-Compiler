@@ -38,6 +38,8 @@ import { AUTOSAVE_DELAY } from '@/shared/lib/persist';
 import { ConfirmDialog } from '@/shared/ui/Modal';
 import GradeAuthSheet, { PENDING_GRADE_KEY } from './GradeAuthSheet';
 import { readStreak, recordSolveDay } from './practiceStreak';
+import { diagnoseOutput } from './outputDiagnosis';
+import { PRACTICE_CHECK_HELP_FLAG, usePracticeVariant } from './practiceCoach';
 
 interface GradeResultItem {
   testCaseId: string;
@@ -89,6 +91,7 @@ function restore(template: FlowchartDoc | null, saved: FlowchartDoc | null): Flo
 
 export default function PracticeFlowchartWorkspace({ questionId, difficulty, questionFlowchart, savedFlowchart }: Props) {
   const { status: authStatus, update: updateSession } = useSession();
+  const checkHelp = usePracticeVariant(PRACTICE_CHECK_HELP_FLAG);
   const template = useMemo(() => parseFlowchartDoc(questionFlowchart), [questionFlowchart]);
   const fillIn = !!template && isTemplate(template);
   const initial = useCallback(() => template ?? starterFlowchart(), [template]);
@@ -428,6 +431,11 @@ export default function PracticeFlowchartWorkspace({ questionId, difficulty, que
                                   <span className="text-info">Inputs: </span>
                                   {r.inputs.join(', ')}
                                 </div>
+                              )}
+                              {checkHelp === 'test' && !r.error && (
+                                <p className="font-sans text-[11px] leading-snug text-light-text">
+                                  {diagnoseOutput(r.expectedOutput ?? '', r.actualOutput ?? '').sentence}
+                                </p>
                               )}
                               <div>
                                 <span className="text-success">Expected: </span>

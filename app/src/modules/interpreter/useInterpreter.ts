@@ -18,6 +18,7 @@ import {
   categorizeRuntimeError,
   resolveOffendingLine,
 } from './errorMessages';
+import { rememberPlaygroundMistake } from './lastMistake';
 import {
   captureRun,
   captureInterpreterError,
@@ -313,6 +314,9 @@ export function useInterpreter(runContext?: RunContext) {
           const d = diagnoseRuntimeError(message, ctx);
           m.primaryDetail = d.detail;
           fix = d.fix ?? null;
+        }
+        if ((runContextRef.current?.feature ?? 'playground') === 'playground') {
+          rememberPlaygroundMistake(category, m.primaryDetail);
         }
         // The editor holds the raw text: the fix is stale once that line changes.
         if (fix) fix = { ...fix, original: m.rawSource.split('\n')[fix.line - 1] ?? fix.original };
