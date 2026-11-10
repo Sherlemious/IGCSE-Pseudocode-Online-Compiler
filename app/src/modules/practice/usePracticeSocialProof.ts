@@ -75,30 +75,29 @@ function loadQuestionSocialStats(): Promise<Map<string, QuestionSocialStat>> {
   return statsPromise;
 }
 
-/** Solve counts for a decision that needs them. The list chips stay behind their own flag. */
+const NO_STATS = new Map<string, QuestionSocialStat>();
+
+/**
+ * Solve counts for a decision that needs them. The list chips stay behind their own flag.
+ * `ready` is derived in render, so the render where `enabled` turns on already reads false
+ * (an effect-set flag would report ready with empty stats for one render).
+ */
 export function useQuestionStats(enabled: boolean): { stats: Map<string, QuestionSocialStat>; ready: boolean } {
-  const [stats, setStats] = useState<Map<string, QuestionSocialStat>>(new Map());
-  const [ready, setReady] = useState(!enabled);
+  const [loaded, setLoaded] = useState<Map<string, QuestionSocialStat> | null>(null);
 
   useEffect(() => {
-    if (!enabled) {
-      setStats(new Map());
-      setReady(true);
-      return;
-    }
-    setReady(false);
+    if (!enabled) return;
     let cancelled = false;
     void loadQuestionSocialStats().then((next) => {
-      if (cancelled) return;
-      setStats(next);
-      setReady(true);
+      if (!cancelled) setLoaded(next);
     });
     return () => {
       cancelled = true;
     };
   }, [enabled]);
 
-  return { stats, ready };
+  if (!enabled) return { stats: NO_STATS, ready: true };
+  return { stats: loaded ?? NO_STATS, ready: loaded !== null };
 }
 
 export function useQuestionSocialStats(): Map<string, QuestionSocialStat> {

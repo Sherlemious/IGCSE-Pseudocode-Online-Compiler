@@ -3,6 +3,7 @@ import { examples } from '../src/modules/content/examples';
 import { thinTopicQuestions } from './thinTopicQuestions';
 import { igcseRecentPaperQuestions } from './igcseRecentPaperQuestions';
 import { flowchartQuestions } from './flowchartQuestions';
+import { studentDrillQuestions } from './studentDrillQuestions';
 
 const prisma = new PrismaClient();
 
@@ -10410,6 +10411,7 @@ CALL Compress()`,
   ...thinTopicQuestions,
   ...igcseRecentPaperQuestions,
   ...flowchartQuestions,
+  ...studentDrillQuestions,
 ];
 
 // ─── Main seed function ────────────────────────────────────────────────────────

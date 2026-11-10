@@ -29,9 +29,27 @@ export type LessonCheckResult = {
   nodeId?: string;
 };
 
+/** The code with each `//` comment removed (a `//` inside a string is kept). */
+export function withoutComments(code: string): string {
+  return code
+    .split('\n')
+    .map((line) => {
+      let inString = false;
+      for (let i = 0; i < line.length; i++) {
+        const ch = line[i];
+        if (ch === '"') inString = !inString;
+        else if (!inString && ch === '/' && line[i + 1] === '/') return line.slice(0, i);
+      }
+      return line;
+    })
+    .join('\n');
+}
+
+/** Needles must appear in the code itself: a starter's comment that mentions DIV does not count. */
 function containsAll(code: string, needles: string[]): string | null {
+  const body = withoutComments(code);
   for (const needle of needles) {
-    if (!code.includes(needle)) return needle;
+    if (!body.includes(needle)) return needle;
   }
   return null;
 }

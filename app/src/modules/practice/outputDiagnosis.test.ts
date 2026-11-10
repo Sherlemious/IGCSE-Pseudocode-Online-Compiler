@@ -17,6 +17,9 @@ describe('diagnoseOutput', () => {
 
   it('names a spacing difference when the characters otherwise match', () => {
     expect(diagnoseOutput('Score: 42', 'Score:42').sentence).toBe('A space is missing.');
+    expect(diagnoseOutput('Score:42', 'Score: 42').sentence).toBe('You printed an extra space.');
+    expect(diagnoseOutput('Total 5', 'Total  5').sentence).toBe('You printed an extra space.');
+    expect(diagnoseOutput('a b', 'a\tb').sentence).toBe('The spacing is different.');
   });
 
   it('names an extra word before it falls through to digits', () => {

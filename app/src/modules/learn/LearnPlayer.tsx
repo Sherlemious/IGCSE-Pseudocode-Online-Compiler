@@ -189,9 +189,12 @@ export default function LearnPlayer({ course, level, lesson, premiumAccess: init
       const remainingOnLevel = level.lessons.filter((item) => item.playable && !isComplete(map, item.id));
       if (remainingOnLevel.length === 0) {
         captureLearn('learn_level_completed', learnLevelProps(level, courseProps, course));
-        // Finishing the last free level is the moment to sell the rest.
-        const upcoming = next?.level;
-        if (upcoming && upcoming.number !== level.number && !upcoming.free && !premiumAccess) {
+        // Finishing the last free syllabus level is the moment to sell the rest.
+        // The free drill levels sit between it and the first paid level on the
+        // map, so look past them for the next syllabus level.
+        const at = course.levels.findIndex((item) => item.slug === level.slug);
+        const upcoming = level.drill ? undefined : course.levels.slice(at + 1).find((item) => !item.drill);
+        if (upcoming && !upcoming.free && !premiumAccess) {
           promptLearnUpgrade(level.number, upcoming.number);
         }
       }
@@ -202,7 +205,7 @@ export default function LearnPlayer({ course, level, lesson, premiumAccess: init
         captureLearn('learn_path_completed', courseProps);
       }
     },
-    [course, lesson, level, next, premiumAccess],
+    [course, lesson, level, premiumAccess],
   );
 
   function openAuth(gate: LearnAuthGate) {

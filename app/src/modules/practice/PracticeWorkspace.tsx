@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { CodeMirrorEditor, EditorUndoButtons, TraceTable, useEditorHistory } from '@/modules/compiler/editor';
@@ -201,21 +201,11 @@ export default function PracticeWorkspace({ questionId, starterCode, savedCode, 
   const [gradeResponse, setGradeResponse] = useState<GradeResponse | null>(null);
   const [applyFixKey, setApplyFixKey] = useState(0);
   const checkHelp = usePracticeVariant(PRACTICE_CHECK_HELP_FLAG);
-  const syntaxFix = useMemo((): ErrorInfo | null => {
-    const fail = gradeResponse?.results.find((r) => !r.passed && r.error?.kind === 'parse');
-    const line = fail?.error?.line;
-    if (!fail?.error || line == null) return null;
-    const fix = findQuickFix(code, line);
-    if (!fix) return null;
-    return {
-      errorType: 'parse',
-      category: fail.error.category ?? 'parse',
-      line,
-      message: fail.error.hint ?? fail.error.message,
-      fix,
-      unchanged: false,
-    };
-  }, [gradeResponse, code]);
+  // Quick fix for a Check that ended in a parse error. Worked out once when the
+  // result arrives, and shown only while the code is still the code that was
+  // checked: any edit, Run or new Check hides it.
+  const [gradeFix, setGradeFix] = useState<{ info: ErrorInfo; code: string } | null>(null);
+  const syntaxFix = checkHelp === 'test' && gradeFix && gradeFix.code === code ? gradeFix.info : null;
   const fixOffered = useRef<string | null>(null);
   useEffect(() => {
     if (checkHelp !== 'test' || !syntaxFix?.fix || !gradeResponse) return;
@@ -290,12 +280,14 @@ export default function PracticeWorkspace({ questionId, starterCode, savedCode, 
   /* ── Handlers ───────────────────────────────────────── */
   const handleRun = useCallback(async () => {
     if (!code.trim() || isRunning) return;
+    setGradeFix(null);
     setActiveTab('output');
     await run(code, { cursorLine: cursorLineRef.current });
   }, [code, isRunning, run]);
 
   const handleDebug = useCallback(async () => {
     if (!code.trim() || isRunning) return;
+    setGradeFix(null);
     setActiveTab('output');
     await debugRun(code, { cursorLine: cursorLineRef.current });
   }, [code, isRunning, debugRun]);
@@ -304,6 +296,7 @@ export default function PracticeWorkspace({ questionId, starterCode, savedCode, 
     if (!code.trim() || isGrading || isRunning) return;
     setIsGrading(true);
     setGradeResponse(null);
+    setGradeFix(null);
     setGradingError(null);
     setActiveTab('results');
 
@@ -340,6 +333,19 @@ export default function PracticeWorkspace({ questionId, starterCode, savedCode, 
         ? diagnoseOutput(visibleMiss.expectedOutput ?? '', visibleMiss.actualOutput ?? '').detail
         : null;
       const offeredFix = firstFail?.error?.kind === 'parse' ? findQuickFix(code, firstFail.error.line) : null;
+      if (checkHelp === 'test' && offeredFix && firstFail?.error && firstFail.error.line != null) {
+        setGradeFix({
+          code,
+          info: {
+            errorType: 'parse',
+            category: firstFail.error.category ?? 'parse',
+            line: firstFail.error.line,
+            message: firstFail.error.hint ?? firstFail.error.message,
+            fix: offeredFix,
+            unchanged: false,
+          },
+        });
+      }
       captureEvent('practice_graded', {
         question_id: questionId,
         pass_count: data.passCount,
@@ -1051,8 +1057,10 @@ export default function PracticeWorkspace({ questionId, starterCode, savedCode, 
     const allPassed = passCount === totalCount;
     const visibleResults = showFailuresOnly ? results.filter((r) => !r.passed) : results;
     const firstFail = results.find((r) => !r.passed);
+    // Hidden tests get no per-test sentence, so they don't count as explained.
     const explained =
-      checkHelp === 'test' && !!firstFail && (firstFail.error?.kind === 'parse' || !firstFail.error);
+      checkHelp === 'test' && !!firstFail &&
+      (firstFail.error?.kind === 'parse' || results.some((r) => !r.passed && !r.error && !r.hidden));
 
     return (
       <div className="p-3 space-y-2">

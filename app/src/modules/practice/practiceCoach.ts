@@ -59,8 +59,11 @@ export function usePracticeVariant(flag: string): PracticeVariant | 'pending' {
       setVariant('test');
       return;
     }
+    // The first answer sticks for this page view: flags arriving after the
+    // timeout (or a later flag reload) must not swap the arm mid-session.
     let settled = false;
     const apply = () => {
+      if (settled) return;
       settled = true;
       try {
         const value = ph.getFeatureFlag(flag);
@@ -73,7 +76,9 @@ export function usePracticeVariant(flag: string): PracticeVariant | 'pending' {
     const unsubscribe = ph.onFeatureFlags(apply);
     // Flags that never arrive (blocked analytics) must not hide the start-here card.
     const timer = window.setTimeout(() => {
-      if (!settled) setVariant('test');
+      if (settled) return;
+      settled = true;
+      setVariant('test');
     }, 2500);
     return () => {
       unsubscribe?.();

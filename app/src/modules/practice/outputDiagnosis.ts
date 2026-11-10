@@ -51,7 +51,11 @@ export function diagnoseOutput(expected: string, actual: string): OutputMismatch
 
   const squash = (rows: string[]) => rows.map((row) => row.replace(/\s+/g, '')).join('\n');
   if (squash(exp) === squash(got)) {
-    return { detail: 'spacing', sentence: 'A space is missing.' };
+    const spaces = (rows: string[]) => rows.join('').replace(/\S/g, '').length;
+    const diff = spaces(got) - spaces(exp);
+    const sentence =
+      diff < 0 ? 'A space is missing.' : diff > 0 ? 'You printed an extra space.' : 'The spacing is different.';
+    return { detail: 'spacing', sentence };
   }
 
   const expWords = wordsOf(expected);

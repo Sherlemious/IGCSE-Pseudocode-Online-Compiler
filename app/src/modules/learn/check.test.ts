@@ -158,3 +158,23 @@ describe('checkLessonCode extra-output explanations', () => {
     expect(result.message).toContain('extra line');
   });
 });
+
+describe('mustContain ignores comments', () => {
+  const divLesson: LearnLesson = {
+    ...fileLesson,
+    id: 't.div',
+    slug: 'div',
+    mustContain: ['DIV'],
+    tests: [{ inputs: [], expectedOutput: '3' }],
+  };
+
+  it('does not count a needle that only appears in a comment', async () => {
+    const result = await checkLessonCode(divLesson, '// x <- 7 DIV 2\nOUTPUT 7 / 2');
+    expect(result.reason).toBe('must_contain');
+  });
+
+  it('still finds the needle in code, and keeps // inside a string', async () => {
+    const result = await checkLessonCode(divLesson, 'OUTPUT 7 DIV 2 // DIV');
+    expect(result.ok).toBe(true);
+  });
+});
