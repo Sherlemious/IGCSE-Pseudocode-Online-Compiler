@@ -23,6 +23,7 @@ jobs:
       # The build pre-renders catalog pages from Postgres; deploy populates the
       # KV cache through a local Hyperdrive proxy.
       CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_HYPERDRIVE: ${{ secrets.CF_DIRECT_URL }}
+      CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_HYPERDRIVE_FRESH: ${{ secrets.CF_DIRECT_URL }}
     steps:
       - uses: actions/checkout@v4
 
