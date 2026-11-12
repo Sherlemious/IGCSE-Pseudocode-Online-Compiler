@@ -21,7 +21,7 @@ export type UserFacets = {
  * flipping a filter doesn't recount every account. The page of rows itself
  * stays live.
  */
-const FACET_REVALIDATE_SECONDS = 300;
+const FACET_REVALIDATE_SECONDS = 60;
 
 async function loadUserFacets(): Promise<UserFacets> {
   const now = new Date();
