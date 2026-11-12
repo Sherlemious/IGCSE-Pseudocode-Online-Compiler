@@ -19,20 +19,19 @@ vi.mock('./repo', () => ({
 }));
 vi.mock('./providers', async (importOriginal) => ({
   ...(await importOriginal<typeof import('./providers')>()),
-  pickProvider: vi.fn(),
+  pickModel: vi.fn(),
   workersAiBinding: vi.fn(() => ({ run: vi.fn() })),
   runWorkersAi: vi.fn(),
-  runClaude: vi.fn(),
 }));
 
 import { getQuestionForMarking } from '@/shared/lib/catalogCache';
 import { getPremiumAccess } from '@/modules/billing/entitlements';
 import { isFlagEnabledFor } from '@/modules/telemetry/serverFlags';
 import * as repo from './repo';
-import { FreeAllowanceUsedUp, pickProvider, runClaude, runWorkersAi } from './providers';
+import { FreeAllowanceUsedUp, pickModel, runWorkersAi } from './providers';
 import { MARK_SCHEMES, markSchemeFor } from './markSchemes';
 import { buildMarkingPrompt, toMarkingResult } from './prompt';
-import { codeHash, FREE_MARKINGS, markAnswer, NEURON_BUDGET } from './service';
+import { codeHash, FREE_MARKINGS, FREE_NEURON_BUDGET, markAnswer, NEURON_BUDGET } from './service';
 
 const scheme = MARK_SCHEMES['Class Survey Vote Tally'];
 const question = {
@@ -91,10 +90,10 @@ describe('prompt and result', () => {
   });
 });
 
-const run = (provider: 'workers-ai' | 'claude', neurons = 80) => ({
+const run = (model = '@cf/openai/gpt-oss-20b', neurons = 80) => ({
   output: allPoints((id) => id !== 10),
-  provider,
-  model: provider === 'claude' ? 'claude-haiku-5-5' : '@cf/openai/gpt-oss-20b',
+  provider: 'workers-ai' as const,
+  model,
   inputTokens: 1100,
   outputTokens: 1500,
   neurons,
@@ -109,9 +108,8 @@ describe('markAnswer', () => {
     vi.mocked(repo.countUserMarkings).mockResolvedValue(0);
     vi.mocked(repo.countAllMarkingsSince).mockResolvedValue(0);
     vi.mocked(repo.sumNeuronsSince).mockResolvedValue(0);
-    vi.mocked(pickProvider).mockReturnValue('workers-ai');
-    vi.mocked(runWorkersAi).mockResolvedValue(run('workers-ai'));
-    vi.mocked(runClaude).mockResolvedValue(run('claude', 0));
+    vi.mocked(pickModel).mockImplementation((paid) => (paid ? '@cf/openai/gpt-oss-120b' : '@cf/openai/gpt-oss-20b'));
+    vi.mocked(runWorkersAi).mockResolvedValue(run());
   });
 
   it('marks on Workers AI, stores the result with its neurons and counts down the free allowance', async () => {
@@ -119,20 +117,33 @@ describe('markAnswer', () => {
     expect(res.result.total).toBe(14);
     expect(res.remaining).toBe(FREE_MARKINGS - 1);
     expect(runWorkersAi).toHaveBeenCalledTimes(1);
-    expect(runClaude).not.toHaveBeenCalled();
+    expect(runWorkersAi).toHaveBeenCalledWith(expect.anything(), '@cf/openai/gpt-oss-20b', expect.any(String));
     expect(repo.createMarking).toHaveBeenCalledWith(
       expect.objectContaining({ userId: 'u1', total: 14, codeHash: codeHash('OUTPUT 1'), neurons: 80, model: '@cf/openai/gpt-oss-20b' }),
     );
   });
 
-  it('uses Claude only where the provider choice says so (a paid account with a key)', async () => {
+  it('marks a paying account on the larger free model', async () => {
     vi.mocked(getPremiumAccess).mockResolvedValue(true);
-    vi.mocked(pickProvider).mockReturnValue('claude');
+    vi.mocked(runWorkersAi).mockResolvedValue(run('@cf/openai/gpt-oss-120b', 160));
     await markAnswer('u1', 'q1', 'OUTPUT 1');
-    expect(pickProvider).toHaveBeenCalledWith(true);
-    expect(runClaude).toHaveBeenCalledTimes(1);
+    expect(pickModel).toHaveBeenCalledWith(true);
+    expect(runWorkersAi).toHaveBeenCalledWith(expect.anything(), '@cf/openai/gpt-oss-120b', expect.any(String));
+    expect(repo.createMarking).toHaveBeenCalledWith(expect.objectContaining({ neurons: 160, model: '@cf/openai/gpt-oss-120b' }));
+  });
+
+  it('keeps the end of the allowance for paying accounts', async () => {
+    vi.mocked(repo.sumNeuronsSince).mockResolvedValue(FREE_NEURON_BUDGET);
+    await expect(markAnswer('u1', 'q1', 'OUTPUT 1')).rejects.toMatchObject({ status: 429, code: 'AI_DONE_FOR_TODAY' });
+    vi.mocked(getPremiumAccess).mockResolvedValue(true);
+    await expect(markAnswer('u1', 'q1', 'OUTPUT 1')).resolves.toMatchObject({ plan: 'paid' });
+  });
+
+  it('is done for today for paying accounts too once the whole allowance is spent', async () => {
+    vi.mocked(getPremiumAccess).mockResolvedValue(true);
+    vi.mocked(repo.sumNeuronsSince).mockResolvedValue(NEURON_BUDGET - 100);
+    await expect(markAnswer('u1', 'q1', 'OUTPUT 1')).rejects.toMatchObject({ status: 429, code: 'AI_DONE_FOR_TODAY' });
     expect(runWorkersAi).not.toHaveBeenCalled();
-    expect(repo.createMarking).toHaveBeenCalledWith(expect.objectContaining({ neurons: 0, model: 'claude-haiku-5-5' }));
   });
 
   it('reuses an identical answer without calling a model or spending an allowance', async () => {
@@ -179,7 +190,7 @@ describe('markAnswer', () => {
   });
 
   it('does not offer marking when no model is available', async () => {
-    vi.mocked(pickProvider).mockReturnValue(null);
+    vi.mocked(pickModel).mockReturnValue(null);
     await expect(markAnswer('u1', 'q1', 'OUTPUT 1')).rejects.toMatchObject({ status: 404 });
   });
 

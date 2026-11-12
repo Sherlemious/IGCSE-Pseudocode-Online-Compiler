@@ -49,6 +49,7 @@ export const TIER_COPY: Record<
     description: 'Monthly access while you practise on your own',
     features: [
       'Full practice + exam library',
+      'Examiner marking on every 15-mark question, 20 a day',
       'Unlimited saved solutions',
       'Personal progress analytics',
       'Cancel anytime — billed monthly',

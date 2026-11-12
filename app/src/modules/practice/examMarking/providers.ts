@@ -1,17 +1,15 @@
-import Anthropic from '@anthropic-ai/sdk';
-import { zodOutputFormat } from '@anthropic-ai/sdk/helpers/zod';
-import { JSON_SHAPE, MARKING_JSON_SCHEMA, MARKING_SYSTEM, MarkingOutput, parseMarkingJson } from './prompt';
+import { JSON_SHAPE, MARKING_JSON_SCHEMA, MARKING_SYSTEM, type MarkingOutput, parseMarkingJson } from './prompt';
 
 /**
- * Who does the marking. Free accounts always use Cloudflare Workers AI (10,000
- * free neurons a day for the whole account, no API key: the Worker's `AI`
- * binding). A paid account uses Claude once ANTHROPIC_API_KEY is set; until
- * then everyone is on Workers AI. Checked in Oct 2026 on five real answers:
- * gpt-oss-20b was within one mark of Claude Haiku on every one, at about
- * 55-115 neurons a marking, and repeated runs agreed.
+ * Who does the marking: Cloudflare Workers AI only, on the account's free
+ * allowance (10,000 neurons a day, no API key: the Worker's `AI` binding).
+ * Nothing here can bill. Free accounts get gpt-oss-20b (checked in Oct 2026
+ * on five real answers: within one mark of Claude Haiku, about 55-115 neurons
+ * a marking); paying accounts get the larger gpt-oss-120b. When the allowance
+ * is gone, marking stops for everyone until 00:00 UTC.
  */
 
-export type ProviderName = 'workers-ai' | 'claude';
+export type ProviderName = 'workers-ai';
 
 export interface ModelRun {
   output: MarkingOutput;
@@ -28,8 +26,8 @@ export class FreeAllowanceUsedUp extends Error {}
 /** The model answered, but not with a usable marking. */
 export class UnusableMarking extends Error {}
 
-export const WORKERS_MODEL = process.env.EXAM_MARKING_FREE_MODEL || '@cf/openai/gpt-oss-20b';
-export const CLAUDE_MODEL = process.env.EXAM_MARKING_MODEL || 'claude-haiku-5-5';
+export const FREE_MODEL = process.env.EXAM_MARKING_FREE_MODEL || '@cf/openai/gpt-oss-20b';
+export const PREMIUM_MODEL = process.env.EXAM_MARKING_PREMIUM_MODEL || '@cf/openai/gpt-oss-120b';
 
 interface AiBinding {
   run(model: string, input: Record<string, unknown>): Promise<unknown>;
@@ -43,12 +41,10 @@ export function workersAiBinding(): AiBinding | null {
   return context?.env?.AI ?? null;
 }
 
-const claudeConfigured = () => Boolean(process.env.ANTHROPIC_API_KEY);
-
-/** Free accounts: Workers AI only. Paid: Claude when a key is set, otherwise Workers AI. Null = nothing can mark. */
-export function pickProvider(paid: boolean): ProviderName | null {
-  if (paid && claudeConfigured()) return 'claude';
-  return workersAiBinding() ? 'workers-ai' : null;
+/** The model for this account, or null when nothing can mark (no AI binding: `next dev`, builds). */
+export function pickModel(paid: boolean): string | null {
+  if (!workersAiBinding()) return null;
+  return paid ? PREMIUM_MODEL : FREE_MODEL;
 }
 
 /** Cloudflare's refusal once the daily free allocation is spent (error 4006). */
@@ -69,10 +65,10 @@ function replyText(reply: WorkersAiReply): string {
   return typeof content === 'string' ? content : '';
 }
 
-export async function runWorkersAi(ai: AiBinding, prompt: string): Promise<ModelRun> {
+export async function runWorkersAi(ai: AiBinding, model: string, prompt: string): Promise<ModelRun> {
   let reply: WorkersAiReply;
   try {
-    reply = (await ai.run(WORKERS_MODEL, {
+    reply = (await ai.run(model, {
       messages: [
         { role: 'system', content: MARKING_SYSTEM + JSON_SHAPE },
         { role: 'user', content: prompt },
@@ -91,31 +87,9 @@ export async function runWorkersAi(ai: AiBinding, prompt: string): Promise<Model
   return {
     output,
     provider: 'workers-ai',
-    model: WORKERS_MODEL,
+    model,
     inputTokens: reply.usage?.prompt_tokens ?? 0,
     outputTokens: reply.usage?.completion_tokens ?? 0,
     neurons: reply.usage?.neurons ?? 0,
-  };
-}
-
-export async function runClaude(prompt: string): Promise<ModelRun> {
-  const client = new Anthropic({ timeout: 60_000, maxRetries: 1 });
-  const response = await client.messages.parse({
-    model: CLAUDE_MODEL,
-    max_tokens: 8000,
-    system: MARKING_SYSTEM,
-    messages: [{ role: 'user', content: prompt }],
-    output_config: { effort: 'medium', format: zodOutputFormat(MarkingOutput) },
-  });
-  if (response.stop_reason === 'refusal' || !response.parsed_output) {
-    throw new UnusableMarking(`Claude gave no usable marking (${response.stop_reason})`);
-  }
-  return {
-    output: response.parsed_output,
-    provider: 'claude',
-    model: CLAUDE_MODEL,
-    inputTokens: response.usage.input_tokens,
-    outputTokens: response.usage.output_tokens,
-    neurons: 0,
   };
 }

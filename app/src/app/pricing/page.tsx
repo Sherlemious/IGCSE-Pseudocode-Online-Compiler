@@ -67,6 +67,7 @@ function passDescription(kind: string): { description: string; features: string[
       description: 'One payment covers practice and exams until 30 June.',
       features: [
         'Full practice + exam library until 30 June',
+        'Examiner marking on every 15-mark question, 20 a day',
         'Unlimited saved solutions',
         'Personal progress analytics',
         'Does not auto-renew',
@@ -78,6 +79,7 @@ function passDescription(kind: string): { description: string; features: string[
       description: 'Sit the Oct/Nov series. One payment, no auto-renew.',
       features: [
         'Full practice + exam library until 30 November',
+        'Examiner marking on every 15-mark question, 20 a day',
         'Unlimited saved solutions',
         'Personal progress analytics',
         'Does not auto-renew',
@@ -88,6 +90,7 @@ function passDescription(kind: string): { description: string; features: string[
     description: 'Sit this exam series. One payment, no auto-renew.',
     features: [
       'Full practice + exam library until the series ends',
+      'Examiner marking on every 15-mark question, 20 a day',
       'Unlimited saved solutions',
       'Personal progress analytics',
       'Does not auto-renew',

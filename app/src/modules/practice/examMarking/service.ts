@@ -9,17 +9,20 @@ import { isFlagEnabledFor } from '@/modules/telemetry/serverFlags';
 import { gradeTestCases, MAX_GRADE_CODE_CHARS } from '@/modules/practice/autograder';
 import { isMarkable, markSchemeFor } from './markSchemes';
 import { buildMarkingPrompt, toMarkingResult, type MarkingResult } from './prompt';
-import { FreeAllowanceUsedUp, pickProvider, runClaude, runWorkersAi, workersAiBinding, type ModelRun } from './providers';
+import { FreeAllowanceUsedUp, pickModel, runWorkersAi, workersAiBinding, type ModelRun } from './providers';
 import * as repo from './repo';
 
 /**
  * "Mark it like an examiner" on 15-mark practice questions. The tests run on
  * our interpreter for free; one model call then marks the answer against the
- * question's 15-point scheme (providers.ts: Workers AI for free accounts, Claude
- * for paid ones once a key exists). Cost control, in order: identical answers
+ * question's 15-point scheme (providers.ts: two Workers AI models, a small one
+ * for free accounts and a larger one for paid ones, both on Cloudflare's free
+ * allowance; nothing can bill). Cost control, in order: identical answers
  * reuse the saved result (no call), free accounts get FREE_MARKINGS in total,
- * paid ones PAID_DAILY a day, a global daily cap, and for Workers AI a daily
- * neuron budget kept under Cloudflare's 10,000 free neurons so it never bills.
+ * paid ones PAID_DAILY a day, a global daily cap, and a daily neuron budget
+ * under Cloudflare's 10,000 free neurons. Free accounts stop at
+ * FREE_NEURON_BUDGET so the rest stays for paying ones; past NEURON_BUDGET (or
+ * when Cloudflare refuses) it is done for today for everyone.
  */
 
 export const FREE_MARKINGS = 3;
@@ -27,8 +30,10 @@ export const PAID_DAILY = 20;
 const DAILY_CAP = Number(process.env.EXAM_MARKING_DAILY_CAP) || 500;
 /** Stay under the 10,000 free neurons a day; two requests in flight can overshoot by a marking or so. */
 export const NEURON_BUDGET = Number(process.env.EXAM_MARKING_NEURON_BUDGET) || 8000;
-/** About the most one marking has taken (a long answer, long reasoning). */
-const NEURONS_PER_MARKING_MAX = 250;
+/** Free accounts stop here, keeping the rest of the day's allowance for paying ones. */
+export const FREE_NEURON_BUDGET = Number(process.env.EXAM_MARKING_FREE_NEURON_BUDGET) || 5000;
+/** About the most one marking has taken (a long answer, long reasoning): gpt-oss-120b costs about twice gpt-oss-20b. */
+const neuronsPerMarkingMax = (paid: boolean) => (paid ? 450 : 250);
 
 export class MarkingError extends HttpError {}
 
@@ -106,12 +111,13 @@ export async function markAnswer(userId: string, questionId: string, rawCode: un
     throw tooManyRequests(3600, 'Examiner marking is busy today. Try again later.');
   }
 
-  const provider = pickProvider(paid);
-  if (!provider) {
+  const model = pickModel(paid);
+  if (!model) {
     logger.warn('Exam marking: no model available', { question_id: questionId });
     throw notFound('Examiner marking is not available right now.');
   }
-  if (provider === 'workers-ai' && (await repo.sumNeuronsSince(startOfUtcDay(now))) + NEURONS_PER_MARKING_MAX > NEURON_BUDGET) {
+  const budget = paid ? NEURON_BUDGET : FREE_NEURON_BUDGET;
+  if ((await repo.sumNeuronsSince(startOfUtcDay(now))) + neuronsPerMarkingMax(paid) > budget) {
     await captureServerEvent(userId, 'exam_marking_done_for_today', { question_id: questionId, plan, source: 'budget' });
     throw doneForToday(now);
   }
@@ -122,13 +128,13 @@ export async function markAnswer(userId: string, questionId: string, rawCode: un
 
   let run: ModelRun;
   try {
-    run = provider === 'claude' ? await runClaude(prompt) : await runWorkersAi(workersAiBinding()!, prompt);
+    run = await runWorkersAi(workersAiBinding()!, model, prompt);
   } catch (err) {
     if (err instanceof FreeAllowanceUsedUp) {
       await captureServerEvent(userId, 'exam_marking_done_for_today', { question_id: questionId, plan, source: 'cloudflare' });
       throw doneForToday(now);
     }
-    logger.error('Exam marking: model call failed', { question_id: questionId, provider, error: String(err) });
+    logger.error('Exam marking: model call failed', { question_id: questionId, model, error: String(err) });
     throw new MarkingError(502, "Couldn't mark this right now. Try again in a minute.");
   }
 

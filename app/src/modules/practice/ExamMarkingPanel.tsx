@@ -5,9 +5,13 @@ import Link from 'next/link';
 import { CheckCircle, GraduationCap, XCircle } from 'lucide-react';
 import { useFeatureFlagEnabled } from 'posthog-js/react';
 import { captureEvent } from '@/modules/interpreter/analytics';
+import { authHref } from '@/modules/auth/callback';
 import { EXAM_MARKING_FLAG } from '@/modules/billing/featureFlags';
 import { studentCheckoutHref, studentCheckoutLabel } from '@/modules/billing/paddle/passes';
 import type { MarkingResult } from './examMarking/prompt';
+
+/** Mirrors FREE_MARKINGS in examMarking/service.ts (server-only module). */
+const FREE_MARKINGS_LABEL = 3;
 
 interface MarkingResponse {
   result: MarkingResult;
@@ -21,7 +25,7 @@ interface MarkingResponse {
  * Tests say whether the program works; this says what a Paper 2 examiner
  * would give it, point by point, and which fixes are worth the most marks.
  */
-export default function ExamMarkingPanel({ questionId, code }: { questionId: string; code: string }) {
+export default function ExamMarkingPanel({ questionId, code, signedIn }: { questionId: string; code: string; signedIn: boolean }) {
   const [state, setState] = useState<'idle' | 'marking'>('idle');
   const [data, setData] = useState<MarkingResponse | null>(null);
   // `done`: today's free marking allowance is used up (comes back at `resetsAt`).
@@ -75,6 +79,29 @@ export default function ExamMarkingPanel({ questionId, code }: { questionId: str
 
   if (!enabled) return null;
 
+  // Signed out: say what it is and that the first markings are free, so it is a reason to sign up.
+  if (!signedIn) {
+    return (
+      <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 text-xs">
+        <div className="flex items-center gap-2">
+          <GraduationCap className="h-4 w-4 text-primary shrink-0" />
+          <span className="font-semibold text-light-text">Examiner marking</span>
+        </div>
+        <p className="mt-1.5 text-dark-text">
+          Passing the tests isn&apos;t the same as full marks. Sign in and get this answer marked against a 15-point
+          scheme, with the fixes worth the most marks. Your first {FREE_MARKINGS_LABEL} markings are free.
+        </p>
+        <Link
+          href={authHref('signup', `/practice/${questionId}`)}
+          onClick={() => captureEvent('exam_marking_signup_clicked', { question_id: questionId })}
+          className="mt-2 inline-block rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-white hover:bg-primary-hover"
+        >
+          Sign in to get it marked
+        </Link>
+      </div>
+    );
+  }
+
   return (
     <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 text-xs">
       <div className="flex items-center gap-2">
@@ -92,6 +119,9 @@ export default function ExamMarkingPanel({ questionId, code }: { questionId: str
           <p className="mt-1.5 text-dark-text">
             Passing the tests isn&apos;t the same as full marks. Get this answer marked against a 15-point scheme, with
             the fixes worth the most marks.
+          </p>
+          <p className="mt-1 text-[11px] text-dark-text">
+            {FREE_MARKINGS_LABEL} free markings, then included with the student pass or monthly plan.
           </p>
           <button
             type="button"

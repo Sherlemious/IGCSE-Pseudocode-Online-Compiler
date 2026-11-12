@@ -71,6 +71,7 @@ function ParentPay({ token, studentName, offer, passLabel, priceId, discountCode
       <ul className="mt-5 space-y-2 text-sm text-light-text">
         <li>&#10003; Every level of the Paper 2 Path, in order, with a check on every lesson</li>
         <li>&#10003; The full practice library, marked by hidden tests</li>
+        <li>&#10003; Examiner marking on every 15-mark question, point by point against a mark scheme</li>
         <li>&#10003; Timed exams, so the real paper is not the first time against the clock</li>
       </ul>
 

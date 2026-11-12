@@ -1127,7 +1127,9 @@ export default function PracticeWorkspace({ questionId, starterCode, savedCode, 
           </div>
         )}
 
-        {examMarking && authStatus === 'authenticated' && <ExamMarkingPanel questionId={questionId} code={code} />}
+        {examMarking && authStatus !== 'loading' && (
+          <ExamMarkingPanel questionId={questionId} code={code} signedIn={authStatus === 'authenticated'} />
+        )}
 
         {/* Save-score nudge for anonymous students (Easy grades without sign-in) */}
         {authStatus !== 'authenticated' && (
