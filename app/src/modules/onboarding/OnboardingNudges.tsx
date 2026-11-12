@@ -15,6 +15,9 @@
  *  - 90 s cumulative usage, flowchart maker not opened yet: "Draw and run flowcharts"
  *  - 15 min cumulative usage, no Learn progress: "Follow the Paper 2 Path"
  *  - 2nd+ session, anyone:                    "Try an Exam"
+ *  - Right after sign-in, teachers only, once per account: the partner card
+ *    for The Learning Mate (paper-script marking). Waits for the DB nudge
+ *    sync so it never shows twice across devices.
  *  - 3rd+ session, free student (or signed out), May/June on sale: a small
  *    May/June pass toast (passToast.tsx). Also right after a student answers
  *    the sitting card with May/Jun 2027. Once per browser.
@@ -37,7 +40,9 @@ import { useEffect, useRef, useCallback, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { usePostHog } from 'posthog-js/react';
 import { usePathname, useRouter } from 'next/navigation';
-import { UserPlus, Map as MapIcon, Workflow } from 'lucide-react';
+import { UserPlus, Map as MapIcon, Workflow, Camera } from 'lucide-react';
+import { captureEvent } from '@/modules/interpreter/analytics';
+import { PARTNERS, partnerOutHref } from '@/modules/partners/partners';
 import { authHref } from '@/modules/auth/callback';
 import { FLOWCHART_VISITED_KEY } from '@/modules/flowchart/constants';
 import NudgeCard from './NudgeCard';
@@ -55,9 +60,10 @@ const LS = {
   learn: 'nudge_shown_learn',
   exam: 'nudge_shown_exam',
   sitting: 'nudge_shown_sitting',
+  partner: 'nudge_shown_partner',
 } as const;
 
-type NudgeKey = 'signup' | 'learn' | 'exam' | 'flowchart' | 'sitting';
+type NudgeKey = 'signup' | 'learn' | 'exam' | 'flowchart' | 'sitting' | 'partner';
 type ActiveNudge = NudgeKey | null;
 
 const THRESHOLDS = {
@@ -105,6 +111,10 @@ export default function OnboardingNudges() {
   const passEligibleRef = useRef(false);
   const signedInRef = useRef(false);
   signedInRef.current = status === 'authenticated';
+  const teacherRef = useRef(false);
+  teacherRef.current = status === 'authenticated' && session?.user?.role === 'TEACHER';
+  // Set once the DB's nudgesShown is in localStorage, so the partner card can't repeat on a new device.
+  const nudgesSyncedRef = useRef(false);
   passEligibleRef.current =
     status !== 'loading' &&
     shouldOfferSessionPass({
@@ -195,6 +205,11 @@ export default function OnboardingNudges() {
     (totalMs: number, sessions: number) => {
       // Not marked as shown: it waits until they're back on a normal page.
       if (quietRef.current || cardUp.current) return;
+      if (teacherRef.current && nudgesSyncedRef.current && !lsGet(LS.partner)) {
+        triggerNudge('partner', 4_000);
+        captureEvent('partner_ad_shown', { partner: 'learningmate', surface: 'popup' });
+        return;
+      }
       if (sittingStateRef.current === 'unanswered' && totalMs >= THRESHOLDS.sittingMs && !lsGet(LS.sitting)) {
         triggerNudge('sitting');
         return;
@@ -232,6 +247,10 @@ export default function OnboardingNudges() {
     const from = params.get('from');
     if (from === PHONE_QR_FROM.pay || from === PHONE_QR_FROM.signup) ph?.capture('phone_qr_opened', { from });
     if (params.get('pass_nudge') === '1') showPassToast('returning', capture, { force: true, signedIn: signedInRef.current });
+    if (params.get('partner_nudge') === '1' && !quietRef.current) {
+      cardUp.current = true;
+      setActiveNudge('partner');
+    }
     if (params.get('flowchart_nudge') === '1' && !quietRef.current) {
       cardUp.current = true;
       setActiveNudge('flowchart');
@@ -247,6 +266,7 @@ export default function OnboardingNudges() {
     const syncKey = `nudges_synced_${session?.user?.id ?? ''}`;
     const synced = sessionStorage.getItem(syncKey);
     if (synced) {
+      nudgesSyncedRef.current = true;
       if (lsGet(LS.sitting) === '1') sittingStateRef.current = 'answered';
       else if (synced === 'answered' || synced === 'unanswered') sittingStateRef.current = synced;
       return;
@@ -257,6 +277,9 @@ export default function OnboardingNudges() {
       .then(({ nudgesShown }: { nudgesShown: string[] }) => {
         for (const key of nudgesShown) lsSet(`nudge_shown_${key}`, '1');
         if (!student) sessionStorage.setItem(syncKey, '1');
+        nudgesSyncedRef.current = true;
+        // Don't wait for the 30 s tick: the partner card is meant for right after sign-in.
+        checkNudges(lsNum(LS.usageMs), lsNum(LS.sessionCount));
       })
       .catch(() => {});
     if (!student) return;
@@ -339,6 +362,28 @@ export default function OnboardingNudges() {
         ctaLabel="Start the path"
         onCta={() => handleCta('learn', () => router.push('/learn?from=nudge_learn'))}
         onDismiss={() => dismissNudge('learn')}
+      />
+    );
+  }
+
+  if (activeNudge === 'partner') {
+    return (
+      <NudgeCard
+        icon={Camera}
+        title="Marking paper scripts too?"
+        description={`${PARTNERS.learningmate.name} grades a student's paper from a photo or upload, with feedback on each question.`}
+        meta="Partner"
+        ctaLabel="Grade a paper free"
+        onCta={() =>
+          handleCta('partner', () => {
+            captureEvent('partner_ad_clicked', { partner: 'learningmate', surface: 'popup' });
+            window.open(partnerOutHref('learningmate', 'popup'), '_blank', 'noopener');
+          })
+        }
+        onDismiss={() => {
+          captureEvent('partner_ad_dismissed', { partner: 'learningmate', surface: 'popup' });
+          dismissNudge('partner');
+        }}
       />
     );
   }

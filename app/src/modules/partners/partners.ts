@@ -13,7 +13,8 @@ export const PARTNERS = {
 
 export type PartnerId = keyof typeof PARTNERS;
 
-export const PARTNER_SURFACES = ['classes', 'mark_book'] as const;
+/** `popup`: the one-time corner card a teacher gets after signing in (OnboardingNudges). */
+export const PARTNER_SURFACES = ['classes', 'mark_book', 'popup'] as const;
 export type PartnerSurface = (typeof PARTNER_SURFACES)[number];
 
 export function isPartner(id: string): id is PartnerId {
