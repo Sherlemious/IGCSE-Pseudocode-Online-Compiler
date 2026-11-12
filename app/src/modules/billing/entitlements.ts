@@ -1,5 +1,5 @@
 import { revalidateTag, unstable_cache } from 'next/cache';
-import { prisma } from '@/shared/db';
+import { freshPrisma, prisma } from '@/shared/db';
 import type { Plan, Prisma } from '@prisma/client';
 import { LEGACY_STARTER_LIMITS, LIMITS, type Tier, type TierLimits } from './limits';
 
@@ -189,7 +189,11 @@ export async function getPremiumAccess(
 ): Promise<boolean> {
   if (db !== prisma) return loadPremiumAccess(userId, db);
   return unstable_cache(
-    () => loadPremiumAccess(userId, prisma),
+    // freshPrisma: this runs right after revalidatePremiumAccess on a grant or
+    // revoke, and the cached Hyperdrive binding would hand back the plan from
+    // before the write, then keep that answer for the whole TTL (Nov 2026: an
+    // admin-granted plan still showed the Premium upsell).
+    () => loadPremiumAccess(userId, freshPrisma),
     ['premium-access', userId],
     // Every grant/revoke path calls revalidatePremiumAccess, so this TTL only
     // bounds the two time-based edges (trialEndsAt / planExpiresAt elapsing and

@@ -3,7 +3,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from '@/shared/ui/HoverPrefetchLink';
 import { useSession } from 'next-auth/react';
-import { Lock, CheckCircle, Crown, FileText, ArrowRight, Sparkles, School } from 'lucide-react';
+import { Lock, CheckCircle, Crown, FileText, ArrowRight, Sparkles, School, GraduationCap } from 'lucide-react';
+import { useFeatureFlagEnabled } from 'posthog-js/react';
+import { EXAM_MARKING_FLAG } from '@/modules/billing/featureFlags';
 import { authHref } from '@/modules/auth/callback';
 import { PracticeFilters } from './PracticeFilters';
 import { PracticeToolbar } from './PracticeToolbar';
@@ -54,6 +56,9 @@ export default function PracticeIndex({
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [progressMap, setProgressMap] = useState<Map<string, PracticeProgress>>(new Map());
   const [premiumAccess, setPremiumAccess] = useState(!gatingEnabled);
+  // The upsell waits for the access answer, so a paying student never sees it flash.
+  const [accessKnown, setAccessKnown] = useState(false);
+  const examMarkingOn = useFeatureFlagEnabled(EXAM_MARKING_FLAG) === true;
 
   useEffect(() => {
     if (authStatus !== 'authenticated') {
@@ -69,6 +74,7 @@ export default function PracticeIndex({
       .then((data: ProgressPayload | null) => {
         if (cancelled || !data) return;
         setPremiumAccess(Boolean(data.premiumAccess) || !gatingEnabled);
+        setAccessKnown(true);
         setProgressMap(
           new Map(
             (data.progress ?? []).map((row) => [
@@ -253,7 +259,7 @@ export default function PracticeIndex({
           </div>
 
           <div className="space-y-2">
-            {gatingEnabled && signedIn && !premiumAccess && (
+            {gatingEnabled && signedIn && accessKnown && !premiumAccess && (
               <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-warning/20 bg-warning/5 text-xs text-warning">
                 <Crown size={13} className="shrink-0" />
                 <span>
@@ -500,6 +506,15 @@ export default function PracticeIndex({
                                       </span>
                                     )}
                                     {social && <SolveCountChip stat={social} compact />}
+                                    {examMarkingOn && q.marks === 15 && q.answerFormat !== 'FLOWCHART' && (
+                                      <span
+                                        title="Get your answer marked against a 15-point scheme"
+                                        className="flex items-center gap-1 text-[10px] text-primary px-1.5 py-0.5 rounded border border-primary/30 bg-primary/5"
+                                      >
+                                        <GraduationCap size={10} />
+                                        <span className="hidden sm:inline">Examiner marking</span>
+                                      </span>
+                                    )}
                                     {q.marks != null && (
                                       <span className="hidden sm:inline text-[10px] text-warning/80 font-mono tabular-nums">
                                         {q.marks}m
