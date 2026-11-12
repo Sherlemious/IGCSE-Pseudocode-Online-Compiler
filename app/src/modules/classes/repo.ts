@@ -95,6 +95,11 @@ export function countActiveClasses(ownerId: string, db: Db = prisma) {
   return db.class.count({ where: { ownerId, archived: false } });
 }
 
+/** Every class the owner has ever made, archived ones included. */
+export function countAllClasses(ownerId: string, db: Db = prisma) {
+  return db.class.count({ where: { ownerId } });
+}
+
 /** Students across the owner's non-archived classes. */
 export function countActiveStudents(ownerId: string, db: Db = prisma) {
   return db.classMembership.count({ where: { class: { ownerId, archived: false } } });

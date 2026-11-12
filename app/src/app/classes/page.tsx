@@ -8,6 +8,7 @@ import { GraduationCap, Users, ArrowRight, School } from 'lucide-react';
 import CreateClassForm from '@/modules/classes/CreateClassForm';
 import { teacherYearlyCheckoutHref } from '@/modules/billing/teacherCheckout';
 import PartnerAd from '@/modules/partners/PartnerAd';
+import { ensureFirstClass } from '@/modules/classes/service';
 
 export const metadata: Metadata = {
   title: 'My Classes',
@@ -19,6 +20,10 @@ export default async function ClassesPage() {
   const session = await auth();
   if (!session?.user?.id) redirect('/auth/signin?callbackUrl=/classes');
   const userId = session.user.id;
+
+  // A teacher's first visit lands on a ready-made class and its join link.
+  const firstClassId = await ensureFirstClass({ id: userId, role: session.user.role });
+  if (firstClassId) redirect(`/classes/${firstClassId}`);
 
   const [owned, enrolled, entitlements] = await Promise.all([
     prisma.class.findMany({

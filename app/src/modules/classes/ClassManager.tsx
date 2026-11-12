@@ -82,6 +82,8 @@ export default function ClassManager({
   const [archiveOpen, setArchiveOpen] = useState(false);
   const [sort, setSort] = useState<RosterSort>('name');
   const viewedRef = useRef(false);
+  // No students yet: the join link is the only thing that matters on this page.
+  const empty = members.length === 0;
 
   useEffect(() => {
     if (viewedRef.current) return;
@@ -198,24 +200,18 @@ export default function ClassManager({
         </div>
       </div>
 
-      {offerStarter && (
-        <div className="rounded-xl border border-primary/30 bg-primary/5 px-4 py-3.5">
-          <p className="text-sm text-light-text">
-            Your students stay on the free editor until you start Starter. $50 for the year, one payment, and the whole class is covered.
-          </p>
-          <Link
-            href={teacherYearlyCheckoutHref('class_progress')}
-            onClick={() => captureEvent('nudge_clicked', { nudge: 'class_starter_year', class_id: classId })}
-            className="mt-2 inline-flex text-sm font-semibold text-primary hover:underline"
-          >
-            Start Starter for the year
-          </Link>
-        </div>
-      )}
-
+      {empty ? (
+        <>
       {/* Join link */}
       <div className="bg-surface/80 backdrop-blur-sm rounded-xl border border-border p-5 card-glow">
-        <h2 className="mono-label text-light-text mb-3">Invite students</h2>
+        {empty ? (
+          <div className="mb-3">
+            <h2 className="text-base font-semibold text-light-text">Your class is ready. Send this link to your students.</h2>
+            <p className="text-xs text-dark-text mt-1">Paste it into your class chat or LMS, or print the join slip. Their work shows up here as soon as they join.</p>
+          </div>
+        ) : (
+          <h2 className="mono-label text-light-text mb-3">Invite students</h2>
+        )}
         <div className="flex flex-wrap items-center gap-2">
           <code className="flex-1 min-w-0 truncate rounded-lg bg-background border border-border px-3 py-2.5 text-xs text-dark-text font-mono">
             {joinUrl}
@@ -240,6 +236,77 @@ export default function ClassManager({
           Students open this link, sign in, and are added to the class. Code: <span className="font-mono text-dark-text">{joinCode}</span>
         </p>
       </div>
+
+      {offerStarter && (
+        <div className="rounded-xl border border-primary/30 bg-primary/5 px-4 py-3.5">
+          <p className="text-sm text-light-text">
+            Your students stay on the free editor until you start Starter. $50 for the year, one payment, and the whole class is covered.
+          </p>
+          <Link
+            href={teacherYearlyCheckoutHref('class_progress')}
+            onClick={() => captureEvent('nudge_clicked', { nudge: 'class_starter_year', class_id: classId })}
+            className="mt-2 inline-flex text-sm font-semibold text-primary hover:underline"
+          >
+            Start Starter for the year
+          </Link>
+        </div>
+      )}
+
+        </>
+      ) : (
+        <>
+      {offerStarter && (
+        <div className="rounded-xl border border-primary/30 bg-primary/5 px-4 py-3.5">
+          <p className="text-sm text-light-text">
+            Your students stay on the free editor until you start Starter. $50 for the year, one payment, and the whole class is covered.
+          </p>
+          <Link
+            href={teacherYearlyCheckoutHref('class_progress')}
+            onClick={() => captureEvent('nudge_clicked', { nudge: 'class_starter_year', class_id: classId })}
+            className="mt-2 inline-flex text-sm font-semibold text-primary hover:underline"
+          >
+            Start Starter for the year
+          </Link>
+        </div>
+      )}
+
+      {/* Join link */}
+      <div className="bg-surface/80 backdrop-blur-sm rounded-xl border border-border p-5 card-glow">
+        {empty ? (
+          <div className="mb-3">
+            <h2 className="text-base font-semibold text-light-text">Your class is ready. Send this link to your students.</h2>
+            <p className="text-xs text-dark-text mt-1">Paste it into your class chat or LMS, or print the join slip. Their work shows up here as soon as they join.</p>
+          </div>
+        ) : (
+          <h2 className="mono-label text-light-text mb-3">Invite students</h2>
+        )}
+        <div className="flex flex-wrap items-center gap-2">
+          <code className="flex-1 min-w-0 truncate rounded-lg bg-background border border-border px-3 py-2.5 text-xs text-dark-text font-mono">
+            {joinUrl}
+          </code>
+          <button
+            onClick={copyLink}
+            className="shrink-0 inline-flex items-center gap-1.5 px-3 py-2.5 rounded-lg bg-primary/10 text-primary
+              text-xs font-medium hover:bg-primary/20 transition-colors"
+          >
+            {copied ? <Check size={13} /> : <Copy size={13} />}
+            {copied ? 'Copied' : 'Copy'}
+          </button>
+          <Link
+            href={`/classes/${classId}/slip`}
+            className="shrink-0 inline-flex items-center gap-1.5 px-3 py-2.5 rounded-lg border border-border text-xs text-light-text hover:border-primary/40 hover:text-primary transition-colors"
+          >
+            <Printer size={13} aria-hidden="true" />
+            Print join slip
+          </Link>
+        </div>
+        <p className="text-[11px] text-dark-text/60 mt-2">
+          Students open this link, sign in, and are added to the class. Code: <span className="font-mono text-dark-text">{joinCode}</span>
+        </p>
+      </div>
+
+        </>
+      )}
 
       {/* Roster */}
       <div>

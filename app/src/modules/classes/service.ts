@@ -22,6 +22,7 @@ import {
 } from './markBook';
 import { ASSIGN_QUESTIONS_MAX, assignmentTimeLimitMin, assignmentTitle, sameQuestionSet } from './assignPlan';
 import * as repo from './repo';
+import { captureServerEvent } from '@/modules/telemetry/serverCapture';
 
 /** A class/assignment failure with its HTTP status and machine-readable code. */
 export class ClassRequestError extends HttpError {
@@ -61,6 +62,28 @@ export async function createClass(user: { id: string; role: string }, name: stri
     }
   }
   throw new HttpError(500, 'Could not generate a unique join code. Please try again.');
+}
+
+/** Name of the class a new teacher gets without asking. They can rename it on the class page. */
+export const FIRST_CLASS_NAME = 'My class';
+
+/**
+ * A teacher who has never made a class gets one, so their first screen is a
+ * join link to send instead of an empty form (37 of 43 teachers never got a
+ * student in). Never recreated: a teacher who archived theirs has made one.
+ * Returns the class id, or null when nothing was created.
+ */
+export async function ensureFirstClass(user: { id: string; role: string }): Promise<string | null> {
+  if (user.role !== 'TEACHER') return null;
+  if ((await repo.countAllClasses(user.id)) > 0) return null;
+  try {
+    const created = await createClass(user, FIRST_CLASS_NAME);
+    await captureServerEvent(user.id, 'class_auto_created', { class_id: created.id });
+    return created.id;
+  } catch {
+    // A plan limit or a join-code clash: fall back to the normal create form.
+    return null;
+  }
 }
 
 export async function listClasses(userId: string) {
