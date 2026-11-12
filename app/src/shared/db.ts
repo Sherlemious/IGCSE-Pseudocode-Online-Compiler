@@ -48,7 +48,11 @@ function createPrisma(options?: Prisma.PrismaClientOptions): PrismaClient {
 }
 
 type CloudflareContext = {
-  env: { HYPERDRIVE?: { connectionString: string }; DATABASE_URL?: string };
+  env: {
+    HYPERDRIVE?: { connectionString: string };
+    HYPERDRIVE_FRESH?: { connectionString: string };
+    DATABASE_URL?: string;
+  };
   ctx: object;
 };
 
@@ -59,13 +63,16 @@ function cloudflareContext(): CloudflareContext | undefined {
 
 // Workers can't reuse a socket across requests, so each request gets its own client.
 const workerClients = new WeakMap<object, PrismaClient>();
+const freshWorkerClients = new WeakMap<object, PrismaClient>();
 
-function workerClient(cf: CloudflareContext): PrismaClient {
-  let client = workerClients.get(cf.ctx);
+function workerClient(cf: CloudflareContext, fresh: boolean): PrismaClient {
+  const clients = fresh ? freshWorkerClients : workerClients;
+  let client = clients.get(cf.ctx);
   if (!client) {
-    const connectionString = cf.env.HYPERDRIVE?.connectionString ?? cf.env.DATABASE_URL ?? process.env.DATABASE_URL;
+    const binding = fresh ? (cf.env.HYPERDRIVE_FRESH ?? cf.env.HYPERDRIVE) : cf.env.HYPERDRIVE;
+    const connectionString = binding?.connectionString ?? cf.env.DATABASE_URL ?? process.env.DATABASE_URL;
     client = createPrisma({ adapter: new PrismaPg({ connectionString, maxUses: 1 }) });
-    workerClients.set(cf.ctx, client);
+    clients.set(cf.ctx, client);
   }
   return client;
 }
@@ -77,14 +84,31 @@ function nodeClient(): PrismaClient {
   return globalForPrisma.prisma;
 }
 
-export const prisma = new Proxy({} as PrismaClient, {
-  get(_target, prop) {
-    const cf = cloudflareContext();
-    const client = cf ? workerClient(cf) : nodeClient();
-    const value = Reflect.get(client, prop, client);
-    return typeof value === 'function' ? value.bind(client) : value;
-  },
-});
+function clientProxy(fresh: boolean): PrismaClient {
+  return new Proxy({} as PrismaClient, {
+    get(_target, prop) {
+      const cf = cloudflareContext();
+      const client = cf ? workerClient(cf, fresh) : nodeClient();
+      const value = Reflect.get(client, prop, client);
+      return typeof value === 'function' ? value.bind(client) : value;
+    },
+  });
+}
+
+/**
+ * The default client. On Cloudflare it goes through Hyperdrive with query
+ * caching on: an identical SELECT within 60 s is answered without waking Neon,
+ * and a write does NOT invalidate it.
+ */
+export const prisma = clientProxy(false);
+
+/**
+ * Same database, Hyperdrive caching off. Use it for reads that must see a write
+ * made moments ago (session/JWT refresh, onboarding, the admin pages); a cached
+ * read there kept new signups bouncing through /onboarding. Off Cloudflare it
+ * is the same client as `prisma`.
+ */
+export const freshPrisma = clientProxy(true);
 
 /**
  * What repositories take as their database handle: the client itself or the

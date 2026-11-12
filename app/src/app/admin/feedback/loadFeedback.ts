@@ -1,6 +1,6 @@
 import { unstable_cache } from 'next/cache';
 import type { Prisma } from '@prisma/client';
-import { prisma } from '@/shared/db';
+import { freshPrisma as prisma } from '@/shared/db'; // uncached: see freshPrisma
 import {
   ADMIN_FEEDBACK_CACHE_TAG,
   ADMIN_FEEDBACK_REVALIDATE_SECONDS,

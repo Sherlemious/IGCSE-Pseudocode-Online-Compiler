@@ -24,7 +24,12 @@
   },
   "triggers": { "crons": ["0 3 * * *"] },
   "services": [{ "binding": "WORKER_SELF_REFERENCE", "service": "pseudocode-compiler" }],
-  "hyperdrive": [{ "binding": "HYPERDRIVE", "id": "cea8d950f61b4d1facd0cb26538a4014" }],
+  // HYPERDRIVE caches SELECTs for 60 s (keeps Neon asleep); HYPERDRIVE_FRESH has
+  // caching disabled, for reads that must see a write just made (freshPrisma).
+  "hyperdrive": [
+    { "binding": "HYPERDRIVE", "id": "cea8d950f61b4d1facd0cb26538a4014" },
+    { "binding": "HYPERDRIVE_FRESH", "id": "5a50fd7202774f73afd17ce6d14c7287" }
+  ],
   "kv_namespaces": [{ "binding": "NEXT_INC_CACHE_KV", "id": "82384a67f5444b6eb80c4329054ded23" }],
   "d1_databases": [
     {

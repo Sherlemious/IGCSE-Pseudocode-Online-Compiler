@@ -3,6 +3,7 @@
 import { useEffect, useRef } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
+import { hasMarkedRoleChosen } from './roleChosenMark';
 
 const SKIP_PREFIXES = ['/onboarding', '/auth', '/api'];
 
@@ -23,12 +24,13 @@ export default function OnboardingGate() {
     if (status !== 'authenticated' || session?.user?.roleChosen) return;
     if (SKIP_PREFIXES.some((prefix) => pathname.startsWith(prefix))) return;
     if (sent.current) return;
+    if (hasMarkedRoleChosen(session?.user?.id)) return;
     sent.current = true;
 
     const search = typeof window !== 'undefined' ? window.location.search : '';
     const here = `${pathname}${search}`;
     router.replace(`/onboarding?callbackUrl=${encodeURIComponent(here)}`);
-  }, [pathname, router, session?.user?.roleChosen, status]);
+  }, [pathname, router, session?.user?.id, session?.user?.roleChosen, status]);
 
   return null;
 }

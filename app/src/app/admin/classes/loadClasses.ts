@@ -1,4 +1,4 @@
-import { prisma } from '@/shared/db';
+import { freshPrisma as prisma } from '@/shared/db'; // uncached: see freshPrisma
 import {
   CLASS_MEMBER_CAP,
   CLASSES_PAGE_SIZE,

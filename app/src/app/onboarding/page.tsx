@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { auth } from '@/modules/auth/auth';
-import { prisma } from '@/shared/db';
+import { freshPrisma as prisma } from '@/shared/db'; // uncached: see freshPrisma
 import RolePicker from './RolePicker';
 import { safeCallback } from '@/modules/auth/callback';
 import { LogoBadge } from '@/shared/brand';

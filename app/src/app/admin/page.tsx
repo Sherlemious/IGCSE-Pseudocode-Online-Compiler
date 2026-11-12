@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import Image from 'next/image';
-import { prisma } from '@/shared/db';
+import { freshPrisma as prisma } from '@/shared/db'; // uncached: see freshPrisma
 import { auth } from '@/modules/auth/auth';
 import { getQuestionCount } from '@/shared/lib/catalogCache';
 import {

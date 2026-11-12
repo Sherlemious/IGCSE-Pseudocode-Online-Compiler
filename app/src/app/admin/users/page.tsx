@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation';
-import { prisma } from '@/shared/db';
+import { freshPrisma as prisma } from '@/shared/db'; // uncached: see freshPrisma
 import { auth } from '@/modules/auth/auth';
 import { AdminPager } from '../_components/AdminPager';
 import ScrollMain from '../_components/ScrollMain';

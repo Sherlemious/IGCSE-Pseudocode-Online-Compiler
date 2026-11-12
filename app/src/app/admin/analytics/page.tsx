@@ -1,5 +1,5 @@
 import { unstable_cache } from 'next/cache';
-import { prisma } from '@/shared/db';
+import { freshPrisma as prisma } from '@/shared/db'; // uncached: see freshPrisma
 import { getQuestionCatalog } from '@/shared/lib/catalogCache';
 import {
   SectionHeading,

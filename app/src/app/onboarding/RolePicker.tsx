@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { GraduationCap, User, Loader2, ArrowRight, AlertCircle } from 'lucide-react';
 import { safeCallback } from '@/modules/auth/callback';
+import { markRoleChosen } from '@/modules/onboarding/roleChosenMark';
 
 type Role = 'STUDENT' | 'TEACHER';
 
@@ -25,7 +26,7 @@ const OPTIONS = [
 
 export default function RolePicker({ callbackUrl }: { callbackUrl?: string }) {
   const router = useRouter();
-  const { update } = useSession();
+  const { data: session, update } = useSession();
   const [role, setRole] = useState<Role>('STUDENT');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -45,6 +46,9 @@ export default function RolePicker({ callbackUrl }: { callbackUrl?: string }) {
         setLoading(false);
         return;
       }
+      // The refresh below can still read the pre-pick row from a query cache,
+      // so record the pick in the browser before anything else (see roleChosenMark).
+      markRoleChosen(session?.user?.id);
       // Refresh the JWT so the new role is live everywhere without a re-login.
       // An argument makes update() POST, which fires the jwt `update` trigger;
       // a bare update() is a plain GET and leaves the cached token stale.

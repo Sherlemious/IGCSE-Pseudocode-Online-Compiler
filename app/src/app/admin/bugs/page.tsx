@@ -1,4 +1,4 @@
-import { prisma } from '@/shared/db';
+import { freshPrisma as prisma } from '@/shared/db'; // uncached: see freshPrisma
 import { AdminPageHeader } from '../_components/adminUi';
 import BugReportTable from './_components/BugReportTable';
 

@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { prisma } from '@/shared/db';
+import { freshPrisma as prisma } from '@/shared/db'; // uncached: see freshPrisma
 import { COURSE_CHOICES } from '@/modules/learn/courseChoice';
 import { courseById } from '@/modules/learn/curriculum';
 import LearnProgressChecklist from '@/modules/learn/LearnProgressChecklist';

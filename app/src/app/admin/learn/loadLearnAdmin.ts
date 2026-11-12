@@ -1,5 +1,5 @@
 import { unstable_cache } from 'next/cache';
-import { prisma } from '@/shared/db';
+import { freshPrisma as prisma } from '@/shared/db'; // uncached: see freshPrisma
 import { COURSE_CHOICES } from '@/modules/learn/courseChoice';
 import { courseById } from '@/modules/learn/curriculum';
 import { buildLearnAdminCourse, type LearnAdminRow } from './learnAdmin';

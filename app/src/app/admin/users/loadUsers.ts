@@ -1,5 +1,5 @@
 import { unstable_cache } from 'next/cache';
-import { prisma } from '@/shared/db';
+import { freshPrisma as prisma } from '@/shared/db'; // uncached: see freshPrisma
 import { SITTING_VALUES, isSitting, type Sitting } from '@/modules/onboarding/sittings';
 
 export type UserFacets = {
