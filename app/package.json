@@ -81,6 +81,11 @@
     },
     "@tailwindcss/typography": {
       "postcss-selector-parser": "^7.1.6"
+    },
+    "dompurify": "^3.4.17",
+    "body-parser": "^2.4.0",
+    "@node-minify/core": {
+      "glob": "^10.5.0"
     }
   },
   "devDependencies": {
@@ -97,7 +102,7 @@
     "tailwindcss": "^4",
     "tsx": "^4.21.0",
     "typescript": "^5",
-    "vitest": "^4.1.11",
-    "wrangler": "^4.151.1"
+    "vitest": "^4.1.12",
+    "wrangler": "^4.160.1"
   }
 }

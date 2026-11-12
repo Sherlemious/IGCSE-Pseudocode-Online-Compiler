@@ -19,13 +19,15 @@ const {
   getQuestionCatalog: vi.fn(),
 }));
 
-vi.mock('@/shared/db', () => ({
-  prisma: {
+vi.mock('@/shared/db', () => {
+  const client = {
     learnProgress: { findMany: findManyLearn },
     progress: { findMany: findManyProgress, count: countProgress },
     examAttempt: { findMany: findManyExams },
-  },
-}));
+  };
+  // The admin repo reads through freshPrisma (uncached Hyperdrive binding).
+  return { prisma: client, freshPrisma: client };
+});
 vi.mock('@/modules/auth/auth', () => ({ auth }));
 vi.mock('@/modules/admin/isAdmin', () => ({ isAdmin }));
 vi.mock('@/shared/lib/catalogCache', () => ({ getQuestionCatalog }));
