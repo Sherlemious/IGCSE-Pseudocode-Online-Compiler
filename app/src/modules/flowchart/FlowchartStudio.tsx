@@ -6,6 +6,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   AlertTriangle,
+  BookOpen,
   Bug,
   Check,
   Code2,
@@ -26,7 +27,8 @@ import { AUTOSAVE_DELAY } from '@/shared/lib/persist';
 import Modal, { ConfirmDialog } from '@/shared/ui/Modal';
 import FlowchartBuilder from './FlowchartBuilder';
 import FlowchartTerminal from './FlowchartTerminal';
-import { FLOWCHART_EXAMPLES } from './examples';
+import FlowchartExamplePicker from './FlowchartExamplePicker';
+import type { FlowchartExample } from './examples';
 import { FLOWCHART_IMPORT_KEY, FLOWCHART_VISITED_KEY } from './constants';
 import FlowchartUseSurvey from './FlowchartUseSurvey';
 import { flowchartFromCode } from './importCode';
@@ -53,6 +55,8 @@ export default function FlowchartStudio() {
   const [focusRequest, setFocusRequest] = useState<{ nodeId: string; nonce: number } | null>(null);
   const [importOpen, setImportOpen] = useState(false);
   const [newOpen, setNewOpen] = useState(false);
+  const [examplesOpen, setExamplesOpen] = useState(false);
+  const [pendingExample, setPendingExample] = useState<{ example: FlowchartExample; doc: FlowchartDoc } | null>(null);
   const [copied, setCopied] = useState(false);
   // Drawing problems ring their boxes only once the student has tried to run:
   // a half-drawn flowchart shouldn't be covered in red while it's being drawn.
@@ -167,6 +171,14 @@ export default function FlowchartStudio() {
     captureEvent('flowchart_converted', { direction: 'to_code', action: 'copy' });
   }, [program.code]);
 
+  const loadExample = useCallback(
+    (example: FlowchartExample, next: FlowchartDoc) => {
+      load(next);
+      captureEvent('flowchart_example_loaded', { example: example.id, category: example.category });
+    },
+    [load],
+  );
+
   const codeLines = program.code ? program.code.replace(/\n$/, '').split('\n') : [];
   const btn =
     'inline-flex items-center gap-1.5 min-h-9 px-2.5 rounded-md text-xs font-semibold transition-colors disabled:opacity-40 disabled:pointer-events-none shrink-0';
@@ -210,25 +222,10 @@ export default function FlowchartStudio() {
 
         <span className="mx-1 h-5 w-px bg-border shrink-0" />
 
-        <select
-          aria-label="Start from an example"
-          value=""
-          onChange={(e) => {
-            const ex = FLOWCHART_EXAMPLES.find((x) => x.id === e.target.value);
-            if (!ex) return;
-            const { doc: next } = flowchartFromCode(ex.code);
-            if (next) load(next);
-            captureEvent('flowchart_example_loaded', { example: ex.id });
-          }}
-          className="min-h-9 shrink-0 rounded-md border border-border bg-background px-2 text-xs text-dark-text hover:text-light-text"
-        >
-          <option value="">Examples…</option>
-          {FLOWCHART_EXAMPLES.map((ex) => (
-            <option key={ex.id} value={ex.id}>
-              {ex.title}
-            </option>
-          ))}
-        </select>
+        <button type="button" onClick={() => setExamplesOpen(true)} className={ghost} title="Browse example flowcharts" aria-label="Examples">
+          <BookOpen size={13} />
+          <span className="hidden sm:inline">Examples</span>
+        </button>
         <button type="button" onClick={() => setImportOpen(true)} className={ghost} title="Draw a flowchart from pseudocode">
           <FileUp size={13} />
           <span className="hidden sm:inline">From code</span>
@@ -371,6 +368,24 @@ export default function FlowchartStudio() {
           setImportOpen(false);
           captureEvent('flowchart_converted', { direction: 'from_code', source: 'paste' });
         }}
+      />
+      <FlowchartExamplePicker
+        open={examplesOpen}
+        onOpenChange={setExamplesOpen}
+        onLoad={(example, next) => {
+          // Only ask when there is a real drawing to lose (more than START → END).
+          if (doc.nodes.length > 2) setPendingExample({ example, doc: next });
+          else loadExample(example, next);
+        }}
+      />
+      <ConfirmDialog
+        open={!!pendingExample}
+        onClose={() => setPendingExample(null)}
+        onConfirm={() => pendingExample && loadExample(pendingExample.example, pendingExample.doc)}
+        icon={<BookOpen size={14} className="text-warning shrink-0" />}
+        title={`Load "${pendingExample?.example.title ?? ''}"?`}
+        message="This replaces your current flowchart."
+        confirmLabel="Load example"
       />
       <ConfirmDialog
         open={newOpen}

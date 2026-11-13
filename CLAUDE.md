@@ -265,7 +265,7 @@ Paywall follow-up: PostHog workflow "Nudge if they hit the Learn paywall and don
 | `flowchart_run` | `surface`, `debug`, `node_count`, `outcome` (`started`\|`drawing_error`), `error_category` |
 | `flowchart_converted` | `direction` (`from_code`\|`to_code`), `source` (`playground`\|`paste`) or `action` (`copy`\|`open_editor`) |
 | `flowchart_exported` | `surface`, `node_count` (PNG download) |
-| `flowchart_example_loaded` | `example` |
+| `flowchart_example_loaded` | `example`, `category` — from the example browser (`flowchart/FlowchartExamplePicker.tsx`; examples in `flowchart/examples.ts`, each run by `examples.test.ts` against its `inputs`/`output`) |
 | `flowchart_edit_clicked` | `from: playground` — "Edit as flowchart" on the editor's Flowchart tab (code handed over in sessionStorage `flowchart_import_code`) |
 | `flowchart_survey_shown` | `from` — once per browser, ~20 s after the maker opens (`?flowchart_survey=1` skips the wait) |
 | `flowchart_survey_dismissed` | `from` |
