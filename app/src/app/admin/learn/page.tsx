@@ -183,11 +183,15 @@ function LevelFunnel({ course }: { course: LearnAdminCourse }) {
   return (
     <div className="space-y-3">
       <p className="text-[11px] text-dark-text">Pale is started. Solid is every lesson in the level finished.</p>
-      {course.levels.map((level) => {
+      {course.levels.map((level, i) => {
+        const firstDrill = level.drill && !course.levels[i - 1]?.drill;
         const reached = Math.round((level.reached / course.learners) * 100);
         const finished = Math.round((level.finished / course.learners) * 100);
         return (
           <div key={level.levelNumber} className="space-y-1.5">
+            {firstDrill && (
+              <p className="pt-2 text-[10px] uppercase tracking-wide text-dark-text">Free drills · on the path after level 3</p>
+            )}
             <div className="flex items-center justify-between gap-3 text-xs">
               <span className="text-light-text font-medium truncate">
                 {level.levelNumber} · {level.levelName}
