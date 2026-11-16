@@ -58,5 +58,15 @@ export function pad2(n: number): string {
   return String(n).padStart(2, '0');
 }
 
+/** Short tag for a level: '04' on the main path, 'D1' for a drill side path. */
+export function levelTag(level: Pick<LearnLevel, 'number' | 'code'>): string {
+  return level.code ?? pad2(level.number);
+}
+
+/** 'Level 4' on the main path, 'Drill D1' for a side path. */
+export function levelTitle(level: Pick<LearnLevel, 'number' | 'code'>): string {
+  return level.code ? `Drill ${level.code}` : `Level ${level.number}`;
+}
+
 /** Muted track colour that stays visible on every theme (border is often darker than the page). */
 export const TRACK = 'color-mix(in srgb, var(--color-dark-text) 28%, transparent)';

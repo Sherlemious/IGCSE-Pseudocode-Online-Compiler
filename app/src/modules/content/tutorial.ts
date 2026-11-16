@@ -160,7 +160,7 @@ export const TUTORIAL_PATH_LEVELS: PathLevelCard[] = [
   {
     number: 4,
     name: 'Branch',
-    href: '/learn/7/if',
+    href: '/learn/4/if',
     leaveWith: 'IF / CASE with both branches closed',
     syllabus: '8.1.4b, 8.1.5',
     free: false,
@@ -168,7 +168,7 @@ export const TUTORIAL_PATH_LEVELS: PathLevelCard[] = [
   {
     number: 5,
     name: 'Repeat',
-    href: '/learn/8/for',
+    href: '/learn/5/for',
     leaveWith: 'FOR, WHILE, REPEAT, totalling and counting',
     syllabus: '8.1.4c–d',
     free: false,
@@ -176,7 +176,7 @@ export const TUTORIAL_PATH_LEVELS: PathLevelCard[] = [
   {
     number: 6,
     name: 'Text',
-    href: '/learn/9/string',
+    href: '/learn/6/string',
     leaveWith: 'LENGTH and SUBSTRING (1-based)',
     syllabus: '8.1.4e',
     free: false,
@@ -184,7 +184,7 @@ export const TUTORIAL_PATH_LEVELS: PathLevelCard[] = [
   {
     number: 7,
     name: 'Arrays',
-    href: '/learn/10/declare',
+    href: '/learn/7/declare',
     leaveWith: 'ARRAY[1:n], fill loops, linear search',
     syllabus: '8.2, 7.4',
     free: false,
@@ -192,7 +192,7 @@ export const TUTORIAL_PATH_LEVELS: PathLevelCard[] = [
   {
     number: 8,
     name: 'Routines',
-    href: '/learn/11/procedure',
+    href: '/learn/8/procedure',
     leaveWith: 'PROCEDURE vs FUNCTION, library functions',
     syllabus: '8.1 procedures/functions',
     free: false,
@@ -200,7 +200,7 @@ export const TUTORIAL_PATH_LEVELS: PathLevelCard[] = [
   {
     number: 9,
     name: 'Files',
-    href: '/learn/12/why',
+    href: '/learn/9/why',
     leaveWith: 'OPENFILE, READFILE, WRITEFILE, EOF',
     syllabus: '8.3',
     free: false,
@@ -208,7 +208,7 @@ export const TUTORIAL_PATH_LEVELS: PathLevelCard[] = [
   {
     number: 10,
     name: 'Paper',
-    href: '/learn/13/validation',
+    href: '/learn/10/validation',
     leaveWith: 'Validation, trace tables, bubble sort',
     syllabus: '7.4–7.9, 9, 10',
     free: false,

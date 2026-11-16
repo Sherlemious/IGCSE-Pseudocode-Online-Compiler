@@ -17,7 +17,7 @@ describe('path layout', () => {
 
   it('lays out one section per playable level and lists the rest as ahead', () => {
     const layout = layoutPath(IGCSE_PAPER_2);
-    const playable = IGCSE_PAPER_2.levels.filter((level) => level.playable);
+    const playable = IGCSE_PAPER_2.levels.filter((level) => level.playable && !level.drill);
     const locked = IGCSE_PAPER_2.levels.filter((level) => !level.playable);
 
     expect(layout.sections.map((section) => section.level.slug)).toEqual(playable.map((level) => level.slug));
@@ -31,6 +31,18 @@ describe('path layout', () => {
       expect(section.bottom).toBeGreaterThan(section.stops[section.stops.length - 1]!.y);
     }
     expect(layout.height).toBeGreaterThan(layout.sections[layout.sections.length - 1]!.bottom);
+
+    // Drills are side paths placed right after the level they branch off.
+    expect(layout.branches.map((branch) => [branch.anchor?.slug, branch.drills.map((drill) => drill.slug)])).toEqual([
+      ['3', ['d1', 'd2']],
+      ['7', ['d3']],
+    ]);
+    for (const branch of layout.branches) {
+      const anchor = layout.sections.find((section) => section.level === branch.anchor)!;
+      const after = layout.sections[layout.sections.indexOf(anchor) + 1]!;
+      expect(branch.top).toBeGreaterThan(anchor.bottom);
+      expect(after.top).toBeGreaterThanOrEqual(branch.top + branch.height);
+    }
   });
 
   it('alternates the winding direction per level and starts each level on centre', () => {

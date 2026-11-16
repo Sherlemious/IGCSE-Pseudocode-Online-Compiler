@@ -22,16 +22,18 @@ describe('learn course choice', () => {
 });
 
 describe('IGCSE Paper 2 curriculum', () => {
-  it('has thirteen levels, with the three drills after Input', () => {
+  it('has ten syllabus levels in order, then three optional drill side paths', () => {
     expect(IGCSE_PAPER_2.levels).toHaveLength(13);
     expect(IGCSE_PAPER_2.levels.map((level) => level.number)).toEqual([
       1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13,
     ]);
-    expect(IGCSE_PAPER_2.levels.filter((level) => level.drill).map((level) => level.slug)).toEqual([
-      '4',
-      '5',
-      '6',
+    const drills = IGCSE_PAPER_2.levels.filter((level) => level.drill);
+    expect(drills.map((level) => [level.slug, level.code, level.branchOf])).toEqual([
+      ['d1', 'D1', 3],
+      ['d2', 'D2', 3],
+      ['d3', 'D3', 7],
     ]);
+    expect(IGCSE_PAPER_2.levels.slice(0, 10).every((level) => !level.drill && level.slug === String(level.number))).toBe(true);
     const ids = IGCSE_PAPER_2.levels.flatMap((level) => level.lessons.map((lesson) => lesson.id));
     const slugs = flattenLessons(IGCSE_PAPER_2).map(
       ({ level, lesson }) => `${level.slug}/${lesson.slug}`,
@@ -54,15 +56,17 @@ describe('IGCSE Paper 2 curriculum', () => {
     expect(lessonHref(found!.level, found!.lesson)).toBe('/learn/2/div-mod');
     expect(previousLesson(IGCSE_PAPER_2, '1.1')).toBeNull();
     expect(nextLesson(IGCSE_PAPER_2, '1.1')?.lesson.id).toBe('1.2');
-    expect(nextLesson(IGCSE_PAPER_2, '3.4')?.lesson.id).toBe('11.1');
-    expect(nextLesson(IGCSE_PAPER_2, '13.4')?.lesson.id).toBe('4.1');
+    // Next walks the syllabus; the drills come after level 10.
+    const lastOf = (slug: string) => IGCSE_PAPER_2.levels.find((level) => level.slug === slug)!.lessons.at(-1)!.id;
+    expect(nextLesson(IGCSE_PAPER_2, lastOf('3'))?.lesson.id).toBe('4.1');
+    expect(nextLesson(IGCSE_PAPER_2, lastOf('10'))?.lesson.id).toBe('11.1');
   });
 
   it('accepts solutionCode for every playable non-quiz lesson', async () => {
     const playable = flattenLessons(IGCSE_PAPER_2).filter(({ lesson }) => lesson.playable);
     expect(playable.length).toBe(93);
     expect(IGCSE_PAPER_2.levels.map((level) => level.lessons.length)).toEqual([
-      6, 9, 6, 4, 4, 4, 8, 10, 7, 9, 7, 7, 12,
+      6, 9, 6, 8, 10, 7, 9, 7, 7, 12, 4, 4, 4,
     ]);
 
     for (const { lesson } of playable) {
@@ -85,7 +89,7 @@ describe('IGCSE Paper 2 curriculum', () => {
       const result = await checkLessonCode(lesson, lesson.solutionCode ?? '');
       expect(result.ok, `${lesson.id}: ${result.message}`).toBe(true);
     }
-    const trace = findLesson(IGCSE_PAPER_2, '13', 'trace')!.lesson;
+    const trace = findLesson(IGCSE_PAPER_2, '10', 'trace')!.lesson;
     expect(trace.type).toBe('quiz');
     expect(trace.starterCode).toContain('A <- 3');
   });
@@ -101,7 +105,7 @@ describe('IGCSE Paper 2 curriculum', () => {
   });
 
   it('fails 10.3 starter until the four errors are fixed', async () => {
-    const lesson = findLesson(IGCSE_PAPER_2, '13', 'errors')!.lesson;
+    const lesson = findLesson(IGCSE_PAPER_2, '10', 'errors')!.lesson;
     const starter = await checkLessonCode(lesson, lesson.starterCode ?? '');
     expect(starter.ok).toBe(false);
     const fixed = await checkLessonCode(lesson, lesson.solutionCode ?? '');
@@ -109,7 +113,7 @@ describe('IGCSE Paper 2 curriculum', () => {
   });
 
   it('fails 10.10 starter until the four errors are fixed', async () => {
-    const lesson = findLesson(IGCSE_PAPER_2, '13', 'more-errors')!.lesson;
+    const lesson = findLesson(IGCSE_PAPER_2, '10', 'more-errors')!.lesson;
     const starter = await checkLessonCode(lesson, lesson.starterCode ?? '');
     expect(starter.ok).toBe(false);
     const fixed = await checkLessonCode(lesson, lesson.solutionCode ?? '');

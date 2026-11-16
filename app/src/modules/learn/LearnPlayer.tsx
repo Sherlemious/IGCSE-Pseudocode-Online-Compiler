@@ -30,6 +30,7 @@ import PassPriceLine from '@/modules/billing/PassPriceLine';
 import AskParentButton from '@/modules/billing/AskParentButton';
 import { captureLearn, learnCourseProps, learnLessonProps, learnLevelProps } from './telemetry';
 import { ALEVEL_COURSE_ID, type LearnCourse, type LearnLesson, type LearnLevel, type QuizItem } from './types';
+import { levelTitle } from './pathTheme';
 
 type Props = {
   course: LearnCourse;
@@ -304,7 +305,7 @@ export default function LearnPlayer({ course, level, lesson, premiumAccess: init
             <div className="mb-4 rounded-xl border border-warning/30 bg-warning/5 p-3 text-sm">
               <PassPriceLine offer={offer} />
               <p className="mt-1.5 text-dark-text">
-                Level {level.number} ends with: {level.leaveWith}. No subscription to cancel, and you can ask for a
+                {levelTitle(level)} ends with: {level.leaveWith}. No subscription to cancel, and you can ask for a
                 full refund within 14 days.
               </p>
             </div>
@@ -373,10 +374,10 @@ export default function LearnPlayer({ course, level, lesson, premiumAccess: init
           <span className="hidden sm:inline">Path</span>
         </Link>
         <span className="hidden md:inline text-[10px] uppercase tracking-wider text-primary/80 shrink-0">
-          Level {level.number} · {level.name}
+          {levelTitle(level)} · {level.name}
         </span>
         <span className="md:hidden font-mono text-[10px] text-primary/80 shrink-0 tabular-nums">
-          {level.number}.{playableIndex >= 0 ? playableIndex + 1 : 0}
+          {level.code ?? level.number}.{playableIndex >= 0 ? playableIndex + 1 : 0}
         </span>
         <h1 className="text-sm font-medium text-light-text truncate min-w-0 flex-1">{lesson.title}</h1>
         {done && <Check size={14} className="text-success shrink-0 hidden sm:block" />}

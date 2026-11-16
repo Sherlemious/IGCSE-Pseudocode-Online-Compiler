@@ -20,6 +20,8 @@ export type LearnAdminRow = {
 export type LevelStat = {
   levelNumber: number;
   levelName: string;
+  /** 'D1' for a drill side path. */
+  levelCode?: string;
   free: boolean;
   reached: number;
   finished: number;
@@ -206,6 +208,7 @@ export function buildLearnAdminCourse(
       return {
         levelNumber: level.number,
         levelName: level.name,
+        levelCode: level.code,
         free: level.free,
         reached,
         finished,

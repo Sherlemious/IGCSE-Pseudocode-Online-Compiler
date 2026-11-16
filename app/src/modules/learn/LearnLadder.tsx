@@ -8,7 +8,7 @@ import { ArrowRight, Crown, Play, Trophy } from 'lucide-react';
 import CourseChooser from './CourseChooser';
 import LearnPathMap from './LearnPathMap';
 import { findLesson, flattenLessons, lessonHref } from './path';
-import { formatMinutes } from './pathTheme';
+import { formatMinutes, levelTitle } from './pathTheme';
 import { isComplete, loadProgress, nextIncomplete, type ProgressMap } from './progress';
 import { hydrateLearnProgress } from './progressSync';
 import { captureLearn, learnCourseProps, learnLessonProps } from './telemetry';
@@ -31,7 +31,7 @@ export default function LearnLadder({
     freeLevels.length > 0
       ? `Levels ${freeLevels[0]!.number}–${freeLevels[freeLevels.length - 1]!.number}`
       : null;
-  const paidLevels = course.levels.filter((level) => !level.free);
+  const paidLevels = course.levels.filter((level) => !level.free && !level.drill);
   const paidRange =
     paidLevels.length > 0
       ? `Levels ${paidLevels[0]!.number}–${paidLevels[paidLevels.length - 1]!.number}`
@@ -157,7 +157,7 @@ export default function LearnLadder({
                 {completed === 0 ? 'Start the path' : 'Continue'}
               </div>
               <div className="text-sm sm:text-base font-medium truncate">
-                Level {nextFound.level.number} · {nextFound.lesson.title}
+                {levelTitle(nextFound.level)} · {nextFound.lesson.title}
               </div>
             </div>
             <span className="hidden sm:flex flex-col items-end shrink-0 font-mono text-[11px] tabular-nums leading-tight">

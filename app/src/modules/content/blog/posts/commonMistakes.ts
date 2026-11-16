@@ -223,7 +223,7 @@ export const commonMistakes: BlogPost = {
     },
     {
       kind: 'p',
-      text: 'Make the loop run over exactly the bounds you declared, and always pick an element with an index: `OUTPUT Scores[i]`, not `OUTPUT Scores`. See [1D arrays](/docs#arrays-1d) and the [arrays lesson](/learn/10/declare).',
+      text: 'Make the loop run over exactly the bounds you declared, and always pick an element with an index: `OUTPUT Scores[i]`, not `OUTPUT Scores`. See [1D arrays](/docs#arrays-1d) and the [arrays lesson](/learn/7/declare).',
     },
 
     // 10
@@ -244,7 +244,7 @@ export const commonMistakes: BlogPost = {
     },
     {
       kind: 'p',
-      text: 'The same goes for `IF Password = "cat" OR "dog"`: write `IF Password = "cat" OR Password = "dog" THEN`. See [IF statements](/docs#if) and the [IF lesson](/learn/7/if).',
+      text: 'The same goes for `IF Password = "cat" OR "dog"`: write `IF Password = "cat" OR Password = "dog" THEN`. See [IF statements](/docs#if) and the [IF lesson](/learn/4/if).',
     },
 
     // Bonus

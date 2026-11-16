@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, type CSSProperties, type ReactNode } from 'react';
 import Link from '@/shared/ui/HoverPrefetchLink';
 import { useSession } from 'next-auth/react';
-import { ArrowRight, Check, Crown, Flag, Lock } from 'lucide-react';
+import { ArrowRight, Check, Crown, Flag, GitBranch, Lock } from 'lucide-react';
 import { lessonHref } from './path';
 import {
   curveThrough,
@@ -11,10 +11,11 @@ import {
   layoutPath,
   leadingCompleted,
   progressAlongPath,
+  type BranchBlock,
   type LevelSection,
   type Side,
 } from './pathLayout';
-import { TRACK, formatMinutes, lessonTypeMeta, levelHue, levelMinutes, pad2 } from './pathTheme';
+import { TRACK, formatMinutes, lessonTypeMeta, levelHue, levelMinutes, levelTag, pad2 } from './pathTheme';
 import {
   isComplete,
   isLessonUnlocked,
@@ -75,16 +76,27 @@ export default function LearnPathMap({
       {/* Phones: level banner + rail list, every lesson titled and tappable. */}
       <div className="md:hidden px-4 pb-12 space-y-10">
         {layout.sections.map((section) => (
-          <MobileSection
-            key={section.level.slug}
-            course={course}
-            section={section}
-            progress={progress}
-            completedIds={completedIds}
-            nextLessonId={nextLessonId}
-            premiumAccess={premiumAccess}
-          />
+          <div key={section.level.slug} className="space-y-6">
+            <MobileSection
+              course={course}
+              section={section}
+              progress={progress}
+              completedIds={completedIds}
+              nextLessonId={nextLessonId}
+              premiumAccess={premiumAccess}
+            />
+            {layout.branches
+              .filter((branch) => branch.anchor === section.level)
+              .map((branch) => (
+                <DrillBranch key={branch.drills[0]!.slug} course={course} branch={branch} progress={progress} premiumAccess={premiumAccess} />
+              ))}
+          </div>
         ))}
+        {layout.branches
+          .filter((branch) => branch.anchor === null)
+          .map((branch) => (
+            <DrillBranch key={branch.drills[0]!.slug} course={course} branch={branch} progress={progress} premiumAccess={premiumAccess} />
+          ))}
         <Roadmap levels={layout.ahead} />
       </div>
 
@@ -157,6 +169,15 @@ export default function LearnPathMap({
               nextLessonId={nextLessonId}
               premiumAccess={premiumAccess}
             />
+          ))}
+          {layout.branches.map((branch) => (
+            <div
+              key={branch.drills[0]!.slug}
+              className="absolute left-0 right-0 z-[2]"
+              style={{ top: branch.top, height: branch.height }}
+            >
+              <DrillBranch course={course} branch={branch} progress={progress} premiumAccess={premiumAccess} desktop />
+            </div>
           ))}
         </nav>
         <Roadmap levels={layout.ahead} />
@@ -628,6 +649,138 @@ function LessonNode({
       {face}
       {label}
     </button>
+  );
+}
+
+/* ── Drill side paths: optional levels hanging off the main path ── */
+
+function drillTarget(level: LearnLevel, progress: ProgressMap, basePath: string): { lesson: LearnLesson; href: string } | null {
+  const playable = level.lessons.filter((lesson) => lesson.playable);
+  const lesson = playable.find((item) => !isComplete(progress, item.id)) ?? playable[0];
+  return lesson ? { lesson, href: lessonHref(level, lesson, basePath) } : null;
+}
+
+function DrillBranch({
+  course,
+  branch,
+  progress,
+  premiumAccess,
+  desktop = false,
+}: {
+  course: LearnCourse;
+  branch: BranchBlock;
+  progress: ProgressMap;
+  premiumAccess: boolean;
+  desktop?: boolean;
+}) {
+  return (
+    <section aria-label="Optional drills" className={desktop ? 'relative h-full pt-9' : 'relative'}>
+      {desktop && (
+        <span
+          aria-hidden
+          className="absolute left-1/2 top-0 h-9 border-l-2 border-dashed"
+          style={{ borderColor: TRACK }}
+        />
+      )}
+      <div
+        className={`rounded-2xl border-2 border-dashed px-4 py-3 ${desktop ? 'mx-[8%]' : ''}`}
+        style={{ borderColor: TRACK }}
+      >
+        <p className="mono-label text-dark-text flex items-center gap-1.5 flex-wrap">
+          <GitBranch size={12} />
+          Side path · optional
+          {branch.anchor && <span className="text-dark-text/70">· practice for level {branch.anchor.number}</span>}
+        </p>
+        <ul className={`mt-2.5 grid gap-2.5 ${branch.drills.length > 1 ? 'sm:grid-cols-2' : ''}`}>
+          {branch.drills.map((drill) => (
+            <li key={drill.slug}>
+              <DrillCard course={course} level={drill} progress={progress} premiumAccess={premiumAccess} />
+            </li>
+          ))}
+        </ul>
+      </div>
+    </section>
+  );
+}
+
+function DrillCard({
+  course,
+  level,
+  progress,
+  premiumAccess,
+}: {
+  course: LearnCourse;
+  level: LearnLevel;
+  progress: ProgressMap;
+  premiumAccess: boolean;
+}) {
+  const { data: session, status } = useSession();
+  const hue = levelHue(level);
+  const target = drillTarget(level, progress, course.basePath);
+  const total = playableCount(level) || level.lessons.length;
+  const done = levelCompletedCount(level, progress);
+  const complete = total > 0 && done === total;
+  const paywalled = !level.free && !premiumAccess && !complete;
+  if (!target) return null;
+
+  return (
+    <Link
+      href={target.href}
+      data-learn-stop={target.lesson.id}
+      aria-label={`Drill ${levelTag(level)}: ${level.name}${paywalled ? ' (needs a plan)' : ''}`}
+      onClick={() => {
+        if (!paywalled) {
+          captureLearn('learn_lesson_clicked', learnLessonProps(level, target.lesson, { source: 'drill' }));
+          return;
+        }
+        // Signed-out clicks open the lesson, where the account gate runs.
+        if (status !== 'authenticated') return;
+        identifyAccount(session?.user);
+        captureLearn('learn_gate_blocked', {
+          ...learnLessonProps(level, target.lesson, { source: 'paywall' }),
+          $set: {
+            ...paywallPersonProps(level, course.basePath),
+            ...(session?.user?.email ? { email: session.user.email } : {}),
+          },
+        });
+      }}
+      className="group block h-full rounded-xl border bg-surface/60 px-3.5 py-3 transition-colors hover:bg-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/70"
+      style={{ borderColor: `color-mix(in srgb, ${hue} 30%, var(--color-border))` }}
+    >
+      <span className="flex items-center gap-2 min-w-0">
+        <span className="mono-label font-semibold shrink-0" style={{ color: hue }}>
+          {levelTag(level)}
+        </span>
+        <span className="text-sm font-semibold text-light-text truncate">{level.name}</span>
+        <span className="ml-auto shrink-0">
+          {complete ? (
+            <Chip tone="success">
+              <Check size={10} strokeWidth={3} />
+              Done
+            </Chip>
+          ) : !level.free ? (
+            <Chip tone="warning">
+              <Crown size={10} />
+              Plan
+            </Chip>
+          ) : null}
+        </span>
+      </span>
+      <span className="block text-xs text-dark-text mt-1 line-clamp-2">{level.leaveWith}</span>
+      <span className="mt-2 flex items-center gap-1.5" aria-label={`${done} of ${total} lessons complete`}>
+        {level.lessons.map((lesson) => (
+          <span
+            key={lesson.id}
+            className="h-1.5 w-4 rounded-full"
+            style={{ background: isComplete(progress, lesson.id) ? 'var(--color-success)' : TRACK }}
+          />
+        ))}
+        <span className="font-mono text-[11px] tabular-nums text-dark-text ml-1">
+          {done}/{total} · {formatMinutes(levelMinutes(level))}
+        </span>
+        <ArrowRight size={12} className="ml-auto text-dark-text group-hover:text-light-text" />
+      </span>
+    </Link>
   );
 }
 

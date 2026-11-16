@@ -1,183 +1,252 @@
 import type { LearnLevel } from '../types';
 
-/** Paid drill. Playground runs hit "index 0" and off-by-one often; almost nobody reaches the Arrays level. */
 export const level6: LearnLevel = {
   number: 6,
   slug: '6',
-  name: 'Slot 1',
-  hours: '1.5',
-  leaveWith: 'The first slot is [1], and a counter starts at 0',
-  syllabus: '8.2',
+  name: 'Text',
+  hours: '2.5',
+  leaveWith: 'LENGTH / SUBSTRING with 1-based index',
+  syllabus: '8.1.4e',
   free: false,
   playable: true,
-  drill: true,
   lessons: [
     {
-      id: '13.1',
-      slug: 'slot',
-      title: 'The first slot is 1',
-      type: 'mutate',
+      id: '6.1',
+      slug: 'string',
+      title: 'STRING is 1-based',
+      type: 'run',
       minutes: 5,
-      why: 'Cambridge arrays start at 1. Scores[0] is the single most common array crash in the playground.',
-      docsAnchor: 'arrays-1d',
-      body: `This program uses slot 0. Cambridge arrays declared \`ARRAY[1:5]\` have no slot 0.
+      why: 'Position 1 is the first character — not 0. Paper 2 traces die on this.',
+      docsAnchor: 'string-functions',
+      body: `**SUBSTRING(string, start, length)** uses a start position of **1** for the first character.
 
-Store 10 in the **first** slot and output it. The program should print \`10\`.`,
-      trap: 'Change both the assignment and the OUTPUT. \`Scores[1]\` is the first slot.',
-      starterCode: `DECLARE Scores : ARRAY[1:5] OF INTEGER
-Scores[0] <- 10
-OUTPUT Scores[0]`,
-      solutionCode: `DECLARE Scores : ARRAY[1:5] OF INTEGER
-Scores[1] <- 10
-OUTPUT Scores[1]`,
-      expectedOutput: '10',
-      mustContain: ['Scores[1]'],
+Output the first character of \`"IGCSE"\`.`,
+      trap: 'Python `s[0]` is IGCSE `SUBSTRING(s, 1, 1)`.',
+      starterCode: `DECLARE Word : STRING
+Word <- "IGCSE"
+OUTPUT SUBSTRING(Word, 1, 1)`,
+      solutionCode: `DECLARE Word : STRING
+Word <- "IGCSE"
+OUTPUT SUBSTRING(Word, 1, 1)`,
+      expectedOutput: 'I',
+      mustContain: ['SUBSTRING'],
       playable: true,
     },
     {
-      id: '13.2',
-      slug: 'ends',
-      title: 'First slot and last slot',
-      type: 'grade',
-      minutes: 6,
-      why: 'A loop that starts at 0 walks off the front of the array. The first value you read is index 1. The last is the upper bound.',
-      docsAnchor: 'arrays-1d',
-      body: `Read **4** integers into \`Values[1]\` … \`Values[4]\`. Output the first, then the last.
-
-Example: input \`8\`, \`2\`, \`5\`, \`9\` →
-
-\`8\`
-\`9\``,
-      starterCode: `DECLARE Values : ARRAY[1:4] OF INTEGER
-DECLARE i : INTEGER
-
-// read four values, then OUTPUT Values[1] and Values[4]`,
-      solutionCode: `DECLARE Values : ARRAY[1:4] OF INTEGER
-DECLARE i : INTEGER
-
-FOR i <- 1 TO 4
-    INPUT Values[i]
-NEXT i
-
-OUTPUT Values[1]
-OUTPUT Values[4]`,
-      tests: [
-        { inputs: ['8', '2', '5', '9'], expectedOutput: '8\n9' },
-        { inputs: ['1', '1', '1', '1'], expectedOutput: '1\n1' },
-        { inputs: ['4', '0', '0', '7'], expectedOutput: '4\n7' },
-        { inputs: ['-1', '3', '3', '0'], expectedOutput: '-1\n0' },
-      ],
-      mustContain: ['[1]', '[4]'],
-      playable: true,
-    },
-    {
-      id: '13.3',
-      slug: 'count',
-      title: 'Count the passes',
-      type: 'grade',
-      minutes: 7,
-      why: 'The counter pattern is where the Repeat level stalls. Start at 0, add 1 for each hit, output the number alone.',
-      docsAnchor: 'arrays-1d',
-      body: `Read **5** integer marks into an array. Output how many are **50 or more**.
-
-Example: input \`40\`, \`50\`, \`49\`, \`80\`, \`100\` → \`3\`.`,
-      trap: 'A mark of 50 counts. Start \`Count <- 0\` before the loop, or the first add has nothing to add to.',
-      starterCode: `DECLARE Marks : ARRAY[1:5] OF INTEGER
-DECLARE i : INTEGER
-DECLARE Count : INTEGER
-
-// read five marks
-// Count how many are >= 50
-// OUTPUT Count`,
-      solutionCode: `DECLARE Marks : ARRAY[1:5] OF INTEGER
-DECLARE i : INTEGER
-DECLARE Count : INTEGER
-
-FOR i <- 1 TO 5
-    INPUT Marks[i]
-NEXT i
-
-Count <- 0
-FOR i <- 1 TO 5
-    IF Marks[i] >= 50 THEN
-        Count <- Count + 1
-    ENDIF
-NEXT i
-
-OUTPUT Count`,
-      tests: [
-        { inputs: ['40', '50', '49', '80', '100'], expectedOutput: '3' },
-        { inputs: ['0', '0', '0', '0', '0'], expectedOutput: '0' },
-        { inputs: ['50', '50', '50', '50', '50'], expectedOutput: '5' },
-        { inputs: ['49', '49', '49', '49', '100'], expectedOutput: '1' },
-      ],
-      mustContain: ['Count <- Count + 1'],
-      playable: true,
-    },
-    {
-      id: '13.4',
-      slug: 'boss',
-      title: 'Boss: one mark, or Not found',
+      id: '6.2',
+      slug: 'length',
+      title: 'LENGTH, UCASE, LCASE',
       type: 'grade',
       minutes: 8,
-      why: 'Searching a list is a Paper 2 staple. "Not found" is printed once, after the loop, never inside it.',
-      docsAnchor: 'arrays-1d',
-      body: `The names and marks are already stored. Read a name. Output that student's mark, or \`Not found\` if the name is not there.
+      why: 'Library string functions. The paper will name them; you must call them with the right arguments.',
+      docsAnchor: 'string-functions',
+      body: `Read a string. Output three lines:
 
-Example: input \`Ada\` → \`80\`. Input \`Zed\` → \`Not found\`.
+1. **LENGTH** of the string
+2. The string in **UCASE**
+3. The string in **LCASE**
 
-Set \`Found <- FALSE\` before the loop. After \`NEXT\`, output \`Not found\` only when Found is still FALSE.`,
-      trap: 'An ELSE inside the loop prints "Not found" for every other student.',
-      starterCode: `DECLARE Names : ARRAY[1:3] OF STRING
-DECLARE Marks : ARRAY[1:3] OF INTEGER
-Names[1] <- "Ada"
-Marks[1] <- 80
-Names[2] <- "Bob"
-Marks[2] <- 54
-Names[3] <- "Cy"
-Marks[3] <- 91
+Example: input \`Ig\` →
 
-DECLARE Target : STRING
-DECLARE Found : BOOLEAN
+\`2\`
+\`IG\`
+\`ig\``,
+      starterCode: `DECLARE Word : STRING
+
+INPUT Word
+
+// OUTPUT LENGTH, UCASE, LCASE`,
+      solutionCode: `DECLARE Word : STRING
+
+INPUT Word
+
+OUTPUT LENGTH(Word)
+OUTPUT UCASE(Word)
+OUTPUT LCASE(Word)`,
+      tests: [
+        { inputs: ['Ig'], expectedOutput: '2\nIG\nig' },
+        { inputs: ['A'], expectedOutput: '1\nA\na' },
+        { inputs: ['Paper'], expectedOutput: '5\nPAPER\npaper' },
+        { inputs: ['OK'], expectedOutput: '2\nOK\nok' },
+      ],
+      mustContain: ['LENGTH', 'UCASE', 'LCASE'],
+      playable: true,
+    },
+    {
+      id: '6.3',
+      slug: 'substring',
+      title: 'SUBSTRING(str, start, length)',
+      type: 'grade',
+      minutes: 8,
+      why: 'Start is 1-based. The third argument is the length, not the end index.',
+      docsAnchor: 'string-functions',
+      body: `Read a string that is at least 3 characters. Output its **first three** characters.
+
+Example: input \`Cambridge\` → \`Cam\`.`,
+      trap: '`SUBSTRING(s, 1, 3)` is characters 1, 2 and 3. Not “from 1 to 3” as an end index in some languages.',
+      starterCode: `DECLARE Word : STRING
+
+INPUT Word
+
+// OUTPUT the first three characters`,
+      solutionCode: `DECLARE Word : STRING
+
+INPUT Word
+
+OUTPUT SUBSTRING(Word, 1, 3)`,
+      tests: [
+        { inputs: ['Cambridge'], expectedOutput: 'Cam' },
+        { inputs: ['IGCSE'], expectedOutput: 'IGC' },
+        { inputs: ['abc'], expectedOutput: 'abc' },
+        { inputs: ['Paper2'], expectedOutput: 'Pap' },
+      ],
+      mustContain: ['SUBSTRING'],
+      playable: true,
+    },
+    {
+      id: '6.6',
+      slug: 'char-loop',
+      title: 'One character at a time',
+      type: 'grade',
+      minutes: 8,
+      why: 'The 15-mark string method: FOR i <- 1 TO LENGTH, SUBSTRING(..., i, 1).',
+      docsAnchor: 'string-functions',
+      body: `Read a word. Output **each character** on its own line.
+
+Example: input \`CAT\` →
+
+\`C\`
+\`A\`
+\`T\``,
+      trap: 'Start the loop at 1, not 0. The last index is LENGTH(word), not LENGTH − 1.',
+      starterCode: `DECLARE Word : STRING
 DECLARE i : INTEGER
-Found <- FALSE
-INPUT Target
 
-// FOR i <- 1 TO 3
-//     IF Names[i] = Target THEN OUTPUT Marks[i] and set Found <- TRUE
-// After the loop: IF Found = FALSE THEN OUTPUT "Not found"`,
-      solutionCode: `DECLARE Names : ARRAY[1:3] OF STRING
-DECLARE Marks : ARRAY[1:3] OF INTEGER
-Names[1] <- "Ada"
-Marks[1] <- 80
-Names[2] <- "Bob"
-Marks[2] <- 54
-Names[3] <- "Cy"
-Marks[3] <- 91
+INPUT Word
 
-DECLARE Target : STRING
-DECLARE Found : BOOLEAN
+// FOR i <- 1 TO LENGTH(Word) — OUTPUT each character`,
+      solutionCode: `DECLARE Word : STRING
 DECLARE i : INTEGER
-Found <- FALSE
-INPUT Target
 
-FOR i <- 1 TO 3
-    IF Names[i] = Target THEN
-        OUTPUT Marks[i]
-        Found <- TRUE
+INPUT Word
+
+FOR i <- 1 TO LENGTH(Word)
+    OUTPUT SUBSTRING(Word, i, 1)
+NEXT i`,
+      tests: [
+        { inputs: ['CAT'], expectedOutput: 'C\nA\nT' },
+        { inputs: ['A'], expectedOutput: 'A' },
+        { inputs: ['Hi'], expectedOutput: 'H\ni' },
+        { inputs: ['IGCSE'], expectedOutput: 'I\nG\nC\nS\nE' },
+      ],
+      mustContain: ['LENGTH', 'SUBSTRING'],
+      playable: true,
+    },
+    {
+      id: '6.4',
+      slug: 'concat',
+      title: 'Join with &',
+      type: 'run',
+      minutes: 4,
+      why: 'Concatenation is &, not +. + is addition; using it on strings is a type error on paper.',
+      docsAnchor: 'concatenation',
+      body: `Join strings with **&**. Spaces are your job — include \`" "\` if you want a gap.
+
+Output **Ada Lovelace** from the two names below.`,
+      trap: '`+` concatenates in Python. Here `+` adds numbers. Use `&`.',
+      starterCode: `DECLARE First : STRING
+DECLARE Last : STRING
+First <- "Ada"
+Last <- "Lovelace"
+OUTPUT First & " " & Last`,
+      solutionCode: `DECLARE First : STRING
+DECLARE Last : STRING
+First <- "Ada"
+Last <- "Lovelace"
+OUTPUT First & " " & Last`,
+      expectedOutput: 'Ada Lovelace',
+      mustContain: ['&'],
+      mustNotContain: ['+'],
+      playable: true,
+    },
+    {
+      id: '6.7',
+      slug: 'initials',
+      title: 'Build initials with &',
+      type: 'grade',
+      minutes: 6,
+      why: 'SUBSTRING one character from each name, then join with &. A tiny Paper 2 string item.',
+      docsAnchor: 'concatenation',
+      body: `Read **First** then **Last**. Output the two initials joined, no space.
+
+Example: input \`Ada\` then \`Lovelace\` → \`AL\`.`,
+      trap: 'First character is position 1: `SUBSTRING(First, 1, 1)`. Join with `&`, not `+`.',
+      starterCode: `DECLARE First : STRING
+DECLARE Last : STRING
+
+INPUT First
+INPUT Last
+
+// OUTPUT the two initials joined`,
+      solutionCode: `DECLARE First : STRING
+DECLARE Last : STRING
+
+INPUT First
+INPUT Last
+
+OUTPUT SUBSTRING(First, 1, 1) & SUBSTRING(Last, 1, 1)`,
+      tests: [
+        { inputs: ['Ada', 'Lovelace'], expectedOutput: 'AL' },
+        { inputs: ['Bob', 'Smith'], expectedOutput: 'BS' },
+        { inputs: ['i', 'g'], expectedOutput: 'ig' },
+        { inputs: ['Paper', 'Two'], expectedOutput: 'PT' },
+      ],
+      mustContain: ['SUBSTRING', '&'],
+      playable: true,
+    },
+    {
+      id: '6.5',
+      slug: 'boss',
+      title: 'Boss: Medium String Processing',
+      type: 'grade',
+      minutes: 12,
+      why: 'A typical Medium: walk the string with FOR, SUBSTRING one character at a time, count.',
+      docsAnchor: 'string-functions',
+      body: `Read a word. Count the vowels **a e i o u** (ignore case). Output the count.
+
+Example: input \`hello\` → \`2\`.`,
+      trap: 'Convert each character with LCASE so you only test against lowercase vowels.',
+      starterCode: `DECLARE Text : STRING
+DECLARE i : INTEGER
+DECLARE Ch : STRING
+DECLARE VowelCount : INTEGER
+
+INPUT Text
+
+VowelCount <- 0
+// loop 1 TO LENGTH(Text), count vowels, OUTPUT VowelCount`,
+      solutionCode: `DECLARE Text : STRING
+DECLARE i : INTEGER
+DECLARE Ch : STRING
+DECLARE VowelCount : INTEGER
+
+INPUT Text
+
+VowelCount <- 0
+FOR i <- 1 TO LENGTH(Text)
+    Ch <- LCASE(SUBSTRING(Text, i, 1))
+    IF Ch = "a" OR Ch = "e" OR Ch = "i" OR Ch = "o" OR Ch = "u" THEN
+        VowelCount <- VowelCount + 1
     ENDIF
 NEXT i
-
-IF Found = FALSE THEN
-    OUTPUT "Not found"
-ENDIF`,
+OUTPUT VowelCount`,
       tests: [
-        { inputs: ['Ada'], expectedOutput: '80' },
-        { inputs: ['Bob'], expectedOutput: '54' },
-        { inputs: ['Cy'], expectedOutput: '91' },
-        { inputs: ['Zed'], expectedOutput: 'Not found' },
+        { inputs: ['hello'], expectedOutput: '2' },
+        { inputs: ['AEIOU'], expectedOutput: '5' },
+        { inputs: ['rhythm'], expectedOutput: '0' },
+        { inputs: ['Ig'], expectedOutput: '1' },
+        { inputs: ['Paper'], expectedOutput: '2' },
       ],
-      mustContain: ['Not found'],
       playable: true,
     },
   ],

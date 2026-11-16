@@ -10,6 +10,8 @@ export type LearnLessonView = {
   slug: string;
   title: string;
   levelNumber: number;
+  /** 'D1' for a drill side path, else undefined. */
+  levelCode?: string;
   levelName: string;
   levelSlug: string;
   state: LessonViewState;
@@ -52,6 +54,7 @@ export function buildLearnProgressView(
       slug: lesson.slug,
       title: lesson.title,
       levelNumber: level.number,
+      levelCode: level.code,
       levelName: level.name,
       levelSlug: level.slug,
       state,
@@ -86,12 +89,14 @@ export function buildLearnProgressView(
 
 export function groupLessonsByLevel(lessons: LearnLessonView[]): {
   levelNumber: number;
+  levelCode?: string;
   levelName: string;
   levelSlug: string;
   lessons: LearnLessonView[];
 }[] {
   const groups: {
     levelNumber: number;
+    levelCode?: string;
     levelName: string;
     levelSlug: string;
     lessons: LearnLessonView[];
@@ -101,6 +106,7 @@ export function groupLessonsByLevel(lessons: LearnLessonView[]): {
     if (!last || last.levelNumber !== lesson.levelNumber) {
       groups.push({
         levelNumber: lesson.levelNumber,
+        levelCode: lesson.levelCode,
         levelName: lesson.levelName,
         levelSlug: lesson.levelSlug,
         lessons: [lesson],

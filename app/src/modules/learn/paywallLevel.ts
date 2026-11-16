@@ -1,15 +1,20 @@
 import type { LearnLevel } from './types';
 import { COURSE_ID } from './types';
-import { LEGACY_LEVEL_SLUGS, levelStartHref } from './path';
+import { levelStartHref } from './path';
 
 /**
  * The paid level a student was blocked on, so the post-checkout page can send
  * them straight back to it. Per-browser only: the same level is also set as a
  * PostHog person property (`paywallPersonProps`) for the cross-device email.
  */
-const KEY = 'learn_paywall_level_v2';
-/** Written before the Nov 2026 renumbering; read through LEGACY_LEVEL_SLUGS. */
-const LEGACY_KEY = 'learn_paywall_level';
+const KEY = 'learn_paywall_level_v3';
+/** Written under earlier level numberings; mapped to today's slugs on read. */
+const OLDER_KEYS: readonly [string, Readonly<Record<string, string>>][] = [
+  // 16 Nov 2026, a few hours: drills 4-6, syllabus 7-13.
+  ['learn_paywall_level_v2', { '4': 'd1', '5': 'd2', '6': 'd3', '7': '4', '8': '5', '9': '6', '10': '7', '11': '8', '12': '9', '13': '10' }],
+  // Before that: drills 11-13, syllabus as today.
+  ['learn_paywall_level', { '11': 'd1', '12': 'd2', '13': 'd3' }],
+];
 
 export type StoredPaywallLevel = { courseId: string; slug: string };
 
@@ -26,10 +31,14 @@ export function readPaywallLevel(): StoredPaywallLevel | null {
   try {
     const raw = localStorage.getItem(KEY);
     if (!raw) {
-      const legacy = localStorage.getItem(LEGACY_KEY);
-      if (!legacy) return null;
-      if (legacy.includes(':')) return { courseId: legacy.slice(0, legacy.indexOf(':')), slug: legacy.slice(legacy.indexOf(':') + 1) };
-      return { courseId: COURSE_ID, slug: LEGACY_LEVEL_SLUGS[legacy] ?? legacy };
+      for (const [key, map] of OLDER_KEYS) {
+        const older = localStorage.getItem(key);
+        if (!older) continue;
+        const split = older.indexOf(':');
+        if (split !== -1) return { courseId: older.slice(0, split), slug: older.slice(split + 1) };
+        return { courseId: COURSE_ID, slug: map[older] ?? older };
+      }
+      return null;
     }
     const split = raw.indexOf(':');
     if (split === -1) return { courseId: COURSE_ID, slug: raw };

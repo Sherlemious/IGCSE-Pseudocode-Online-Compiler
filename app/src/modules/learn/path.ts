@@ -35,25 +35,28 @@ export function findLesson(
 }
 
 /**
- * Level slugs before the Nov 2026 renumbering, when the drills were 11-13
- * but sat after level 3 on the path. Old slug -> current slug, for the IGCSE
- * Paper 2 course only. Lesson ids (progress keys) did not change.
+ * Level slugs from earlier numberings, oldest first: until 16 Nov 2026 the
+ * drills were levels 11-13; for a few hours that day they were 4-6 and the
+ * syllabus 7-13. A URL that matches no current lesson tries each candidate.
+ * Lesson ids (progress keys) never changed.
  */
-export const LEGACY_LEVEL_SLUGS: Readonly<Record<string, string>> = {
-  '4': '7', '5': '8', '6': '9', '7': '10', '8': '11', '9': '12', '10': '13',
-  '11': '4', '12': '5', '13': '6',
+export const LEGACY_LEVEL_SLUGS: Readonly<Record<string, readonly string[]>> = {
+  '4': ['d1'], '5': ['d2'], '6': ['d3'],
+  '7': ['4'], '8': ['5'], '9': ['6'], '10': ['7'],
+  '11': ['d1', '8'], '12': ['d2', '9'], '13': ['d3', '10'],
 };
 
 /**
  * Where an old `/learn/<level>/<lesson>` link points now, or null. Only used
  * when the URL does not match a current lesson, so a `boss` URL (every level
- * has one) resolves to the current level of that number, not the old one.
+ * has one) resolves to the current level of that number.
  */
 export function legacyLessonHref(course: LearnCourse, levelSlug: string, lessonSlug: string, basePath = '/learn'): string | null {
-  const moved = LEGACY_LEVEL_SLUGS[levelSlug];
-  if (!moved) return null;
-  const found = findLesson(course, moved, lessonSlug);
-  return found ? `${basePath}/${found.level.slug}/${found.lesson.slug}` : null;
+  for (const moved of LEGACY_LEVEL_SLUGS[levelSlug] ?? []) {
+    const found = findLesson(course, moved, lessonSlug);
+    if (found) return `${basePath}/${found.level.slug}/${found.lesson.slug}`;
+  }
+  return null;
 }
 
 export function previousLesson(

@@ -66,11 +66,22 @@ export type LevelSection = {
   bottom: number;
 };
 
+/** Optional drill levels drawn as a side path between two syllabus levels. */
+export type BranchBlock = {
+  /** The syllabus level the drills hang off (null when the anchor is missing). */
+  anchor: LearnLevel | null;
+  drills: LearnLevel[];
+  top: number;
+  height: number;
+};
+
 export type PathLayout = {
   width: number;
   height: number;
-  /** One section per playable level, in order. */
+  /** One section per playable syllabus level, in order. */
   sections: LevelSection[];
+  /** Drill side paths, each placed right after its anchor level. */
+  branches: BranchBlock[];
   /** Every playable lesson stop, in path order. */
   stops: LessonStop[];
   /** Levels that are not playable yet — rendered as the roadmap after the map. */
@@ -87,15 +98,27 @@ const NODE_TO_END = 64;
 const LEVEL_GAP = 28;
 const START_Y = 8;
 const TAIL = 24;
+export const BRANCH_HEIGHT = 196;
 
 export function layoutPath(course: LearnCourse): PathLayout {
   const sections: LevelSection[] = [];
   const stops: LessonStop[] = [];
   const ahead: LearnLevel[] = [];
+  const branches: BranchBlock[] = [];
+  const drills = course.levels.filter((level) => level.drill && level.playable);
+  const placed = new Set<LearnLevel>();
   let y = START_Y;
   let stopIndex = 0;
 
+  const addBranch = (anchor: LearnLevel | null, group: LearnLevel[]) => {
+    if (group.length === 0) return;
+    group.forEach((drill) => placed.add(drill));
+    branches.push({ anchor, drills: group, top: y, height: BRANCH_HEIGHT });
+    y += BRANCH_HEIGHT + LEVEL_GAP;
+  };
+
   for (const level of course.levels) {
+    if (level.drill) continue;
     if (!level.playable) {
       ahead.push(level);
       continue;
@@ -137,10 +160,12 @@ export function layoutPath(course: LearnCourse): PathLayout {
     });
     stops.push(...sectionStops);
     y += LEVEL_GAP;
+    addBranch(level, drills.filter((drill) => drill.branchOf === level.number));
   }
+  addBranch(null, drills.filter((drill) => !placed.has(drill)));
 
-  const height = (sections.length > 0 ? y - LEVEL_GAP : y) + TAIL;
-  return { width: PATH_WIDTH, height, sections, stops, ahead };
+  const height = (sections.length > 0 || branches.length > 0 ? y - LEVEL_GAP : y) + TAIL;
+  return { width: PATH_WIDTH, height, sections, branches, stops, ahead };
 }
 
 /** Number of leading stops that are complete — the connector is lit up to here. */

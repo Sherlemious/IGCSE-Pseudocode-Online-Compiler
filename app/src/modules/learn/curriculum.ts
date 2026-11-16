@@ -7,9 +7,9 @@ import { level7 } from './curriculum/level7';
 import { level8 } from './curriculum/level8';
 import { level9 } from './curriculum/level9';
 import { level10 } from './curriculum/level10';
-import { level11 } from './curriculum/level11';
-import { level12 } from './curriculum/level12';
-import { level13 } from './curriculum/level13';
+import { drill1 } from './curriculum/drill1';
+import { drill2 } from './curriculum/drill2';
+import { drill3 } from './curriculum/drill3';
 
 export { ALEVEL_9618 };
 
@@ -25,7 +25,7 @@ export const IGCSE_PAPER_2: LearnCourse = {
   kicker: 'IGCSE 0478 / 0984 / 2210 · Paper 2',
   title: 'IGCSE & O Level Paper 2 Path',
   subtitle:
-    'Ten syllabus levels, then three drills on the mistakes students make right now: exact lines, formulas, and arrays that start at 1. No videos — you write, run, and check in the compiler.',
+    'Ten syllabus levels, plus three optional drills on the mistakes students make right now: exact lines, formulas, and arrays that start at 1. No videos — you write, run, and check in the compiler.',
   completeNote:
     'All thirteen levels done. Rewrite a Paper 2 algorithm on paper next — the hall will not show a syntax error.',
   otherPath: {
@@ -670,9 +670,11 @@ OUTPUT A + B`,
     level8,
     level9,
     level10,
-    level11,
-    level12,
-    level13,
+    // Optional side paths, drawn off level `branchOf` on the map. Kept last so
+    // Next and Continue walk the syllabus first.
+    drill1,
+    drill2,
+    drill3,
   ],
 };
 

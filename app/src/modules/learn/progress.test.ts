@@ -85,15 +85,15 @@ describe('learn sequential unlock', () => {
     const empty: ProgressMap = {};
     expect(isLessonUnlocked(IGCSE_PAPER_2, lesson('2', 'declare'), empty)).toBe(true);
     expect(isLessonUnlocked(IGCSE_PAPER_2, lesson('3', 'input'), empty)).toBe(true);
-    expect(isLessonUnlocked(IGCSE_PAPER_2, lesson('8', 'for'), empty, { premium: true })).toBe(true);
-    expect(isLessonUnlocked(IGCSE_PAPER_2, lesson('8', 'for'), empty)).toBe(false);
+    expect(isLessonUnlocked(IGCSE_PAPER_2, lesson('5', 'for'), empty, { premium: true })).toBe(true);
+    expect(isLessonUnlocked(IGCSE_PAPER_2, lesson('5', 'for'), empty)).toBe(false);
   });
 
   it('keeps order inside a level after jumping in', () => {
-    expect(isLessonUnlocked(IGCSE_PAPER_2, lesson('8', 'for-step'), {}, { premium: true })).toBe(false);
+    expect(isLessonUnlocked(IGCSE_PAPER_2, lesson('5', 'for-step'), {}, { premium: true })).toBe(false);
     const afterFor = done(['5.1']);
-    expect(isLessonUnlocked(IGCSE_PAPER_2, lesson('8', 'for-step'), afterFor, { premium: true })).toBe(true);
-    expect(isLessonUnlocked(IGCSE_PAPER_2, lesson('8', 'totaller'), afterFor, { premium: true })).toBe(false);
+    expect(isLessonUnlocked(IGCSE_PAPER_2, lesson('5', 'for-step'), afterFor, { premium: true })).toBe(true);
+    expect(isLessonUnlocked(IGCSE_PAPER_2, lesson('5', 'totaller'), afterFor, { premium: true })).toBe(false);
   });
 
   it('unlocks the next playable lesson after the previous completes', () => {
@@ -112,9 +112,9 @@ describe('learn sequential unlock', () => {
         afterFree[item.id] = { completedAt: '2026-09-16T00:00:00.000Z', attempts: 1 };
       }
     }
-    expect(isLessonUnlocked(IGCSE_PAPER_2, lesson('7', 'if'), afterFree)).toBe(false);
-    expect(isLessonUnlocked(IGCSE_PAPER_2, lesson('7', 'if'), afterFree, { premium: true })).toBe(true);
-    expect(isLessonUnlocked(IGCSE_PAPER_2, lesson('13', 'scenario'), afterFree, { premium: true })).toBe(false);
+    expect(isLessonUnlocked(IGCSE_PAPER_2, lesson('4', 'if'), afterFree)).toBe(false);
+    expect(isLessonUnlocked(IGCSE_PAPER_2, lesson('4', 'if'), afterFree, { premium: true })).toBe(true);
+    expect(isLessonUnlocked(IGCSE_PAPER_2, lesson('10', 'scenario'), afterFree, { premium: true })).toBe(false);
   });
 });
 
@@ -254,7 +254,7 @@ describe('nextIncomplete', () => {
       .filter(({ level }) => level.number <= 3)
       .map(({ lesson }) => lesson.id);
     const next = nextIncomplete(IGCSE_PAPER_2, done(finishedEarly));
-    expect(next).toEqual({ levelSlug: '7', lessonSlug: 'if' });
+    expect(next).toEqual({ levelSlug: '4', lessonSlug: 'if' });
   });
 
   it('opens the drills once every syllabus lesson is done', () => {
@@ -262,7 +262,7 @@ describe('nextIncomplete', () => {
       .filter(({ level }) => !level.drill)
       .map(({ lesson }) => lesson.id);
     const next = nextIncomplete(IGCSE_PAPER_2, done(syllabus));
-    expect(next).toEqual({ levelSlug: '4', lessonSlug: 'space' });
+    expect(next).toEqual({ levelSlug: 'd1', lessonSlug: 'space' });
   });
 });
 

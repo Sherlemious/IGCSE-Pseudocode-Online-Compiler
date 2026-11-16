@@ -8,6 +8,7 @@ import { levelStartHref } from './path';
 import { readPaywallLevel } from './paywallLevel';
 import { ALEVEL_COURSE_ID } from './types';
 import { captureLearn } from './telemetry';
+import { levelTitle } from './pathTheme';
 
 /**
  * Post-checkout next step for a student: every paid level, each opening at its
@@ -49,7 +50,7 @@ export default function LearnUnlockedLevels() {
         >
           <span className="min-w-0">
             <span className="block text-sm font-semibold">
-              Start Level {blocked.level.number}: {blocked.level.name}
+              Start {levelTitle(blocked.level)}: {blocked.level.name}
             </span>
             <span className="block text-xs text-white/80 truncate">{blocked.level.leaveWith}</span>
           </span>
@@ -68,7 +69,7 @@ export default function LearnUnlockedLevels() {
               onClick={() => track('learn_level', level.number)}
               className="flex items-center gap-3 px-3 py-2.5 hover:bg-background/60 transition-colors"
             >
-              <span className="mono-label text-primary w-6 shrink-0 tabular-nums">{level.number}</span>
+              <span className="mono-label text-primary w-6 shrink-0 tabular-nums">{level.code ?? level.number}</span>
               <span className="min-w-0 flex-1">
                 <span className="block text-sm font-medium text-light-text">{level.name}</span>
                 <span className="block text-xs text-dark-text truncate">{level.leaveWith}</span>

@@ -6,6 +6,7 @@ import { LessonOutline } from '@/modules/learn/LessonOutline';
 import { IGCSE_PAPER_2 } from '@/modules/learn/curriculum';
 import { findLesson, flattenLessons, legacyLessonHref } from '@/modules/learn/path';
 import { SHARE_IMAGE, SITE_URL, truncateDescription } from '@/shared/lib/seo';
+import { levelTitle } from '@/modules/learn/pathTheme';
 
 interface Props {
   params: Promise<{ level: string; lesson: string }>;
@@ -24,7 +25,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!found) {
     return { title: 'Lesson', robots: { index: false, follow: false } };
   }
-  const title = `${found.lesson.title} · Level ${found.level.number} ${found.level.name}`;
+  const title = `${found.lesson.title} · ${levelTitle(found.level)} ${found.level.name}`;
   const path = `/learn/${found.level.slug}/${found.lesson.slug}`;
   const description = truncateDescription(
     `${found.lesson.why} Cambridge O Level 2210 and IGCSE 0478 Paper 2.`,

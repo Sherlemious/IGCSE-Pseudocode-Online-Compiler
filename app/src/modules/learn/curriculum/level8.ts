@@ -3,376 +3,258 @@ import type { LearnLevel } from '../types';
 export const level8: LearnLevel = {
   number: 8,
   slug: '8',
-  name: 'Repeat',
-  hours: '4.5',
-  leaveWith: 'Totaller, counter, flag; pick FOR / WHILE / REPEAT',
-  syllabus: '8.1.4c–d, 8.1.5',
+  name: 'Routines',
+  hours: '2.5',
+  leaveWith: 'PROCEDURE vs FUNCTION, ≤3 params, ROUND/RANDOM',
+  syllabus: '8.1 procedures/functions/library',
   free: false,
   playable: true,
   lessons: [
     {
-      id: '5.1',
-      slug: 'for',
-      title: 'FOR … TO … NEXT',
+      id: '8.1',
+      slug: 'procedure',
+      title: 'PROCEDURE and CALL',
       type: 'run',
       minutes: 6,
-      why: 'NEXT must match the counter identifier. FOR is the loop when you know how many times.',
-      docsAnchor: 'for',
-      body: `**FOR** counter **<-** start **TO** end, body, **NEXT** counter.
+      why: 'Actions, no return value. CALL is how you run one.',
+      docsAnchor: 'procedures',
+      body: `A **PROCEDURE** does something. You **CALL** it. It does not return a value to use in an expression.
 
-Output the integers 1 to 5, each on its own line.`,
-      trap: '`for i in range(5):` is Python. IGCSE is `FOR i <- 1 TO 5` … `NEXT i`.',
-      starterCode: `DECLARE i : INTEGER
+This one should print **Ready**.`,
+      trap: 'You cannot write `OUTPUT Greet()` if Greet is a PROCEDURE. That is a FUNCTION.',
+      starterCode: `PROCEDURE Greet()
+    OUTPUT "Ready"
+ENDPROCEDURE
 
-FOR i <- 1 TO 5
-    OUTPUT i
-NEXT i`,
-      solutionCode: `DECLARE i : INTEGER
+CALL Greet()`,
+      solutionCode: `PROCEDURE Greet()
+    OUTPUT "Ready"
+ENDPROCEDURE
 
-FOR i <- 1 TO 5
-    OUTPUT i
-NEXT i`,
-      expectedOutput: '1\n2\n3\n4\n5',
-      mustContain: ['FOR', 'NEXT'],
+CALL Greet()`,
+      expectedOutput: 'Ready',
+      mustContain: ['PROCEDURE', 'CALL'],
       playable: true,
     },
     {
-      id: '5.9',
-      slug: 'for-step',
-      title: 'FOR … STEP',
-      type: 'run',
-      minutes: 5,
-      why: 'STEP changes the counter by more than 1. Default STEP is +1 when you omit it.',
-      docsAnchor: 'for',
-      body: `**FOR** counter **<-** start **TO** end **STEP** size.
-
-Output the even numbers **2, 4, 6, 8, 10**, each on its own line.`,
-      trap: 'STEP sits on the FOR line, not on NEXT. `FOR i <- 2 TO 10 STEP 2`.',
-      starterCode: `DECLARE i : INTEGER
-
-FOR i <- 2 TO 10 STEP 2
-    OUTPUT i
-NEXT i`,
-      solutionCode: `DECLARE i : INTEGER
-
-FOR i <- 2 TO 10 STEP 2
-    OUTPUT i
-NEXT i`,
-      expectedOutput: '2\n4\n6\n8\n10',
-      mustContain: ['STEP'],
-      playable: true,
-    },
-    {
-      id: '5.2',
-      slug: 'totaller',
-      title: 'The totaller pattern',
-      type: 'run',
-      minutes: 6,
-      why: 'Total <- 0 before the loop. Always. Forgetting the init is a classic trace-table zero.',
-      docsAnchor: 'for',
-      body: `A **totaller** adds into one variable each pass.
-
-1. \`Total <- 0\` **before** the loop
-2. \`Total <- Total + value\` **inside** the loop
-
-Sum 1 to 10 and output the total (55).`,
-      trap: 'Do not start Total at 1 unless the question says so. Zero, then add.',
-      starterCode: `DECLARE Total : INTEGER
-DECLARE i : INTEGER
-
-Total <- 0
-FOR i <- 1 TO 10
-    Total <- Total + i
-NEXT i
-OUTPUT Total`,
-      solutionCode: `DECLARE Total : INTEGER
-DECLARE i : INTEGER
-
-Total <- 0
-FOR i <- 1 TO 10
-    Total <- Total + i
-NEXT i
-OUTPUT Total`,
-      expectedOutput: '55',
-      mustContain: ['Total <- 0'],
-      playable: true,
-    },
-    {
-      id: '5.3',
-      slug: 'counter',
-      title: 'The counter pattern',
-      type: 'grade',
-      minutes: 6,
-      why: 'Count <- Count + 1 only inside the IF. Counting every pass is totalling the wrong thing.',
-      docsAnchor: 'for',
-      body: `Read an integer **N**, then **N** more integers. Count how many are **greater than 0**. Output that count.
-
-Example: input \`4\` then \`1\`, \`-2\`, \`0\`, \`5\` → \`2\`.`,
-      trap: 'Zero is not positive. Increment only when the condition is true.',
-      starterCode: `DECLARE N : INTEGER
-DECLARE Value : INTEGER
-DECLARE Count : INTEGER
-DECLARE i : INTEGER
-
-INPUT N
-Count <- 0
-
-// loop N times, count positives, OUTPUT Count`,
-      solutionCode: `DECLARE N : INTEGER
-DECLARE Value : INTEGER
-DECLARE Count : INTEGER
-DECLARE i : INTEGER
-
-INPUT N
-Count <- 0
-FOR i <- 1 TO N
-    INPUT Value
-    IF Value > 0 THEN
-        Count <- Count + 1
-    ENDIF
-NEXT i
-OUTPUT Count`,
-      tests: [
-        { inputs: ['4', '1', '-2', '0', '5'], expectedOutput: '2' },
-        { inputs: ['3', '-1', '-2', '-3'], expectedOutput: '0' },
-        { inputs: ['1', '8'], expectedOutput: '1' },
-        { inputs: ['5', '0', '0', '1', '0', '2'], expectedOutput: '2' },
-        { inputs: ['2', '10', '20'], expectedOutput: '2' },
-      ],
-      mustContain: ['Count <- Count + 1'],
-      playable: true,
-    },
-    {
-      id: '5.4',
-      slug: 'while',
-      title: 'WHILE can run zero times',
-      type: 'run',
-      minutes: 6,
-      why: 'Pre-condition loop: the test runs before the body. If it is already false, the body never runs.',
-      docsAnchor: 'while',
-      body: `**WHILE** condition **DO** … **ENDWHILE**.
-
-Here **N** starts at 0, so the loop body must not run. The program should still print **Done**.`,
-      trap: 'A WHILE that should run at least once is usually a REPEAT UNTIL. Pick the loop from the question, not from habit.',
-      starterCode: `DECLARE N : INTEGER
-N <- 0
-
-WHILE N > 0 DO
-    OUTPUT N
-    N <- N - 1
-ENDWHILE
-OUTPUT "Done"`,
-      solutionCode: `DECLARE N : INTEGER
-N <- 0
-
-WHILE N > 0 DO
-    OUTPUT N
-    N <- N - 1
-ENDWHILE
-OUTPUT "Done"`,
-      expectedOutput: 'Done',
-      mustContain: ['WHILE', 'ENDWHILE'],
-      playable: true,
-    },
-    {
-      id: '5.10',
-      slug: 'sentinel',
-      title: 'Sentinel WHILE',
+      id: '8.6',
+      slug: 'proc-params',
+      title: 'PROCEDURE with a parameter',
       type: 'grade',
       minutes: 8,
-      why: 'Read until a stopper value. Prime INPUT before the WHILE, and do not process the sentinel.',
-      docsAnchor: 'while',
-      body: `Read names until the user types **END**. Output each name except END.
+      why: 'The caller passes a value in. The procedure uses the parameter name — it does not INPUT again.',
+      docsAnchor: 'procedures',
+      body: `Write **PROCEDURE Square(N : INTEGER)** that outputs **N * N**.
 
-Prime: INPUT once **before** the loop. WHILE the name is not END, OUTPUT it, then INPUT the next.
+The main program reads an integer and **CALL**s Square.
 
-Example: input \`Ada\`, \`Bob\`, \`END\` →
+Example: input \`6\` → \`36\`.`,
+      trap: 'CALL Square(X) — the argument is in brackets. Do not INPUT inside the procedure.',
+      starterCode: `// PROCEDURE Square(N : INTEGER)
+//     ...
+// ENDPROCEDURE
 
-\`Ada\`
-\`Bob\``,
-      trap: 'Do not OUTPUT the sentinel. If END is first, the body must not run.',
-      starterCode: `DECLARE Name : STRING
+DECLARE X : INTEGER
+INPUT X
+// CALL Square(X)`,
+      solutionCode: `PROCEDURE Square(N : INTEGER)
+    OUTPUT N * N
+ENDPROCEDURE
 
-INPUT Name
-// WHILE Name <> "END" DO
-//     OUTPUT Name
-//     INPUT Name
-// ENDWHILE`,
-      solutionCode: `DECLARE Name : STRING
-
-INPUT Name
-WHILE Name <> "END" DO
-    OUTPUT Name
-    INPUT Name
-ENDWHILE`,
+DECLARE X : INTEGER
+INPUT X
+CALL Square(X)`,
       tests: [
-        { inputs: ['Ada', 'Bob', 'END'], expectedOutput: 'Ada\nBob' },
-        { inputs: ['Sam', 'END'], expectedOutput: 'Sam' },
-        { inputs: ['Ann', 'Bea', 'Cal', 'END'], expectedOutput: 'Ann\nBea\nCal' },
-        { inputs: ['Zed', 'END'], expectedOutput: 'Zed' },
+        { inputs: ['6'], expectedOutput: '36' },
+        { inputs: ['0'], expectedOutput: '0' },
+        { inputs: ['-3'], expectedOutput: '9' },
+        { inputs: ['10'], expectedOutput: '100' },
       ],
-      mustContain: ['WHILE', '"END"'],
+      mustContain: ['PROCEDURE', 'CALL'],
       playable: true,
     },
     {
-      id: '5.5',
-      slug: 'repeat',
-      title: 'REPEAT UNTIL validation',
-      type: 'grade',
+      id: '8.2',
+      slug: 'function',
+      title: 'FUNCTION and RETURN',
+      type: 'run',
       minutes: 6,
-      why: 'Post-condition — the body always runs once, so you get at least one prompt. That is why validation uses REPEAT.',
-      docsAnchor: 'repeat',
-      body: `Keep reading an integer until it is between **1 and 10** inclusive. Then output that valid value.
+      why: 'Use the result in an expression. FUNCTION … RETURNS type, then RETURN value.',
+      docsAnchor: 'functions',
+      body: `A **FUNCTION** returns a value. Call it by name in an OUTPUT or assignment — not with CALL.
 
-Example: input \`0\`, then \`11\`, then \`5\` → \`5\`.`,
-      trap: 'UNTIL is the exit condition (stop when TRUE). WHILE is the continue condition. Mixing them is a common trace error.',
-      starterCode: `DECLARE N : INTEGER
+This **Double** function should print **10**.`,
+      trap: '`CALL Double(5)` is wrong for a function. `OUTPUT Double(5)` is the Cambridge form.',
+      starterCode: `FUNCTION Double(N : INTEGER) RETURNS INTEGER
+    RETURN N * 2
+ENDFUNCTION
 
-// REPEAT … UNTIL N is 1 to 10, then OUTPUT N`,
-      solutionCode: `DECLARE N : INTEGER
+OUTPUT Double(5)`,
+      solutionCode: `FUNCTION Double(N : INTEGER) RETURNS INTEGER
+    RETURN N * 2
+ENDFUNCTION
 
-REPEAT
-    INPUT N
-UNTIL N >= 1 AND N <= 10
-OUTPUT N`,
-      tests: [
-        { inputs: ['5'], expectedOutput: '5' },
-        { inputs: ['0', '11', '5'], expectedOutput: '5' },
-        { inputs: ['-3', '10'], expectedOutput: '10' },
-        { inputs: ['1'], expectedOutput: '1' },
-        { inputs: ['99', '0', '7'], expectedOutput: '7' },
-      ],
-      mustContain: ['REPEAT', 'UNTIL'],
+OUTPUT Double(5)`,
+      expectedOutput: '10',
+      mustContain: ['FUNCTION', 'RETURN'],
       playable: true,
     },
     {
-      id: '5.6',
-      slug: 'which-loop',
-      title: 'Which loop?',
+      id: '8.7',
+      slug: 'function-call',
+      title: 'Use a FUNCTION in OUTPUT',
+      type: 'grade',
+      minutes: 8,
+      why: 'Functions return a value you use in an expression. No CALL — OUTPUT Triple(X).',
+      docsAnchor: 'functions',
+      body: `Write **FUNCTION Triple(N : INTEGER) RETURNS INTEGER** that returns **N * 3**.
+
+The main program reads an integer and outputs **Triple(X)**.
+
+Example: input \`5\` → \`15\`.`,
+      trap: '`CALL Triple(5)` is for a PROCEDURE. A FUNCTION is `OUTPUT Triple(5)`.',
+      starterCode: `// FUNCTION Triple(N : INTEGER) RETURNS INTEGER
+//     RETURN ...
+// ENDFUNCTION
+
+DECLARE X : INTEGER
+INPUT X
+// OUTPUT Triple(X)`,
+      solutionCode: `FUNCTION Triple(N : INTEGER) RETURNS INTEGER
+    RETURN N * 3
+ENDFUNCTION
+
+DECLARE X : INTEGER
+INPUT X
+OUTPUT Triple(X)`,
+      tests: [
+        { inputs: ['5'], expectedOutput: '15' },
+        { inputs: ['0'], expectedOutput: '0' },
+        { inputs: ['-2'], expectedOutput: '-6' },
+        { inputs: ['10'], expectedOutput: '30' },
+      ],
+      mustContain: ['FUNCTION', 'RETURN'],
+      playable: true,
+    },
+    {
+      id: '8.3',
+      slug: 'params',
+      title: 'Parameters, local vs global',
       type: 'quiz',
-      minutes: 5,
-      why: 'The question usually tells you: a known count is FOR; test-before is WHILE; test-after / validation is REPEAT.',
-      docsAnchor: 'iteration',
-      body: `Pick the loop the syllabus expects — not the one you like typing.`,
+      minutes: 6,
+      why: 'The syllabus asks for at most three parameters. Locals die when the routine ends; globals do not.',
+      docsAnchor: 'procedures',
+      body: `A parameter is a value the caller **passes in**. A local variable is DECLARED inside the routine.`,
       quiz: [
         {
-          prompt: 'You must print the integers 1 to 20. Which loop?',
+          prompt: 'The syllabus says a student-written procedure or function should have at most how many parameters?',
           options: [
-            { id: 'for', label: 'FOR … TO … NEXT' },
-            { id: 'while', label: 'WHILE … ENDWHILE' },
-            { id: 'repeat', label: 'REPEAT … UNTIL' },
+            { id: 'one', label: '1' },
+            { id: 'three', label: '3' },
+            { id: 'ten', label: '10' },
           ],
-          correctId: 'for',
-          explanation: 'The number of repeats is known before the loop starts, so FOR.',
+          correctId: 'three',
+          explanation: 'Cambridge IGCSE limits student-designed routines to a maximum of three parameters.',
         },
         {
-          prompt: 'Read numbers until the user types 0. Zero must not be processed, and they might type 0 first. Which loop?',
+          prompt: 'A variable DECLARED inside a FUNCTION is:',
           options: [
-            { id: 'for', label: 'FOR … TO … NEXT' },
-            { id: 'while', label: 'WHILE … ENDWHILE' },
-            { id: 'repeat', label: 'REPEAT … UNTIL' },
+            { id: 'global', label: 'Global — the main program can use it after RETURN' },
+            { id: 'local', label: 'Local — it only exists while the function runs' },
+            { id: 'const', label: 'A CONSTANT by default' },
           ],
-          correctId: 'while',
-          explanation: 'The body must be skippable (zero times). That is a pre-condition WHILE.',
+          correctId: 'local',
+          explanation: 'Locals are created on entry and discarded on RETURN / ENDFUNCTION.',
         },
         {
-          prompt: 'Keep asking for a password until it is at least 8 characters. Which loop?',
+          prompt: 'Which call is correct for FUNCTION Square(N : INTEGER) RETURNS INTEGER?',
           options: [
-            { id: 'for', label: 'FOR … TO … NEXT' },
-            { id: 'while', label: 'WHILE … ENDWHILE' },
-            { id: 'repeat', label: 'REPEAT … UNTIL' },
+            { id: 'call', label: 'CALL Square(4)' },
+            { id: 'out', label: 'OUTPUT Square(4)' },
+            { id: 'run', label: 'RUN Square 4' },
           ],
-          correctId: 'repeat',
-          explanation: 'You always prompt at least once, then re-prompt until valid — REPEAT UNTIL.',
+          correctId: 'out',
+          explanation: 'Functions are used in expressions. CALL is for PROCEDURES.',
         },
       ],
       playable: true,
     },
     {
-      id: '5.7',
-      slug: 'nested',
-      title: 'Nested statements, max 3',
+      id: '8.4',
+      slug: 'library',
+      title: 'ROUND, RANDOM, DIV, MOD',
+      type: 'grade',
+      minutes: 8,
+      why: 'Library routines you must recognise on sight. RANDOM() is a real in [0, 1).',
+      docsAnchor: 'math-functions',
+      body: `Output four lines, in this order:
+
+1. **ROUND(3.7)** — nearest integer
+2. **10 DIV 3**
+3. **10 MOD 3**
+4. **TRUE** if \`RANDOM()\` is at least 0 (it always is — this just proves you called it)
+
+You must call **ROUND**, **RANDOM**, **DIV** and **MOD**.`,
+      trap: '`/` is real division. DIV is the whole-number quotient. RANDOM() needs the empty brackets.',
+      starterCode: `DECLARE X : REAL
+
+// four OUTPUT lines: ROUND, DIV, MOD, then RANDOM() >= 0`,
+      solutionCode: `DECLARE X : REAL
+
+OUTPUT ROUND(3.7)
+OUTPUT 10 DIV 3
+OUTPUT 10 MOD 3
+X <- RANDOM()
+OUTPUT X >= 0`,
+      expectedOutput: '4\n3\n1\nTRUE',
+      mustContain: ['ROUND', 'RANDOM', 'DIV', 'MOD'],
+      playable: true,
+    },
+    {
+      id: '8.5',
+      slug: 'boss',
+      title: 'Boss: Easy Procedures',
       type: 'grade',
       minutes: 10,
-      why: 'Indentation is how the marker sees the nest. The syllabus asks for at most three levels of nesting.',
-      docsAnchor: 'for',
-      body: `Output a 2-by-2 multiplication grid using **two FOR loops**. Each product on its own line, row-major:
+      why: 'A one-parameter PROCEDURE that the main program CALLs after INPUT.',
+      docsAnchor: 'procedures',
+      body: `Write **PROCEDURE Banner(Title : STRING)** that outputs:
 
-\`1\`
-\`2\`
-\`2\`
-\`4\`
+\`***\`
+the Title
+\`***\`
 
-(That is 1×1, 1×2, 2×1, 2×2.)`,
-      trap: 'NEXT must close the inner loop before the outer NEXT. Indent the inner FOR.',
-      starterCode: `DECLARE Row : INTEGER
-DECLARE Col : INTEGER
+The main program reads a string and CALLs Banner.
 
-// nested FOR loops — OUTPUT Row * Col`,
-      solutionCode: `DECLARE Row : INTEGER
-DECLARE Col : INTEGER
+Example: input \`IGCSE\` →
 
-FOR Row <- 1 TO 2
-    FOR Col <- 1 TO 2
-        OUTPUT Row * Col
-    NEXT Col
-NEXT Row`,
-      expectedOutput: '1\n2\n2\n4',
-      mustContain: ['FOR Row', 'FOR Col'],
-      playable: true,
-    },
-    {
-      id: '5.8',
-      slug: 'boss',
-      title: 'Boss: totaller + counter + trace',
-      type: 'grade',
-      minutes: 12,
-      why: 'One FOR, two patterns, first blank-trace skill: Total and Count change on different passes.',
-      docsAnchor: 'for',
-      body: `Read **N**, then **N** integers. Output two lines:
+\`***\`
+\`IGCSE\`
+\`***\``,
+      starterCode: `// PROCEDURE Banner(Title : STRING)
+//     ...
+// ENDPROCEDURE
 
-1. The **sum** of the values
-2. How many values were **greater than 10**
+DECLARE Name : STRING
+INPUT Name
+// CALL Banner(Name)`,
+      solutionCode: `PROCEDURE Banner(Title : STRING)
+    OUTPUT "***"
+    OUTPUT Title
+    OUTPUT "***"
+ENDPROCEDURE
 
-Example: input \`4\` then \`3\`, \`12\`, \`10\`, \`20\` →
-
-\`45\`
-\`2\``,
-      trap: '10 is not greater than 10. Initialise both Total and Count to 0 before the loop.',
-      starterCode: `DECLARE N : INTEGER
-DECLARE Value : INTEGER
-DECLARE Total : INTEGER
-DECLARE Count : INTEGER
-DECLARE i : INTEGER
-
-INPUT N
-
-// totaller + counter, then OUTPUT Total and Count`,
-      solutionCode: `DECLARE N : INTEGER
-DECLARE Value : INTEGER
-DECLARE Total : INTEGER
-DECLARE Count : INTEGER
-DECLARE i : INTEGER
-
-INPUT N
-Total <- 0
-Count <- 0
-FOR i <- 1 TO N
-    INPUT Value
-    Total <- Total + Value
-    IF Value > 10 THEN
-        Count <- Count + 1
-    ENDIF
-NEXT i
-OUTPUT Total
-OUTPUT Count`,
+DECLARE Name : STRING
+INPUT Name
+CALL Banner(Name)`,
       tests: [
-        { inputs: ['4', '3', '12', '10', '20'], expectedOutput: '45\n2' },
-        { inputs: ['1', '11'], expectedOutput: '11\n1' },
-        { inputs: ['3', '0', '0', '0'], expectedOutput: '0\n0' },
-        { inputs: ['2', '-5', '15'], expectedOutput: '10\n1' },
-        { inputs: ['5', '10', '10', '10', '10', '10'], expectedOutput: '50\n0' },
+        { inputs: ['IGCSE'], expectedOutput: '***\nIGCSE\n***' },
+        { inputs: ['Hi'], expectedOutput: '***\nHi\n***' },
+        { inputs: ['Paper 2'], expectedOutput: '***\nPaper 2\n***' },
+        { inputs: ['A'], expectedOutput: '***\nA\n***' },
+        { inputs: ['Ready'], expectedOutput: '***\nReady\n***' },
       ],
+      mustContain: ['PROCEDURE', 'CALL'],
       playable: true,
     },
   ],

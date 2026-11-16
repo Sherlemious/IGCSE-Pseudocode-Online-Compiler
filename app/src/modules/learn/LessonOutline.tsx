@@ -3,6 +3,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { flattenLessons, lessonHref, nextLesson, previousLesson } from './path';
 import type { LearnCourse, LearnLesson, LearnLevel } from './types';
+import { levelTitle } from './pathTheme';
 
 /*
  * Server-rendered text for screen readers and crawlers. The path map and the
@@ -22,7 +23,7 @@ export function CourseLessonIndex({ course }: { course: LearnCourse }) {
         .map((level) => (
           <section key={level.slug}>
             <h3>
-              Level {level.number}: {level.name}
+              {levelTitle(level)}: {level.name}
               {level.free ? ' (free)' : ''}
             </h3>
             <p>{level.leaveWith}</p>
@@ -60,12 +61,12 @@ export function LessonOutline({
     <section aria-label={`About this lesson: ${lesson.title}`} className="sr-only">
       <h2>{lesson.title}</h2>
       <p>
-        Level {level.number}: {level.name}. {lesson.why}
+        {levelTitle(level)}: {level.name}. {lesson.why}
       </p>
       {level.free && lesson.body && <ReactMarkdown remarkPlugins={[remarkGfm]}>{lesson.body}</ReactMarkdown>}
       {siblings.length > 0 && (
-        <nav aria-label={`Other lessons in level ${level.number}`}>
-          <h3>Other lessons in level {level.number}</h3>
+        <nav aria-label={`Other lessons in ${levelTitle(level).toLowerCase()}`}>
+          <h3>Other lessons in {levelTitle(level).toLowerCase()}</h3>
           <ul>
             {siblings.map((item) => (
               <li key={item.lesson.id}>

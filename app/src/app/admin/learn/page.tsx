@@ -190,7 +190,7 @@ function LevelFunnel({ course }: { course: LearnAdminCourse }) {
           <div key={level.levelNumber} className="space-y-1.5">
             <div className="flex items-center justify-between gap-3 text-xs">
               <span className="text-light-text font-medium truncate">
-                {level.levelNumber} · {level.levelName}
+                {level.levelCode ?? level.levelNumber} · {level.levelName}
                 {!level.free && <span className="ml-2 text-[10px] uppercase tracking-wide text-warning">Paid</span>}
               </span>
               <span className="font-mono tabular-nums text-dark-text shrink-0">

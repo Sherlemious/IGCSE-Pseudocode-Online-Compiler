@@ -67,11 +67,16 @@ export type LearnLevel = {
   free: boolean;
   playable: boolean;
   /**
-   * Short practice level built from what students actually fail.
-   * Free and open from the map, and it does not sit in the Continue
-   * sequence while a syllabus lesson is still unfinished.
+   * Optional practice level built from what students actually fail. Drawn as
+   * a side path off `branchOf` on the map, labelled `code` (D1, D2…) instead
+   * of a level number, and kept out of Continue and Next while the syllabus
+   * is unfinished. `number` is internal (sorting, colour), never shown.
    */
   drill?: boolean;
+  /** Display label for a drill, e.g. 'D1'. */
+  code?: string;
+  /** The syllabus level number this drill branches off on the map. */
+  branchOf?: number;
   lessons: LearnLesson[];
 };
 

@@ -27,7 +27,7 @@ export default function LearnProgressChecklist({
       {groups.map((group) => (
         <div key={group.levelSlug}>
           <h3 className="mono-label text-dark-text mb-2">
-            Level {group.levelNumber} · {group.levelName}
+            {group.levelCode ? `Drill ${group.levelCode}` : `Level ${group.levelNumber}`} · {group.levelName}
           </h3>
           <ul className="space-y-1.5">
             {group.lessons.map((lesson) => (
