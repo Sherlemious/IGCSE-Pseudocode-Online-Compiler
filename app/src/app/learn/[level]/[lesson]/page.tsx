@@ -1,10 +1,10 @@
 import type { Metadata } from 'next';
-import { notFound } from 'next/navigation';
+import { notFound, permanentRedirect } from 'next/navigation';
 import { PREMIUM_GATING_ENABLED } from '@/modules/billing/featureFlags';
 import LearnPlayer from '@/modules/learn/LearnPlayer';
 import { LessonOutline } from '@/modules/learn/LessonOutline';
 import { IGCSE_PAPER_2 } from '@/modules/learn/curriculum';
-import { findLesson, flattenLessons } from '@/modules/learn/path';
+import { findLesson, flattenLessons, legacyLessonHref } from '@/modules/learn/path';
 import { SHARE_IMAGE, SITE_URL, truncateDescription } from '@/shared/lib/seo';
 
 interface Props {
@@ -47,7 +47,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function LearnLessonPage({ params }: Props) {
   const { level: levelSlug, lesson: lessonSlug } = await params;
   const found = findLesson(IGCSE_PAPER_2, levelSlug, lessonSlug);
-  if (!found) notFound();
+  if (!found) {
+    const moved = legacyLessonHref(IGCSE_PAPER_2, levelSlug, lessonSlug);
+    if (moved) permanentRedirect(moved);
+    notFound();
+  }
 
   const jsonLd = {
     '@context': 'https://schema.org',

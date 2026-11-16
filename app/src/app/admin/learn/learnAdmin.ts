@@ -21,8 +21,6 @@ export type LevelStat = {
   levelNumber: number;
   levelName: string;
   free: boolean;
-  /** An optional free drill (levels 11+), shown on the path after level 3 but listed after the main levels here. */
-  drill: boolean;
   reached: number;
   finished: number;
 };
@@ -209,13 +207,10 @@ export function buildLearnAdminCourse(
         levelNumber: level.number,
         levelName: level.name,
         free: level.free,
-        drill: Boolean(level.drill),
         reached,
         finished,
       };
-    })
-    // Main levels by number, then the drills by number, so the funnel reads 1-10 in order.
-    .sort((a, b) => Number(a.drill) - Number(b.drill) || a.levelNumber - b.levelNumber);
+    });
 
   const minStarted = people.length >= 8 ? 3 : 1;
   const ranked = [...lessonAcc.entries()]

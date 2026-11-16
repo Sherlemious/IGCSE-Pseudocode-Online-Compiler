@@ -1,145 +1,260 @@
 import type { LearnLevel } from '../types';
 
-/** Free drill. Last 90 days: wrong output is the main Check failure, and a missing OUTPUT comma is a top playground hint. */
 export const level11: LearnLevel = {
   number: 11,
   slug: '11',
-  name: 'Exact lines',
-  hours: '1',
-  leaveWith: 'The space lives in the string, and the line has nothing extra',
-  syllabus: '8.1.3',
-  free: true,
+  name: 'Routines',
+  hours: '2.5',
+  leaveWith: 'PROCEDURE vs FUNCTION, ≤3 params, ROUND/RANDOM',
+  syllabus: '8.1 procedures/functions/library',
+  free: false,
   playable: true,
-  drill: true,
   lessons: [
     {
-      id: '11.1',
-      slug: 'space',
-      title: 'The space is inside the quotes',
-      type: 'mutate',
-      minutes: 4,
-      why: 'A comma between OUTPUT items does not insert a space. "Score:42" and "Score: 42" are different answers.',
-      docsAnchor: 'first-program',
-      body: `This prints \`Score:42\`. Change the string so it prints:
+      id: '8.1',
+      slug: 'procedure',
+      title: 'PROCEDURE and CALL',
+      type: 'run',
+      minutes: 6,
+      why: 'Actions, no return value. CALL is how you run one.',
+      docsAnchor: 'procedures',
+      body: `A **PROCEDURE** does something. You **CALL** it. It does not return a value to use in an expression.
 
-\`Score: 42\`
+This one should print **Ready**.`,
+      trap: 'You cannot write `OUTPUT Greet()` if Greet is a PROCEDURE. That is a FUNCTION.',
+      starterCode: `PROCEDURE Greet()
+    OUTPUT "Ready"
+ENDPROCEDURE
 
-Do not add another OUTPUT.`,
-      trap: 'Write the space inside the quotes: \`"Score: "\`. The comma only separates items.',
-      starterCode: `DECLARE Score : INTEGER
-Score <- 42
-OUTPUT "Score:", Score`,
-      solutionCode: `DECLARE Score : INTEGER
-Score <- 42
-OUTPUT "Score: ", Score`,
-      expectedOutput: 'Score: 42',
+CALL Greet()`,
+      solutionCode: `PROCEDURE Greet()
+    OUTPUT "Ready"
+ENDPROCEDURE
+
+CALL Greet()`,
+      expectedOutput: 'Ready',
+      mustContain: ['PROCEDURE', 'CALL'],
       playable: true,
     },
     {
-      id: '11.2',
-      slug: 'receipt',
-      title: 'Name, colon, price',
+      id: '8.6',
+      slug: 'proc-params',
+      title: 'PROCEDURE with a parameter',
       type: 'grade',
-      minutes: 6,
-      why: 'Paper 2 marks the characters on the line. A missing space after the colon is a wrong answer.',
-      docsAnchor: 'io',
-      body: `Read an item name, then an integer price. Output one line:
+      minutes: 8,
+      why: 'The caller passes a value in. The procedure uses the parameter name — it does not INPUT again.',
+      docsAnchor: 'procedures',
+      body: `Write **PROCEDURE Square(N : INTEGER)** that outputs **N * N**.
 
-\`Name: price\`
+The main program reads an integer and **CALL**s Square.
 
-Example: input \`Pencil\` then \`3\` → \`Pencil: 3\`.`,
-      trap: 'The colon and the space are one string: \`": "\`.',
-      starterCode: `DECLARE Item : STRING
-DECLARE Price : INTEGER
+Example: input \`6\` → \`36\`.`,
+      trap: 'CALL Square(X) — the argument is in brackets. Do not INPUT inside the procedure.',
+      starterCode: `// PROCEDURE Square(N : INTEGER)
+//     ...
+// ENDPROCEDURE
 
-INPUT Item
-INPUT Price
+DECLARE X : INTEGER
+INPUT X
+// CALL Square(X)`,
+      solutionCode: `PROCEDURE Square(N : INTEGER)
+    OUTPUT N * N
+ENDPROCEDURE
 
-// OUTPUT Item: Price`,
-      solutionCode: `DECLARE Item : STRING
-DECLARE Price : INTEGER
-
-INPUT Item
-INPUT Price
-
-OUTPUT Item, ": ", Price`,
+DECLARE X : INTEGER
+INPUT X
+CALL Square(X)`,
       tests: [
-        { inputs: ['Pencil', '3'], expectedOutput: 'Pencil: 3' },
-        { inputs: ['Pen', '10'], expectedOutput: 'Pen: 10' },
-        { inputs: ['Book', '0'], expectedOutput: 'Book: 0' },
-        { inputs: ['Ruler', '2'], expectedOutput: 'Ruler: 2' },
+        { inputs: ['6'], expectedOutput: '36' },
+        { inputs: ['0'], expectedOutput: '0' },
+        { inputs: ['-3'], expectedOutput: '9' },
+        { inputs: ['10'], expectedOutput: '100' },
+      ],
+      mustContain: ['PROCEDURE', 'CALL'],
+      playable: true,
+    },
+    {
+      id: '8.2',
+      slug: 'function',
+      title: 'FUNCTION and RETURN',
+      type: 'run',
+      minutes: 6,
+      why: 'Use the result in an expression. FUNCTION … RETURNS type, then RETURN value.',
+      docsAnchor: 'functions',
+      body: `A **FUNCTION** returns a value. Call it by name in an OUTPUT or assignment — not with CALL.
+
+This **Double** function should print **10**.`,
+      trap: '`CALL Double(5)` is wrong for a function. `OUTPUT Double(5)` is the Cambridge form.',
+      starterCode: `FUNCTION Double(N : INTEGER) RETURNS INTEGER
+    RETURN N * 2
+ENDFUNCTION
+
+OUTPUT Double(5)`,
+      solutionCode: `FUNCTION Double(N : INTEGER) RETURNS INTEGER
+    RETURN N * 2
+ENDFUNCTION
+
+OUTPUT Double(5)`,
+      expectedOutput: '10',
+      mustContain: ['FUNCTION', 'RETURN'],
+      playable: true,
+    },
+    {
+      id: '8.7',
+      slug: 'function-call',
+      title: 'Use a FUNCTION in OUTPUT',
+      type: 'grade',
+      minutes: 8,
+      why: 'Functions return a value you use in an expression. No CALL — OUTPUT Triple(X).',
+      docsAnchor: 'functions',
+      body: `Write **FUNCTION Triple(N : INTEGER) RETURNS INTEGER** that returns **N * 3**.
+
+The main program reads an integer and outputs **Triple(X)**.
+
+Example: input \`5\` → \`15\`.`,
+      trap: '`CALL Triple(5)` is for a PROCEDURE. A FUNCTION is `OUTPUT Triple(5)`.',
+      starterCode: `// FUNCTION Triple(N : INTEGER) RETURNS INTEGER
+//     RETURN ...
+// ENDFUNCTION
+
+DECLARE X : INTEGER
+INPUT X
+// OUTPUT Triple(X)`,
+      solutionCode: `FUNCTION Triple(N : INTEGER) RETURNS INTEGER
+    RETURN N * 3
+ENDFUNCTION
+
+DECLARE X : INTEGER
+INPUT X
+OUTPUT Triple(X)`,
+      tests: [
+        { inputs: ['5'], expectedOutput: '15' },
+        { inputs: ['0'], expectedOutput: '0' },
+        { inputs: ['-2'], expectedOutput: '-6' },
+        { inputs: ['10'], expectedOutput: '30' },
+      ],
+      mustContain: ['FUNCTION', 'RETURN'],
+      playable: true,
+    },
+    {
+      id: '8.3',
+      slug: 'params',
+      title: 'Parameters, local vs global',
+      type: 'quiz',
+      minutes: 6,
+      why: 'The syllabus asks for at most three parameters. Locals die when the routine ends; globals do not.',
+      docsAnchor: 'procedures',
+      body: `A parameter is a value the caller **passes in**. A local variable is DECLARED inside the routine.`,
+      quiz: [
+        {
+          prompt: 'The syllabus says a student-written procedure or function should have at most how many parameters?',
+          options: [
+            { id: 'one', label: '1' },
+            { id: 'three', label: '3' },
+            { id: 'ten', label: '10' },
+          ],
+          correctId: 'three',
+          explanation: 'Cambridge IGCSE limits student-designed routines to a maximum of three parameters.',
+        },
+        {
+          prompt: 'A variable DECLARED inside a FUNCTION is:',
+          options: [
+            { id: 'global', label: 'Global — the main program can use it after RETURN' },
+            { id: 'local', label: 'Local — it only exists while the function runs' },
+            { id: 'const', label: 'A CONSTANT by default' },
+          ],
+          correctId: 'local',
+          explanation: 'Locals are created on entry and discarded on RETURN / ENDFUNCTION.',
+        },
+        {
+          prompt: 'Which call is correct for FUNCTION Square(N : INTEGER) RETURNS INTEGER?',
+          options: [
+            { id: 'call', label: 'CALL Square(4)' },
+            { id: 'out', label: 'OUTPUT Square(4)' },
+            { id: 'run', label: 'RUN Square 4' },
+          ],
+          correctId: 'out',
+          explanation: 'Functions are used in expressions. CALL is for PROCEDURES.',
+        },
       ],
       playable: true,
     },
     {
-      id: '11.3',
-      slug: 'sum-line',
-      title: 'Build one sentence from two numbers',
+      id: '8.4',
+      slug: 'library',
+      title: 'ROUND, RANDOM, DIV, MOD',
       type: 'grade',
-      minutes: 6,
-      why: 'Students who pass the arithmetic still lose the mark by printing the sum on its own, or by leaving the spaces out.',
-      docsAnchor: 'first-program',
-      body: `Read two integers. Output one line in this shape:
+      minutes: 8,
+      why: 'Library routines you must recognise on sight. RANDOM() is a real in [0, 1).',
+      docsAnchor: 'math-functions',
+      body: `Output four lines, in this order:
 
-\`A + B = sum\`
+1. **ROUND(3.7)** — nearest integer
+2. **10 DIV 3**
+3. **10 MOD 3**
+4. **TRUE** if \`RANDOM()\` is at least 0 (it always is — this just proves you called it)
 
-Example: input \`2\` then \`3\` → \`2 + 3 = 5\`.`,
-      trap: 'Each space is inside a string. \`" + "\` and \`" = "\` are the gaps.',
-      starterCode: `DECLARE A : INTEGER
-DECLARE B : INTEGER
+You must call **ROUND**, **RANDOM**, **DIV** and **MOD**.`,
+      trap: '`/` is real division. DIV is the whole-number quotient. RANDOM() needs the empty brackets.',
+      starterCode: `DECLARE X : REAL
 
-INPUT A
-INPUT B
+// four OUTPUT lines: ROUND, DIV, MOD, then RANDOM() >= 0`,
+      solutionCode: `DECLARE X : REAL
 
-// OUTPUT A + B = the sum`,
-      solutionCode: `DECLARE A : INTEGER
-DECLARE B : INTEGER
-
-INPUT A
-INPUT B
-
-OUTPUT A, " + ", B, " = ", A + B`,
-      tests: [
-        { inputs: ['2', '3'], expectedOutput: '2 + 3 = 5' },
-        { inputs: ['0', '0'], expectedOutput: '0 + 0 = 0' },
-        { inputs: ['10', '1'], expectedOutput: '10 + 1 = 11' },
-        { inputs: ['-2', '5'], expectedOutput: '-2 + 5 = 3' },
-      ],
+OUTPUT ROUND(3.7)
+OUTPUT 10 DIV 3
+OUTPUT 10 MOD 3
+X <- RANDOM()
+OUTPUT X >= 0`,
+      expectedOutput: '4\n3\n1\nTRUE',
+      mustContain: ['ROUND', 'RANDOM', 'DIV', 'MOD'],
       playable: true,
     },
     {
-      id: '11.4',
+      id: '8.5',
       slug: 'boss',
-      title: 'Boss: word, then how many',
+      title: 'Boss: Easy Procedures',
       type: 'grade',
-      minutes: 6,
-      why: 'The mark is the whole line. Extra words, or a missing space around x, fail the check.',
-      docsAnchor: 'io',
-      body: `Read a word, then an integer. Output one line:
+      minutes: 10,
+      why: 'A one-parameter PROCEDURE that the main program CALLs after INPUT.',
+      docsAnchor: 'procedures',
+      body: `Write **PROCEDURE Banner(Title : STRING)** that outputs:
 
-\`word x count\`
+\`***\`
+the Title
+\`***\`
 
-Example: input \`apple\` then \`4\` → \`apple x 4\`.`,
-      starterCode: `DECLARE Word : STRING
-DECLARE Count : INTEGER
+The main program reads a string and CALLs Banner.
 
-INPUT Word
-INPUT Count
+Example: input \`IGCSE\` →
 
-// OUTPUT Word x Count`,
-      solutionCode: `DECLARE Word : STRING
-DECLARE Count : INTEGER
+\`***\`
+\`IGCSE\`
+\`***\``,
+      starterCode: `// PROCEDURE Banner(Title : STRING)
+//     ...
+// ENDPROCEDURE
 
-INPUT Word
-INPUT Count
+DECLARE Name : STRING
+INPUT Name
+// CALL Banner(Name)`,
+      solutionCode: `PROCEDURE Banner(Title : STRING)
+    OUTPUT "***"
+    OUTPUT Title
+    OUTPUT "***"
+ENDPROCEDURE
 
-OUTPUT Word, " x ", Count`,
+DECLARE Name : STRING
+INPUT Name
+CALL Banner(Name)`,
       tests: [
-        { inputs: ['apple', '4'], expectedOutput: 'apple x 4' },
-        { inputs: ['bus', '1'], expectedOutput: 'bus x 1' },
-        { inputs: ['ticket', '0'], expectedOutput: 'ticket x 0' },
-        { inputs: ['seat', '12'], expectedOutput: 'seat x 12' },
+        { inputs: ['IGCSE'], expectedOutput: '***\nIGCSE\n***' },
+        { inputs: ['Hi'], expectedOutput: '***\nHi\n***' },
+        { inputs: ['Paper 2'], expectedOutput: '***\nPaper 2\n***' },
+        { inputs: ['A'], expectedOutput: '***\nA\n***' },
+        { inputs: ['Ready'], expectedOutput: '***\nReady\n***' },
       ],
+      mustContain: ['PROCEDURE', 'CALL'],
       playable: true,
     },
   ],

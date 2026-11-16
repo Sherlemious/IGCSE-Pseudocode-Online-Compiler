@@ -25,12 +25,12 @@ describe('IGCSE Paper 2 curriculum', () => {
   it('has thirteen levels, with the three drills after Input', () => {
     expect(IGCSE_PAPER_2.levels).toHaveLength(13);
     expect(IGCSE_PAPER_2.levels.map((level) => level.number)).toEqual([
-      1, 2, 3, 11, 12, 13, 4, 5, 6, 7, 8, 9, 10,
+      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13,
     ]);
     expect(IGCSE_PAPER_2.levels.filter((level) => level.drill).map((level) => level.slug)).toEqual([
-      '11',
-      '12',
-      '13',
+      '4',
+      '5',
+      '6',
     ]);
     const ids = IGCSE_PAPER_2.levels.flatMap((level) => level.lessons.map((lesson) => lesson.id));
     const slugs = flattenLessons(IGCSE_PAPER_2).map(
@@ -85,7 +85,7 @@ describe('IGCSE Paper 2 curriculum', () => {
       const result = await checkLessonCode(lesson, lesson.solutionCode ?? '');
       expect(result.ok, `${lesson.id}: ${result.message}`).toBe(true);
     }
-    const trace = findLesson(IGCSE_PAPER_2, '10', 'trace')!.lesson;
+    const trace = findLesson(IGCSE_PAPER_2, '13', 'trace')!.lesson;
     expect(trace.type).toBe('quiz');
     expect(trace.starterCode).toContain('A <- 3');
   });
@@ -101,7 +101,7 @@ describe('IGCSE Paper 2 curriculum', () => {
   });
 
   it('fails 10.3 starter until the four errors are fixed', async () => {
-    const lesson = findLesson(IGCSE_PAPER_2, '10', 'errors')!.lesson;
+    const lesson = findLesson(IGCSE_PAPER_2, '13', 'errors')!.lesson;
     const starter = await checkLessonCode(lesson, lesson.starterCode ?? '');
     expect(starter.ok).toBe(false);
     const fixed = await checkLessonCode(lesson, lesson.solutionCode ?? '');
@@ -109,7 +109,7 @@ describe('IGCSE Paper 2 curriculum', () => {
   });
 
   it('fails 10.10 starter until the four errors are fixed', async () => {
-    const lesson = findLesson(IGCSE_PAPER_2, '10', 'more-errors')!.lesson;
+    const lesson = findLesson(IGCSE_PAPER_2, '13', 'more-errors')!.lesson;
     const starter = await checkLessonCode(lesson, lesson.starterCode ?? '');
     expect(starter.ok).toBe(false);
     const fixed = await checkLessonCode(lesson, lesson.solutionCode ?? '');

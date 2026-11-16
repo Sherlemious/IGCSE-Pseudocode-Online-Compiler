@@ -3,512 +3,452 @@ import type { LearnLevel } from '../types';
 export const level10: LearnLevel = {
   number: 10,
   slug: '10',
-  name: 'Paper',
-  hours: '5.5',
-  leaveWith: 'Validation, traces, bubble sort, SQL, gates, 15-mark skeleton',
-  syllabus: '7.4–7.9, 9, 10',
+  name: 'Arrays',
+  hours: '4.5',
+  leaveWith: 'ARRAY[1:n], fill loop, linear search, 2D [row, col]',
+  syllabus: '8.2, 7.4',
   free: false,
   playable: true,
   lessons: [
     {
-      id: '10.1',
-      slug: 'validation',
-      title: 'Validation checks',
-      type: 'grade',
-      minutes: 8,
-      why: 'Range, length, type, presence, format, check digit — REPEAT UNTIL is the usual wrapper.',
-      docsAnchor: 'repeat',
-      body: `Keep reading an integer **Age** until it is between **0 and 120** inclusive (a **range check**). Then output it.
-
-The syllabus also names length, type, presence, format and check digit — those are the labels to learn even when the program only needs a range.
-
-Example: input \`-1\`, then \`200\`, then \`16\` → \`16\`.`,
-      trap: 'Validation is not verification. Validation asks “is this data reasonable?” Verification asks “did we copy it correctly?”',
-      starterCode: `DECLARE Age : INTEGER
-
-// REPEAT INPUT Age UNTIL 0 to 120, then OUTPUT Age`,
-      solutionCode: `DECLARE Age : INTEGER
-
-REPEAT
-    INPUT Age
-UNTIL Age >= 0 AND Age <= 120
-OUTPUT Age`,
-      tests: [
-        { inputs: ['16'], expectedOutput: '16' },
-        { inputs: ['-1', '200', '16'], expectedOutput: '16' },
-        { inputs: ['0'], expectedOutput: '0' },
-        { inputs: ['120'], expectedOutput: '120' },
-        { inputs: ['121', '0'], expectedOutput: '0' },
-      ],
-      mustContain: ['REPEAT', 'UNTIL'],
-      playable: true,
-    },
-    {
-      id: '10.9',
-      slug: 'presence',
-      title: 'Presence check',
-      type: 'grade',
-      minutes: 8,
-      why: 'Presence means “not empty”. REPEAT UNTIL LENGTH(Name) > 0 is the usual wrapper.',
-      docsAnchor: 'repeat',
-      body: `Keep reading a **STRING** Name until it is not empty (a **presence check**). Then output the name.
-
-An empty INPUT is a zero-length string. Reject it and read again.
-
-Example: input (empty), then \`Ada\` → \`Ada\`.`,
-      trap: 'Empty is LENGTH 0, not the letters "empty". Do not compare Name to a space unless the question says so.',
-      starterCode: `DECLARE Name : STRING
-
-// REPEAT INPUT Name UNTIL it is not empty, then OUTPUT Name`,
-      solutionCode: `DECLARE Name : STRING
-
-REPEAT
-    INPUT Name
-UNTIL LENGTH(Name) > 0
-OUTPUT Name`,
-      tests: [
-        { inputs: ['Ada'], expectedOutput: 'Ada' },
-        { inputs: ['', 'Ada'], expectedOutput: 'Ada' },
-        { inputs: ['', '', 'Bob'], expectedOutput: 'Bob' },
-        { inputs: ['X'], expectedOutput: 'X' },
-        { inputs: ['', 'Paper'], expectedOutput: 'Paper' },
-      ],
-      mustContain: ['REPEAT', 'UNTIL', 'LENGTH'],
-      playable: true,
-    },
-    {
-      id: '10.2',
-      slug: 'test-data',
-      title: 'Test data and verification',
-      type: 'quiz',
-      minutes: 8,
-      why: 'Normal, abnormal, extreme, boundary — the four labels Paper 2 uses when it asks you to suggest test data.',
-      body: `A field **Age** is valid when it is an integer from 0 to 120 inclusive.`,
-      quiz: [
-        {
-          prompt: 'Which is extreme (boundary) test data for Age 0–120?',
-          options: [
-            { id: 'fifty', label: '50' },
-            { id: 'zero', label: '0 and 120' },
-            { id: 'hello', label: '"hello"' },
-          ],
-          correctId: 'zero',
-          explanation: 'Extreme / boundary values sit on the edge of the valid range: 0 and 120.',
-        },
-        {
-          prompt: 'Which is abnormal test data for that Age field?',
-          options: [
-            { id: 'ten', label: '10' },
-            { id: 'neg', label: '-5 or 200 or "abc"' },
-            { id: 'hundred', label: '100' },
-          ],
-          correctId: 'neg',
-          explanation: 'Abnormal data is outside the rules: too small, too big, or the wrong type.',
-        },
-        {
-          prompt: 'Verification is best described as:',
-          options: [
-            { id: 'range', label: 'Checking a value is in range' },
-            { id: 'copy', label: 'Checking data was copied / entered accurately (e.g. double entry)' },
-            { id: 'eof', label: 'Checking a file is not at EOF' },
-          ],
-          correctId: 'copy',
-          explanation: 'Validation = reasonable. Verification = matches the original (double entry, on-screen check).',
-        },
-      ],
-      playable: true,
-    },
-    {
-      id: '10.3',
-      slug: 'errors',
-      title: 'Find four errors',
-      type: 'mutate',
-      minutes: 10,
-      why: 'Specimen-style error hunt: the program is close. Four slips stop it matching the mark scheme.',
-      body: `This program should add **1 to 5** and output **15**. It has four errors:
-
-1. Assignment uses **=** instead of **<-**
-2. The loop goes **TO 4**, not 5
-3. **OUTPUT total** uses the wrong case
-4. The IF is missing **ENDIF**
-
-Fix all four. Output must be \`15\`.`,
-      trap: 'Variable names are case-sensitive here. `total` is not `Total`.',
-      starterCode: `DECLARE Total : INTEGER
-DECLARE i : INTEGER
-Total = 0
-FOR i <- 1 TO 4
-    Total <- Total + i
-NEXT i
-IF Total > 0 THEN
-OUTPUT total`,
-      solutionCode: `DECLARE Total : INTEGER
-DECLARE i : INTEGER
-Total <- 0
-FOR i <- 1 TO 5
-    Total <- Total + i
-NEXT i
-IF Total > 0 THEN
-    OUTPUT Total
-ENDIF`,
-      expectedOutput: '15',
-      mustContain: ['Total <- 0', 'TO 5', 'OUTPUT Total', 'ENDIF'],
-      playable: true,
-    },
-    {
-      id: '10.10',
-      slug: 'more-errors',
-      title: 'Find more errors',
-      type: 'mutate',
-      minutes: 10,
-      why: 'A second error hunt: comparison, assignment, case of identifiers, missing ENDIF.',
-      body: `This program should output the **larger** of 7 and 12, which is **12**. It has four errors:
-
-1. Assignment uses **=** instead of **<-**
-2. The IF is missing **THEN**
-3. **OUTPUT a** uses the wrong identifier
-4. The IF is missing **ENDIF**
-
-Fix all four. Output must be \`12\`.`,
-      trap: 'Identifiers are case-sensitive here. `a` is not `A`.',
-      starterCode: `DECLARE A : INTEGER
-DECLARE B : INTEGER
-A <- 7
-B = 12
-IF A > B
-    OUTPUT A
-ELSE
-    OUTPUT a`,
-      solutionCode: `DECLARE A : INTEGER
-DECLARE B : INTEGER
-A <- 7
-B <- 12
-IF A > B THEN
-    OUTPUT A
-ELSE
-    OUTPUT B
-ENDIF`,
-      expectedOutput: '12',
-      mustContain: ['B <- 12', 'THEN', 'OUTPUT B', 'ENDIF'],
-      playable: true,
-    },
-    {
-      id: '10.4',
-      slug: 'trace',
-      title: 'Blank trace table',
-      type: 'quiz',
-      minutes: 12,
-      why: 'Fill cells, then reveal the live trace. Paper 2 pays for the dry-run skill, not for typing fast.',
-      body: `Dry-run this snippet. Fill the blank cells, then **Run** it on the right — the live trace should match.
-
-\`\`\`
-A <- 3
-B <- 5
-A <- A + B
-B <- A - B
-OUTPUT A
-OUTPUT B
-\`\`\`
-
-| Statement | A | B |
-| --- | --- | --- |
-| A <- 3 |  |  |
-| B <- 5 |  |  |
-| A <- A + B |  |  |
-| B <- A - B |  |  |
-
-Work left to right, top to bottom. A change overwrites the cell.`,
-      starterCode: `DECLARE A : INTEGER
-DECLARE B : INTEGER
-A <- 3
-B <- 5
-A <- A + B
-B <- A - B
-OUTPUT A
-OUTPUT B`,
-      quiz: [
-        {
-          prompt: 'After `A <- A + B`, what is A?',
-          options: [
-            { id: 'three', label: '3' },
-            { id: 'eight', label: '8' },
-            { id: 'five', label: '5' },
-          ],
-          correctId: 'eight',
-          explanation: 'A was 3, B was 5, so A becomes 8. B is still 5 at that moment.',
-        },
-        {
-          prompt: 'After `B <- A - B`, what is B?',
-          options: [
-            { id: 'two', label: '2' },
-            { id: 'three', label: '3' },
-            { id: 'eight', label: '8' },
-          ],
-          correctId: 'three',
-          explanation: 'A is already 8, B is still 5, so B becomes 8 - 5 = 3. (This pair swapped 3 and 5 into 8 and 3.)',
-        },
-        {
-          prompt: 'What two lines does OUTPUT print, in order?',
-          options: [
-            { id: 'orig', label: '3 then 5' },
-            { id: 'swap', label: '8 then 3' },
-            { id: 'same', label: '5 then 3' },
-          ],
-          correctId: 'swap',
-          explanation: 'Final A is 8, final B is 3.',
-        },
-      ],
-      playable: true,
-    },
-    {
-      id: '10.5',
-      slug: 'flowchart',
-      title: 'Flowchart → pseudocode',
-      type: 'quiz',
-      minutes: 8,
-      why: 'Diamond is a condition: IF or a loop test. Rectangles are processes. Parallelograms are INPUT/OUTPUT.',
-      body: `A flowchart from a mark scheme. Follow it from START: the diamond asks a Yes/No question, and each arrow leads to a different OUTPUT.
-
-A diamond with two arrows is selection. A diamond that loops back is iteration.`,
-      diagramCode: `INPUT Age
-IF Age < 18 THEN
-    OUTPUT "Child"
-ELSE
-    OUTPUT "Adult"
-ENDIF`,
-      quiz: [
-        {
-          prompt: 'The diamond “Age < 18” becomes which pseudocode?',
-          options: [
-            { id: 'if', label: 'IF Age < 18 THEN … ELSE … ENDIF' },
-            { id: 'for', label: 'FOR Age <- 1 TO 18' },
-            { id: 'case', label: 'CASE OF Age' },
-          ],
-          correctId: 'if',
-          explanation: 'Two outgoing arrows from a yes/no diamond is an IF … ELSE.',
-        },
-        {
-          prompt: 'A parallelogram labelled “INPUT Age” is:',
-          options: [
-            { id: 'proc', label: 'A process rectangle you ignore' },
-            { id: 'io', label: 'An INPUT (or OUTPUT) statement' },
-            { id: 'term', label: 'The start/end terminator' },
-          ],
-          correctId: 'io',
-          explanation: 'Parallelograms are I/O. Terminals (rounded) are Start/End. Rectangles are processes.',
-        },
-        {
-          prompt: 'A diamond whose “no” arrow goes back above the diamond is usually:',
-          options: [
-            { id: 'if', label: 'IF without ELSE' },
-            { id: 'loop', label: 'A loop condition (WHILE or REPEAT)' },
-            { id: 'case', label: 'CASE OF' },
-          ],
-          correctId: 'loop',
-          explanation: 'A back-edge from the decision is iteration. WHERE the test sits (before vs after the body) chooses WHILE vs REPEAT.',
-        },
-      ],
-      playable: true,
-    },
-    {
-      id: '10.11',
-      slug: 'draw-flowchart',
-      title: 'Draw a flowchart',
-      type: 'flowchart',
-      minutes: 8,
-      why: 'Paper 2 can ask you to draw the flowchart for an algorithm. The symbols carry the marks: parallelogram for INPUT/OUTPUT, diamond for the decision.',
-      docsAnchor: 'selection',
-      body: `Draw a flowchart that inputs a temperature and outputs \`Hot\` if it is **over 25**, otherwise \`Not hot\`.
-
-Click a box, then pick a shape: it is added after that box. Type in the box. Label the arrows out of the diamond **Yes** and **No**, and join both OUTPUT boxes to STOP.
-
-Run it to try it, then Check.`,
-      trap: 'A decision box holds a question, like `Temp > 25`. Do not write IF or THEN in it.',
-      solutionCode: `INPUT Temp
-IF Temp > 25 THEN
-    OUTPUT "Hot"
-ELSE
-    OUTPUT "Not hot"
-ENDIF`,
-      tests: [
-        { inputs: ['30'], expectedOutput: 'Hot' },
-        { inputs: ['25'], expectedOutput: 'Not hot' },
-        { inputs: ['4'], expectedOutput: 'Not hot' },
-      ],
-      playable: true,
-    },
-    {
-      id: '10.12',
-      slug: 'complete-flowchart',
-      title: 'Complete a flowchart loop',
-      type: 'flowchart',
-      minutes: 8,
-      why: '“Complete the flowchart” questions give you the shapes and blank out the condition or the step that changes a value.',
-      docsAnchor: 'repeat-until',
-      body: `This flowchart inputs **3 numbers** and outputs their total. Two boxes are blank.
-
-- The blank **process** box adds the number to the total.
-- The blank **decision** at the bottom ends the loop once 3 numbers have been counted. Its **No** arrow goes back up.
-
-Click a dashed box and type in it.`,
-      trap: 'A loop whose test is at the bottom always runs once: that is REPEAT … UNTIL.',
-      solutionCode: `Total <- 0
-Count <- 0
-REPEAT
-    INPUT Num
-    Total <- Total + Num
-    Count <- Count + 1
-UNTIL Count = 3
-OUTPUT Total`,
-      flowchartBlanks: ['Total ← Total + Num', 'Count = 3'],
-      tests: [
-        { inputs: ['1', '2', '3'], expectedOutput: '6' },
-        { inputs: ['5', '5', '5'], expectedOutput: '15' },
-        { inputs: ['10', '-4', '0'], expectedOutput: '6' },
-      ],
-      playable: true,
-    },
-    {
-      id: '10.6',
-      slug: 'sort',
-      title: 'Bubble sort with Temp',
-      type: 'grade',
-      minutes: 10,
-      why: 'Do not write “swap” as English. Three assignments through Temp is the mark.',
+      id: '7.1',
+      slug: 'declare',
+      title: 'DECLARE ARRAY[1:n]',
+      type: 'run',
+      minutes: 5,
+      why: 'Bounds come from the question. Lower bound is usually 1 — the same 1-based habit as STRING.',
       docsAnchor: 'arrays-1d',
-      body: `The array is \`4, 1, 3, 2\`. Bubble-sort it **ascending** and output the four values, one per line.
+      body: `**DECLARE Name : ARRAY[1:n] OF TYPE**. Index with square brackets: \`Scores[1]\`.
 
-Use a **Temp** variable for the swap.`,
-      trap: '`CALL Swap(...)` is not on the syllabus. Temp <- A, A <- B, B <- Temp.',
-      starterCode: `DECLARE Num : ARRAY[1:4] OF INTEGER
+Store 10 in slot 1 and output it.`,
+      trap: '`Scores[0]` is not the first slot. Cambridge arrays almost always start at 1.',
+      starterCode: `DECLARE Scores : ARRAY[1:5] OF INTEGER
+Scores[1] <- 10
+OUTPUT Scores[1]`,
+      solutionCode: `DECLARE Scores : ARRAY[1:5] OF INTEGER
+Scores[1] <- 10
+OUTPUT Scores[1]`,
+      expectedOutput: '10',
+      mustContain: ['ARRAY[1:5]'],
+      playable: true,
+    },
+    {
+      id: '7.2',
+      slug: 'fill',
+      title: 'Fill every slot with FOR',
+      type: 'grade',
+      minutes: 8,
+      why: 'The fill loop is the array’s first friend. You cannot OUTPUT an array as a whole — walk it.',
+      docsAnchor: 'arrays-1d',
+      body: `Read **3** integers into \`Num[1]\` … \`Num[3]\`, then output them in order, one per line.
+
+Example: input \`8\`, \`2\`, \`5\` →
+
+\`8\`
+\`2\`
+\`5\``,
+      starterCode: `DECLARE Num : ARRAY[1:3] OF INTEGER
 DECLARE i : INTEGER
-DECLARE j : INTEGER
-DECLARE Temp : INTEGER
 
-Num[1] <- 4
-Num[2] <- 1
-Num[3] <- 3
-Num[4] <- 2
-
-// bubble sort, then OUTPUT each slot`,
-      solutionCode: `DECLARE Num : ARRAY[1:4] OF INTEGER
+// fill with INPUT, then OUTPUT each slot`,
+      solutionCode: `DECLARE Num : ARRAY[1:3] OF INTEGER
 DECLARE i : INTEGER
-DECLARE j : INTEGER
-DECLARE Temp : INTEGER
-
-Num[1] <- 4
-Num[2] <- 1
-Num[3] <- 3
-Num[4] <- 2
 
 FOR i <- 1 TO 3
-    FOR j <- 1 TO 4 - i
-        IF Num[j] > Num[j + 1] THEN
-            Temp <- Num[j]
-            Num[j] <- Num[j + 1]
-            Num[j + 1] <- Temp
-        ENDIF
-    NEXT j
+    INPUT Num[i]
 NEXT i
-FOR i <- 1 TO 4
+FOR i <- 1 TO 3
     OUTPUT Num[i]
 NEXT i`,
-      expectedOutput: '1\n2\n3\n4',
-      mustContain: ['Temp'],
-      mustNotContain: ['CALL Swap', 'swap('],
-      playable: true,
-    },
-    {
-      id: '10.7',
-      slug: 'closed',
-      title: 'SQL and truth tables',
-      type: 'quiz',
-      minutes: 10,
-      why: 'Small closed topics — sit them first in the hall. They are quick marks if you have the tables memorised.',
-      body: `**SQL** (from a table Student with fields Name, Age, House):
-
-\`SELECT Name FROM Student WHERE Age > 16\`
-
-**AND** is only TRUE when both sides are TRUE. **OR** is TRUE if either side is TRUE. **NOT** flips.`,
-      quiz: [
-        {
-          prompt: 'SELECT Name FROM Student WHERE House = \'Red\' AND Age >= 15  returns:',
-          options: [
-            { id: 'all', label: 'Every student in Red, of any age' },
-            { id: 'both', label: 'Red-house students who are 15 or older' },
-            { id: 'or', label: 'Anyone in Red, plus anyone 15 or older' },
-          ],
-          correctId: 'both',
-          explanation: 'AND requires both conditions. OR would union the two groups.',
-        },
-        {
-          prompt: 'If A is TRUE and B is FALSE, A AND B is:',
-          options: [
-            { id: 't', label: 'TRUE' },
-            { id: 'f', label: 'FALSE' },
-            { id: 'x', label: 'Undefined' },
-          ],
-          correctId: 'f',
-          explanation: 'AND is TRUE only when both inputs are TRUE.',
-        },
-        {
-          prompt: 'If A is TRUE and B is FALSE, A OR NOT B is:',
-          options: [
-            { id: 't', label: 'TRUE' },
-            { id: 'f', label: 'FALSE' },
-            { id: 'x', label: 'FALSE then TRUE' },
-          ],
-          correctId: 't',
-          explanation: 'NOT B is TRUE, and TRUE OR TRUE is TRUE. Even without that, A is already TRUE.',
-        },
+      tests: [
+        { inputs: ['8', '2', '5'], expectedOutput: '8\n2\n5' },
+        { inputs: ['0', '0', '0'], expectedOutput: '0\n0\n0' },
+        { inputs: ['-1', '2', '-3'], expectedOutput: '-1\n2\n-3' },
+        { inputs: ['9', '8', '7'], expectedOutput: '9\n8\n7' },
       ],
       playable: true,
     },
     {
-      id: '10.8',
-      slug: 'scenario',
-      title: 'Boss: timed 15-mark',
+      id: '7.3',
+      slug: 'scan',
+      title: 'Totaller/counter over the array',
       type: 'grade',
-      minutes: 30,
-      why: 'DECLARE → init → INPUT + validation → loop → OUTPUT. In the hall this is about 15 minutes — no compiler.',
-      docsAnchor: 'input',
-      body: `A club stores race times.
+      minutes: 8,
+      why: 'One pass, two patterns: add every slot, count the ones that match a condition.',
+      docsAnchor: 'arrays-1d',
+      body: `The array already has 4 values after you read them. Output two lines:
 
-1. **REPEAT** until Count is between **1 and 10**
-2. Read **Count** integers (the times)
-3. Output their **total**
+1. The **sum** of all four
+2. How many values are **greater than 0**
 
-In the exam you would write this on paper. Here, Check is the mark scheme.
+Example: input \`3\`, \`-1\`, \`0\`, \`4\` →
 
-Example: input \`0\`, then \`3\`, then \`10\`, \`20\`, \`5\` → \`35\`.`,
-      trap: 'Validate Count first. Then loop Count times. Total <- 0 before that loop.',
-      starterCode: `DECLARE Count : INTEGER
-DECLARE Time : INTEGER
-DECLARE Total : INTEGER
+\`6\`
+\`2\``,
+      starterCode: `DECLARE Num : ARRAY[1:4] OF INTEGER
 DECLARE i : INTEGER
-
-// validate Count 1–10, totaller, OUTPUT Total`,
-      solutionCode: `DECLARE Count : INTEGER
-DECLARE Time : INTEGER
 DECLARE Total : INTEGER
-DECLARE i : INTEGER
+DECLARE Count : INTEGER
 
-REPEAT
-    INPUT Count
-UNTIL Count >= 1 AND Count <= 10
+FOR i <- 1 TO 4
+    INPUT Num[i]
+NEXT i
+
+// totaller + counter, then OUTPUT Total and Count`,
+      solutionCode: `DECLARE Num : ARRAY[1:4] OF INTEGER
+DECLARE i : INTEGER
+DECLARE Total : INTEGER
+DECLARE Count : INTEGER
+
+FOR i <- 1 TO 4
+    INPUT Num[i]
+NEXT i
 
 Total <- 0
-FOR i <- 1 TO Count
-    INPUT Time
-    Total <- Total + Time
+Count <- 0
+FOR i <- 1 TO 4
+    Total <- Total + Num[i]
+    IF Num[i] > 0 THEN
+        Count <- Count + 1
+    ENDIF
 NEXT i
+OUTPUT Total
+OUTPUT Count`,
+      tests: [
+        { inputs: ['3', '-1', '0', '4'], expectedOutput: '6\n2' },
+        { inputs: ['1', '1', '1', '1'], expectedOutput: '4\n4' },
+        { inputs: ['-2', '-3', '0', '0'], expectedOutput: '-5\n0' },
+        { inputs: ['10', '20', '-5', '0'], expectedOutput: '25\n2' },
+      ],
+      playable: true,
+    },
+    {
+      id: '7.8',
+      slug: 'count-value',
+      title: 'Count how many match',
+      type: 'grade',
+      minutes: 8,
+      why: 'Occurrence counting: one pass, increment when the slot equals the target.',
+      docsAnchor: 'arrays-1d',
+      body: `Read **4** integers into an array, then a **Target**. Output how many slots equal Target.
+
+Example: input \`8\`, \`2\`, \`8\`, \`8\`, then target \`8\` → \`3\`.`,
+      starterCode: `DECLARE Num : ARRAY[1:4] OF INTEGER
+DECLARE i : INTEGER
+DECLARE Target : INTEGER
+DECLARE Count : INTEGER
+
+FOR i <- 1 TO 4
+    INPUT Num[i]
+NEXT i
+INPUT Target
+Count <- 0
+
+// count matches, OUTPUT Count`,
+      solutionCode: `DECLARE Num : ARRAY[1:4] OF INTEGER
+DECLARE i : INTEGER
+DECLARE Target : INTEGER
+DECLARE Count : INTEGER
+
+FOR i <- 1 TO 4
+    INPUT Num[i]
+NEXT i
+INPUT Target
+Count <- 0
+FOR i <- 1 TO 4
+    IF Num[i] = Target THEN
+        Count <- Count + 1
+    ENDIF
+NEXT i
+OUTPUT Count`,
+      tests: [
+        { inputs: ['8', '2', '8', '8', '8'], expectedOutput: '3' },
+        { inputs: ['1', '2', '3', '4', '9'], expectedOutput: '0' },
+        { inputs: ['5', '5', '5', '5', '5'], expectedOutput: '4' },
+        { inputs: ['0', '1', '0', '1', '0'], expectedOutput: '2' },
+      ],
+      mustContain: ['Count <- Count + 1'],
+      playable: true,
+    },
+    {
+      id: '7.4',
+      slug: 'search',
+      title: 'Linear search + Found flag',
+      type: 'grade',
+      minutes: 10,
+      why: 'Memorise the template, then vary it. Found is BOOLEAN, not a STRING "TRUE".',
+      docsAnchor: 'arrays-1d',
+      body: `The array is already filled with 10, 20, 30, 40, 50. Read a **Target**. Output **TRUE** if Target is in the array, otherwise **FALSE**.
+
+Use a **Found** flag. Do not stop early if you prefer a full pass — either is accepted here.`,
+      trap: 'Found starts FALSE. Set it TRUE when you hit the target. Do not store `"TRUE"` as a STRING.',
+      starterCode: `DECLARE Num : ARRAY[1:5] OF INTEGER
+DECLARE i : INTEGER
+DECLARE Target : INTEGER
+DECLARE Found : BOOLEAN
+
+Num[1] <- 10
+Num[2] <- 20
+Num[3] <- 30
+Num[4] <- 40
+Num[5] <- 50
+
+INPUT Target
+Found <- FALSE
+
+// linear search, then OUTPUT Found`,
+      solutionCode: `DECLARE Num : ARRAY[1:5] OF INTEGER
+DECLARE i : INTEGER
+DECLARE Target : INTEGER
+DECLARE Found : BOOLEAN
+
+Num[1] <- 10
+Num[2] <- 20
+Num[3] <- 30
+Num[4] <- 40
+Num[5] <- 50
+
+INPUT Target
+Found <- FALSE
+FOR i <- 1 TO 5
+    IF Num[i] = Target THEN
+        Found <- TRUE
+    ENDIF
+NEXT i
+OUTPUT Found`,
+      tests: [
+        { inputs: ['30'], expectedOutput: 'TRUE' },
+        { inputs: ['10'], expectedOutput: 'TRUE' },
+        { inputs: ['50'], expectedOutput: 'TRUE' },
+        { inputs: ['15'], expectedOutput: 'FALSE' },
+        { inputs: ['0'], expectedOutput: 'FALSE' },
+      ],
+      mustContain: ['Found'],
+      playable: true,
+    },
+    {
+      id: '7.5',
+      slug: 'extreme',
+      title: 'Max / min / average',
+      type: 'grade',
+      minutes: 8,
+      why: 'Initialise max from the first element, not from 0. Zero fails when every value is negative.',
+      docsAnchor: 'arrays-1d',
+      body: `Read 4 integers into an array. Output three lines: **maximum**, **minimum**, then the **integer average** (sum DIV 4).
+
+Example: input \`4\`, \`9\`, \`1\`, \`6\` →
+
+\`9\`
+\`1\`
+\`5\``,
+      trap: '`Max <- 0` looks safe and is wrong for negatives. `Max <- Num[1]` is the Cambridge habit.',
+      starterCode: `DECLARE Num : ARRAY[1:4] OF INTEGER
+DECLARE i : INTEGER
+DECLARE Max : INTEGER
+DECLARE Min : INTEGER
+DECLARE Total : INTEGER
+
+FOR i <- 1 TO 4
+    INPUT Num[i]
+NEXT i
+
+// OUTPUT max, min, then Total DIV 4`,
+      solutionCode: `DECLARE Num : ARRAY[1:4] OF INTEGER
+DECLARE i : INTEGER
+DECLARE Max : INTEGER
+DECLARE Min : INTEGER
+DECLARE Total : INTEGER
+
+FOR i <- 1 TO 4
+    INPUT Num[i]
+NEXT i
+
+Max <- Num[1]
+Min <- Num[1]
+Total <- Num[1]
+FOR i <- 2 TO 4
+    IF Num[i] > Max THEN
+        Max <- Num[i]
+    ENDIF
+    IF Num[i] < Min THEN
+        Min <- Num[i]
+    ENDIF
+    Total <- Total + Num[i]
+NEXT i
+OUTPUT Max
+OUTPUT Min
+OUTPUT Total DIV 4`,
+      tests: [
+        { inputs: ['4', '9', '1', '6'], expectedOutput: '9\n1\n5' },
+        { inputs: ['-2', '-8', '-3', '-1'], expectedOutput: '-1\n-8\n-3' },
+        { inputs: ['5', '5', '5', '5'], expectedOutput: '5\n5\n5' },
+        { inputs: ['10', '0', '0', '6'], expectedOutput: '10\n0\n4' },
+      ],
+      playable: true,
+    },
+    {
+      id: '7.6',
+      slug: 'grid',
+      title: '2D arrays [row, col]',
+      type: 'grade',
+      minutes: 12,
+      why: 'Nested FOR. Row first in Cambridge wording: ARRAY[1:rows, 1:cols] and Grid[Row, Col].',
+      docsAnchor: 'arrays-2d',
+      body: `Read four integers into a 2×2 grid (row by row). Output the **sum** of all four cells.
+
+Example: input \`1\`, \`2\`, \`3\`, \`4\` → \`10\`.`,
+      trap: '`Grid[Row, Col]` with a comma. Two pairs of brackets is a different language.',
+      starterCode: `DECLARE Grid : ARRAY[1:2, 1:2] OF INTEGER
+DECLARE Row : INTEGER
+DECLARE Col : INTEGER
+DECLARE Total : INTEGER
+
+// fill the grid, then OUTPUT the sum`,
+      solutionCode: `DECLARE Grid : ARRAY[1:2, 1:2] OF INTEGER
+DECLARE Row : INTEGER
+DECLARE Col : INTEGER
+DECLARE Total : INTEGER
+
+FOR Row <- 1 TO 2
+    FOR Col <- 1 TO 2
+        INPUT Grid[Row, Col]
+    NEXT Col
+NEXT Row
+Total <- 0
+FOR Row <- 1 TO 2
+    FOR Col <- 1 TO 2
+        Total <- Total + Grid[Row, Col]
+    NEXT Col
+NEXT Row
 OUTPUT Total`,
       tests: [
-        { inputs: ['3', '10', '20', '5'], expectedOutput: '35' },
-        { inputs: ['0', '3', '10', '20', '5'], expectedOutput: '35' },
-        { inputs: ['1', '9'], expectedOutput: '9' },
-        { inputs: ['11', '2', '4', '6'], expectedOutput: '10' },
-        { inputs: ['10', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1'], expectedOutput: '10' },
+        { inputs: ['1', '2', '3', '4'], expectedOutput: '10' },
+        { inputs: ['0', '0', '0', '0'], expectedOutput: '0' },
+        { inputs: ['-1', '1', '-1', '1'], expectedOutput: '0' },
+        { inputs: ['10', '20', '30', '40'], expectedOutput: '100' },
+      ],
+      mustContain: ['ARRAY[1:2, 1:2]'],
+      playable: true,
+    },
+    {
+      id: '7.9',
+      slug: 'row-total',
+      title: 'Sum each row of a 2D array',
+      type: 'grade',
+      minutes: 10,
+      why: 'Row totals: inner loop walks columns, outer loop walks rows. Output one total per row.',
+      docsAnchor: 'arrays-2d',
+      body: `Read six integers into a 2×3 grid (row by row). Output the **sum of row 1**, then the **sum of row 2**.
+
+Example: input \`1\`, \`2\`, \`3\`, \`4\`, \`5\`, \`6\` →
+
+\`6\`
+\`15\``,
+      trap: '`Grid[Row, Col]` with a comma. Total the inner loop, OUTPUT after each row, then reset Total.',
+      starterCode: `DECLARE Grid : ARRAY[1:2, 1:3] OF INTEGER
+DECLARE Row : INTEGER
+DECLARE Col : INTEGER
+DECLARE Total : INTEGER
+
+// fill, then OUTPUT each row sum`,
+      solutionCode: `DECLARE Grid : ARRAY[1:2, 1:3] OF INTEGER
+DECLARE Row : INTEGER
+DECLARE Col : INTEGER
+DECLARE Total : INTEGER
+
+FOR Row <- 1 TO 2
+    FOR Col <- 1 TO 3
+        INPUT Grid[Row, Col]
+    NEXT Col
+NEXT Row
+FOR Row <- 1 TO 2
+    Total <- 0
+    FOR Col <- 1 TO 3
+        Total <- Total + Grid[Row, Col]
+    NEXT Col
+    OUTPUT Total
+NEXT Row`,
+      tests: [
+        { inputs: ['1', '2', '3', '4', '5', '6'], expectedOutput: '6\n15' },
+        { inputs: ['0', '0', '0', '0', '0', '0'], expectedOutput: '0\n0' },
+        { inputs: ['10', '10', '10', '1', '2', '3'], expectedOutput: '30\n6' },
+        { inputs: ['-1', '0', '1', '2', '2', '2'], expectedOutput: '0\n6' },
+      ],
+      mustContain: ['ARRAY[1:2, 1:3]'],
+      playable: true,
+    },
+    {
+      id: '7.7',
+      slug: 'boss',
+      title: 'Boss: Medium 1D then Easy 2D',
+      type: 'grade',
+      minutes: 15,
+      why: 'Level gate: search a list, then total a tiny grid — the two array skills Paper 2 actually asks.',
+      docsAnchor: 'arrays-1d',
+      body: `First, the 1D array is \`5, 8, 3, 8, 1\`. Read a **Target**. Output **TRUE** if it appears, else **FALSE**.
+
+Then read four integers into a 2×2 grid and output the **sum**.
+
+Example: input \`8\`, then \`1\`, \`2\`, \`3\`, \`4\` →
+
+\`TRUE\`
+\`10\``,
+      starterCode: `DECLARE Num : ARRAY[1:5] OF INTEGER
+DECLARE Grid : ARRAY[1:2, 1:2] OF INTEGER
+DECLARE i : INTEGER
+DECLARE Row : INTEGER
+DECLARE Col : INTEGER
+DECLARE Target : INTEGER
+DECLARE Found : BOOLEAN
+DECLARE Total : INTEGER
+
+Num[1] <- 5
+Num[2] <- 8
+Num[3] <- 3
+Num[4] <- 8
+Num[5] <- 1
+
+INPUT Target
+Found <- FALSE
+// search, OUTPUT Found
+// then fill Grid, OUTPUT its sum`,
+      solutionCode: `DECLARE Num : ARRAY[1:5] OF INTEGER
+DECLARE Grid : ARRAY[1:2, 1:2] OF INTEGER
+DECLARE i : INTEGER
+DECLARE Row : INTEGER
+DECLARE Col : INTEGER
+DECLARE Target : INTEGER
+DECLARE Found : BOOLEAN
+DECLARE Total : INTEGER
+
+Num[1] <- 5
+Num[2] <- 8
+Num[3] <- 3
+Num[4] <- 8
+Num[5] <- 1
+
+INPUT Target
+Found <- FALSE
+FOR i <- 1 TO 5
+    IF Num[i] = Target THEN
+        Found <- TRUE
+    ENDIF
+NEXT i
+OUTPUT Found
+
+Total <- 0
+FOR Row <- 1 TO 2
+    FOR Col <- 1 TO 2
+        INPUT Grid[Row, Col]
+        Total <- Total + Grid[Row, Col]
+    NEXT Col
+NEXT Row
+OUTPUT Total`,
+      tests: [
+        { inputs: ['8', '1', '2', '3', '4'], expectedOutput: 'TRUE\n10' },
+        { inputs: ['3', '0', '0', '0', '0'], expectedOutput: 'TRUE\n0' },
+        { inputs: ['9', '5', '5', '5', '5'], expectedOutput: 'FALSE\n20' },
+        { inputs: ['1', '10', '20', '30', '40'], expectedOutput: 'TRUE\n100' },
       ],
       playable: true,
     },

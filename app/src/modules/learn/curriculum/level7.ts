@@ -3,452 +3,338 @@ import type { LearnLevel } from '../types';
 export const level7: LearnLevel = {
   number: 7,
   slug: '7',
-  name: 'Arrays',
-  hours: '4.5',
-  leaveWith: 'ARRAY[1:n], fill loop, linear search, 2D [row, col]',
-  syllabus: '8.2, 7.4',
+  name: 'Branch',
+  hours: '3',
+  leaveWith: 'IF / CASE with both branches closed',
+  syllabus: '8.1.4b, 8.1.5',
   free: false,
   playable: true,
   lessons: [
     {
-      id: '7.1',
-      slug: 'declare',
-      title: 'DECLARE ARRAY[1:n]',
+      id: '4.1',
+      slug: 'if',
+      title: 'IF … THEN … ENDIF',
       type: 'run',
       minutes: 5,
-      why: 'Bounds come from the question. Lower bound is usually 1 — the same 1-based habit as STRING.',
-      docsAnchor: 'arrays-1d',
-      body: `**DECLARE Name : ARRAY[1:n] OF TYPE**. Index with square brackets: \`Scores[1]\`.
+      why: 'THEN sits on the IF line (or the next). ENDIF closes the block — a missing ENDIF is a top Paper 2 slip.',
+      docsAnchor: 'if',
+      body: `Write **IF** condition **THEN**, indent the body, close with **ENDIF**.
 
-Store 10 in slot 1 and output it.`,
-      trap: '`Scores[0]` is not the first slot. Cambridge arrays almost always start at 1.',
-      starterCode: `DECLARE Scores : ARRAY[1:5] OF INTEGER
-Scores[1] <- 10
-OUTPUT Scores[1]`,
-      solutionCode: `DECLARE Scores : ARRAY[1:5] OF INTEGER
-Scores[1] <- 10
-OUTPUT Scores[1]`,
-      expectedOutput: '10',
-      mustContain: ['ARRAY[1:5]'],
+Cambridge wants THEN visible. This compiler lets you omit it; the paper does not.
+
+Run, then Check.`,
+      trap: 'Do not write `if …:` with a colon. That is Python. IGCSE is `IF Score >= 50 THEN`.',
+      starterCode: `DECLARE Score : INTEGER
+Score <- 50
+
+IF Score >= 50 THEN
+    OUTPUT "Pass"
+ENDIF`,
+      solutionCode: `DECLARE Score : INTEGER
+Score <- 50
+
+IF Score >= 50 THEN
+    OUTPUT "Pass"
+ENDIF`,
+      expectedOutput: 'Pass',
+      mustContain: ['THEN', 'ENDIF'],
       playable: true,
     },
     {
-      id: '7.2',
-      slug: 'fill',
-      title: 'Fill every slot with FOR',
+      id: '4.2',
+      slug: 'else',
+      title: 'ELSE and ELSEIF',
+      type: 'run',
+      minutes: 5,
+      why: 'Both branches must be visible to the marker. ELSEIF (or ELSE IF) is how you stack conditions.',
+      docsAnchor: 'if',
+      body: `**ELSE** is the other path. **ELSEIF** (also written **ELSE IF**) tests the next condition.
+
+This program stores 75. It should print **B**.
+
+- 90 or more → A
+- 70 or more → B
+- otherwise → C`,
+      trap: '`else:` is Python. IGCSE uses ELSE and ELSEIF with no colon, then ENDIF at the end.',
+      starterCode: `DECLARE Score : INTEGER
+Score <- 75
+
+IF Score >= 90 THEN
+    OUTPUT "A"
+ELSEIF Score >= 70 THEN
+    OUTPUT "B"
+ELSE
+    OUTPUT "C"
+ENDIF`,
+      solutionCode: `DECLARE Score : INTEGER
+Score <- 75
+
+IF Score >= 90 THEN
+    OUTPUT "A"
+ELSEIF Score >= 70 THEN
+    OUTPUT "B"
+ELSE
+    OUTPUT "C"
+ENDIF`,
+      expectedOutput: 'B',
+      mustContain: ['ELSE'],
+      playable: true,
+    },
+    {
+      id: '4.7',
+      slug: 'nested-if',
+      title: 'Nested IF',
       type: 'grade',
       minutes: 8,
-      why: 'The fill loop is the array’s first friend. You cannot OUTPUT an array as a whole — walk it.',
-      docsAnchor: 'arrays-1d',
-      body: `Read **3** integers into \`Num[1]\` … \`Num[3]\`, then output them in order, one per line.
+      why: 'An IF inside an IF is allowed. Indent so the marker sees which ENDIF closes which THEN.',
+      docsAnchor: 'if',
+      body: `Read an integer **Age**, then a STRING **Member** (\`Y\` or \`N\`).
 
-Example: input \`8\`, \`2\`, \`5\` →
+- If Age is **18 or more**:
+  - Member \`Y\` → \`Adult member\`
+  - otherwise → \`Adult guest\`
+- Otherwise → \`Junior\`
 
-\`8\`
-\`2\`
-\`5\``,
-      starterCode: `DECLARE Num : ARRAY[1:3] OF INTEGER
-DECLARE i : INTEGER
+Example: input \`20\` then \`Y\` → \`Adult member\`.`,
+      trap: 'Close the inner IF with ENDIF before the outer ENDIF. Two IFs, two ENDIFs.',
+      starterCode: `DECLARE Age : INTEGER
+DECLARE Member : STRING
 
-// fill with INPUT, then OUTPUT each slot`,
-      solutionCode: `DECLARE Num : ARRAY[1:3] OF INTEGER
-DECLARE i : INTEGER
+INPUT Age
+INPUT Member
 
-FOR i <- 1 TO 3
-    INPUT Num[i]
-NEXT i
-FOR i <- 1 TO 3
-    OUTPUT Num[i]
-NEXT i`,
+// nested IF — Adult member / Adult guest / Junior`,
+      solutionCode: `DECLARE Age : INTEGER
+DECLARE Member : STRING
+
+INPUT Age
+INPUT Member
+
+IF Age >= 18 THEN
+    IF Member = "Y" THEN
+        OUTPUT "Adult member"
+    ELSE
+        OUTPUT "Adult guest"
+    ENDIF
+ELSE
+    OUTPUT "Junior"
+ENDIF`,
       tests: [
-        { inputs: ['8', '2', '5'], expectedOutput: '8\n2\n5' },
-        { inputs: ['0', '0', '0'], expectedOutput: '0\n0\n0' },
-        { inputs: ['-1', '2', '-3'], expectedOutput: '-1\n2\n-3' },
-        { inputs: ['9', '8', '7'], expectedOutput: '9\n8\n7' },
+        { inputs: ['20', 'Y'], expectedOutput: 'Adult member' },
+        { inputs: ['20', 'N'], expectedOutput: 'Adult guest' },
+        { inputs: ['18', 'Y'], expectedOutput: 'Adult member' },
+        { inputs: ['17', 'Y'], expectedOutput: 'Junior' },
+        { inputs: ['0', 'N'], expectedOutput: 'Junior' },
       ],
+      mustContain: ['IF', 'ENDIF'],
       playable: true,
     },
     {
-      id: '7.3',
-      slug: 'scan',
-      title: 'Totaller/counter over the array',
+      id: '4.3',
+      slug: 'relational',
+      title: 'Relational operators',
       type: 'grade',
       minutes: 8,
-      why: 'One pass, two patterns: add every slot, count the ones that match a condition.',
-      docsAnchor: 'arrays-1d',
-      body: `The array already has 4 values after you read them. Output two lines:
+      why: '= <> > < >= <= — not !=, not ==. Using the wrong one is a silent mark loss.',
+      docsAnchor: 'comparison',
+      body: `Read an integer. Output **Even** if it is divisible by 2, otherwise **Odd**.
 
-1. The **sum** of all four
-2. How many values are **greater than 0**
+Use **MOD**. Comparison for “equal” is **=**, not **==**. “Not equal” (when you need it) is **<>**, not **!=**.
 
-Example: input \`3\`, \`-1\`, \`0\`, \`4\` →
+Example: input \`4\` → \`Even\`.`,
+      trap: '`!=` and `==` are Java / Python. IGCSE is `<>` and `=`.',
+      starterCode: `DECLARE N : INTEGER
 
-\`6\`
-\`2\``,
-      starterCode: `DECLARE Num : ARRAY[1:4] OF INTEGER
-DECLARE i : INTEGER
-DECLARE Total : INTEGER
-DECLARE Count : INTEGER
+INPUT N
 
-FOR i <- 1 TO 4
-    INPUT Num[i]
-NEXT i
+// OUTPUT "Even" or "Odd"`,
+      solutionCode: `DECLARE N : INTEGER
 
-// totaller + counter, then OUTPUT Total and Count`,
-      solutionCode: `DECLARE Num : ARRAY[1:4] OF INTEGER
-DECLARE i : INTEGER
-DECLARE Total : INTEGER
-DECLARE Count : INTEGER
+INPUT N
 
-FOR i <- 1 TO 4
-    INPUT Num[i]
-NEXT i
-
-Total <- 0
-Count <- 0
-FOR i <- 1 TO 4
-    Total <- Total + Num[i]
-    IF Num[i] > 0 THEN
-        Count <- Count + 1
-    ENDIF
-NEXT i
-OUTPUT Total
-OUTPUT Count`,
+IF N MOD 2 = 0 THEN
+    OUTPUT "Even"
+ELSE
+    OUTPUT "Odd"
+ENDIF`,
       tests: [
-        { inputs: ['3', '-1', '0', '4'], expectedOutput: '6\n2' },
-        { inputs: ['1', '1', '1', '1'], expectedOutput: '4\n4' },
-        { inputs: ['-2', '-3', '0', '0'], expectedOutput: '-5\n0' },
-        { inputs: ['10', '20', '-5', '0'], expectedOutput: '25\n2' },
+        { inputs: ['4'], expectedOutput: 'Even' },
+        { inputs: ['7'], expectedOutput: 'Odd' },
+        { inputs: ['0'], expectedOutput: 'Even' },
+        { inputs: ['1'], expectedOutput: 'Odd' },
+        { inputs: ['100'], expectedOutput: 'Even' },
       ],
+      mustContain: ['MOD', 'THEN'],
       playable: true,
     },
     {
-      id: '7.8',
-      slug: 'count-value',
-      title: 'Count how many match',
-      type: 'grade',
-      minutes: 8,
-      why: 'Occurrence counting: one pass, increment when the slot equals the target.',
-      docsAnchor: 'arrays-1d',
-      body: `Read **4** integers into an array, then a **Target**. Output how many slots equal Target.
+      id: '4.4',
+      slug: 'logic',
+      title: 'AND OR NOT',
+      type: 'run',
+      minutes: 5,
+      why: 'BOOLEAN operators sit on full conditions, not on a dangling comparison: Age >= 12 AND Age <= 65.',
+      docsAnchor: 'logical',
+      body: `Each side of **AND** / **OR** must be a complete condition.
 
-Example: input \`8\`, \`2\`, \`8\`, \`8\`, then target \`8\` → \`3\`.`,
-      starterCode: `DECLARE Num : ARRAY[1:4] OF INTEGER
-DECLARE i : INTEGER
-DECLARE Target : INTEGER
-DECLARE Count : INTEGER
+Wrong: \`Age >= 12 AND <= 65\`
+Right: \`Age >= 12 AND Age <= 65\`
 
-FOR i <- 1 TO 4
-    INPUT Num[i]
-NEXT i
-INPUT Target
-Count <- 0
+This program should print **Standard** for age 30.`,
+      trap: 'Do not write `&&` or `||`. Use AND and OR.',
+      starterCode: `DECLARE Age : INTEGER
+Age <- 30
 
-// count matches, OUTPUT Count`,
-      solutionCode: `DECLARE Num : ARRAY[1:4] OF INTEGER
-DECLARE i : INTEGER
-DECLARE Target : INTEGER
-DECLARE Count : INTEGER
+IF Age >= 12 AND Age <= 65 THEN
+    OUTPUT "Standard"
+ELSE
+    OUTPUT "Special"
+ENDIF`,
+      solutionCode: `DECLARE Age : INTEGER
+Age <- 30
 
-FOR i <- 1 TO 4
-    INPUT Num[i]
-NEXT i
-INPUT Target
-Count <- 0
-FOR i <- 1 TO 4
-    IF Num[i] = Target THEN
-        Count <- Count + 1
-    ENDIF
-NEXT i
-OUTPUT Count`,
-      tests: [
-        { inputs: ['8', '2', '8', '8', '8'], expectedOutput: '3' },
-        { inputs: ['1', '2', '3', '4', '9'], expectedOutput: '0' },
-        { inputs: ['5', '5', '5', '5', '5'], expectedOutput: '4' },
-        { inputs: ['0', '1', '0', '1', '0'], expectedOutput: '2' },
-      ],
-      mustContain: ['Count <- Count + 1'],
+IF Age >= 12 AND Age <= 65 THEN
+    OUTPUT "Standard"
+ELSE
+    OUTPUT "Special"
+ENDIF`,
+      expectedOutput: 'Standard',
+      mustContain: ['AND'],
       playable: true,
     },
     {
-      id: '7.4',
-      slug: 'search',
-      title: 'Linear search + Found flag',
-      type: 'grade',
-      minutes: 10,
-      why: 'Memorise the template, then vary it. Found is BOOLEAN, not a STRING "TRUE".',
-      docsAnchor: 'arrays-1d',
-      body: `The array is already filled with 10, 20, 30, 40, 50. Read a **Target**. Output **TRUE** if Target is in the array, otherwise **FALSE**.
+      id: '4.8',
+      slug: 'flag-if',
+      title: 'IF a BOOLEAN flag',
+      type: 'run',
+      minutes: 5,
+      why: 'Search and validation use a BOOLEAN flag. Test it with IF Flag = TRUE — not IF Flag = "TRUE".',
+      docsAnchor: 'if',
+      body: `A **BOOLEAN** is already TRUE or FALSE. Compare it to **TRUE** / **FALSE**, or use it as the condition.
 
-Use a **Found** flag. Do not stop early if you prefer a full pass — either is accepted here.`,
-      trap: 'Found starts FALSE. Set it TRUE when you hit the target. Do not store `"TRUE"` as a STRING.',
-      starterCode: `DECLARE Num : ARRAY[1:5] OF INTEGER
-DECLARE i : INTEGER
-DECLARE Target : INTEGER
-DECLARE Found : BOOLEAN
+This program should print **Open**.`,
+      trap: '`IF Flag = "TRUE"` compares a BOOLEAN to a STRING. Write `IF Flag = TRUE THEN`.',
+      starterCode: `DECLARE Flag : BOOLEAN
+Flag <- TRUE
 
-Num[1] <- 10
-Num[2] <- 20
-Num[3] <- 30
-Num[4] <- 40
-Num[5] <- 50
+IF Flag = TRUE THEN
+    OUTPUT "Open"
+ELSE
+    OUTPUT "Closed"
+ENDIF`,
+      solutionCode: `DECLARE Flag : BOOLEAN
+Flag <- TRUE
 
-INPUT Target
-Found <- FALSE
-
-// linear search, then OUTPUT Found`,
-      solutionCode: `DECLARE Num : ARRAY[1:5] OF INTEGER
-DECLARE i : INTEGER
-DECLARE Target : INTEGER
-DECLARE Found : BOOLEAN
-
-Num[1] <- 10
-Num[2] <- 20
-Num[3] <- 30
-Num[4] <- 40
-Num[5] <- 50
-
-INPUT Target
-Found <- FALSE
-FOR i <- 1 TO 5
-    IF Num[i] = Target THEN
-        Found <- TRUE
-    ENDIF
-NEXT i
-OUTPUT Found`,
-      tests: [
-        { inputs: ['30'], expectedOutput: 'TRUE' },
-        { inputs: ['10'], expectedOutput: 'TRUE' },
-        { inputs: ['50'], expectedOutput: 'TRUE' },
-        { inputs: ['15'], expectedOutput: 'FALSE' },
-        { inputs: ['0'], expectedOutput: 'FALSE' },
-      ],
-      mustContain: ['Found'],
+IF Flag = TRUE THEN
+    OUTPUT "Open"
+ELSE
+    OUTPUT "Closed"
+ENDIF`,
+      expectedOutput: 'Open',
+      mustContain: ['TRUE'],
       playable: true,
     },
     {
-      id: '7.5',
-      slug: 'extreme',
-      title: 'Max / min / average',
-      type: 'grade',
-      minutes: 8,
-      why: 'Initialise max from the first element, not from 0. Zero fails when every value is negative.',
-      docsAnchor: 'arrays-1d',
-      body: `Read 4 integers into an array. Output three lines: **maximum**, **minimum**, then the **integer average** (sum DIV 4).
+      id: '4.5',
+      slug: 'case',
+      title: 'CASE OF … OTHERWISE',
+      type: 'run',
+      minutes: 6,
+      why: 'When one identifier is matched against several discrete values, CASE is cleaner than a stack of ELSEIF.',
+      docsAnchor: 'case',
+      body: `**CASE OF** identifier, then each label ends with a colon, then **OTHERWISE**, then **ENDCASE**.
 
-Example: input \`4\`, \`9\`, \`1\`, \`6\` →
+CHAR literals use single quotes: \`'B'\`.
 
-\`9\`
-\`1\`
-\`5\``,
-      trap: '`Max <- 0` looks safe and is wrong for negatives. `Max <- Num[1]` is the Cambridge habit.',
-      starterCode: `DECLARE Num : ARRAY[1:4] OF INTEGER
-DECLARE i : INTEGER
-DECLARE Max : INTEGER
-DECLARE Min : INTEGER
-DECLARE Total : INTEGER
+This grade is B — output **Good**.`,
+      trap: 'CASE needs ENDCASE, not ENDIF. Labels are values (or ranges), not conditions like `Grade = \'A\'`.',
+      starterCode: `DECLARE Grade : CHAR
+Grade <- 'B'
 
-FOR i <- 1 TO 4
-    INPUT Num[i]
-NEXT i
+CASE OF Grade
+    'A' :
+        OUTPUT "Excellent"
+    'B' :
+        OUTPUT "Good"
+    'C' :
+        OUTPUT "OK"
+    OTHERWISE :
+        OUTPUT "Ungraded"
+ENDCASE`,
+      solutionCode: `DECLARE Grade : CHAR
+Grade <- 'B'
 
-// OUTPUT max, min, then Total DIV 4`,
-      solutionCode: `DECLARE Num : ARRAY[1:4] OF INTEGER
-DECLARE i : INTEGER
-DECLARE Max : INTEGER
-DECLARE Min : INTEGER
-DECLARE Total : INTEGER
-
-FOR i <- 1 TO 4
-    INPUT Num[i]
-NEXT i
-
-Max <- Num[1]
-Min <- Num[1]
-Total <- Num[1]
-FOR i <- 2 TO 4
-    IF Num[i] > Max THEN
-        Max <- Num[i]
-    ENDIF
-    IF Num[i] < Min THEN
-        Min <- Num[i]
-    ENDIF
-    Total <- Total + Num[i]
-NEXT i
-OUTPUT Max
-OUTPUT Min
-OUTPUT Total DIV 4`,
-      tests: [
-        { inputs: ['4', '9', '1', '6'], expectedOutput: '9\n1\n5' },
-        { inputs: ['-2', '-8', '-3', '-1'], expectedOutput: '-1\n-8\n-3' },
-        { inputs: ['5', '5', '5', '5'], expectedOutput: '5\n5\n5' },
-        { inputs: ['10', '0', '0', '6'], expectedOutput: '10\n0\n4' },
-      ],
+CASE OF Grade
+    'A' :
+        OUTPUT "Excellent"
+    'B' :
+        OUTPUT "Good"
+    'C' :
+        OUTPUT "OK"
+    OTHERWISE :
+        OUTPUT "Ungraded"
+ENDCASE`,
+      expectedOutput: 'Good',
+      mustContain: ['CASE', 'OTHERWISE', 'ENDCASE'],
       playable: true,
     },
     {
-      id: '7.6',
-      slug: 'grid',
-      title: '2D arrays [row, col]',
+      id: '4.6',
+      slug: 'boss',
+      title: 'Boss: Easy then Medium Selection',
       type: 'grade',
       minutes: 12,
-      why: 'Nested FOR. Row first in Cambridge wording: ARRAY[1:rows, 1:cols] and Grid[Row, Col].',
-      docsAnchor: 'arrays-2d',
-      body: `Read four integers into a 2×2 grid (row by row). Output the **sum** of all four cells.
+      why: 'A typical Paper 2 pair: a two-way IF, then a three-way comparison.',
+      docsAnchor: 'if',
+      body: `Read three integers (separate lines). Output two lines:
 
-Example: input \`1\`, \`2\`, \`3\`, \`4\` → \`10\`.`,
-      trap: '`Grid[Row, Col]` with a comma. Two pairs of brackets is a different language.',
-      starterCode: `DECLARE Grid : ARRAY[1:2, 1:2] OF INTEGER
-DECLARE Row : INTEGER
-DECLARE Col : INTEGER
-DECLARE Total : INTEGER
+1. The **largest** of the three
+2. **Pass** if that largest value is at least 50, otherwise **Fail**
 
-// fill the grid, then OUTPUT the sum`,
-      solutionCode: `DECLARE Grid : ARRAY[1:2, 1:2] OF INTEGER
-DECLARE Row : INTEGER
-DECLARE Col : INTEGER
-DECLARE Total : INTEGER
+Example: input \`3\`, \`72\`, \`40\` →
 
-FOR Row <- 1 TO 2
-    FOR Col <- 1 TO 2
-        INPUT Grid[Row, Col]
-    NEXT Col
-NEXT Row
-Total <- 0
-FOR Row <- 1 TO 2
-    FOR Col <- 1 TO 2
-        Total <- Total + Grid[Row, Col]
-    NEXT Col
-NEXT Row
-OUTPUT Total`,
+\`72\`
+\`Pass\``,
+      trap: 'Initialise Max from the first value, not from 0 — 0 loses when all three are negative.',
+      starterCode: `DECLARE A : INTEGER
+DECLARE B : INTEGER
+DECLARE C : INTEGER
+DECLARE Max : INTEGER
+
+INPUT A
+INPUT B
+INPUT C
+
+// find Max, then OUTPUT Max and Pass/Fail`,
+      solutionCode: `DECLARE A : INTEGER
+DECLARE B : INTEGER
+DECLARE C : INTEGER
+DECLARE Max : INTEGER
+
+INPUT A
+INPUT B
+INPUT C
+
+Max <- A
+IF B > Max THEN
+    Max <- B
+ENDIF
+IF C > Max THEN
+    Max <- C
+ENDIF
+
+OUTPUT Max
+IF Max >= 50 THEN
+    OUTPUT "Pass"
+ELSE
+    OUTPUT "Fail"
+ENDIF`,
       tests: [
-        { inputs: ['1', '2', '3', '4'], expectedOutput: '10' },
-        { inputs: ['0', '0', '0', '0'], expectedOutput: '0' },
-        { inputs: ['-1', '1', '-1', '1'], expectedOutput: '0' },
-        { inputs: ['10', '20', '30', '40'], expectedOutput: '100' },
-      ],
-      mustContain: ['ARRAY[1:2, 1:2]'],
-      playable: true,
-    },
-    {
-      id: '7.9',
-      slug: 'row-total',
-      title: 'Sum each row of a 2D array',
-      type: 'grade',
-      minutes: 10,
-      why: 'Row totals: inner loop walks columns, outer loop walks rows. Output one total per row.',
-      docsAnchor: 'arrays-2d',
-      body: `Read six integers into a 2×3 grid (row by row). Output the **sum of row 1**, then the **sum of row 2**.
-
-Example: input \`1\`, \`2\`, \`3\`, \`4\`, \`5\`, \`6\` →
-
-\`6\`
-\`15\``,
-      trap: '`Grid[Row, Col]` with a comma. Total the inner loop, OUTPUT after each row, then reset Total.',
-      starterCode: `DECLARE Grid : ARRAY[1:2, 1:3] OF INTEGER
-DECLARE Row : INTEGER
-DECLARE Col : INTEGER
-DECLARE Total : INTEGER
-
-// fill, then OUTPUT each row sum`,
-      solutionCode: `DECLARE Grid : ARRAY[1:2, 1:3] OF INTEGER
-DECLARE Row : INTEGER
-DECLARE Col : INTEGER
-DECLARE Total : INTEGER
-
-FOR Row <- 1 TO 2
-    FOR Col <- 1 TO 3
-        INPUT Grid[Row, Col]
-    NEXT Col
-NEXT Row
-FOR Row <- 1 TO 2
-    Total <- 0
-    FOR Col <- 1 TO 3
-        Total <- Total + Grid[Row, Col]
-    NEXT Col
-    OUTPUT Total
-NEXT Row`,
-      tests: [
-        { inputs: ['1', '2', '3', '4', '5', '6'], expectedOutput: '6\n15' },
-        { inputs: ['0', '0', '0', '0', '0', '0'], expectedOutput: '0\n0' },
-        { inputs: ['10', '10', '10', '1', '2', '3'], expectedOutput: '30\n6' },
-        { inputs: ['-1', '0', '1', '2', '2', '2'], expectedOutput: '0\n6' },
-      ],
-      mustContain: ['ARRAY[1:2, 1:3]'],
-      playable: true,
-    },
-    {
-      id: '7.7',
-      slug: 'boss',
-      title: 'Boss: Medium 1D then Easy 2D',
-      type: 'grade',
-      minutes: 15,
-      why: 'Level gate: search a list, then total a tiny grid — the two array skills Paper 2 actually asks.',
-      docsAnchor: 'arrays-1d',
-      body: `First, the 1D array is \`5, 8, 3, 8, 1\`. Read a **Target**. Output **TRUE** if it appears, else **FALSE**.
-
-Then read four integers into a 2×2 grid and output the **sum**.
-
-Example: input \`8\`, then \`1\`, \`2\`, \`3\`, \`4\` →
-
-\`TRUE\`
-\`10\``,
-      starterCode: `DECLARE Num : ARRAY[1:5] OF INTEGER
-DECLARE Grid : ARRAY[1:2, 1:2] OF INTEGER
-DECLARE i : INTEGER
-DECLARE Row : INTEGER
-DECLARE Col : INTEGER
-DECLARE Target : INTEGER
-DECLARE Found : BOOLEAN
-DECLARE Total : INTEGER
-
-Num[1] <- 5
-Num[2] <- 8
-Num[3] <- 3
-Num[4] <- 8
-Num[5] <- 1
-
-INPUT Target
-Found <- FALSE
-// search, OUTPUT Found
-// then fill Grid, OUTPUT its sum`,
-      solutionCode: `DECLARE Num : ARRAY[1:5] OF INTEGER
-DECLARE Grid : ARRAY[1:2, 1:2] OF INTEGER
-DECLARE i : INTEGER
-DECLARE Row : INTEGER
-DECLARE Col : INTEGER
-DECLARE Target : INTEGER
-DECLARE Found : BOOLEAN
-DECLARE Total : INTEGER
-
-Num[1] <- 5
-Num[2] <- 8
-Num[3] <- 3
-Num[4] <- 8
-Num[5] <- 1
-
-INPUT Target
-Found <- FALSE
-FOR i <- 1 TO 5
-    IF Num[i] = Target THEN
-        Found <- TRUE
-    ENDIF
-NEXT i
-OUTPUT Found
-
-Total <- 0
-FOR Row <- 1 TO 2
-    FOR Col <- 1 TO 2
-        INPUT Grid[Row, Col]
-        Total <- Total + Grid[Row, Col]
-    NEXT Col
-NEXT Row
-OUTPUT Total`,
-      tests: [
-        { inputs: ['8', '1', '2', '3', '4'], expectedOutput: 'TRUE\n10' },
-        { inputs: ['3', '0', '0', '0', '0'], expectedOutput: 'TRUE\n0' },
-        { inputs: ['9', '5', '5', '5', '5'], expectedOutput: 'FALSE\n20' },
-        { inputs: ['1', '10', '20', '30', '40'], expectedOutput: 'TRUE\n100' },
+        { inputs: ['3', '72', '40'], expectedOutput: '72\nPass' },
+        { inputs: ['10', '10', '10'], expectedOutput: '10\nFail' },
+        { inputs: ['-1', '-5', '-3'], expectedOutput: '-1\nFail' },
+        { inputs: ['50', '20', '30'], expectedOutput: '50\nPass' },
+        { inputs: ['1', '2', '3'], expectedOutput: '3\nFail' },
       ],
       playable: true,
     },

@@ -1,13 +1,15 @@
 import type { LearnLevel } from './types';
 import { COURSE_ID } from './types';
-import { levelStartHref } from './path';
+import { LEGACY_LEVEL_SLUGS, levelStartHref } from './path';
 
 /**
  * The paid level a student was blocked on, so the post-checkout page can send
  * them straight back to it. Per-browser only: the same level is also set as a
  * PostHog person property (`paywallPersonProps`) for the cross-device email.
  */
-const KEY = 'learn_paywall_level';
+const KEY = 'learn_paywall_level_v2';
+/** Written before the Nov 2026 renumbering; read through LEGACY_LEVEL_SLUGS. */
+const LEGACY_KEY = 'learn_paywall_level';
 
 export type StoredPaywallLevel = { courseId: string; slug: string };
 
@@ -23,7 +25,12 @@ export function rememberPaywallLevel(level: LearnLevel, courseId: string = COURS
 export function readPaywallLevel(): StoredPaywallLevel | null {
   try {
     const raw = localStorage.getItem(KEY);
-    if (!raw) return null;
+    if (!raw) {
+      const legacy = localStorage.getItem(LEGACY_KEY);
+      if (!legacy) return null;
+      if (legacy.includes(':')) return { courseId: legacy.slice(0, legacy.indexOf(':')), slug: legacy.slice(legacy.indexOf(':') + 1) };
+      return { courseId: COURSE_ID, slug: LEGACY_LEVEL_SLUGS[legacy] ?? legacy };
+    }
     const split = raw.indexOf(':');
     if (split === -1) return { courseId: COURSE_ID, slug: raw };
     return { courseId: raw.slice(0, split), slug: raw.slice(split + 1) };
