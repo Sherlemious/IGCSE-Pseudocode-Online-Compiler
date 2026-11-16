@@ -555,6 +555,14 @@ model ExamAnswer {
   graded     Boolean @default(false)
   sortOrder  Int     @default(0)
 
+  // Written feedback from the teacher of the class the attempt's assignment
+  // belongs to. `feedbackById` is the writer (plain id, no relation: keeps the
+  // change additive). `feedbackSeenAt` drives the student's "new feedback" dot.
+  teacherFeedback String?   @db.Text
+  feedbackAt      DateTime?
+  feedbackById    String?
+  feedbackSeenAt  DateTime?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

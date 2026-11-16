@@ -5,8 +5,9 @@ import { auth } from '@/modules/auth/auth';
 import { prisma } from '@/shared/db';
 import { getQuestionCatalog } from '@/shared/lib/catalogCache';
 import { findOwnedQuestionLabels } from '@/modules/questions/repo';
-import { Clock, ArrowLeft, CheckCircle, XCircle, RotateCcw, Minus } from 'lucide-react';
+import { Clock, ArrowLeft, CheckCircle, XCircle, RotateCcw, Minus, MessageSquare } from 'lucide-react';
 import ExamShareButton from '@/modules/share/ExamShareButton';
+import FeedbackViewedTracker from '@/modules/classes/FeedbackViewedTracker';
 
 export const metadata: Metadata = {
   title: 'Exam Results',
@@ -37,6 +38,8 @@ export default async function ExamResultsPage({ params }: Props) {
           passCount: true,
           totalTests: true,
           questionId: true,
+          teacherFeedback: true,
+          feedbackAt: true,
         },
       },
     },
@@ -56,9 +59,13 @@ export default async function ExamResultsPage({ params }: Props) {
       graded: a.graded,
       passCount: a.passCount,
       totalTests: a.totalTests,
+      teacherFeedback: a.teacherFeedback,
+      feedbackAt: a.feedbackAt,
       question: { id: question.id, title: question.title, difficulty: question.difficulty },
     }];
   });
+
+  const hasFeedback = answers.some((a) => a.teacherFeedback);
 
   const passedQuestions = answers.filter((a) => a.graded && a.totalTests > 0 && a.passCount === a.totalTests).length;
   const totalQuestions = answers.length;
@@ -99,6 +106,9 @@ export default async function ExamResultsPage({ params }: Props) {
       />
 
       <div className="max-w-xl mx-auto relative">
+        {hasFeedback && exam.assignmentId && (
+          <FeedbackViewedTracker attemptId={exam.id} assignmentId={exam.assignmentId} />
+        )}
         <Link
           href="/exam"
           className="inline-flex items-center gap-1.5 text-xs text-dark-text hover:text-light-text transition-colors mb-8 group"
@@ -184,10 +194,8 @@ export default async function ExamResultsPage({ params }: Props) {
               const allPassed = a.totalTests > 0 && a.passCount === a.totalTests;
               const pct = a.totalTests > 0 ? Math.round((a.passCount / a.totalTests) * 100) : 0;
               return (
-                <div
-                  key={a.id}
-                  className="bg-surface border border-border rounded-lg px-4 py-3 flex items-center gap-3"
-                >
+                <div key={a.id} className="bg-surface border border-border rounded-lg px-4 py-3">
+                <div className="flex items-center gap-3">
                   <span
                     className={`w-7 h-7 rounded-md flex items-center justify-center text-[10px] font-mono font-bold shrink-0 ${
                       allPassed
@@ -243,6 +251,23 @@ export default async function ExamResultsPage({ params }: Props) {
                       <span className="text-dark-text/40 text-[10px] font-normal">skipped</span>
                     )}
                   </div>
+                </div>
+                {a.teacherFeedback && (
+                  <div className="mt-3 border-t border-border/50 pt-3">
+                    <div className="flex items-center gap-1.5 text-[11px] font-medium text-primary">
+                      <MessageSquare size={12} />
+                      Feedback from your teacher
+                      {a.feedbackAt && (
+                        <span className="font-mono font-normal text-dark-text/60">
+                          · {a.feedbackAt.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' })}
+                        </span>
+                      )}
+                    </div>
+                    <p className="mt-1.5 text-xs text-light-text whitespace-pre-wrap break-words leading-relaxed">
+                      {a.teacherFeedback}
+                    </p>
+                  </div>
+                )}
                 </div>
               );
             })}

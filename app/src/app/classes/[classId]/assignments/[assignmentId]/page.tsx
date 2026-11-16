@@ -5,6 +5,7 @@ import { ArrowLeft, CheckCircle2, Circle, Clock } from 'lucide-react';
 import { auth } from '@/modules/auth/auth';
 import { prisma } from '@/shared/db';
 import CodeDetails from '@/modules/classes/CodeDetails';
+import AnswerFeedbackEditor from '@/modules/classes/AnswerFeedbackEditor';
 import AssignmentShareActions from '@/modules/classes/AssignmentShareActions';
 import StudentProgressLink from '@/modules/classes/StudentProgressLink';
 
@@ -53,7 +54,15 @@ export default async function AssignmentResultsPage({ params }: Props) {
       totalTests: true,
       answers: {
         orderBy: { sortOrder: 'asc' },
-        select: { code: true, passCount: true, totalTests: true, question: { select: { title: true } } },
+        select: {
+                id: true,
+                code: true,
+                passCount: true,
+                totalTests: true,
+                teacherFeedback: true,
+                feedbackAt: true,
+                question: { select: { title: true } },
+              },
       },
     },
   });
@@ -114,15 +123,22 @@ export default async function AssignmentResultsPage({ params }: Props) {
                     </span>
                   </div>
                   {at && at.answers.length > 0 && (
-                    <div className="mt-2.5 space-y-1.5 border-t border-border/50 pt-2.5">
-                        {at.answers.map((ans, i) => (
-                          <CodeDetails
-                            key={i}
-                            label={`${ans.question.title} — ${ans.passCount}/${ans.totalTests}`}
-                            code={ans.code}
-                            classId={classId}
-                            surface="assigned_work"
-                          />
+                    <div className="mt-2.5 space-y-3 border-t border-border/50 pt-2.5">
+                        {at.answers.map((ans) => (
+                          <div key={ans.id} className="space-y-1.5">
+                            <CodeDetails
+                              label={`${ans.question.title} — ${ans.passCount}/${ans.totalTests}`}
+                              code={ans.code}
+                              classId={classId}
+                              surface="assigned_work"
+                            />
+                            <AnswerFeedbackEditor
+                              classId={classId}
+                              answerId={ans.id}
+                              initialFeedback={ans.teacherFeedback}
+                              initialFeedbackAt={ans.feedbackAt ? ans.feedbackAt.toISOString() : null}
+                            />
+                          </div>
                         ))}
                     </div>
                   )}

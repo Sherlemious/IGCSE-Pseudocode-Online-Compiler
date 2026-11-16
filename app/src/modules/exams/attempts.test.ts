@@ -57,6 +57,7 @@ beforeEach(() => {
   answer = {
     id: 'answer1', examAttemptId: exam.id, questionId: 'q1', code: submission.code,
     graded: true, passCount: 1, totalTests: 1, sortOrder: 0, createdAt: now, updatedAt: now,
+    teacherFeedback: null, feedbackAt: null, feedbackById: null, feedbackSeenAt: null,
   };
   testCases = [{ id: 'test1', questionId: 'q1', inputs: [], expectedOutput: 'Ada', isHidden: false, description: null, sortOrder: 0, initialFiles: null }];
   auth.mockResolvedValue({ user: { id: 'student1' } });

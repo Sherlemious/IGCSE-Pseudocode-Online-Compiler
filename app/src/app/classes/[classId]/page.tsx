@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import type { Metadata } from 'next';
 import { redirect, notFound } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, School, ClipboardList, ListChecks, CalendarClock } from 'lucide-react';
+import { ArrowLeft, School, ClipboardList, ListChecks, CalendarClock, MessageSquare } from 'lucide-react';
 import { auth } from '@/modules/auth/auth';
 import { prisma } from '@/shared/db';
 import { SITE_URL } from '@/shared/lib/seo';
@@ -10,6 +10,7 @@ import { getEntitlements } from '@/modules/billing/entitlements';
 import ClassManager, { type ClassMember } from '@/modules/classes/ClassManager';
 import ClassAssignments, { type AssignmentRow } from '@/modules/classes/ClassAssignments';
 import StartAssignmentButton from '@/modules/classes/StartAssignmentButton';
+import { hasUnseenFeedback } from '@/modules/classes/feedback';
 import { loadRosterStats } from '@/modules/classes/loadRosterStats';
 import { getQuestionCatalog } from '@/shared/lib/catalogCache';
 import { getQuestionSocialStats } from '@/modules/practice/loadSocialStats';
@@ -184,7 +185,17 @@ export default async function ClassDetailPage({ params }: Props) {
     ? await prisma.examAttempt.findMany({
         where: { userId, assignmentId: { in: assignmentIds } },
         orderBy: { createdAt: 'desc' },
-        select: { id: true, assignmentId: true, status: true, score: true, totalTests: true },
+        select: {
+          id: true,
+          assignmentId: true,
+          status: true,
+          score: true,
+          totalTests: true,
+          answers: {
+            where: { teacherFeedback: { not: null } },
+            select: { teacherFeedback: true, feedbackAt: true, feedbackSeenAt: true },
+          },
+        },
       })
     : [];
   const latestByAssignment = new Map<string, (typeof myAttempts)[number]>();
@@ -219,6 +230,7 @@ export default async function ClassDetailPage({ params }: Props) {
                 ? 'in_progress'
                 : 'completed';
             const dueLabel = formatDue(a.dueDate);
+            const newFeedback = status === 'completed' && !!at?.answers.some(hasUnseenFeedback);
             return (
               <div key={a.id} className="flex items-center justify-between gap-3 bg-surface border border-border rounded-lg px-4 py-3.5">
                 <div className="min-w-0">
@@ -226,6 +238,9 @@ export default async function ClassDetailPage({ params }: Props) {
                   <div className="flex items-center gap-3 mt-1 text-[10px] text-dark-text font-mono">
                     <span className="flex items-center gap-1"><ListChecks size={11} />{a.exam._count.questions} q</span>
                     {dueLabel && <span className="flex items-center gap-1"><CalendarClock size={11} />due {dueLabel}</span>}
+                    {newFeedback && (
+                      <span className="flex items-center gap-1 text-primary"><MessageSquare size={11} />New feedback</span>
+                    )}
                   </div>
                 </div>
                 <StartAssignmentButton classId={classId} assignmentId={a.id} attemptId={at?.id} status={status} score={at?.score} totalTests={at?.totalTests} />
