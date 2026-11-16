@@ -197,7 +197,7 @@ Pull requests back to this repository are welcome.
 
 ## Cite
 
-GitHub's "Cite this repository" button reads [CITATION.cff](CITATION.cff). If you use the compiler in research (for example, a study of its use in a class), cite the version you used and the date you accessed [pseudocode-compiler.sherlemious.com](https://pseudocode-compiler.sherlemious.com), since the live site changes between releases.
+GitHub's "Cite this repository" button reads [CITATION.cff](CITATION.cff). The v0.1.0 release is archived on Zenodo as [doi:10.5281/zenodo.24288539](https://doi.org/10.5281/zenodo.24288539). If you use the compiler in research (for example, a study of its use in a class), cite the version you used and the date you accessed [pseudocode-compiler.sherlemious.com](https://pseudocode-compiler.sherlemious.com), since the live site changes between releases.
 
 ## License
 
