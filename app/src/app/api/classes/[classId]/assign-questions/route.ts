@@ -1,5 +1,5 @@
 import { route } from '@/shared/http/route';
-import { optionalDate, optionalText, readJsonOrEmpty, stringList } from '@/shared/http/input';
+import { optionalDate, optionalText, optionalTimeZone, readJsonOrEmpty, stringList } from '@/shared/http/input';
 import { enforceRateLimit } from '@/shared/http/rateLimit';
 import { requireUser } from '@/modules/auth/guards';
 import { ASSIGNMENT_TITLE_MAX } from '@/modules/classes/assignPlan';
@@ -18,5 +18,6 @@ export const POST = route(async (req, { params }: RouteContext<'/api/classes/[cl
     optionalDate(body.dueDate),
     optionalText(body.title, ASSIGNMENT_TITLE_MAX),
     body.timed === true, // untimed unless the teacher picks the timer
+    optionalTimeZone(body.timeZone),
   );
 });

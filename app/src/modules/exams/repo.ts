@@ -130,7 +130,7 @@ export async function lockOwnedAttempt(examId: string, userId: string, db: Db): 
 export function getAttempt(examId: string, db: Db) {
   return db.examAttempt.findUniqueOrThrow({
     where: { id: examId },
-    include: { assignment: { select: { dueDate: true } } },
+    include: { assignment: { select: { dueDate: true, dueTimeZone: true } } },
   });
 }
 

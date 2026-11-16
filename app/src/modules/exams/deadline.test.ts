@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { attemptDeadline, endOfUtcDay, isPastDeadline } from './deadline';
+import { attemptDeadline, isPastDeadline } from './deadline';
 
 const startedAt = new Date('2026-11-16T09:00:00Z');
 const due = new Date('2026-11-20T00:00:00Z');
@@ -12,9 +12,16 @@ describe('attemptDeadline', () => {
     expect(attemptDeadline(attempt, due)).toBe(startedAt.getTime() + 30 * 60_000);
   });
 
-  it('untimed with a due date: the end of that UTC day', () => {
+  it('untimed with a due date: the end of that day, in UTC when no zone was recorded', () => {
     expect(attemptDeadline({ startedAt, timeLimitMin: null }, due)).toBe(endOfDue);
-    expect(endOfUtcDay(new Date('2026-11-20T18:30:00Z')).getTime()).toBe(endOfDue);
+    expect(attemptDeadline({ startedAt, timeLimitMin: null }, due, null)).toBe(endOfDue);
+  });
+
+  it("untimed with a due date and the teacher's zone: their own midnight", () => {
+    expect(attemptDeadline({ startedAt, timeLimitMin: null }, due, 'Asia/Shanghai'))
+      .toBe(new Date('2026-11-20T15:59:59.999Z').getTime());
+    expect(isPastDeadline({ startedAt, timeLimitMin: null }, due, new Date('2026-11-20T16:00:00Z'), 'Asia/Shanghai')).toBe(true);
+    expect(isPastDeadline({ startedAt, timeLimitMin: null }, due, new Date('2026-11-20T16:00:00Z'))).toBe(false);
   });
 
   it('untimed without a due date: none', () => {

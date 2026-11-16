@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { GraduationCap, Loader2, Check, ArrowRight } from 'lucide-react';
 import Combobox from '@/shared/ui/Combobox';
 import DatePicker from '@/shared/ui/DatePicker';
+import { browserTimeZone } from '@/shared/lib/dueDate';
 import AssignmentTimingPicker, { timingHint } from '@/modules/classes/AssignmentTimingPicker';
 
 interface Props {
@@ -53,7 +54,7 @@ export default function AssignExamToClass({ examId, timeLimitMin, highlight }: P
     const res = await fetch(`/api/classes/${classId}/assignments`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ examId, dueDate: due || undefined, timed }),
+      body: JSON.stringify({ examId, dueDate: due || undefined, timeZone: browserTimeZone(), timed }),
     });
     setBusy(false);
     const data = await res.json().catch(() => ({}));

@@ -1,6 +1,6 @@
 import { badRequest } from '@/shared/http/errors';
 import { route } from '@/shared/http/route';
-import { optionalDate, readJsonOrEmpty } from '@/shared/http/input';
+import { optionalDate, optionalTimeZone, readJsonOrEmpty } from '@/shared/http/input';
 import { requireUser } from '@/modules/auth/guards';
 import { assignExam } from '@/modules/classes/service';
 
@@ -12,5 +12,5 @@ export const POST = route(async (req, { params }: RouteContext<'/api/classes/[cl
   const examId = typeof body.examId === 'string' ? body.examId : '';
   if (!examId) throw badRequest('Pick an exam to assign.');
   // An exam keeps its timer unless the teacher picks "no time limit".
-  return assignExam(classId, user.id, examId, optionalDate(body.dueDate), body.timed !== false);
+  return assignExam(classId, user.id, examId, optionalDate(body.dueDate), body.timed !== false, optionalTimeZone(body.timeZone));
 });

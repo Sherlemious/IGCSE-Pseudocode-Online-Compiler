@@ -29,7 +29,7 @@ export default async function ExamActivePage({ params }: Props) {
   const exam = await prisma.examAttempt.findFirst({
     where: { id: examId, userId: session.user.id },
     include: {
-      assignment: { select: { dueDate: true } },
+      assignment: { select: { dueDate: true, dueTimeZone: true } },
       answers: {
         orderBy: { sortOrder: 'asc' },
         select: {
@@ -54,11 +54,12 @@ export default async function ExamActivePage({ params }: Props) {
   // Nothing closes an attempt in the background: one reopened after its time
   // limit or due date is submitted now with the work saved before the cut-off.
   const dueDate = exam.assignment?.dueDate ?? null;
-  if (isPastDeadline(exam, dueDate, new Date())) {
+  const dueTimeZone = exam.assignment?.dueTimeZone ?? null;
+  if (isPastDeadline(exam, dueDate, new Date(), dueTimeZone)) {
     await submitExamAttempt(exam.id, session.user.id);
     redirect(`/exam/${examId}/results`);
   }
-  const deadline = attemptDeadline(exam, dueDate);
+  const deadline = attemptDeadline(exam, dueDate, dueTimeZone);
 
   const catalogQuestions = await Promise.all(exam.answers.map((a) => getPublicQuestion(a.questionId)));
   const missingIds = exam.answers.filter((_, index) => !catalogQuestions[index]).map((a) => a.questionId);

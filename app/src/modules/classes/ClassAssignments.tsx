@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { ClipboardList, Plus, Loader2, X, Users, CalendarClock, Pencil, Timer } from 'lucide-react';
 import Combobox from '@/shared/ui/Combobox';
 import DatePicker from '@/shared/ui/DatePicker';
+import { browserTimeZone } from '@/shared/lib/dueDate';
 import AssignmentShareActions from './AssignmentShareActions';
 import ClassQuickStart from './ClassQuickStart';
 import AssignmentTimingPicker, { timingHint } from './AssignmentTimingPicker';
@@ -81,7 +82,7 @@ export default function ClassAssignments({ classId, className, joinCode, rosterS
     const res = await fetch(`/api/classes/${classId}/assignments`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ examId, dueDate: due || undefined, timed }),
+      body: JSON.stringify({ examId, dueDate: due || undefined, timeZone: browserTimeZone(), timed }),
     });
     setBusy(null);
     if (!res.ok) {
@@ -118,7 +119,7 @@ export default function ClassAssignments({ classId, className, joinCode, rosterS
     const res = await fetch(`/api/classes/${classId}/assignments/${row.id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title: trimmed, dueDate: dueDate || null, timed: rowTimed }),
+      body: JSON.stringify({ title: trimmed, dueDate: dueDate || null, timeZone: browserTimeZone(), timed: rowTimed }),
     });
     setBusy(null);
     if (!res.ok) {

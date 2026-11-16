@@ -140,11 +140,12 @@ export async function assignExam(
   examId: string,
   dueDate: Date | null,
   timed = true,
+  dueTimeZone: string | null = null,
 ) {
   await requireOwnedClass(classId, userId);
   if (!(await findOwnedExam(examId, userId))) throw notFound('That exam could not be found.');
   try {
-    return await repo.createAssignment({ classId, examId, dueDate, timed });
+    return await repo.createAssignment({ classId, examId, dueDate, dueTimeZone: dueDate ? dueTimeZone : null, timed });
   } catch (err) {
     if (isUniqueViolation(err)) throw conflict('That exam is already assigned to this class.', 'ALREADY_ASSIGNED');
     throw err;
@@ -164,6 +165,7 @@ export async function assignQuestions(
   dueDate: Date | null,
   title?: string | null,
   timed = false,
+  dueTimeZone: string | null = null,
 ) {
   const cls = await requireOwnedClass(classId, userId);
   const requested = [...new Set(questionIds.filter((id) => id.trim()))];
@@ -201,7 +203,7 @@ export async function assignQuestions(
           questionIds: validIds,
           isPublished: true,
         }, tx);
-        const assignment = await repo.createAssignment({ classId, examId: exam.id, dueDate, timed }, tx);
+        const assignment = await repo.createAssignment({ classId, examId: exam.id, dueDate, dueTimeZone: dueDate ? dueTimeZone : null, timed }, tx);
         return {
           assignmentId: assignment.id,
           examId: exam.id,
@@ -230,7 +232,7 @@ export async function updateAssignment(
   classId: string,
   userId: string,
   assignmentId: string,
-  data: { title?: string; dueDate?: Date | null; timed?: boolean },
+  data: { title?: string; dueDate?: Date | null; dueTimeZone?: string | null; timed?: boolean },
 ) {
   if (data.title === undefined && data.dueDate === undefined && data.timed === undefined) {
     throw badRequest('Nothing to update.');
@@ -262,6 +264,7 @@ function toMarkInput(cls: MarkBookClass) {
       id: assignment.id,
       title: assignment.exam.title,
       dueDate: assignment.dueDate,
+      dueTimeZone: assignment.dueTimeZone,
     })),
     attempts: cls.assignments.flatMap((assignment) =>
       assignment.attempts.map((attempt) => ({

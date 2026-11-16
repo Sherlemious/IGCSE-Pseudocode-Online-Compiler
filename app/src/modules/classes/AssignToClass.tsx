@@ -7,6 +7,7 @@ import { Check, Loader2, School } from 'lucide-react';
 import { captureEvent } from '@/modules/interpreter/analytics';
 import Combobox from '@/shared/ui/Combobox';
 import DatePicker from '@/shared/ui/DatePicker';
+import { browserTimeZone } from '@/shared/lib/dueDate';
 import Modal from '@/shared/ui/Modal';
 import AssignmentShareActions from './AssignmentShareActions';
 import AssignmentTimingPicker, { timingHint } from './AssignmentTimingPicker';
@@ -111,7 +112,7 @@ export default function AssignToClassButton({
     const res = await fetch(`/api/classes/${classId}/assign-questions`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ questionIds, dueDate: due || undefined, title: title.trim() || undefined, timed }),
+      body: JSON.stringify({ questionIds, dueDate: due || undefined, timeZone: browserTimeZone(), title: title.trim() || undefined, timed }),
     });
     const data = await res.json().catch(() => ({}));
     setBusy(false);

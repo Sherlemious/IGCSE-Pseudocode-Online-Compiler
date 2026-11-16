@@ -93,7 +93,8 @@ export default async function ExamResultsPage({ params }: Props) {
     percentage >= 90 ? 'A*' : percentage >= 80 ? 'A' : percentage >= 70 ? 'B'
     : percentage >= 60 ? 'C' : percentage >= 50 ? 'D' : percentage >= 40 ? 'E' : 'U';
   const examRemark =
-    percentage >= 70 ? 'Strong performance under timed conditions.'
+    percentage >= 70
+      ? (exam.timeLimitMin != null ? 'Strong performance under timed conditions.' : 'Strong work on this assignment.')
     : percentage >= 40 ? 'A solid attempt — review the questions you missed below.'
     : 'Keep practising — revisit these topics and sit the paper again.';
 

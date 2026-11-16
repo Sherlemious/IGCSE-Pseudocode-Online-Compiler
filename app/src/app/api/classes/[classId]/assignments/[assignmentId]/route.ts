@@ -1,6 +1,6 @@
 import { badRequest } from '@/shared/http/errors';
 import { route } from '@/shared/http/route';
-import { optionalDate, optionalText, readJsonOrEmpty } from '@/shared/http/input';
+import { optionalDate, optionalText, optionalTimeZone, readJsonOrEmpty } from '@/shared/http/input';
 import { requireUser } from '@/modules/auth/guards';
 import { ASSIGNMENT_TITLE_MAX } from '@/modules/classes/assignPlan';
 import { unassignExam, updateAssignment } from '@/modules/classes/service';
@@ -12,7 +12,7 @@ export const PATCH = route(async (req, { params }: Ctx) => {
   const user = await requireUser();
   const { classId, assignmentId } = await params;
   const body = await readJsonOrEmpty(req);
-  const data: { title?: string; dueDate?: Date | null; timed?: boolean } = {};
+  const data: { title?: string; dueDate?: Date | null; dueTimeZone?: string | null; timed?: boolean } = {};
   if ('title' in body) {
     const title = optionalText(body.title, ASSIGNMENT_TITLE_MAX);
     if (!title) throw badRequest('Give the assignment a name.');
@@ -25,6 +25,7 @@ export const PATCH = route(async (req, { params }: Ctx) => {
       const due = optionalDate(body.dueDate);
       if (!due) throw badRequest('That due date is not valid.');
       data.dueDate = due;
+      data.dueTimeZone = optionalTimeZone(body.timeZone);
     }
   }
   if ('timed' in body) {

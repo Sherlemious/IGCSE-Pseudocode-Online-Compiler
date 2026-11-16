@@ -1,4 +1,5 @@
 import { badRequest } from './errors';
+import { isValidTimeZone } from '@/shared/lib/dueDate';
 
 export type JsonObject = Record<string, unknown>;
 
@@ -50,4 +51,9 @@ export function optionalDate(value: unknown): Date | null {
   if (typeof value !== 'string' || !value.trim()) return null;
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? null : date;
+}
+
+/** An IANA timezone name from the browser, or null when absent or unknown. */
+export function optionalTimeZone(value: unknown): string | null {
+  return isValidTimeZone(value) ? value : null;
 }

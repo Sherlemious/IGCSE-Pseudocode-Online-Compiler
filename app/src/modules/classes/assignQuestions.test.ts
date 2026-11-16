@@ -111,7 +111,7 @@ describe('assignQuestions', () => {
       expect.anything(),
     );
     expect(repo.createAssignment).toHaveBeenCalledWith(
-      { classId: 'class-1', examId: 'exam-1', dueDate: due, timed: false },
+      { classId: 'class-1', examId: 'exam-1', dueDate: due, dueTimeZone: null, timed: false },
       expect.anything(),
     );
     expect(result).toMatchObject({
@@ -130,10 +130,24 @@ describe('assignQuestions', () => {
     const result = await assignQuestions('class-1', 'teacher', ['q1', 'q2'], null, null, true);
     expect(exams.createExam).toHaveBeenCalledWith(expect.objectContaining({ timeLimitMin: 60 }), expect.anything());
     expect(repo.createAssignment).toHaveBeenCalledWith(
-      { classId: 'class-1', examId: 'exam-1', dueDate: null, timed: true },
+      { classId: 'class-1', examId: 'exam-1', dueDate: null, dueTimeZone: null, timed: true },
       expect.anything(),
     );
     expect(result).toMatchObject({ timed: true, timeLimitMin: 60 });
+  });
+
+  it("stores the teacher's timezone with a due date, and drops it without one", async () => {
+    const due = new Date('2026-11-20T00:00:00.000Z');
+    await assignQuestions('class-1', 'teacher', ['q1'], due, null, false, 'Asia/Shanghai');
+    expect(repo.createAssignment).toHaveBeenLastCalledWith(
+      expect.objectContaining({ dueDate: due, dueTimeZone: 'Asia/Shanghai' }),
+      expect.anything(),
+    );
+    await assignQuestions('class-1', 'teacher', ['q2'], null, null, false, 'Asia/Shanghai');
+    expect(repo.createAssignment).toHaveBeenLastCalledWith(
+      expect.objectContaining({ dueDate: null, dueTimeZone: null }),
+      expect.anything(),
+    );
   });
 
   it('titles a single question from the bank and a set by its size', async () => {

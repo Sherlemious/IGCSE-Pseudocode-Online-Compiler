@@ -1,8 +1,11 @@
 /**
  * Mark book grid and CSV. Pure: roster, assignments and attempts in, no I/O.
  * Due dates are calendar days stored as UTC midnight (`yyyy-mm-dd` from the
- * date picker). A submission is late only when completedAt is after that UTC day.
+ * date picker). A submission is late only when completedAt is after the end of
+ * that day in the teacher's zone (UTC when none was recorded).
  */
+
+import { endOfDueDay } from '@/shared/lib/dueDate';
 
 export type MarkStatus = 'not_started' | 'in_progress' | 'submitted' | 'late' | 'missing';
 
@@ -16,6 +19,8 @@ export interface MarkAssignment {
   id: string;
   title: string;
   dueDate: Date | null;
+  /** The teacher's zone when the due date was set; null = UTC. */
+  dueTimeZone?: string | null;
 }
 
 export interface MarkAttempt {
@@ -100,18 +105,14 @@ export const MARK_STATUS_LABEL: Record<MarkStatus, string> = {
 
 const SUBMITTED_STATUS = new Set<MarkStatus>(['submitted', 'late']);
 
-function endOfUtcDay(date: Date): Date {
-  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), 23, 59, 59, 999));
-}
-
-function duePassed(due: Date | null, now: Date): boolean {
+function duePassed(due: Date | null, zone: string | null | undefined, now: Date): boolean {
   if (!due) return false;
-  return now.getTime() > endOfUtcDay(due).getTime();
+  return now.getTime() > endOfDueDay(due, zone).getTime();
 }
 
-function isLate(completedAt: Date | null, due: Date | null): boolean {
+function isLate(completedAt: Date | null, due: Date | null, zone: string | null | undefined): boolean {
   if (!completedAt || !due) return false;
-  return completedAt.getTime() > endOfUtcDay(due).getTime();
+  return completedAt.getTime() > endOfDueDay(due, zone).getTime();
 }
 
 function percentOf(score: number | null, total: number | null): number | null {
@@ -151,17 +152,17 @@ interface AttemptSlot {
   inProgress: boolean;
 }
 
-function cellFor(slot: AttemptSlot | undefined, due: Date | null, now: Date): MarkCell {
+function cellFor(slot: AttemptSlot | undefined, due: Date | null, zone: string | null | undefined, now: Date): MarkCell {
   const completed = slot?.completed ?? null;
   if (completed) {
     return {
-      status: isLate(completed.completedAt, due) ? 'late' : 'submitted',
+      status: isLate(completed.completedAt, due, zone) ? 'late' : 'submitted',
       score: completed.score,
       totalTests: completed.totalTests,
       percent: percentOf(completed.score, completed.totalTests),
     };
   }
-  if (duePassed(due, now)) {
+  if (duePassed(due, zone, now)) {
     return { status: 'missing', score: null, totalTests: null, percent: null };
   }
   if (slot?.inProgress) {
@@ -194,7 +195,7 @@ export function buildMarkBook(input: {
 
   const rows: MarkRow[] = input.students.map((student) => {
     const cells = input.assignments.map((assignment) =>
-      cellFor(byPair.get(pairKey(student.userId, assignment.id)), assignment.dueDate, now),
+      cellFor(byPair.get(pairKey(student.userId, assignment.id)), assignment.dueDate, assignment.dueTimeZone, now),
     );
     const submitted = cells.filter((cell) => SUBMITTED_STATUS.has(cell.status));
     return {

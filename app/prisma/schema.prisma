@@ -440,7 +440,10 @@ model Assignment {
   examId  String
   exam    Exam      @relation(fields: [examId], references: [id], onDelete: Cascade)
   dueDate DateTime?
-  // False = no time limit: attempts stay open until dueDate (end of that UTC
+  // IANA zone of the teacher who set dueDate; the due day ends at their
+  // midnight (shared/lib/dueDate.ts). Null = UTC, for dates set before this.
+  dueTimeZone String?
+  // False = no time limit: attempts stay open until dueDate (end of that
   // day) or until the student submits. True = the exam's timeLimitMin applies.
   timed   Boolean   @default(true)
 

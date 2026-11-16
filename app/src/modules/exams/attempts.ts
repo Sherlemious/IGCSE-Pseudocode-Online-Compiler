@@ -21,15 +21,16 @@ export interface AnswerSubmission {
 }
 
 /** An attempt plus the due date of the class assignment it belongs to, if any. */
-type LockedAttempt = ExamAttempt & { assignment?: { dueDate: Date | null } | null };
+type LockedAttempt = ExamAttempt & { assignment?: { dueDate: Date | null; dueTimeZone?: string | null } | null };
 
 const dueDateOf = (exam: LockedAttempt) => exam.assignment?.dueDate ?? null;
+const dueZoneOf = (exam: LockedAttempt) => exam.assignment?.dueTimeZone ?? null;
 
 function requireActive(exam: LockedAttempt, now: Date): void {
   if (exam.status !== 'IN_PROGRESS') {
     throw new ExamRequestError(409, 'EXAM_COMPLETED', 'This exam has already been submitted.');
   }
-  if (isPastDeadline(exam, dueDateOf(exam), now)) {
+  if (isPastDeadline(exam, dueDateOf(exam), now, dueZoneOf(exam))) {
     const message = exam.timeLimitMin == null
       ? 'The due date has passed. Submit to view your results.'
       : 'Time is up. Submit the exam to view your results.';
@@ -138,7 +139,7 @@ export function submitExamAttempt(examId: string, userId: string) {
     }
     const answers = await repo.listAnswerScores(examId, tx);
     const score = answers.filter((answer) => answer.graded && answer.totalTests > 0 && answer.passCount === answer.totalTests).length;
-    const deadline = attemptDeadline(exam, dueDateOf(exam));
+    const deadline = attemptDeadline(exam, dueDateOf(exam), dueZoneOf(exam));
     const timedOut = deadline !== null && now.getTime() >= deadline;
     // An untimed attempt closed after its due date took no work past that
     // cut-off, so it is stamped at the cut-off and the mark book reads it as on time.

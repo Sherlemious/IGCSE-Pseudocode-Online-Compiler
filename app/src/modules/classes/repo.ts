@@ -57,6 +57,7 @@ export function findClassMarkBook(classId: string) {
         select: {
           id: true,
           dueDate: true,
+          dueTimeZone: true,
           exam: { select: { title: true } },
           attempts: {
             where: { user: { classEnrollments: { some: { classId } } } },
@@ -178,14 +179,16 @@ export function findAssignmentOwnership(assignmentId: string) {
 export function saveAssignmentEdits(
   assignmentId: string,
   examId: string,
-  data: { title?: string; dueDate?: Date | null; timed?: boolean },
+  data: { title?: string; dueDate?: Date | null; dueTimeZone?: string | null; timed?: boolean },
 ) {
   return prisma.$transaction(async (tx) => {
     if (data.dueDate !== undefined || data.timed !== undefined) {
       await tx.assignment.update({
         where: { id: assignmentId },
         data: {
-          ...(data.dueDate !== undefined ? { dueDate: data.dueDate } : {}),
+          ...(data.dueDate !== undefined
+            ? { dueDate: data.dueDate, dueTimeZone: data.dueDate ? (data.dueTimeZone ?? null) : null }
+            : {}),
           ...(data.timed !== undefined ? { timed: data.timed } : {}),
         },
       });
@@ -197,7 +200,7 @@ export function saveAssignmentEdits(
 }
 
 export function createAssignment(
-  data: { classId: string; examId: string; dueDate: Date | null; timed: boolean },
+  data: { classId: string; examId: string; dueDate: Date | null; dueTimeZone: string | null; timed: boolean },
   db: Db = prisma,
 ) {
   return db.assignment.create({ data, select: { id: true } });
