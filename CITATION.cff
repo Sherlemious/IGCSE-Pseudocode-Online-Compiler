@@ -3,6 +3,7 @@ message: "If you use this compiler in your research or teaching materials, pleas
 title: "Cambridge IGCSE & A Level Pseudocode Compiler: a browser-based interpreter, practice and exam platform for Cambridge pseudocode"
 type: software
 version: 0.1.0
+doi: 10.5281/zenodo.24288539
 date-released: 2026-11-16
 abstract: >-
   A browser-based interpreter for the pseudocode of Cambridge IGCSE Computer
