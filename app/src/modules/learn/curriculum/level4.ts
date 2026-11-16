@@ -1,6 +1,6 @@
 import type { LearnLevel } from '../types';
 
-/** Free drill. Last 90 days: wrong output is the main Check failure, and a missing OUTPUT comma is a top playground hint. */
+/** Paid drill. Last 90 days: wrong output is the main Check failure, and a missing OUTPUT comma is a top playground hint. */
 export const level4: LearnLevel = {
   number: 4,
   slug: '4',
@@ -8,7 +8,7 @@ export const level4: LearnLevel = {
   hours: '1',
   leaveWith: 'The space lives in the string, and the line has nothing extra',
   syllabus: '8.1.3',
-  free: true,
+  free: false,
   playable: true,
   drill: true,
   lessons: [

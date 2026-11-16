@@ -1,6 +1,6 @@
 import type { LearnLevel } from '../types';
 
-/** Free drill. Playground runs hit "index 0" and off-by-one often; almost nobody reaches the Arrays level. */
+/** Paid drill. Playground runs hit "index 0" and off-by-one often; almost nobody reaches the Arrays level. */
 export const level6: LearnLevel = {
   number: 6,
   slug: '6',
@@ -8,7 +8,7 @@ export const level6: LearnLevel = {
   hours: '1.5',
   leaveWith: 'The first slot is [1], and a counter starts at 0',
   syllabus: '8.2',
-  free: true,
+  free: false,
   playable: true,
   drill: true,
   lessons: [

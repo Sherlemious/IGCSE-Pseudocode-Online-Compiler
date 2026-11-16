@@ -25,7 +25,7 @@ export const IGCSE_PAPER_2: LearnCourse = {
   kicker: 'IGCSE 0478 / 0984 / 2210 · Paper 2',
   title: 'IGCSE & O Level Paper 2 Path',
   subtitle:
-    'Ten syllabus levels, then three free drills on the mistakes students make right now: exact lines, formulas, and arrays that start at 1. No videos — you write, run, and check in the compiler.',
+    'Ten syllabus levels, then three drills on the mistakes students make right now: exact lines, formulas, and arrays that start at 1. No videos — you write, run, and check in the compiler.',
   completeNote:
     'All thirteen levels done. Rewrite a Paper 2 algorithm on paper next — the hall will not show a syntax error.',
   otherPath: {

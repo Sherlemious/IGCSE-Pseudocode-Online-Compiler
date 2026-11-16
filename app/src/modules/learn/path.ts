@@ -35,7 +35,7 @@ export function findLesson(
 }
 
 /**
- * Level slugs before the Nov 2026 renumbering, when the free drills were 11-13
+ * Level slugs before the Nov 2026 renumbering, when the drills were 11-13
  * but sat after level 3 on the path. Old slug -> current slug, for the IGCSE
  * Paper 2 course only. Lesson ids (progress keys) did not change.
  */

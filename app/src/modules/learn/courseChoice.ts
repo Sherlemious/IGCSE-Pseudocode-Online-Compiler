@@ -16,7 +16,7 @@ export type CourseChoice = {
   covers: string;
   levels: number;
   freeLevels: number;
-  /** Extra free levels that drill the mistakes students currently make. */
+  /** Extra levels that drill the mistakes students currently make. */
   drills: number;
 };
 

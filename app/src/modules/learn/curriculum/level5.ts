@@ -1,6 +1,6 @@
 import type { LearnLevel } from '../types';
 
-/** Free drill. The Celsius boss is the hardest Check on the path (17% pass), almost all of it wrong output. */
+/** Paid drill. The Celsius boss is the hardest Check on the path (17% pass), almost all of it wrong output. */
 export const level5: LearnLevel = {
   number: 5,
   slug: '5',
@@ -8,7 +8,7 @@ export const level5: LearnLevel = {
   hours: '1',
   leaveWith: 'DIV and MOD, then output the number and nothing else',
   syllabus: '8.1.4',
-  free: true,
+  free: false,
   playable: true,
   drill: true,
   lessons: [

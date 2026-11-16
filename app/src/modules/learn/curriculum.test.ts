@@ -40,10 +40,10 @@ describe('IGCSE Paper 2 curriculum', () => {
     expect(new Set(slugs).size).toBe(slugs.length);
   });
 
-  it('makes levels 1–3 and the drills free, and every level playable', () => {
+  it('makes only levels 1–3 free, and every level playable', () => {
     for (const level of IGCSE_PAPER_2.levels) {
       expect(level.playable).toBe(true);
-      expect(level.free).toBe(level.number <= 3 || level.drill === true);
+      expect(level.free).toBe(level.number <= 3);
       expect(level.lessons.every((lesson) => lesson.playable === true)).toBe(true);
     }
   });
