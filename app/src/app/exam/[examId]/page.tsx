@@ -5,6 +5,8 @@ import { prisma } from '@/shared/db';
 import { getPublicQuestion } from '@/shared/lib/catalogCache';
 import { findAttemptQuestionViews } from '@/modules/questions/repo';
 import ExamWorkspace from '@/modules/exams/ExamWorkspace';
+import { submitExamAttempt } from '@/modules/exams/attempts';
+import { attemptDeadline, isPastDeadline } from '@/modules/exams/deadline';
 
 export const metadata: Metadata = {
   title: 'Exam in Progress',
@@ -27,6 +29,7 @@ export default async function ExamActivePage({ params }: Props) {
   const exam = await prisma.examAttempt.findFirst({
     where: { id: examId, userId: session.user.id },
     include: {
+      assignment: { select: { dueDate: true } },
       answers: {
         orderBy: { sortOrder: 'asc' },
         select: {
@@ -47,6 +50,15 @@ export default async function ExamActivePage({ params }: Props) {
   if (exam.status !== 'IN_PROGRESS') {
     redirect(`/exam/${examId}/results`);
   }
+
+  // Nothing closes an attempt in the background: one reopened after its time
+  // limit or due date is submitted now with the work saved before the cut-off.
+  const dueDate = exam.assignment?.dueDate ?? null;
+  if (isPastDeadline(exam, dueDate, new Date())) {
+    await submitExamAttempt(exam.id, session.user.id);
+    redirect(`/exam/${examId}/results`);
+  }
+  const deadline = attemptDeadline(exam, dueDate);
 
   const catalogQuestions = await Promise.all(exam.answers.map((a) => getPublicQuestion(a.questionId)));
   const missingIds = exam.answers.filter((_, index) => !catalogQuestions[index]).map((a) => a.questionId);
@@ -89,6 +101,7 @@ export default async function ExamActivePage({ params }: Props) {
       questions={questions}
       timeLimitMin={exam.timeLimitMin}
       startedAt={exam.startedAt.toISOString()}
+      dueAt={exam.timeLimitMin == null && deadline !== null ? new Date(deadline).toISOString() : null}
     />
   );
 }

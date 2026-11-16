@@ -92,7 +92,7 @@ export default async function ManageExamPage({ params, searchParams }: Props) {
 
         {/* Assign to a class */}
         <div className="mb-6">
-          <AssignExamToClass examId={exam.id} highlight={!!created} />
+          <AssignExamToClass examId={exam.id} timeLimitMin={exam.timeLimitMin} highlight={!!created} />
         </div>
 
         {/* Share */}

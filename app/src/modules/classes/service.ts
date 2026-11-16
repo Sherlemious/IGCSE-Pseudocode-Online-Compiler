@@ -130,12 +130,21 @@ export async function removeStudent(classId: string, ownerId: string, studentId:
 
 // ── Teacher: assignments ───────────────────────────────────────────────────
 
-/** Assign one of the teacher's own exams to a class they own. */
-export async function assignExam(classId: string, userId: string, examId: string, dueDate: Date | null) {
+/**
+ * Assign one of the teacher's own exams to a class they own. An exam keeps its
+ * timer unless the teacher picks "no time limit" (`timed: false`).
+ */
+export async function assignExam(
+  classId: string,
+  userId: string,
+  examId: string,
+  dueDate: Date | null,
+  timed = true,
+) {
   await requireOwnedClass(classId, userId);
   if (!(await findOwnedExam(examId, userId))) throw notFound('That exam could not be found.');
   try {
-    return await repo.createAssignment({ classId, examId, dueDate });
+    return await repo.createAssignment({ classId, examId, dueDate, timed });
   } catch (err) {
     if (isUniqueViolation(err)) throw conflict('That exam is already assigned to this class.', 'ALREADY_ASSIGNED');
     throw err;
@@ -144,7 +153,9 @@ export async function assignExam(classId: string, userId: string, examId: string
 
 /**
  * Assign practice questions by creating a small published exam and handing it
- * to the class. Exams are the only thing an assignment can point at.
+ * to the class. Exams are the only thing an assignment can point at. Homework
+ * is untimed unless the teacher asks for the timer (`timed: true`); the exam
+ * still carries the suggested limit so the teacher can switch it on later.
  */
 export async function assignQuestions(
   classId: string,
@@ -152,6 +163,7 @@ export async function assignQuestions(
   questionIds: string[],
   dueDate: Date | null,
   title?: string | null,
+  timed = false,
 ) {
   const cls = await requireOwnedClass(classId, userId);
   const requested = [...new Set(questionIds.filter((id) => id.trim()))];
@@ -189,7 +201,7 @@ export async function assignQuestions(
           questionIds: validIds,
           isPublished: true,
         }, tx);
-        const assignment = await repo.createAssignment({ classId, examId: exam.id, dueDate }, tx);
+        const assignment = await repo.createAssignment({ classId, examId: exam.id, dueDate, timed }, tx);
         return {
           assignmentId: assignment.id,
           examId: exam.id,
@@ -197,6 +209,8 @@ export async function assignQuestions(
           joinCode: cls.joinCode,
           title: examTitle,
           questionCount: validIds.length,
+          timed,
+          timeLimitMin,
         };
       });
     } catch (err) {
@@ -208,14 +222,19 @@ export async function assignQuestions(
   throw new HttpError(500, 'Could not generate a unique share code. Please try again.');
 }
 
-/** Rename the work students see, and set or clear its due date. Owner-only. */
+/**
+ * Rename the work students see, set or clear its due date, or switch its timer
+ * on or off. Owner-only. Timing applies to attempts started after the change.
+ */
 export async function updateAssignment(
   classId: string,
   userId: string,
   assignmentId: string,
-  data: { title?: string; dueDate?: Date | null },
+  data: { title?: string; dueDate?: Date | null; timed?: boolean },
 ) {
-  if (data.title === undefined && data.dueDate === undefined) throw badRequest('Nothing to update.');
+  if (data.title === undefined && data.dueDate === undefined && data.timed === undefined) {
+    throw badRequest('Nothing to update.');
+  }
   if (data.title !== undefined && !data.title.trim()) throw badRequest('Give the assignment a name.');
   const assignment = await repo.findAssignmentOwnership(assignmentId);
   if (!assignment || assignment.classId !== classId || assignment.class.ownerId !== userId) throw notFound();
@@ -340,15 +359,15 @@ export function startAssignment(userId: string, assignmentId: string) {
     }
     // Completed assignments lead to their results; sharing never creates a retake.
     const existing = await repo.findLatestAssignmentAttempt(userId, assignmentId, tx);
-    if (existing) return { attemptId: existing.id, resumed: true };
+    if (existing) return { attemptId: existing.id, resumed: true, timed: existing.timeLimitMin != null };
     const attempt = await repo.createAssignmentAttempt({
       userId,
       assignmentId,
       examId: exam.id,
-      timeLimitMin: exam.timeLimitMin,
+      timeLimitMin: assignment.timed ? exam.timeLimitMin : null,
       questionIds: exam.questions.map((q) => q.questionId),
     }, tx);
-    return { attemptId: attempt.id, resumed: false };
+    return { attemptId: attempt.id, resumed: false, timed: assignment.timed };
   }, { isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted });
 }
 

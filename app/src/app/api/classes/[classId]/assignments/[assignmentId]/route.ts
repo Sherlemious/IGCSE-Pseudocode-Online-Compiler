@@ -7,12 +7,12 @@ import { unassignExam, updateAssignment } from '@/modules/classes/service';
 
 type Ctx = RouteContext<'/api/classes/[classId]/assignments/[assignmentId]'>;
 
-/** Rename an assignment and set or clear its due date. Owner-only. */
+/** Rename an assignment, set or clear its due date, or switch its timer. Owner-only. */
 export const PATCH = route(async (req, { params }: Ctx) => {
   const user = await requireUser();
   const { classId, assignmentId } = await params;
   const body = await readJsonOrEmpty(req);
-  const data: { title?: string; dueDate?: Date | null } = {};
+  const data: { title?: string; dueDate?: Date | null; timed?: boolean } = {};
   if ('title' in body) {
     const title = optionalText(body.title, ASSIGNMENT_TITLE_MAX);
     if (!title) throw badRequest('Give the assignment a name.');
@@ -26,6 +26,10 @@ export const PATCH = route(async (req, { params }: Ctx) => {
       if (!due) throw badRequest('That due date is not valid.');
       data.dueDate = due;
     }
+  }
+  if ('timed' in body) {
+    if (typeof body.timed !== 'boolean') throw badRequest('Choose timed or no time limit.');
+    data.timed = body.timed;
   }
   await updateAssignment(classId, user.id, assignmentId, data);
   return { ok: true };

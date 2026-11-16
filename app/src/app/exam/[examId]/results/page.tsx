@@ -66,8 +66,10 @@ export default async function ExamResultsPage({ params }: Props) {
 
   const durationMs = exam.completedAt
     ? new Date(exam.completedAt).getTime() - new Date(exam.startedAt).getTime()
-    : exam.timeLimitMin * 60 * 1000;
+    : (exam.timeLimitMin ?? 0) * 60 * 1000;
   const durationMin = Math.ceil(durationMs / 60000);
+  // An untimed assignment can span days; elapsed time is not a sitting length.
+  const showDuration = exam.timeLimitMin != null;
 
   // SVG ring parameters
   const ringSize = 140;
@@ -140,7 +142,7 @@ export default async function ExamResultsPage({ params }: Props) {
           </div>
 
           <h1 className="display-serif text-2xl font-semibold text-light-text mb-1.5">
-            {exam.status === 'TIMED_OUT' ? 'Time\u2019s Up!' : 'Exam Complete'}
+            {exam.status === 'TIMED_OUT' ? (showDuration ? 'Time\u2019s Up!' : 'Due date reached') : 'Exam Complete'}
           </h1>
 
           <div className="inline-flex items-center gap-2">
@@ -153,10 +155,12 @@ export default async function ExamResultsPage({ params }: Props) {
               <CheckCircle size={13} className="text-success" />
               {passedQuestions}/{totalQuestions} correct
             </span>
-            <span className="flex items-center gap-1.5 font-mono">
-              <Clock size={13} />
-              {durationMin}min
-            </span>
+            {showDuration && (
+              <span className="flex items-center gap-1.5 font-mono">
+                <Clock size={13} />
+                {durationMin}min
+              </span>
+            )}
           </div>
 
           {exam.topic && (

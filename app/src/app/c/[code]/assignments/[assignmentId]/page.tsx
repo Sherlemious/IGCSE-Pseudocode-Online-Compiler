@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { ClipboardList, Clock, ListChecks } from 'lucide-react';
+import { CalendarClock, ClipboardList, Clock, ListChecks } from 'lucide-react';
 import { auth } from '@/modules/auth/auth';
 import { authHref } from '@/modules/auth/callback';
 import { isAtStudentCap, limitsForUser } from '@/modules/billing/entitlements';
@@ -50,7 +50,7 @@ export default async function AssignmentLandingPage({ params, searchParams }: {
     return <Shell>
       <AssignmentLinkTracker assignmentId={assignmentId} source={source} signedIn={false} />
       <h1 className="display-serif text-2xl font-semibold text-light-text">Open your assignment</h1>
-      <p className="text-sm text-dark-text">Sign in to see the assignment and join your teacher&apos;s class. The timer only starts when you choose Start.</p>
+      <p className="text-sm text-dark-text">Sign in to see the assignment and join your teacher&apos;s class. Nothing starts until you choose Start.</p>
       <div className="flex flex-wrap gap-3">
         <Link href={authHref('signin', returnTo)} className="rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-on-primary">Sign in</Link>
         <Link href={authHref('signup', returnTo)} className="rounded-lg border border-border px-4 py-2.5 text-sm text-light-text">Create an account</Link>
@@ -77,6 +77,7 @@ export default async function AssignmentLandingPage({ params, searchParams }: {
     studentsAcrossClasses,
   });
   const latest = assignment.attempts[0];
+  const dueLabel = assignment.dueDate?.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
   const context = { assignmentId, classId: assignment.classId };
   return <Shell>
     {!isOwner && <AssignmentLinkTracker {...context} source={source} signedIn />}
@@ -86,15 +87,27 @@ export default async function AssignmentLandingPage({ params, searchParams }: {
     </div>
     <div className="flex flex-wrap gap-4 text-xs font-mono text-dark-text">
       <span className="inline-flex items-center gap-1.5"><ListChecks size={14} />{assignment.exam._count.questions} questions</span>
-      <span className="inline-flex items-center gap-1.5"><Clock size={14} />{assignment.exam.timeLimitMin} min</span>
-      {assignment.dueDate && <span>Due {assignment.dueDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })}</span>}
+      {assignment.timed ? (
+        <>
+          <span className="inline-flex items-center gap-1.5"><Clock size={14} />{assignment.exam.timeLimitMin} min</span>
+          {dueLabel && <span>Due {dueLabel}</span>}
+        </>
+      ) : (
+        <span className="inline-flex items-center gap-1.5"><CalendarClock size={14} />{dueLabel ? `Due ${dueLabel}` : 'No time limit'}</span>
+      )}
     </div>
     {isOwner ? (
       <Link href={`/classes/${assignment.classId}/assignments/${assignmentId}`} className="inline-block text-sm text-primary hover:underline">View assignment results</Link>
     ) : isMember ? (
       <>
         <StartAssignmentButton {...context} attemptId={latest?.id} status={!latest ? 'none' : latest.status === 'IN_PROGRESS' ? 'in_progress' : 'completed'} />
-        {!latest && <p className="text-xs text-dark-text">The timer starts when you choose Start. Make sure you&apos;re ready.</p>}
+        {!latest && (assignment.timed ? (
+          <p className="text-xs text-dark-text">The timer starts when you choose Start. Make sure you&apos;re ready.</p>
+        ) : (
+          <p className="text-xs text-dark-text">
+            No timer. Your work saves as you go, so you can leave and come back{dueLabel ? ` until the end of ${dueLabel}` : ''}. Submit when you&apos;re done.
+          </p>
+        ))}
       </>
     ) : full ? (
       <p role="status" className="rounded-lg border border-warning/20 bg-warning/8 p-3 text-sm text-warning">This class is full. Ask your teacher to make room.</p>

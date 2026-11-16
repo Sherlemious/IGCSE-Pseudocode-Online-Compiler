@@ -174,15 +174,21 @@ export function findAssignmentOwnership(assignmentId: string) {
   });
 }
 
-/** Due date and the exam title students see. Both are optional; an omitted field is left alone. */
+/** Due date, timing and the exam title students see. Each is optional; an omitted field is left alone. */
 export function saveAssignmentEdits(
   assignmentId: string,
   examId: string,
-  data: { title?: string; dueDate?: Date | null },
+  data: { title?: string; dueDate?: Date | null; timed?: boolean },
 ) {
   return prisma.$transaction(async (tx) => {
-    if (data.dueDate !== undefined) {
-      await tx.assignment.update({ where: { id: assignmentId }, data: { dueDate: data.dueDate } });
+    if (data.dueDate !== undefined || data.timed !== undefined) {
+      await tx.assignment.update({
+        where: { id: assignmentId },
+        data: {
+          ...(data.dueDate !== undefined ? { dueDate: data.dueDate } : {}),
+          ...(data.timed !== undefined ? { timed: data.timed } : {}),
+        },
+      });
     }
     if (data.title !== undefined) {
       await tx.exam.update({ where: { id: examId }, data: { title: data.title } });
@@ -190,7 +196,10 @@ export function saveAssignmentEdits(
   });
 }
 
-export function createAssignment(data: { classId: string; examId: string; dueDate: Date | null }, db: Db = prisma) {
+export function createAssignment(
+  data: { classId: string; examId: string; dueDate: Date | null; timed: boolean },
+  db: Db = prisma,
+) {
   return db.assignment.create({ data, select: { id: true } });
 }
 
@@ -219,6 +228,7 @@ export function findAssignmentForStart(assignmentId: string, db: Db) {
     where: { id: assignmentId },
     select: {
       classId: true,
+      timed: true,
       class: { select: { archived: true } },
       exam: {
         select: {
@@ -239,12 +249,13 @@ export function findLatestAssignmentAttempt(userId: string, assignmentId: string
   return db.examAttempt.findFirst({
     where: { userId, assignmentId },
     orderBy: { createdAt: 'desc' },
-    select: { id: true },
+    select: { id: true, timeLimitMin: true },
   });
 }
 
 export function createAssignmentAttempt(
-  data: { userId: string; assignmentId: string; examId: string; timeLimitMin: number; questionIds: string[] },
+  /** `timeLimitMin: null` makes the attempt untimed. */
+  data: { userId: string; assignmentId: string; examId: string; timeLimitMin: number | null; questionIds: string[] },
   db: Db,
 ) {
   return db.examAttempt.create({
@@ -269,7 +280,7 @@ export function findAssignmentInvitation(userId: string, joinCode: string, assig
       exam: { isPublished: true, questions: { some: {} } },
     },
     select: {
-      id: true, classId: true, dueDate: true,
+      id: true, classId: true, dueDate: true, timed: true,
       class: { select: {
         name: true, ownerId: true,
         owner: { select: OWNER_PLAN_SELECT },

@@ -7,7 +7,7 @@ interface ExamItem {
   topic: string | null;
   difficulty: string | null;
   questionCount: number;
-  timeLimitMin: number;
+  timeLimitMin: number | null;
   status: string;
   score: number | null;
   totalTests: number | null;
@@ -44,7 +44,7 @@ function ExamRowBody({ exam }: { exam: ExamItem }) {
       </div>
       <div className="flex-1 min-w-0">
         <div className="text-xs text-light-text">
-          {exam.questionCount}Q &middot; {exam.timeLimitMin}min
+          {exam.questionCount}Q &middot; {exam.timeLimitMin == null ? 'untimed' : `${exam.timeLimitMin}min`}
           {exam.topic && <span className="text-dark-text"> &middot; {exam.topic}</span>}
         </div>
         <div className="flex items-center gap-1.5 mt-0.5">

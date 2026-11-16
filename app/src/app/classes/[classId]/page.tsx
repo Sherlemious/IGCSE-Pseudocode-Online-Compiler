@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import type { Metadata } from 'next';
 import { redirect, notFound } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, School, ClipboardList, ListChecks, CalendarClock } from 'lucide-react';
+import { ArrowLeft, School, ClipboardList, ListChecks, CalendarClock, Timer } from 'lucide-react';
 import { auth } from '@/modules/auth/auth';
 import { prisma } from '@/shared/db';
 import { SITE_URL } from '@/shared/lib/seo';
@@ -82,7 +82,8 @@ export default async function ClassDetailPage({ params }: Props) {
         select: {
           id: true,
           dueDate: true,
-          exam: { select: { id: true, title: true, isPublished: true, _count: { select: { questions: true } } } },
+          timed: true,
+          exam: { select: { id: true, title: true, isPublished: true, timeLimitMin: true, _count: { select: { questions: true } } } },
         },
       },
     },
@@ -120,7 +121,7 @@ export default async function ClassDetailPage({ params }: Props) {
       prisma.exam.findMany({
         where: { ownerId: userId, isPublished: true, id: { notIn: assignedExamIds } },
         orderBy: { updatedAt: 'desc' },
-        select: { id: true, title: true },
+        select: { id: true, title: true, timeLimitMin: true },
       }),
       loadRosterStats(memberIds, assignmentIds),
     ]);
@@ -134,6 +135,8 @@ export default async function ClassDetailPage({ params }: Props) {
       submittedCount: submittedByAssignment.get(a.id) ?? 0,
       rosterSize,
       isPublished: a.exam.isPublished,
+      timed: a.timed,
+      timeLimitMin: a.exam.timeLimitMin,
     }));
 
     const starters = assignmentRows.length === 0 ? await starterQuestions() : [];
@@ -226,6 +229,7 @@ export default async function ClassDetailPage({ params }: Props) {
                   <div className="flex items-center gap-3 mt-1 text-[10px] text-dark-text font-mono">
                     <span className="flex items-center gap-1"><ListChecks size={11} />{a.exam._count.questions} q</span>
                     {dueLabel && <span className="flex items-center gap-1"><CalendarClock size={11} />due {dueLabel}</span>}
+                    <span className="flex items-center gap-1"><Timer size={11} />{a.timed ? `${a.exam.timeLimitMin} min` : 'no time limit'}</span>
                   </div>
                 </div>
                 <StartAssignmentButton classId={classId} assignmentId={a.id} attemptId={at?.id} status={status} score={at?.score} totalTests={at?.totalTests} />

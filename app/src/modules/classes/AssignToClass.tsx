@@ -9,6 +9,8 @@ import Combobox from '@/shared/ui/Combobox';
 import DatePicker from '@/shared/ui/DatePicker';
 import Modal from '@/shared/ui/Modal';
 import AssignmentShareActions from './AssignmentShareActions';
+import AssignmentTimingPicker, { timingHint } from './AssignmentTimingPicker';
+import { assignmentTimeLimitMin } from './assignPlan';
 import { useOwnedClasses, type OwnedClassOption } from './useOwnedClasses';
 
 export type AssignSurface = 'practice_question' | 'practice_list' | 'class_quick_start';
@@ -20,6 +22,8 @@ export interface AssignResult {
   joinCode: string;
   title: string;
   questionCount: number;
+  timed: boolean;
+  timeLimitMin: number;
 }
 
 function todayISO(): string {
@@ -61,6 +65,8 @@ export default function AssignToClassButton({
   const [classId, setClassId] = useState(fixedClass?.id ?? '');
   const [title, setTitle] = useState('');
   const [due, setDue] = useState('');
+  // Homework defaults to no time limit; the teacher can opt into the timer.
+  const [timed, setTimed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [result, setResult] = useState<AssignResult | null>(null);
@@ -91,6 +97,7 @@ export default function AssignToClassButton({
     setResult(null);
     setDue('');
     setTitle('');
+    setTimed(false);
   }
 
   function openPicker() {
@@ -104,7 +111,7 @@ export default function AssignToClassButton({
     const res = await fetch(`/api/classes/${classId}/assign-questions`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ questionIds, dueDate: due || undefined, title: title.trim() || undefined }),
+      body: JSON.stringify({ questionIds, dueDate: due || undefined, title: title.trim() || undefined, timed }),
     });
     const data = await res.json().catch(() => ({}));
     setBusy(false);
@@ -117,6 +124,7 @@ export default function AssignToClassButton({
       class_id: classId,
       question_count: assigned.questionCount,
       surface,
+      timed: assigned.timed,
     });
     onAssigned?.(assigned, due);
     setResult(assigned);
@@ -183,7 +191,21 @@ export default function AssignToClassButton({
               aria-label="Assignment name"
               className="w-full rounded-lg border border-border bg-background px-3.5 py-2.5 text-sm text-light-text placeholder:text-dark-text/50 focus:outline-none focus:border-primary/50"
             />
-            <DatePicker value={due || null} onChange={(value) => setDue(value ?? '')} min={todayISO()} ariaLabel="Optional due date" />
+            <AssignmentTimingPicker
+              timed={timed}
+              onChange={setTimed}
+              timeLimitMin={assignmentTimeLimitMin(questionIds.length)}
+            />
+            <DatePicker
+              value={due || null}
+              onChange={(value) => setDue(value ?? '')}
+              min={todayISO()}
+              ariaLabel={timed ? 'Optional due date' : 'Due date'}
+            />
+            <p className="text-[11px] text-dark-text">
+              {timingHint(timed)}
+              {!timed && !due && ' With no due date it stays open until they submit.'}
+            </p>
             <button
               type="button"
               onClick={() => void assign()}

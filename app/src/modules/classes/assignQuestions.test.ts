@@ -111,7 +111,7 @@ describe('assignQuestions', () => {
       expect.anything(),
     );
     expect(repo.createAssignment).toHaveBeenCalledWith(
-      { classId: 'class-1', examId: 'exam-1', dueDate: due },
+      { classId: 'class-1', examId: 'exam-1', dueDate: due, timed: false },
       expect.anything(),
     );
     expect(result).toMatchObject({
@@ -121,7 +121,19 @@ describe('assignQuestions', () => {
       joinCode: 'ABC234',
       title: 'Week 1',
       questionCount: 1,
+      timed: false,
+      timeLimitMin: 30,
     });
+  });
+
+  it('keeps the suggested limit on the exam and stores the timer choice on the assignment', async () => {
+    const result = await assignQuestions('class-1', 'teacher', ['q1', 'q2'], null, null, true);
+    expect(exams.createExam).toHaveBeenCalledWith(expect.objectContaining({ timeLimitMin: 60 }), expect.anything());
+    expect(repo.createAssignment).toHaveBeenCalledWith(
+      { classId: 'class-1', examId: 'exam-1', dueDate: null, timed: true },
+      expect.anything(),
+    );
+    expect(result).toMatchObject({ timed: true, timeLimitMin: 60 });
   });
 
   it('titles a single question from the bank and a set by its size', async () => {
@@ -188,6 +200,11 @@ describe('updateAssignment', () => {
   it('renames the exam students see and can clear the due date', async () => {
     await updateAssignment('class-1', 'teacher', 'asg-1', { title: 'Week 2', dueDate: null });
     expect(repo.saveAssignmentEdits).toHaveBeenCalledWith('asg-1', 'exam-1', { title: 'Week 2', dueDate: null });
+  });
+
+  it('switches the timer on its own', async () => {
+    await updateAssignment('class-1', 'teacher', 'asg-1', { timed: false });
+    expect(repo.saveAssignmentEdits).toHaveBeenCalledWith('asg-1', 'exam-1', { timed: false });
   });
 
   it('refuses a blank name', async () => {

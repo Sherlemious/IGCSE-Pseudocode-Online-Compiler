@@ -196,7 +196,8 @@ The autograder returns `error.hint` (same text as the Run button) and `error.cat
 - `Question` / `TestCase` — practice questions with test cases
 - `Question.ownerId` — nullable owner (`User`, `onDelete: Cascade`, indexed). **Null is the public catalog.** A set owner is a teacher-authored question: those rows are excluded from `catalogCache` (and therefore `/practice`, `/api/questions`, the random exam pool, the sitemap, SEO and Learn). Creating or editing one requires `tierForUser !== 'free'` (`403 PLAN_REQUIRED`); a lapsed plan cannot create or edit, but questions already saved still run on exams that include them. Students receive no solution and no hidden tests. Deleting the teacher cascades to their questions (and their `ExamQuestion` rows), but `ExamAnswer` restricts, so a teacher whose question has been answered cannot be deleted until those answers are. **Additive column — `npx prisma db push` is required before deploy.** Do not ship this code until that push has run; `prisma migrate` is not used here (shadow-DB replay is broken).
 - `Progress` — per-user question completion state
-- `ExamAttempt` / `ExamAnswer` — a student's run of an exam (timed session). `examId` is null for the self-service random simulator; set when the attempt is a run of a shared `Exam`.
+- `ExamAttempt` / `ExamAnswer` — a student's run of an exam. `examId` is null for the self-service random simulator; set when the attempt is a run of a shared `Exam`. `timeLimitMin` null = untimed (a class assignment set to no time limit).
+- `Assignment.timed` (default true) — false = no time limit: the attempt has no countdown, can be left and resumed, and closes at the end of `dueDate` (UTC day, same cut-off as the mark book) or on submit (`exams/deadline.ts`). Quick-assigned practice questions default to untimed; an assigned exam keeps its timer unless switched off. A change applies to attempts started afterwards. Nothing closes an expired attempt in the background: reopening it submits it. **Additive (`timed` column; `ExamAttempt.timeLimitMin` made nullable) — `npx prisma db push` before deploy.**
 - `Exam` / `ExamQuestion` — instructor-authored, reusable, shareable exam **definitions** (fixed ordered question set, `shareCode`, `isPublished`). Any signed-in user can create one and share it via `/e/[code]`; taking it materializes an `ExamAttempt` (`api/exams/[examId]/start`) so the existing take→grade→results pipeline is reused unchanged.
 - `Example` — built-in code examples (also seeded in `data/examples.ts`)
 - `Question.answerFormat` / `Question.flowchart` / `Progress.lastFlowchart` — flowchart questions (see Flowcharts). `lastCode` keeps the pseudocode a flowchart answer became
@@ -296,8 +297,8 @@ Page-side events fire via `captureEvent` (same path as `class_joined` / `assignm
 | `class_joined` | `class_id`, optional assignment context |
 | `assignment_link_opened` | `assignment_id`, `class_id`, `source` (`google_classroom`\|`direct`), `signed_in` |
 | `assignment_link_copied` | `assignment_id`, `class_id` |
-| `assignment_started` | `assignment_id`, `class_id`, `source`, `exam_id` (attempt id) |
-| `assignment_quick_created` | `class_id`, `question_count`, `surface` (`practice_question`\|`practice_list`\|`class_quick_start`) — one-click assign of practice questions. No student names, emails, or `lastCode` |
+| `assignment_started` | `assignment_id`, `class_id`, `source`, `exam_id` (attempt id), `timed` |
+| `assignment_quick_created` | `class_id`, `question_count`, `surface` (`practice_question`\|`practice_list`\|`class_quick_start`), `timed` — one-click assign of practice questions. No student names, emails, or `lastCode` |
 | `class_auto_created` | `class_id`: server-side. A teacher who has never made a class gets "My class" on their first /classes visit and lands on its join link (`ensureFirstClass`); never recreated after an archive |
 | `class_join_slip_printed` | `class_id` — teacher printed the join slip (class name, join URL, join code, QR) |
 | `class_progress_viewed` | `class_id`, `roster_size`, `assignment_count`, `students_with_practice`, `students_active_7d` |

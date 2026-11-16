@@ -126,8 +126,12 @@ export async function lockOwnedAttempt(examId: string, userId: string, db: Db): 
   return rows.length > 0;
 }
 
+/** The attempt plus its assignment's due date, which closes an untimed attempt. */
 export function getAttempt(examId: string, db: Db) {
-  return db.examAttempt.findUniqueOrThrow({ where: { id: examId } });
+  return db.examAttempt.findUniqueOrThrow({
+    where: { id: examId },
+    include: { assignment: { select: { dueDate: true } } },
+  });
 }
 
 export function findAnswer(examId: string, questionId: string, db: Db) {
