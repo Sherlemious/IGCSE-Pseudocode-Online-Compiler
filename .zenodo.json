@@ -1,0 +1,33 @@
+{
+  "upload_type": "software",
+  "title": "Cambridge IGCSE & A Level Pseudocode Compiler: a browser-based interpreter, practice and exam platform for Cambridge pseudocode",
+  "description": "<p>A browser-based interpreter for the pseudocode of Cambridge IGCSE Computer Science (0478/0984/2210) and Cambridge International AS &amp; A Level Computer Science (9618). One superset ANTLR4 grammar covers both syllabuses, and an async tree-walking interpreter runs entirely client-side with student-friendly parse and runtime error messages. Around it sit autograded practice questions, timed exam simulation, a flowchart builder that converts drawings to runnable pseudocode, a sequenced Paper 2 course, and teacher classes with assignments and progress tracking.</p><p>Live at <a href=\"https://pseudocode-compiler.sherlemious.com\">pseudocode-compiler.sherlemious.com</a>. Source: <a href=\"https://github.com/Sherlemious/IGCSE-Pseudocode-Online-Compiler\">github.com/Sherlemious/IGCSE-Pseudocode-Online-Compiler</a>. Copyright (c) 2026 Abdelrahman Mohammed, all rights reserved; files are not distributed through this record.</p>",
+  "creators": [
+    {
+      "name": "Mohammed, Abdelrahman MM",
+      "orcid": "0009-0008-6848-0254"
+    }
+  ],
+  "access_right": "closed",
+  "keywords": [
+    "pseudocode",
+    "interpreter",
+    "computer science education",
+    "Cambridge IGCSE",
+    "Cambridge International AS & A Level",
+    "autograder",
+    "flowcharts",
+    "error messages"
+  ],
+  "related_identifiers": [
+    {
+      "identifier": "https://github.com/Sherlemious/IGCSE-Pseudocode-Online-Compiler",
+      "relation": "isSupplementTo",
+      "resource_type": "software"
+    },
+    {
+      "identifier": "https://pseudocode-compiler.sherlemious.com",
+      "relation": "isDocumentedBy"
+    }
+  ]
+}

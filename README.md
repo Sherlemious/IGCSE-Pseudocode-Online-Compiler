@@ -195,6 +195,10 @@ Pull requests back to this repository are welcome.
 
 **A fork is for proposing changes to this repository. It is not permission to publish or host a separate copy.** See [License](#license).
 
+## Cite
+
+GitHub's "Cite this repository" button reads [CITATION.cff](CITATION.cff). If you use the compiler in research (for example, a study of its use in a class), cite the version you used and the date you accessed [pseudocode-compiler.sherlemious.com](https://pseudocode-compiler.sherlemious.com), since the live site changes between releases.
+
 ## License
 
 Copyright (c) 2026 Abdelrahman Mohammed. All rights reserved.
