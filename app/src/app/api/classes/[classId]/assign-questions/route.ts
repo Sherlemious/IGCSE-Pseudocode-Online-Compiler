@@ -17,5 +17,6 @@ export const POST = route(async (req, { params }: RouteContext<'/api/classes/[cl
     stringList(body.questionIds),
     optionalDate(body.dueDate),
     optionalText(body.title, ASSIGNMENT_TITLE_MAX),
+    body.timed === true, // untimed unless the teacher picks the timer
   );
 });

@@ -239,3 +239,34 @@ describe('exam HTTP boundary', () => {
     expect(exam.status).toBe(expired ? 'TIMED_OUT' : 'COMPLETED');
   });
 });
+
+describe('untimed assignment attempts', () => {
+  const week = 7 * 24 * 60 * 60_000;
+  const withDue = (dueDate: Date | null) => {
+    exam = { ...exam, timeLimitMin: null, assignmentId: 'asg1', assignment: { dueDate } } as ExamAttempt;
+  };
+
+  it('without a due date, accepts work long after starting and submits as completed', async () => {
+    withDue(null);
+    vi.setSystemTime(now.getTime() + week);
+    await expect(saveExamAnswer(exam.id, exam.userId, { ...submission, code: 'OUTPUT 1\n' })).resolves.toEqual({ ok: true });
+    await expect(submitExamAttempt(exam.id, exam.userId)).resolves.toMatchObject({ timedOut: false });
+    expect(exam.status).toBe('COMPLETED');
+  });
+
+  it('with a due date, stays open through the due day and closes after it', async () => {
+    withDue(new Date('2026-09-08T00:00:00Z'));
+    vi.setSystemTime(new Date('2026-09-08T23:59:00Z'));
+    await expect(saveExamAnswer(exam.id, exam.userId, submission)).resolves.toEqual({ ok: true });
+    vi.setSystemTime(new Date('2026-09-09T00:00:00Z'));
+    await expect(saveExamAnswer(exam.id, exam.userId, submission)).rejects.toMatchObject({ status: 409, code: 'EXAM_EXPIRED' });
+  });
+
+  it('closed after its due date, is stamped at the cut-off so it is not late', async () => {
+    withDue(new Date('2026-09-08T00:00:00Z'));
+    vi.setSystemTime(new Date('2026-09-12T10:00:00Z'));
+    await expect(submitExamAttempt(exam.id, exam.userId)).resolves.toMatchObject({ timedOut: true, score: 1 });
+    expect(exam.status).toBe('TIMED_OUT');
+    expect(exam.completedAt?.toISOString()).toBe('2026-09-08T23:59:59.999Z');
+  });
+});

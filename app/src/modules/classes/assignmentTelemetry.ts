@@ -26,9 +26,14 @@ export function assignmentProperties(context: AssignmentContext) {
   return { assignment_id: context.assignmentId, class_id: context.classId, source: assignmentSource(context.assignmentId) };
 }
 
-export function captureAssignmentStart(context: AssignmentContext, attemptId: string, resumed: boolean): void {
+export function captureAssignmentStart(
+  context: AssignmentContext,
+  attemptId: string,
+  resumed: boolean,
+  timed: boolean,
+): void {
   if (resumed) return;
   const properties = { ...assignmentProperties(context), exam_id: attemptId };
-  captureEvent('assignment_started', properties);
+  captureEvent('assignment_started', { ...properties, timed });
   captureEvent('exam_started', properties);
 }

@@ -11,5 +11,6 @@ export const POST = route(async (req, { params }: RouteContext<'/api/classes/[cl
   const body = await readJsonOrEmpty(req);
   const examId = typeof body.examId === 'string' ? body.examId : '';
   if (!examId) throw badRequest('Pick an exam to assign.');
-  return assignExam(classId, user.id, examId, optionalDate(body.dueDate));
+  // An exam keeps its timer unless the teacher picks "no time limit".
+  return assignExam(classId, user.id, examId, optionalDate(body.dueDate), body.timed !== false);
 });

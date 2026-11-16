@@ -1,0 +1,42 @@
+import { describe, expect, it } from 'vitest';
+import { attemptDeadline, endOfUtcDay, isPastDeadline } from './deadline';
+
+const startedAt = new Date('2026-11-16T09:00:00Z');
+const due = new Date('2026-11-20T00:00:00Z');
+const endOfDue = new Date('2026-11-20T23:59:59.999Z').getTime();
+
+describe('attemptDeadline', () => {
+  it('timed: start plus the limit, whatever the due date', () => {
+    const attempt = { startedAt, timeLimitMin: 30 };
+    expect(attemptDeadline(attempt, null)).toBe(startedAt.getTime() + 30 * 60_000);
+    expect(attemptDeadline(attempt, due)).toBe(startedAt.getTime() + 30 * 60_000);
+  });
+
+  it('untimed with a due date: the end of that UTC day', () => {
+    expect(attemptDeadline({ startedAt, timeLimitMin: null }, due)).toBe(endOfDue);
+    expect(endOfUtcDay(new Date('2026-11-20T18:30:00Z')).getTime()).toBe(endOfDue);
+  });
+
+  it('untimed without a due date: none', () => {
+    expect(attemptDeadline({ startedAt, timeLimitMin: null }, null)).toBeNull();
+    expect(attemptDeadline({ startedAt, timeLimitMin: null }, undefined)).toBeNull();
+  });
+});
+
+describe('isPastDeadline', () => {
+  it('timed: closes at the exact limit', () => {
+    const attempt = { startedAt, timeLimitMin: 30 };
+    expect(isPastDeadline(attempt, null, new Date(startedAt.getTime() + 30 * 60_000 - 1))).toBe(false);
+    expect(isPastDeadline(attempt, null, new Date(startedAt.getTime() + 30 * 60_000))).toBe(true);
+  });
+
+  it('untimed with a due date: open all of the due day, days after starting', () => {
+    const attempt = { startedAt, timeLimitMin: null };
+    expect(isPastDeadline(attempt, due, new Date('2026-11-20T23:00:00Z'))).toBe(false);
+    expect(isPastDeadline(attempt, due, new Date(endOfDue))).toBe(true);
+  });
+
+  it('untimed without a due date: never closes on its own', () => {
+    expect(isPastDeadline({ startedAt, timeLimitMin: null }, null, new Date('2030-01-01T00:00:00Z'))).toBe(false);
+  });
+});

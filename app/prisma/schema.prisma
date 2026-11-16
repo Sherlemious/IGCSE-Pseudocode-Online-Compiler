@@ -339,7 +339,9 @@ model ExamAttempt {
   topic         String?
   difficulty    Difficulty?
   questionCount Int
-  timeLimitMin  Int
+  // Null = untimed (a class assignment set as "no time limit"): open until the
+  // assignment's due date, or until the student submits.
+  timeLimitMin  Int?
 
   status     ExamStatus @default(IN_PROGRESS)
   score      Int?
@@ -438,6 +440,9 @@ model Assignment {
   examId  String
   exam    Exam      @relation(fields: [examId], references: [id], onDelete: Cascade)
   dueDate DateTime?
+  // False = no time limit: attempts stay open until dueDate (end of that UTC
+  // day) or until the student submits. True = the exam's timeLimitMin applies.
+  timed   Boolean   @default(true)
 
   attempts ExamAttempt[]
 

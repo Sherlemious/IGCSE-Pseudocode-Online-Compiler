@@ -24,6 +24,7 @@ import {
   ChevronRight,
   Bug,
   Bookmark,
+  CalendarClock,
 } from 'lucide-react';
 
 /* ── Types ──────────────────────────────────────────────── */
@@ -54,13 +55,23 @@ interface ExamQuestion {
 interface Props {
   examId: string;
   questions: ExamQuestion[];
-  timeLimitMin: number;
+  /** Null = untimed class assignment: no countdown, open until `dueAt` or submit. */
+  timeLimitMin: number | null;
   startedAt: string;
+  /** Untimed only: when the assignment closes (end of its due date), if it has one. */
+  dueAt?: string | null;
+}
+
+/** setTimeout cannot wait longer than about 24.8 days. */
+const MAX_TIMEOUT_MS = 2_147_483_647;
+
+function formatDueAt(iso: string): string {
+  return new Date(iso).toLocaleString(undefined, { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' });
 }
 
 /* ── Component ──────────────────────────────────────────── */
 
-export default function ExamWorkspace({ examId, questions, timeLimitMin, startedAt }: Props) {
+export default function ExamWorkspace({ examId, questions, timeLimitMin, startedAt, dueAt = null }: Props) {
   const router = useRouter();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [codes, setCodes] = useState<Record<string, string>>(() => {
@@ -163,7 +174,28 @@ export default function ExamWorkspace({ examId, questions, timeLimitMin, started
     await saveQueueRef.current;
   }, [saveCode]);
 
-  useEffect(() => () => { clearTimeout(saveTimerRef.current); }, []);
+  // Leaving inside the 2 s autosave window (closing the tab, navigating away)
+  // must not drop the last edit: an untimed attempt is resumed later from it.
+  useEffect(() => {
+    const sendPending = () => {
+      clearTimeout(saveTimerRef.current);
+      if (submittingRef.current) return;
+      for (const [qId, draft] of pendingSavesRef.current) {
+        void fetch(`/api/exam/${examId}/save`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ questionId: qId, code: draft }),
+          keepalive: true,
+        }).catch(() => {});
+      }
+      pendingSavesRef.current.clear();
+    };
+    window.addEventListener('pagehide', sendPending);
+    return () => {
+      window.removeEventListener('pagehide', sendPending);
+      sendPending();
+    };
+  }, [examId]);
 
   const handleCodeChange = useCallback(
     (newCode: string) => {
@@ -271,6 +303,15 @@ export default function ExamWorkspace({ examId, questions, timeLimitMin, started
     void handleSubmit(true);
   }, [handleSubmit, interpreterStop]);
 
+  // An untimed attempt closes itself if the page is still open at the due date.
+  useEffect(() => {
+    if (timeLimitMin != null || !dueAt) return;
+    const wait = new Date(dueAt).getTime() - Date.now();
+    if (wait > MAX_TIMEOUT_MS) return;
+    const timer = setTimeout(handleTimeUp, Math.max(0, wait));
+    return () => clearTimeout(timer);
+  }, [timeLimitMin, dueAt, handleTimeUp]);
+
   const goPrev = useCallback(() => {
     setCurrentIndex((prev) => Math.max(0, prev - 1));
   }, []);
@@ -315,7 +356,9 @@ export default function ExamWorkspace({ examId, questions, timeLimitMin, started
             <div className="w-14 h-14 rounded-full bg-error/15 border border-error/30 flex items-center justify-center mx-auto mb-4">
               <Loader2 size={24} className="text-error animate-spin" />
             </div>
-            <h2 className="display-serif text-2xl font-semibold text-light-text mb-2">Time&apos;s Up!</h2>
+            <h2 className="display-serif text-2xl font-semibold text-light-text mb-2">
+              {timeLimitMin == null ? 'Due date reached' : <>Time&apos;s Up!</>}
+            </h2>
             <p className="text-xs text-dark-text leading-relaxed">Submitting your exam&hellip;</p>
           </div>
         </div>
@@ -324,7 +367,17 @@ export default function ExamWorkspace({ examId, questions, timeLimitMin, started
       {/* Top bar */}
       <div className="h-11 border-b border-border bg-surface flex items-center justify-between px-3 shrink-0">
         <div className="flex items-center gap-3">
-          <ExamTimer startedAt={startedAt} timeLimitMin={timeLimitMin} onTimeUp={handleTimeUp} />
+          {timeLimitMin != null ? (
+            <ExamTimer startedAt={startedAt} timeLimitMin={timeLimitMin} onTimeUp={handleTimeUp} />
+          ) : (
+            <span
+              className="inline-flex items-center gap-1.5 text-xs font-mono text-dark-text"
+              title="No time limit. Your work saves as you go, so you can leave and come back."
+            >
+              <CalendarClock size={14} className="text-primary" aria-hidden="true" />
+              {dueAt ? `Due ${formatDueAt(dueAt)}` : 'No time limit'}
+            </span>
+          )}
           <div className="w-px h-5 bg-border" />
           <div className="flex items-center gap-1">
             <button

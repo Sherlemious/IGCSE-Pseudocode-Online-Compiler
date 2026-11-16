@@ -5,9 +5,12 @@ import Link from 'next/link';
 import { GraduationCap, Loader2, Check, ArrowRight } from 'lucide-react';
 import Combobox from '@/shared/ui/Combobox';
 import DatePicker from '@/shared/ui/DatePicker';
+import AssignmentTimingPicker, { timingHint } from '@/modules/classes/AssignmentTimingPicker';
 
 interface Props {
   examId: string;
+  /** The exam's own limit, used when the teacher keeps it timed. */
+  timeLimitMin: number;
   highlight?: boolean; // subtle emphasis right after exam creation
 }
 
@@ -22,10 +25,12 @@ function todayISO(): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
-export default function AssignExamToClass({ examId, highlight }: Props) {
+export default function AssignExamToClass({ examId, timeLimitMin, highlight }: Props) {
   const [classes, setClasses] = useState<OwnedClass[] | null>(null);
   const [classId, setClassId] = useState('');
   const [due, setDue] = useState('');
+  // An exam keeps its timer unless the teacher switches it off.
+  const [timed, setTimed] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [assigned, setAssigned] = useState<{ id: string; name: string } | null>(null);
@@ -48,7 +53,7 @@ export default function AssignExamToClass({ examId, highlight }: Props) {
     const res = await fetch(`/api/classes/${classId}/assignments`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ examId, dueDate: due || undefined }),
+      body: JSON.stringify({ examId, dueDate: due || undefined, timed }),
     });
     setBusy(false);
     const data = await res.json().catch(() => ({}));
@@ -125,6 +130,10 @@ export default function AssignExamToClass({ examId, highlight }: Props) {
               {busy ? <Loader2 size={15} className="animate-spin" /> : <GraduationCap size={15} />}
               Assign
             </button>
+          </div>
+          <div className="mt-2 space-y-1.5">
+            <AssignmentTimingPicker timed={timed} onChange={setTimed} timeLimitMin={timeLimitMin} />
+            <p className="text-[11px] text-dark-text">{timingHint(timed)}</p>
           </div>
         </>
       )}

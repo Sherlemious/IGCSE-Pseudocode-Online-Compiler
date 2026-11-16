@@ -3,11 +3,12 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ClipboardList, Plus, Loader2, X, Users, CalendarClock, Pencil } from 'lucide-react';
+import { ClipboardList, Plus, Loader2, X, Users, CalendarClock, Pencil, Timer } from 'lucide-react';
 import Combobox from '@/shared/ui/Combobox';
 import DatePicker from '@/shared/ui/DatePicker';
 import AssignmentShareActions from './AssignmentShareActions';
 import ClassQuickStart from './ClassQuickStart';
+import AssignmentTimingPicker, { timingHint } from './AssignmentTimingPicker';
 import type { AssignResult } from './AssignToClass';
 
 function todayISO(): string {
@@ -24,6 +25,10 @@ export interface AssignmentRow {
   submittedCount: number;
   rosterSize: number;
   isPublished: boolean;
+  /** False = no time limit, open until the due date. */
+  timed: boolean;
+  /** The exam's limit, used when `timed`. */
+  timeLimitMin: number;
 }
 
 interface Props {
@@ -32,7 +37,7 @@ interface Props {
   joinCode: string;
   rosterSize: number;
   assignments: AssignmentRow[];
-  availableExams: { id: string; title: string }[];
+  availableExams: { id: string; title: string; timeLimitMin: number }[];
   starterQuestions?: { id: string; title: string }[];
 }
 
@@ -50,10 +55,12 @@ export default function ClassAssignments({ classId, className, joinCode, rosterS
   const router = useRouter();
   const [examId, setExamId] = useState('');
   const [due, setDue] = useState('');
+  // An existing exam keeps its timer unless the teacher switches it off.
+  const [timed, setTimed] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [pending, setPending] = useState<AssignmentRow | null>(null);
-  const [edits, setEdits] = useState<Record<string, { examTitle: string; dueDate: string | null }>>({});
+  const [edits, setEdits] = useState<Record<string, { examTitle: string; dueDate: string | null; timed: boolean }>>({});
   const [editingId, setEditingId] = useState<string | null>(null);
   const [quickStartOpen, setQuickStartOpen] = useState(false);
   // The server drops the suggestion list once an assignment exists. Keep it while
@@ -74,7 +81,7 @@ export default function ClassAssignments({ classId, className, joinCode, rosterS
     const res = await fetch(`/api/classes/${classId}/assignments`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ examId, dueDate: due || undefined }),
+      body: JSON.stringify({ examId, dueDate: due || undefined, timed }),
     });
     setBusy(null);
     if (!res.ok) {
@@ -84,6 +91,7 @@ export default function ClassAssignments({ classId, className, joinCode, rosterS
     }
     setExamId('');
     setDue('');
+    setTimed(true);
     router.refresh();
   }
 
@@ -97,10 +105,12 @@ export default function ClassAssignments({ classId, className, joinCode, rosterS
       submittedCount: 0,
       rosterSize,
       isPublished: true,
+      timed: result.timed,
+      timeLimitMin: result.timeLimitMin,
     });
   }
 
-  async function saveEdit(row: AssignmentRow, title: string, dueDate: string) {
+  async function saveEdit(row: AssignmentRow, title: string, dueDate: string, rowTimed: boolean) {
     const trimmed = title.trim();
     if (!trimmed || busy) return;
     setBusy(row.id);
@@ -108,7 +118,7 @@ export default function ClassAssignments({ classId, className, joinCode, rosterS
     const res = await fetch(`/api/classes/${classId}/assignments/${row.id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title: trimmed, dueDate: dueDate || null }),
+      body: JSON.stringify({ title: trimmed, dueDate: dueDate || null, timed: rowTimed }),
     });
     setBusy(null);
     if (!res.ok) {
@@ -121,6 +131,7 @@ export default function ClassAssignments({ classId, className, joinCode, rosterS
       [row.id]: {
         examTitle: trimmed,
         dueDate: dueDate ? new Date(`${dueDate}T00:00:00.000Z`).toISOString() : null,
+        timed: rowTimed,
       },
     }));
     setEditingId(null);
@@ -154,6 +165,7 @@ export default function ClassAssignments({ classId, className, joinCode, rosterS
             <Link href="/exams/new" className="text-primary hover:underline">Create an exam</Link> to assign work.
           </p>
         ) : (
+          <div className="space-y-2">
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
             <div className="flex-1 min-w-0">
               <Combobox
@@ -175,6 +187,13 @@ export default function ClassAssignments({ classId, className, joinCode, rosterS
               {busy === 'assign' ? <Loader2 size={15} className="animate-spin" /> : <Plus size={15} />}
               Assign
             </button>
+          </div>
+          <AssignmentTimingPicker
+            timed={timed}
+            onChange={setTimed}
+            timeLimitMin={availableExams.find((e) => e.id === examId)?.timeLimitMin ?? null}
+          />
+          <p className="text-[11px] text-dark-text">{timingHint(timed)}</p>
           </div>
         )}
       </div>
@@ -206,7 +225,7 @@ export default function ClassAssignments({ classId, className, joinCode, rosterS
                     row={a}
                     busy={busy === a.id}
                     onCancel={() => setEditingId(null)}
-                    onSave={(title, dueDate) => saveEdit(a, title, dueDate)}
+                    onSave={(title, dueDate, rowTimed) => saveEdit(a, title, dueDate, rowTimed)}
                   />
                 ) : (
                   <>
@@ -219,6 +238,9 @@ export default function ClassAssignments({ classId, className, joinCode, rosterS
                           <Users size={11} />{a.submittedCount}/{a.rosterSize} submitted
                         </span>
                         {dueLabel && <span className="flex items-center gap-1"><CalendarClock size={11} />due {dueLabel}</span>}
+                        <span className="flex items-center gap-1">
+                          <Timer size={11} />{a.timed ? `${a.timeLimitMin} min` : 'no time limit'}
+                        </span>
                       </div>
                     </div>
                     <div className="flex shrink-0 items-center gap-1">
@@ -264,10 +286,11 @@ function AssignmentEditForm({
   row: AssignmentRow;
   busy: boolean;
   onCancel: () => void;
-  onSave: (title: string, dueDate: string) => void;
+  onSave: (title: string, dueDate: string, timed: boolean) => void;
 }) {
   const [title, setTitle] = useState(row.examTitle);
   const [dueDate, setDueDate] = useState(dueInputValue(row.dueDate));
+  const [timed, setTimed] = useState(row.timed);
   return (
     <div className="w-full space-y-2">
       <input
@@ -279,10 +302,14 @@ function AssignmentEditForm({
         className="w-full rounded-lg border border-border bg-background px-3.5 py-2.5 text-sm text-light-text focus:outline-none focus:border-primary/50"
       />
       <DatePicker value={dueDate || null} onChange={(value) => setDueDate(value ?? '')} min={todayISO()} ariaLabel="Due date" />
+      <AssignmentTimingPicker timed={timed} onChange={setTimed} timeLimitMin={row.timeLimitMin} />
+      {timed !== row.timed && (
+        <p className="text-[11px] text-dark-text">Applies to students who start after you save.</p>
+      )}
       <div className="flex flex-wrap items-center gap-2">
         <button
           type="button"
-          onClick={() => onSave(title, dueDate)}
+          onClick={() => onSave(title, dueDate, timed)}
           disabled={busy || !title.trim()}
           className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-on-primary hover:opacity-90 disabled:opacity-50"
         >

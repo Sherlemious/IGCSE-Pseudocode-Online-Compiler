@@ -4,6 +4,7 @@ import { HttpError } from '@/shared/http/errors';
 import { gradeTestCases } from '@/modules/practice/autograder';
 import { getQuestionForGrade } from '@/shared/lib/catalogCache';
 import { loadOwnedTestCases } from '@/modules/questions/repo';
+import { attemptDeadline, isPastDeadline } from './deadline';
 import * as repo from './repo';
 
 /** An exam-attempt failure with its HTTP status and machine-readable code. */
@@ -19,16 +20,20 @@ export interface AnswerSubmission {
   code: string;
 }
 
-export function examDeadline(exam: Pick<ExamAttempt, 'startedAt' | 'timeLimitMin'>): number {
-  return exam.startedAt.getTime() + exam.timeLimitMin * 60_000;
-}
+/** An attempt plus the due date of the class assignment it belongs to, if any. */
+type LockedAttempt = ExamAttempt & { assignment?: { dueDate: Date | null } | null };
 
-function requireActive(exam: ExamAttempt, now: Date): void {
+const dueDateOf = (exam: LockedAttempt) => exam.assignment?.dueDate ?? null;
+
+function requireActive(exam: LockedAttempt, now: Date): void {
   if (exam.status !== 'IN_PROGRESS') {
     throw new ExamRequestError(409, 'EXAM_COMPLETED', 'This exam has already been submitted.');
   }
-  if (now.getTime() >= examDeadline(exam)) {
-    throw new ExamRequestError(409, 'EXAM_EXPIRED', 'Time is up. Submit the exam to view your results.');
+  if (isPastDeadline(exam, dueDateOf(exam), now)) {
+    const message = exam.timeLimitMin == null
+      ? 'The due date has passed. Submit to view your results.'
+      : 'Time is up. Submit the exam to view your results.';
+    throw new ExamRequestError(409, 'EXAM_EXPIRED', message);
   }
 }
 
@@ -40,7 +45,7 @@ function requireActive(exam: ExamAttempt, now: Date): void {
 function withAttempt<T>(
   examId: string,
   userId: string,
-  work: (tx: Db, exam: ExamAttempt, now: Date) => Promise<T>,
+  work: (tx: Db, exam: LockedAttempt, now: Date) => Promise<T>,
 ): Promise<T> {
   return prisma.$transaction(async (tx) => {
     if (!(await repo.lockOwnedAttempt(examId, userId, tx))) {
@@ -133,9 +138,13 @@ export function submitExamAttempt(examId: string, userId: string) {
     }
     const answers = await repo.listAnswerScores(examId, tx);
     const score = answers.filter((answer) => answer.graded && answer.totalTests > 0 && answer.passCount === answer.totalTests).length;
-    const timedOut = now.getTime() >= examDeadline(exam);
+    const deadline = attemptDeadline(exam, dueDateOf(exam));
+    const timedOut = deadline !== null && now.getTime() >= deadline;
+    // An untimed attempt closed after its due date took no work past that
+    // cut-off, so it is stamped at the cut-off and the mark book reads it as on time.
+    const completedAt = timedOut && exam.timeLimitMin == null ? new Date(deadline) : now;
     await repo.completeAttempt(examId, {
-      status: timedOut ? 'TIMED_OUT' : 'COMPLETED', score, totalTests: answers.length, completedAt: now,
+      status: timedOut ? 'TIMED_OUT' : 'COMPLETED', score, totalTests: answers.length, completedAt,
     }, tx);
     return { score, totalTests: answers.length, timedOut };
   });

@@ -137,7 +137,7 @@ export default async function ExamPage() {
                       />
                       <div>
                         <div className="text-xs font-medium text-light-text">
-                          {a.questionCount} questions &middot; {a.timeLimitMin} min
+                          {a.questionCount} questions &middot; {a.timeLimitMin == null ? 'no time limit' : `${a.timeLimitMin} min`}
                           {a.topic && <span className="text-dark-text"> &middot; {a.topic}</span>}
                         </div>
                         <div className="text-[10px] text-dark-text font-mono">

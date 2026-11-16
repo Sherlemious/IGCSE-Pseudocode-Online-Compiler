@@ -14,7 +14,7 @@ export type ExamRow = {
   topic: string | null;
   difficulty: string | null;
   questionCount: number;
-  timeLimitMin: number;
+  timeLimitMin: number | null;
   status: string;
   score: number | null;
   totalTests: number | null;
@@ -37,7 +37,7 @@ export type ExamHistoryItem = {
   topic: string | null;
   difficulty: string | null;
   questionCount: number;
-  timeLimitMin: number;
+  timeLimitMin: number | null;
   status: string;
   score: number | null;
   totalTests: number | null;

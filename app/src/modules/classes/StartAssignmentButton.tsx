@@ -46,7 +46,7 @@ export default function StartAssignmentButton({ assignmentId, classId, attemptId
         setLoading(false);
         return;
       }
-      captureAssignmentStart({ assignmentId, classId }, data.attemptId, data.resumed !== false);
+      captureAssignmentStart({ assignmentId, classId }, data.attemptId, data.resumed !== false, data.timed !== false);
       router.push(`/exam/${data.attemptId}`);
     } catch {
       setError('Something went wrong.');
