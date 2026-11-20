@@ -67,7 +67,7 @@ export default async function ClassesPage() {
                 <>
                   Invite students by link.{' '}
                   <Link href={teacherYearlyCheckoutHref('classes')} className="text-primary hover:underline">
-                    Starter is $50 for the year and covers your roster
+                    Small class is $40 for the year and covers up to 10 students
                   </Link>
                   .
                 </>

@@ -472,12 +472,12 @@ export default function PricingClient({
       paddle_env: paddleEnv,
     });
   };
-  const starter = findTierView(teacherTiers, ['starter']);
+  const small = findTierView(teacherTiers, ['small']);
   const band = teacherBandForStudents(seats);
   const selected = findTierView(teacherTiers, band.slugs);
   const selectedLimits = LIMITS[band.tier];
   const seatLabel = seats >= TEACHER_SLIDER_MAX ? '750+' : String(seats);
-  const yearlySaving = yearlySavingPct(starter ?? selected, quotes);
+  const yearlySaving = yearlySavingPct(small ?? selected, quotes);
 
   const renderPassCard = (pass: StudentPassView) => {
     const passQuote = pass.priceId ? quotes[pass.priceId] : undefined;
@@ -660,7 +660,7 @@ export default function PricingClient({
               : 'border border-primary/40 text-primary hover:bg-primary/10'
           }`}
         >
-          {tier.slug === 'starter' ? 'Start with Starter' : `Subscribe to ${tier.name}`}
+          {tier.slug === 'small' ? 'Start with Small class' : `Subscribe to ${tier.name}`}
         </button>
       );
     }
@@ -909,34 +909,34 @@ export default function PricingClient({
       )}
 
       {showTeachers && (
-        <section className={`mx-auto grid max-w-4xl gap-6 ${starter ? 'lg:grid-cols-2' : ''}`}>
-          {starter && (
+        <section className={`mx-auto grid max-w-4xl gap-6 ${small ? 'lg:grid-cols-2' : ''}`}>
+          {small && (
             <div
               className={`relative flex flex-col rounded-2xl border p-6 backdrop-blur-sm ${
-                currentTier === 'starter'
+                currentTier === 'small'
                   ? 'border-primary bg-surface shadow-intense ring-1 ring-primary/50'
                   : 'border-border bg-surface/80'
               }`}
             >
-              {currentTier === 'starter' && (
+              {currentTier === 'small' && (
                 <span className="absolute -top-3 right-4 rounded-full bg-primary px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">
                   Current plan
                 </span>
               )}
-              <h2 className="text-lg font-semibold text-light-text">{starter.name}</h2>
-              <p className="mt-1 text-sm text-dark-text">{starter.description}</p>
-              <div className="mt-5 flex items-baseline gap-1">{renderTeacherPrice(starter)}</div>
+              <h2 className="text-lg font-semibold text-light-text">{small.name}</h2>
+              <p className="mt-1 text-sm text-dark-text">{small.description}</p>
+              <div className="mt-5 flex items-baseline gap-1">{renderTeacherPrice(small)}</div>
               <CapacityStats
-                maxClasses={LIMITS.starter.maxClasses}
-                maxStudents={LIMITS.starter.maxStudentsTotal}
+                maxClasses={LIMITS.small.maxClasses}
+                maxStudents={LIMITS.small.maxStudentsTotal}
               />
-              {renderTeacherCta(starter, ['starter'], false)}
-              {currentTier !== 'starter' && !canManageBilling && (
+              {renderTeacherCta(small, ['small'], false)}
+              {currentTier !== 'small' && !canManageBilling && (
                 <Link
-                  href={`/contact?subject=${encodeURIComponent('Starter plan invoice')}`}
+                  href={`/contact?subject=${encodeURIComponent('Small class plan invoice')}`}
                   onClick={() =>
                     ph?.capture('contact_sales_clicked', {
-                      tier: 'starter',
+                      tier: 'small',
                       paddle_env: paddleEnv,
                       source: 'invoice',
                     })

@@ -20,7 +20,7 @@ Every student price ends in .99 and is tax-inclusive (`tax_mode: internal`), so 
 | Oct/Nov session | $7.99 | $4.99 | ₹449 |
 | May/June session | $12.99 | $7.99 | ₹699 |
 
-Teacher plans (Starter $5/$50, Classroom $12/$120, Department $39/$390, School $89/$890) are list price everywhere. The dated sections below record how the catalog was created; amounts there are historical.
+Teacher plans (Small class $4/$40, Starter $7.50/$75, Classroom $12/$120, Department $39/$390, School $89/$890) are list price everywhere. The dated sections below record how the catalog was created; amounts there are historical.
 
 ---
 
@@ -162,6 +162,19 @@ New recurring prices on the **existing Student product**. Do not reprice the $1 
 | live | `pro_01m1mbfwxdx17e0he7eqekg1y1` | `pri_01m2qsfnyh5wt3qxfsc3ab8d1a` | `pri_01m2qsfppe91t5y31gc2bpg50g` |
 
 Pasted into `seedPricing.ts`. Legacy $1 IDs remain mapped in `app/src/modules/billing/paddle/plan.ts`.
+
+## Created — Small class + Starter repricing (2026-11-20)
+
+New **Small class** tier (up to 10 students, 2 classes) at **$4/mo · $40/yr** on its own product, and Starter repriced to **$7.50/mo · $75/yr** with new prices on the existing Starter product. No PPP overrides (teacher plans). Rides on `Plan.STARTER` with `planTier = 'small'`.
+
+The old $5/$50 Starter prices were **not** touched. Subscribers on them keep renewing at $5/$50: the `starter` PricingTier row now holds the new IDs, so the old IDs live in `LEGACY_STARTER_PRICE_IDS` (`paddle/plan.ts`) and still resolve to `starter`. (`PricingTier` is unique on slug + env, so a second `starter` row is not possible.)
+
+| Env | Small product | Small month $4 | Small year $40 | Starter month $7.50 | Starter year $75 |
+|-----|---------------|----------------|----------------|---------------------|------------------|
+| sandbox | `pro_01m7x56cab0rv32a3kbc40zdjw` | `pri_01m7x56ce2ve8hvjajshw9fmch` | `pri_01m7x56chn87z4cek1cxnvtb2j` | `pri_01m7x56cn8n6yqgwwh1nabyh6w` | `pri_01m7x56crxbxxazvmp71108yvg` |
+| live | `pro_01m7x56kr8d3grdc4abzb4yddp` | `pri_01m7x56kw6pfs88ark2jv72nd6` | `pri_01m7x56kzzmnzzbpgd6xfsn671` | `pri_01m7x56m3mw4sgzw760bmnwfc6` | `pri_01m7x56mg5zqcky37ph7ea5s80` |
+
+Deploy order: ship the code, then `npm run db:seed:pricing <env>`. Until the seed runs, `/pricing` keeps showing the old rows.
 
 ## Checklist
 

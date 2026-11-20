@@ -41,19 +41,20 @@ interface TierSeed {
 // Shared display copy — identical across environments; only the price IDs differ.
 const COPY = {
   student: { ...TIER_COPY.student, sortOrder: 0, contactOnly: false },
+  small: { ...TIER_COPY.small, sortOrder: 1, contactOnly: false },
   starter: {
     ...TIER_COPY.starter,
     features: [
       ...TIER_COPY.starter.features.filter((feature) => feature !== 'Write your own autograded questions'),
       'Write your own autograded questions',
     ],
-    sortOrder: 1,
+    sortOrder: 2,
     contactOnly: false,
   },
-  pro: { ...TIER_COPY.pro, sortOrder: 2, contactOnly: false },
-  department: { ...TIER_COPY.department, sortOrder: 3, contactOnly: false },
-  school: { ...TIER_COPY.school, sortOrder: 4, contactOnly: false },
-  advanced: { ...TIER_COPY.advanced, sortOrder: 5, contactOnly: true },
+  pro: { ...TIER_COPY.pro, sortOrder: 3, contactOnly: false },
+  department: { ...TIER_COPY.department, sortOrder: 4, contactOnly: false },
+  school: { ...TIER_COPY.school, sortOrder: 5, contactOnly: false },
+  advanced: { ...TIER_COPY.advanced, sortOrder: 6, contactOnly: true },
 } as const;
 
 const tier = (slug: keyof typeof COPY, monthPriceId: string, yearPriceId: string): TierSeed => ({
@@ -68,7 +69,10 @@ const tier = (slug: keyof typeof COPY, monthPriceId: string, yearPriceId: string
 const SANDBOX_TIERS: TierSeed[] = [
   // $2/mo + $20/yr (10×). Legacy $1 IDs stay in paddle/plan.ts so existing subs still map.
   tier('student', 'pri_01m2qsfmqenmdk2w1nez6zdjrb', 'pri_01m2qsfneshwq06csfmp5hjgxz'),
-  tier('starter', 'pri_01m1j4kxtxewyftebqsvryp50k', 'pri_01m1j4kxzn6cp0ywqr2m7qc73s'),
+  // Nov 2026: Small class $4/$40 (new) and Starter repriced to $7.50/$75. The
+  // old $5/$50 Starter IDs stay mapped in paddle/plan.ts (LEGACY_STARTER_PRICE_IDS).
+  tier('small', 'pri_01m7x56ce2ve8hvjajshw9fmch', 'pri_01m7x56chn87z4cek1cxnvtb2j'),
+  tier('starter', 'pri_01m7x56cn8n6yqgwwh1nabyh6w', 'pri_01m7x56crxbxxazvmp71108yvg'),
   tier('pro', 'pri_01m1j4kyafpw7v0r985s1tmhzf', 'pri_01m1j4kyezssa9erzpzwe9nc88'),
   // Created 2026-09-16 via the paddle-sandbox MCP (see docs/paddle-catalog.md).
   tier('department', 'pri_01m2nqdavv70rmdvhp3dps1xfx', 'pri_01m2nqdb01nqnxaa9bpvf4qgx5'),
@@ -83,7 +87,10 @@ const SANDBOX_TIERS: TierSeed[] = [
 const PRODUCTION_TIERS: TierSeed[] = [
   // $2/mo + $20/yr (10×). Legacy $1 IDs stay in paddle/plan.ts so existing subs still map.
   tier('student', 'pri_01m2qsfnyh5wt3qxfsc3ab8d1a', 'pri_01m2qsfppe91t5y31gc2bpg50g'),
-  tier('starter', 'pri_01m1mbfxw6enq2faxm3wnkc3de', 'pri_01m1mbfy1hm2fndbp227dqvk02'),
+  // Nov 2026: Small class $4/$40 (new) and Starter repriced to $7.50/$75. The
+  // old $5/$50 Starter IDs stay mapped in paddle/plan.ts (LEGACY_STARTER_PRICE_IDS).
+  tier('small', 'pri_01m7x56kw6pfs88ark2jv72nd6', 'pri_01m7x56kzzmnzzbpgd6xfsn671'),
+  tier('starter', 'pri_01m7x56m3mw4sgzw760bmnwfc6', 'pri_01m7x56mg5zqcky37ph7ea5s80'),
   tier('pro', 'pri_01m1mbfy5rmde0sb9eq8emg292', 'pri_01m1mbfy9x1vkj2h7gnecdrtym'),
   // Created 2026-09-16 via the paddle-live MCP, mirroring the sandbox catalog.
   tier('department', 'pri_01m2nqt61vncea5t0g6qe80n28', 'pri_01m2nqt66336h29kpb3pafv90q'),

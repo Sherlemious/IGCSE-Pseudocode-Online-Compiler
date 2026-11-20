@@ -11,6 +11,7 @@ import { prisma } from '@/shared/db';
  */
 export const TIER_TO_PLAN: Record<string, { plan: Plan; tier: string }> = {
   student: { plan: 'STUDENT', tier: 'student' },
+  small: { plan: 'STARTER', tier: 'small' },
   starter: { plan: 'STARTER', tier: 'starter' },
   pro: { plan: 'PRO', tier: 'pro' },
   classroom: { plan: 'PRO', tier: 'classroom' },
@@ -21,7 +22,19 @@ export const TIER_TO_PLAN: Record<string, { plan: Plan; tier: string }> = {
 };
 
 /** Slugs that are the new capacity bands — buying one clears grandfathered limits. */
-export const BAND_SLUGS = new Set(['classroom', 'department', 'school', 'campus']);
+export const BAND_SLUGS = new Set(['small', 'classroom', 'department', 'school', 'campus']);
+
+/**
+ * The original $5/mo and $50/yr Starter prices. Starter was repriced to
+ * $7.50/$75 (Nov 2026); the `starter` PricingTier row now holds the new IDs, so
+ * these must still resolve for subscribers who are staying on the old price.
+ */
+export const LEGACY_STARTER_PRICE_IDS: ReadonlySet<string> = new Set([
+  'pri_01m1j4kxtxewyftebqsvryp50k', // sandbox month $5
+  'pri_01m1j4kxzn6cp0ywqr2m7qc73s', // sandbox year $50
+  'pri_01m1mbfxw6enq2faxm3wnkc3de', // live month $5
+  'pri_01m1mbfy1hm2fndbp227dqvk02', // live year $50
+]);
 
 /**
  * Original $1/mo student prices. `/pricing` now checkouts the $2 SKUs; these
@@ -48,5 +61,6 @@ export async function tierSlugForPriceId(
   });
   if (row?.slug) return row.slug;
   if (LEGACY_STUDENT_PRICE_IDS.has(priceId)) return 'student';
+  if (LEGACY_STARTER_PRICE_IDS.has(priceId)) return 'starter';
   return null;
 }

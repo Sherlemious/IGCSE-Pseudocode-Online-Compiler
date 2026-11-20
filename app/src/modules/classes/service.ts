@@ -309,7 +309,7 @@ export async function buildClassMarksCsv(classId: string, userId: string): Promi
   const cls = await loadOwnedMarkBook(classId, userId);
   const { tier } = await getEntitlements(userId);
   if (tier === 'free') {
-    throw new ClassRequestError(403, 'PLAN_REQUIRED', 'CSV export is included with Starter.');
+    throw new ClassRequestError(403, 'PLAN_REQUIRED', 'CSV export is included with any paid plan.');
   }
   const book = buildMarkBook(toMarkInput(cls));
   return { filename: marksCsvFilename(cls.name), body: serializeMarkBookCsv(book) };

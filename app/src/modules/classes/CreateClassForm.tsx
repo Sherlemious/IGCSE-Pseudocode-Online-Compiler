@@ -21,6 +21,7 @@ interface Props {
 
 const PLAN_LABELS: Record<Tier, string> = {
   free: 'Free',
+  small: 'Small class',
   starter: 'Starter',
   pro: 'Pro',
   classroom: 'Classroom',

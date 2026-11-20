@@ -41,7 +41,7 @@ export default function PricingAudiencePicker({ paddleEnv }: { paddleEnv: string
         </span>
         <span className="mt-4 text-lg font-semibold text-light-text">I&apos;m a teacher</span>
         <span className="mt-1 text-sm leading-relaxed text-dark-text">
-          Starter for a small class, or pick how many students you teach and we&apos;ll show the plan.
+          Small class for one group, or pick how many students you teach and we&apos;ll show the plan.
         </span>
       </Link>
     </div>

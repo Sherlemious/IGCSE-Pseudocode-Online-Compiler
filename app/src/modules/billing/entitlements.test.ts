@@ -103,9 +103,40 @@ describe('limits', () => {
     expect(LIMITS.campus.maxStudentsTotal).toBe(Infinity);
   });
 
+  it('Small class is 2 classes / 10 students total, split any way across them', () => {
+    expect(limitsFor('small')).toEqual({
+      maxClasses: 2,
+      maxStudentsTotal: 10,
+      maxStudentsPerClass: 10,
+    });
+    const limits = limitsForUser({
+      plan: 'STARTER' as Plan,
+      trialEndsAt: null,
+      planTier: 'small',
+      legacyCapacity: false,
+    });
+    expect(limits).toEqual(LIMITS.small);
+    expect(isAtStudentCap({ limits, studentsInClass: 4, studentsAcrossClasses: 10 })).toBe(true);
+    expect(isAtStudentCap({ limits, studentsInClass: 4, studentsAcrossClasses: 9 })).toBe(false);
+  });
+
+  it('a Small class teacher counts as paid, so their students get premium questions', () => {
+    expect(
+      hasPremiumAccess({
+        plan: 'FREE' as Plan,
+        trialEndsAt: null,
+        classOwners: [{ plan: 'STARTER' as Plan, trialEndsAt: null, planTier: 'small' }],
+      }),
+    ).toBe(true);
+  });
+
   it('maps a student-count onto the matching paid band', () => {
+    expect(teacherBandForStudents(3).tier).toBe('small');
+    expect(teacherBandForStudents(10).tier).toBe('small');
+    expect(teacherBandForStudents(11).tier).toBe('starter');
     expect(teacherBandForStudents(30).tier).toBe('starter');
-    expect(teacherBandForStudents(TEACHER_SLIDER_MIN).tier).toBe('classroom');
+    expect(teacherBandForStudents(31).tier).toBe('classroom');
+    expect(teacherBandForStudents(TEACHER_SLIDER_MIN).tier).toBe('starter');
     expect(teacherBandForStudents(90).tier).toBe('classroom');
     expect(teacherBandForStudents(91).tier).toBe('department');
     expect(teacherBandForStudents(250).tier).toBe('department');

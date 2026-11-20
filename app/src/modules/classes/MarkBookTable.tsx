@@ -83,7 +83,7 @@ function filenameFromDisposition(header: string | null): string | null {
 function ScoreCell({ cell }: { cell: MarkPreviewCell }) {
   if (cell.locked || !cell.status) {
     return (
-      <span className="inline-flex items-center justify-center text-dark-text/40" aria-label="Included with Starter">
+      <span className="inline-flex items-center justify-center text-dark-text/40" aria-label="Included with any paid plan">
         <Lock size={13} />
       </span>
     );
@@ -134,7 +134,7 @@ export default function MarkBookTable({ classId, tier, exportAllowed, columns, r
     try {
       const res = await fetch(`/api/classes/${classId}/marks.csv`);
       if (res.status === 403) {
-        setExportError('CSV export is included with Starter.');
+        setExportError('CSV export is included with any paid plan.');
         return;
       }
       if (!res.ok) {
@@ -203,8 +203,8 @@ export default function MarkBookTable({ classId, tier, exportAllowed, columns, r
       {!exportAllowed && (
         <div className="rounded-xl border border-primary/30 bg-primary/5 px-4 py-3.5 mb-6">
           <p className="text-sm text-light-text">
-            The full mark book and CSV export are included with Starter.
-            {columns.length > 1 ? ' This preview shows the latest assignment.' : ' Download unlocks on Starter.'}
+            The full mark book and CSV export are included with any paid plan.
+            {columns.length > 1 ? ' This preview shows the latest assignment.' : ' Download unlocks on a paid plan.'}
           </p>
           <Link href={UPGRADE_HREF} onClick={clickUpgrade} className="mt-2 inline-flex text-sm font-semibold text-primary hover:underline">
             See teacher plans
@@ -315,7 +315,7 @@ export default function MarkBookTable({ classId, tier, exportAllowed, columns, r
                       })}
                       <td className="border-b border-border px-3 py-2.5 align-top bg-background">
                         {row.averageLocked ? (
-                          <span className="inline-flex text-dark-text/40" aria-label="Included with Starter">
+                          <span className="inline-flex text-dark-text/40" aria-label="Included with any paid plan">
                             <Lock size={13} />
                           </span>
                         ) : (
@@ -343,7 +343,7 @@ export default function MarkBookTable({ classId, tier, exportAllowed, columns, r
                     {columns.map((column) => (
                       <td key={column.id} className="border-r border-border px-3 py-2.5 bg-surface">
                         {column.locked ? (
-                          <span className="inline-flex text-dark-text/40" aria-label="Included with Starter">
+                          <span className="inline-flex text-dark-text/40" aria-label="Included with any paid plan">
                             <Lock size={13} />
                           </span>
                         ) : (
@@ -358,7 +358,7 @@ export default function MarkBookTable({ classId, tier, exportAllowed, columns, r
                     ))}
                     <td className="px-3 py-2.5 bg-surface">
                       {averageLocked ? (
-                        <span className="inline-flex text-dark-text/40" aria-label="Included with Starter">
+                        <span className="inline-flex text-dark-text/40" aria-label="Included with any paid plan">
                           <Lock size={13} />
                         </span>
                       ) : (

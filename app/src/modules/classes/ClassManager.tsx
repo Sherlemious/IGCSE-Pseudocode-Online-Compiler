@@ -31,7 +31,7 @@ interface Props {
   maxStudents: number | null; // null = unlimited
   assignmentCount: number;
   members: ClassMember[];
-  /** Free teachers: students stay on the free editor until Starter. */
+  /** Free teachers: students stay on the free editor until a paid plan. */
   offerStarter?: boolean;
 }
 
@@ -240,14 +240,14 @@ export default function ClassManager({
       {offerStarter && (
         <div className="rounded-xl border border-primary/30 bg-primary/5 px-4 py-3.5">
           <p className="text-sm text-light-text">
-            Your students stay on the free editor until you start Starter. $50 for the year, one payment, and the whole class is covered.
+            Your students stay on the free editor until you start a plan. $40 for the year, one payment, and the whole class is covered.
           </p>
           <Link
             href={teacherYearlyCheckoutHref('class_progress')}
             onClick={() => captureEvent('nudge_clicked', { nudge: 'class_starter_year', class_id: classId })}
             className="mt-2 inline-flex text-sm font-semibold text-primary hover:underline"
           >
-            Start Starter for the year
+            Start Small class for the year
           </Link>
         </div>
       )}
@@ -258,14 +258,14 @@ export default function ClassManager({
       {offerStarter && (
         <div className="rounded-xl border border-primary/30 bg-primary/5 px-4 py-3.5">
           <p className="text-sm text-light-text">
-            Your students stay on the free editor until you start Starter. $50 for the year, one payment, and the whole class is covered.
+            Your students stay on the free editor until you start a plan. $40 for the year, one payment, and the whole class is covered.
           </p>
           <Link
             href={teacherYearlyCheckoutHref('class_progress')}
             onClick={() => captureEvent('nudge_clicked', { nudge: 'class_starter_year', class_id: classId })}
             className="mt-2 inline-flex text-sm font-semibold text-primary hover:underline"
           >
-            Start Starter for the year
+            Start Small class for the year
           </Link>
         </div>
       )}

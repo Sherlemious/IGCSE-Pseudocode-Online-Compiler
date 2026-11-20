@@ -16,6 +16,8 @@ import { LEGACY_STARTER_LIMITS, LIMITS, type Tier, type TierLimits } from './lim
  *
  * Bands (class-capacity axis):
  *   free       — 1 class, 5 students; also where student passes land.
+ *   small      — 2 classes, 10 students total. Rides on `Plan.STARTER` with
+ *                `planTier = 'small'`, so it needs no schema change.
  *   starter    — 3 classes, 30 students total (new checkouts).
  *   classroom  — 6 classes, 90 students. Sold as the $15 tier (was "Pro").
  *   department — 15 classes, 250 students.
@@ -33,6 +35,7 @@ export { LEGACY_STARTER_LIMITS, LIMITS, teacherBandForStudents } from './limits'
  * via `legacyCapacity` and stay on unlimited `pro`.
  */
 const SLUG_TO_TIER: Record<string, Tier> = {
+  small: 'small',
   starter: 'starter',
   classroom: 'classroom',
   pro: 'classroom',

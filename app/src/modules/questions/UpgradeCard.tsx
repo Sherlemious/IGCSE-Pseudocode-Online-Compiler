@@ -16,7 +16,7 @@ export default function UpgradeCard() {
     <div className="mb-6 rounded-xl border border-primary/30 bg-primary/[0.06] px-4 py-3.5">
       <p className="text-sm font-medium text-light-text">Writing questions is part of a teacher plan</p>
       <p className="text-xs text-dark-text mt-1 leading-relaxed">
-        You can look through the editor. Saving and running a solution needs Starter or above.
+        You can look through the editor. Saving and running a solution needs a paid teacher plan.
         Questions you already saved still work on exams if a plan lapses.
       </p>
       <Link

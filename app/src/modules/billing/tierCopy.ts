@@ -30,7 +30,7 @@ export const TEACHER_COMPARE: readonly {
   paid: boolean | string;
   who?: 'students';
 }[] = [
-  { label: 'Students', free: '5', paid: '30 to 750+' },
+  { label: 'Students', free: '5', paid: '10 to 750+' },
   { label: 'Full practice library, premium questions and timed exams', free: false, paid: true, who: 'students' },
   { label: 'Paper 2 Path, every level', free: false, paid: true, who: 'students' },
   { label: 'Your own autograded questions, with hidden tests', free: false, paid: true },
@@ -55,9 +55,18 @@ export const TIER_COPY: Record<
       'Cancel anytime — billed monthly',
     ],
   },
+  small: {
+    name: 'Small class',
+    description: 'One teacher, a small group — your students get the full library',
+    features: [
+      ...PAID_TEACHER_INCLUDED.students,
+      ...PAID_TEACHER_INCLUDED.teaching,
+      'Up to 2 classes, 10 students in total',
+    ],
+  },
   starter: {
     name: 'Starter',
-    description: 'One teacher, a real class — your students get the full library',
+    description: 'One teacher, several groups — your students get the full library',
     features: [
       ...PAID_TEACHER_INCLUDED.students,
       ...PAID_TEACHER_INCLUDED.teaching,
