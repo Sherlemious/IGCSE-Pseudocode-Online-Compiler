@@ -37,7 +37,6 @@ import { ONBOARDING_KEY } from '@/modules/onboarding/constants';
 import { formatOutputEntries } from '@/modules/compiler/formatOutputEntries';
 import { LEARN_FIRST_START_FLAG } from '@/modules/telemetry/experiments';
 import SaveProgramSheet from './SaveProgramSheet';
-import { suggestLearnPath } from '@/modules/learn/learnNudge';
 import { suggestPlaygroundPractice } from '@/modules/practice/playgroundPractice';
 import LearnFirstStart, { LEARN_FIRST_SEEN_KEY } from '@/modules/learn/LearnFirstStart';
 import { loadProgress } from '@/modules/learn/progress';
@@ -671,10 +670,11 @@ const CompilerPage: React.FC = () => {
     ) {
       markSavePromptShown();
       setSaveSheetOpen(true);
-    } else if (outcome === 'success' && learnFirst === 'off' && suggestPlaygroundPractice()) {
-      // The easy-question toast owns this run. The Paper 2 Path toast waits for a later success.
-    } else if (outcome === 'success') {
-      setTimeout(() => suggestLearnPath('playground'), 1500);
+    } else if (outcome === 'success' && learnFirst === 'off') {
+      // The easy-question toast owns this run. (The playground "start the Paper 2 Path"
+      // toast was retired in Nov 2026: 0.8% clicked, and the timed `learn` card and the
+      // first-visit start card already cover it.)
+      suggestPlaygroundPractice();
     }
 
     // Track run count and trigger feedback survey after threshold

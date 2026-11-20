@@ -7,6 +7,7 @@ import { usePostHog } from 'posthog-js/react';
 import { Loader2, Plus, Lock } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import type { Tier } from '@/modules/billing/entitlements';
+import { teacherYearlyCheckoutHref } from '@/modules/billing/teacherCheckout';
 
 interface Props {
   canCreate: boolean;
@@ -39,10 +40,15 @@ export default function CreateClassForm({ canCreate, maxClasses, classCount, stu
   const [error, setError] = useState('');
   const shownRef = useRef(false);
 
-  // Fire the class-limit nudge once when the locked state is shown, so we can
+  // The upgrade pitch only makes sense for a free teacher who already has
+  // students: the one-class cap is not what is holding back an empty class.
+  // Paid teachers meeting the (hidden) class cap are not sold anything either.
+  const offerUpgrade = tier === 'free' && studentCount > 0;
+
+  // Fire the class-limit nudge once when the upgrade card is shown, so we can
   // measure how often teachers hit the ceiling and how many click Upgrade.
   useEffect(() => {
-    if (!canCreate && !shownRef.current) {
+    if (!canCreate && offerUpgrade && !shownRef.current) {
       shownRef.current = true;
       ph?.capture('nudge_shown', {
         nudge: 'class_limit',
@@ -52,21 +58,39 @@ export default function CreateClassForm({ canCreate, maxClasses, classCount, stu
         tier,
       });
     }
-  }, [canCreate, classCount, studentCount, maxClasses, tier, ph]);
+  }, [canCreate, offerUpgrade, classCount, studentCount, maxClasses, tier, ph]);
 
   if (!canCreate) {
+    if (!offerUpgrade) {
+      return (
+        <div className="flex items-center gap-2 rounded-lg border border-border bg-background/50 px-4 py-3 text-xs text-dark-text">
+          <Lock size={13} className="shrink-0" />
+          {tier === 'free' ? (
+            <span>The free plan has one class. Share its join link to get your students in.</span>
+          ) : (
+            <span>
+              You&apos;ve reached the class limit on the {PLAN_LABELS[tier]} plan. Archive a class you no longer use, or{' '}
+              <Link href="/contact?subject=Class%20limit" className="text-primary hover:underline">
+                email me
+              </Link>{' '}
+              and I&apos;ll raise it.
+            </span>
+          )}
+        </div>
+      );
+    }
     return (
       <div className="flex items-center justify-between gap-3 rounded-lg border border-border bg-background/50 px-4 py-3">
         <span className="flex items-center gap-2 text-xs text-dark-text">
           <Lock size={13} />
-          You&apos;ve reached the class limit on the {PLAN_LABELS[tier]} plan. Archive a class you no longer use, or upgrade.
+          The free plan has one class. Small class is $40 for the year and covers up to 10 students, with the full library for all of them.
         </span>
         <Link
-          href="/pricing?view=teacher"
+          href={teacherYearlyCheckoutHref('class_limit')}
           onClick={() => ph?.capture('nudge_clicked', { nudge: 'class_limit' })}
           className="shrink-0 text-xs font-medium text-primary hover:underline"
         >
-          Upgrade →
+          See the plan →
         </Link>
       </div>
     );

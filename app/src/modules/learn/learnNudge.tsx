@@ -9,12 +9,12 @@ import { loadProgress } from './progress';
 
 const SHOWN_KEY = 'learn_nudge_shown';
 
-export type LearnNudgeSurface = 'playground' | 'practice';
+export type LearnNudgeSurface = 'practice';
 
 /**
- * Students who reach the Paper 2 Path convert; most who only use the editor
- * never find it. After a success in the playground or practice, point them at
- * the path once per browser. Skipped if they have already started it.
+ * Students who reach the Paper 2 Path convert. After a passed practice
+ * question, point them at the path once per browser. Skipped if they have
+ * already started it. The playground version was retired (Nov 2026).
  */
 export function suggestLearnPath(surface: LearnNudgeSurface): void {
   try {
@@ -28,7 +28,7 @@ export function suggestLearnPath(surface: LearnNudgeSurface): void {
   const nudge = `learn_path_${surface}`;
   captureEvent('nudge_shown', { nudge, surface });
 
-  const title = surface === 'practice' ? 'Nice — that one passed.' : 'It ran. Nice.';
+  const title = 'Nice — that one passed.';
 
   toast.custom(
     (toastId) => (
