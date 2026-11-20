@@ -88,12 +88,18 @@ describe('tierForUser', () => {
 });
 
 describe('limits', () => {
-  it('new starter is 3 classes / 30 students total', () => {
+  it('new starter is 30 students total; its class cap is a hidden anti-abuse bound', () => {
     expect(limitsFor('starter')).toEqual({
-      maxClasses: 3,
+      maxClasses: 10,
       maxStudentsTotal: 30,
       maxStudentsPerClass: 30,
     });
+  });
+
+  it('hidden class caps stay generous: at least one class per 6 students, never shown', () => {
+    for (const tier of ['small', 'starter', 'classroom', 'department', 'school'] as const) {
+      expect(LIMITS[tier].maxClasses * 6).toBeGreaterThanOrEqual(LIMITS[tier].maxStudentsTotal);
+    }
   });
 
   it('bands scale by total students', () => {
@@ -103,9 +109,9 @@ describe('limits', () => {
     expect(LIMITS.campus.maxStudentsTotal).toBe(Infinity);
   });
 
-  it('Small class is 2 classes / 10 students total, split any way across them', () => {
+  it('Small class is 10 students total, split any way across classes', () => {
     expect(limitsFor('small')).toEqual({
-      maxClasses: 2,
+      maxClasses: 5,
       maxStudentsTotal: 10,
       maxStudentsPerClass: 10,
     });

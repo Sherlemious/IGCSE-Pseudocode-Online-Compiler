@@ -179,17 +179,12 @@ function yearlySavingPct(
   return pct >= 5 ? pct : null;
 }
 
-function CapacityStats({ maxClasses, maxStudents }: { maxClasses: number; maxStudents: number }) {
-  const classLabel = !Number.isFinite(maxClasses) || maxClasses === 1 ? 'class' : 'classes';
+function CapacityStats({ maxStudents }: { maxStudents: number }) {
   return (
-    <div className="mt-5 grid grid-cols-2 gap-3">
-      <div className="rounded-xl border border-border bg-background/50 px-3 py-3">
-        <p className="text-2xl font-bold tracking-tight text-light-text">{formatCap(maxClasses)}</p>
-        <p className="mt-0.5 text-xs text-dark-text">{classLabel}</p>
-      </div>
+    <div className="mt-5">
       <div className="rounded-xl border border-border bg-background/50 px-3 py-3">
         <p className="text-2xl font-bold tracking-tight text-light-text">{formatCap(maxStudents)}</p>
-        <p className="mt-0.5 text-xs text-dark-text">students in total</p>
+        <p className="mt-0.5 text-xs text-dark-text">students, split across your classes however you like</p>
       </div>
     </div>
   );
@@ -926,10 +921,7 @@ export default function PricingClient({
               <h2 className="text-lg font-semibold text-light-text">{small.name}</h2>
               <p className="mt-1 text-sm text-dark-text">{small.description}</p>
               <div className="mt-5 flex items-baseline gap-1">{renderTeacherPrice(small)}</div>
-              <CapacityStats
-                maxClasses={LIMITS.small.maxClasses}
-                maxStudents={LIMITS.small.maxStudentsTotal}
-              />
+              <CapacityStats maxStudents={LIMITS.small.maxStudentsTotal} />
               {renderTeacherCta(small, ['small'], false)}
               {currentTier !== 'small' && !canManageBilling && (
                 <Link
@@ -988,7 +980,7 @@ export default function PricingClient({
                 onPointerUp={(e) => reportSeats(Number((e.target as HTMLInputElement).value))}
                 onKeyUp={(e) => reportSeats(Number((e.target as HTMLInputElement).value))}
                 aria-label="Number of students"
-                aria-valuetext={`${seatLabel} students, ${selected?.name ?? band.tier} plan, ${formatCap(selectedLimits.maxClasses)} classes`}
+                aria-valuetext={`${seatLabel} students, ${selected?.name ?? band.tier} plan`}
                 className="relative z-0 mt-4 block h-2 w-full cursor-pointer appearance-none rounded-full bg-border accent-primary"
               />
               <div className="mt-3 flex flex-wrap gap-2">
@@ -1025,10 +1017,7 @@ export default function PricingClient({
                   <p className="text-xs font-medium uppercase tracking-wide text-primary">{selected.name}</p>
                   <p className="mt-1 text-sm text-dark-text">{selected.description}</p>
                   <div className="mt-4 flex items-baseline gap-1">{renderTeacherPrice(selected)}</div>
-                  <CapacityStats
-                    maxClasses={selectedLimits.maxClasses}
-                    maxStudents={selectedLimits.maxStudentsTotal}
-                  />
+                  <CapacityStats maxStudents={selectedLimits.maxStudentsTotal} />
                 </div>
                 {renderTeacherCta(selected, band.slugs, true)}
               </>

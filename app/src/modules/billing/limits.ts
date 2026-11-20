@@ -26,13 +26,19 @@ export const LEGACY_STARTER_LIMITS: TierLimits = {
   maxStudentsPerClass: 30,
 };
 
+/**
+ * Students in total is the priced axis. `maxClasses` is only an anti-abuse
+ * bound scaled to it (roughly one class per 3 students), generous enough that a
+ * real teacher never meets it, and it is never shown on the pricing page.
+ * Free keeps one class; legacy Starter keeps the 3 it bought.
+ */
 export const LIMITS: Record<Tier, TierLimits> = {
   free: { maxClasses: 1, maxStudentsTotal: 5, maxStudentsPerClass: 5 },
-  small: { maxClasses: 2, maxStudentsTotal: 10, maxStudentsPerClass: 10 },
-  starter: { maxClasses: 3, maxStudentsTotal: 30, maxStudentsPerClass: 30 },
-  classroom: { maxClasses: 6, maxStudentsTotal: 90, maxStudentsPerClass: 90 },
-  department: { maxClasses: 15, maxStudentsTotal: 250, maxStudentsPerClass: 250 },
-  school: { maxClasses: 40, maxStudentsTotal: 750, maxStudentsPerClass: 750 },
+  small: { maxClasses: 5, maxStudentsTotal: 10, maxStudentsPerClass: 10 },
+  starter: { maxClasses: 10, maxStudentsTotal: 30, maxStudentsPerClass: 30 },
+  classroom: { maxClasses: 30, maxStudentsTotal: 90, maxStudentsPerClass: 90 },
+  department: { maxClasses: 80, maxStudentsTotal: 250, maxStudentsPerClass: 250 },
+  school: { maxClasses: 200, maxStudentsTotal: 750, maxStudentsPerClass: 750 },
   campus: UNLIMITED,
   pro: UNLIMITED,
 };

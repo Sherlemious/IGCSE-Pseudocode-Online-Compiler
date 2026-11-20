@@ -61,7 +61,7 @@ export const TIER_COPY: Record<
     features: [
       ...PAID_TEACHER_INCLUDED.students,
       ...PAID_TEACHER_INCLUDED.teaching,
-      'Up to 2 classes, 10 students in total',
+      'Up to 10 students in total, in as many classes as you like',
     ],
   },
   starter: {
@@ -70,25 +70,25 @@ export const TIER_COPY: Record<
     features: [
       ...PAID_TEACHER_INCLUDED.students,
       ...PAID_TEACHER_INCLUDED.teaching,
-      'Up to 3 classes, 30 students in total',
+      'Up to 30 students in total, in as many classes as you like',
     ],
   },
   pro: {
     name: 'Classroom',
-    description: 'Several classes, up to 90 students',
+    description: 'Up to 90 students, split across your classes however you like',
     features: [
       'Everything in Starter, including student premium access',
-      'Up to 6 classes, 90 students in total',
+      'Up to 90 students in total',
       'Progress analytics',
       'Priority support',
     ],
   },
   classroom: {
     name: 'Classroom',
-    description: 'Several classes, up to 90 students',
+    description: 'Up to 90 students, split across your classes however you like',
     features: [
       'Everything in Starter, including student premium access',
-      'Up to 6 classes, 90 students in total',
+      'Up to 90 students in total',
       'Progress analytics',
       'Priority support',
     ],
@@ -98,7 +98,7 @@ export const TIER_COPY: Record<
     description: 'A department running many classes',
     features: [
       'Everything in Classroom',
-      'Up to 15 classes, 250 students in total',
+      'Up to 250 students in total',
       'Progress analytics',
       'Priority support',
     ],
@@ -108,7 +108,7 @@ export const TIER_COPY: Record<
     description: 'Whole-school seat capacity',
     features: [
       'Everything in Department',
-      'Up to 40 classes, 750 students in total',
+      'Up to 750 students in total',
       'School-wide analytics',
       'Onboarding help',
     ],
@@ -118,7 +118,7 @@ export const TIER_COPY: Record<
     description: 'For large schools that need unlimited seats',
     features: [
       'Everything in School',
-      'Unlimited classes and students',
+      'Unlimited students',
       'Multiple teachers',
       'Onboarding help',
     ],
@@ -128,7 +128,7 @@ export const TIER_COPY: Record<
     description: 'For large schools that need unlimited seats',
     features: [
       'Everything in School',
-      'Unlimited classes and students',
+      'Unlimited students',
       'Multiple teachers',
       'Onboarding help',
     ],

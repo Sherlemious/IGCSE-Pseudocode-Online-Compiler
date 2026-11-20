@@ -32,7 +32,6 @@ export class ClassRequestError extends HttpError {
 }
 
 const unavailable = () => new ClassRequestError(404, 'ASSIGNMENT_UNAVAILABLE', 'This assignment is no longer available.');
-const plural = (n: number) => `${n} class${n === 1 ? '' : 'es'}`;
 const isUniqueViolation = (err: unknown) =>
   err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002';
 
@@ -49,7 +48,7 @@ async function requireOwnedClass(classId: string, userId: string) {
 export async function createClass(user: { id: string; role: string }, name: string) {
   const { limits } = await getEntitlements(user.id);
   if ((await repo.countActiveClasses(user.id)) >= limits.maxClasses) {
-    throw new ClassRequestError(403, 'LIMIT_CLASSES', `Your plan allows ${plural(limits.maxClasses)}. Upgrade to add more.`);
+    throw new ClassRequestError(403, 'LIMIT_CLASSES', 'You have reached the class limit for your plan. Archive a class you no longer use, or upgrade.');
   }
   for (let attempt = 0; attempt < 5; attempt++) {
     try {
@@ -113,7 +112,7 @@ export async function updateClass(classId: string, userId: string, data: { name?
       throw new ClassRequestError(
         403,
         'LIMIT_CLASSES',
-        `Your plan allows ${plural(limits.maxClasses)}. Archive another class or upgrade to restore this one.`,
+        'You have reached the class limit for your plan. Archive another class or upgrade to restore this one.',
       );
     }
     if (activeStudents + cls._count.memberships > limits.maxStudentsTotal) {

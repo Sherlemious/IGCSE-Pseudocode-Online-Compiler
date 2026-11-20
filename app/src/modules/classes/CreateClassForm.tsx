@@ -59,7 +59,7 @@ export default function CreateClassForm({ canCreate, maxClasses, classCount, stu
       <div className="flex items-center justify-between gap-3 rounded-lg border border-border bg-background/50 px-4 py-3">
         <span className="flex items-center gap-2 text-xs text-dark-text">
           <Lock size={13} />
-          You&apos;ve reached your {maxClasses}-class limit on the {PLAN_LABELS[tier]} plan.
+          You&apos;ve reached the class limit on the {PLAN_LABELS[tier]} plan. Archive a class you no longer use, or upgrade.
         </span>
         <Link
           href="/pricing?view=teacher"
