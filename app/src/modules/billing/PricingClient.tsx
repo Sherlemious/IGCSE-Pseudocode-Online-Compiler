@@ -22,6 +22,7 @@ import {
 } from './limits';
 import { TEACHER_COMPARE } from './tierCopy';
 import AskParentButton from './AskParentButton';
+import { CHECKOUT_CLOSED_EVENT, type CheckoutClosedDetail } from './PaddleProvider';
 
 export interface PricingTierView {
   slug: string;
@@ -215,6 +216,7 @@ export default function PricingClient({
   checkoutSource,
   onSignInToCheckout,
   guestCheckout = false,
+  prefillEmail = null,
   discountCode,
 }: {
   teacherTiers: PricingTierView[];
@@ -252,6 +254,12 @@ export default function PricingClient({
    * creating it if needed (custom data `guest`, `intended_role`).
    */
   guestCheckout?: boolean;
+  /**
+   * Signed-out buyer from one of our emails (`&email=` on the link): fill it
+   * into Paddle so checkout opens on the payment step and the webhook matches
+   * the existing account by that email.
+   */
+  prefillEmail?: string | null;
   /**
    * `?code=`: a personal Paddle discount code (offered one to one by email).
    * Replaces the early bird on the `autoCheckout` plan only; Paddle validates it.
@@ -390,21 +398,23 @@ export default function PricingClient({
       auto_opened: Boolean(opts.auto),
       signed_in: Boolean(appUserId),
       discount_code: code,
+      email_link: Boolean(!appUserId && prefillEmail),
     });
     if (!appUserId && onSignInToCheckout && !guestCheckout) {
       onSignInToCheckout({ slug: opts.slug, interval: opts.interval });
       return;
     }
+    const checkoutEmail = customerEmail ?? (appUserId ? undefined : prefillEmail ?? undefined);
     paddle.Checkout.open({
       items: [{ priceId: opts.priceId, quantity: 1 }],
       ...(code ? { discountCode: code } : {}),
       // Email plus the visitor's country (from the edge), so Paddle's one-page
       // checkout opens on the payment step instead of asking for both again.
       // Paddle only accepts an address next to an email or customer id.
-      ...(customerEmail
+      ...(checkoutEmail
         ? {
             customer: {
-              email: customerEmail,
+              email: checkoutEmail,
               ...(checkoutCountry(countryCode) ? { address: { countryCode: checkoutCountry(countryCode)! } } : {}),
             },
           }
@@ -420,10 +430,28 @@ export default function PricingClient({
       settings: {
         displayMode: 'overlay',
         variant: 'one-page',
-        successUrl: `${window.location.origin}/welcome${appUserId ? '' : '?guest=1'}`,
+        successUrl: `${window.location.origin}/welcome${appUserId ? '' : checkoutEmail ? '?guest=1&linked=1' : '?guest=1'}`,
       },
     });
   };
+
+  // A student who closes checkout without paying. Most who leave never pick a
+  // payment method, and "no card, a parent has to pay" is the reason they give
+  // (checkout survey, Nov 2026), so offer the parent link right then.
+  const [leftCheckout, setLeftCheckout] = useState(false);
+  const leftCheckoutShownRef = useRef(false);
+  useEffect(() => {
+    if (!showPasses || !appUserId || viewerIsTeacher) return;
+    const onClosed = (e: Event) => {
+      const detail = (e as CustomEvent<CheckoutClosedDetail>).detail;
+      if (detail?.completed || leftCheckoutShownRef.current) return;
+      leftCheckoutShownRef.current = true;
+      setLeftCheckout(true);
+      ph?.capture('nudge_shown', { nudge: 'ask_parent_after_close', surface: 'pricing', price_id: detail?.priceId ?? null });
+    };
+    window.addEventListener(CHECKOUT_CLOSED_EVENT, onClosed);
+    return () => window.removeEventListener(CHECKOUT_CLOSED_EVENT, onClosed);
+  }, [showPasses, appUserId, viewerIsTeacher, ph]);
 
   // `?checkout=<slug>` hand-off (Learn paywall, or a signed-out click that went
   // through sign-in): open that plan's checkout as soon as the buyer is signed
@@ -771,6 +799,20 @@ export default function PricingClient({
 
       {showPasses && (
         <section className="mx-auto flex max-w-md flex-col gap-4">
+          {leftCheckout && appUserId && !viewerIsTeacher && !currentTier && (
+            <div className="rounded-2xl border border-primary/40 bg-primary/[0.07] p-4" role="status">
+              <p className="text-sm font-semibold text-light-text">No card? A parent can pay from their phone.</p>
+              <p className="mt-1 text-xs text-dark-text leading-relaxed">
+                Send them a link. They pay, and the pass goes on your account.
+              </p>
+              <div className="mt-2">
+                <AskParentButton
+                  surface="checkout_closed"
+                  until={featuredSession ? formatUntil(featuredSession.coversUntil) : undefined}
+                />
+              </div>
+            </div>
+          )}
           {viewerIsTeacher && (
             <p className="mb-0 text-center text-sm text-dark-text">
               Session passes and the student plan are for students only. Your classes stay on a teacher plan.

@@ -76,6 +76,7 @@ export function showPassToast(
             </span>
             <span className="mt-0.5 block text-[11px] leading-snug text-dark-text">
               Every Paper 2 Path level and premium question until {until}. Pay once, no subscription.
+              {signedIn && ' No card? A parent can pay from their phone.'}
             </span>
             <Link
               href={href}

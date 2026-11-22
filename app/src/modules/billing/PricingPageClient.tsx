@@ -61,7 +61,26 @@ function PricingViewInner({
   // the plan on the account for the email paid with (made if missing). Since
   // sign-in-first shipped, most signed-out buyers closed the sign-in sheet.
   const [guestCheckout, setGuestCheckout] = useState(false);
-  const needsSignInForCheckout = Boolean(checkoutSlug) && sessionStatus === 'unauthenticated' && !guestCheckout;
+  // `&email=` on a buy link in our own emails (PostHog fills it per recipient).
+  // People read those emails on their phone, where they aren't signed in, and
+  // the sign-in sheet lost all of them (Nov 2026 sale: 66 shown, 0 bought). With
+  // the email in the link, Paddle opens straight away with it filled in, and the
+  // webhook puts the plan on the account with that email. A forged link can only
+  // pay for someone else's plan, so the email needs no signature. Read once and
+  // then dropped from the URL, so it doesn't sit in pageview URLs.
+  const [linkEmail] = useState(() => {
+    const raw = searchParams.get('email')?.trim() ?? '';
+    return raw.length <= 254 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(raw) ? raw : null;
+  });
+  const emailLinkCheckout = Boolean(checkoutSlug && linkEmail) && sessionStatus === 'unauthenticated';
+  useEffect(() => {
+    if (!searchParams.has('email')) return;
+    const next = new URLSearchParams(searchParams.toString());
+    next.delete('email');
+    router.replace(`/pricing?${next.toString()}`, { scroll: false });
+  }, [router, searchParams]);
+  const needsSignInForCheckout =
+    Boolean(checkoutSlug) && sessionStatus === 'unauthenticated' && !guestCheckout && !emailLinkCheckout;
   const [checkoutAuthOpen, setCheckoutAuthOpen] = useState(false);
   const payAsGuest = () => {
     ph?.capture('pricing_guest_checkout_chosen', { source: checkoutFrom ?? 'unknown', tier: checkoutSlug, paddle_env: paddleEnv });
@@ -237,6 +256,11 @@ function PricingViewInner({
                 ? 'Use the account you teach with. Checkout opens right after, and the plan covers your classes on that account.'
                 : 'Use the account you study with. Checkout opens right after, and levels 4–10 unlock on that account.'}
             </p>
+            {!checkoutForTeacher && (
+              <p className="mt-1 text-xs text-dark-text">
+                No card? Sign in and you can send a parent a link to pay from their phone.
+              </p>
+            )}
             <button
               type="button"
               onClick={() => {
@@ -316,7 +340,8 @@ function PricingViewInner({
               autoInterval={searchParams.get('interval')}
               checkoutSource={checkoutFrom}
               onSignInToCheckout={signInToCheckout}
-              guestCheckout={guestCheckout && !session}
+              guestCheckout={(guestCheckout || emailLinkCheckout) && !session}
+              prefillEmail={emailLinkCheckout ? linkEmail : null}
               discountCode={personalCode}
             />
           </PaddleProvider>

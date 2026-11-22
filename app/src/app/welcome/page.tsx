@@ -14,14 +14,17 @@ export const metadata: Metadata = {
 };
 
 interface Props {
-  searchParams: Promise<{ guest?: string }>;
+  searchParams: Promise<{ guest?: string; linked?: string }>;
 }
 
 export default async function WelcomePage({ searchParams }: Props) {
   const session = await auth();
   const teacher = session?.user?.role === 'TEACHER';
+  const params = await searchParams;
   // Paid without an account: the webhook made one on the email they paid with.
-  const guest = !session?.user && (await searchParams).guest === '1';
+  const guest = !session?.user && params.guest === '1';
+  // Paid signed out from an email link: the account already exists (no claim email).
+  const linked = params.linked === '1';
   return (
     <div className="flex-1 min-h-0 overflow-y-auto bg-background bg-dot-grid scrollbar-pretty">
       <WelcomeTracker />
@@ -36,7 +39,26 @@ export default async function WelcomePage({ searchParams }: Props) {
       <div className="relative mx-auto flex w-full max-w-lg flex-col items-center px-4 py-16 text-center sm:py-24">
         <div className="w-full rounded-2xl border border-border bg-surface/80 backdrop-blur-sm p-6 sm:p-8 shadow-intense">
           <LogoBadge size={64} animate className="mx-auto mb-4" />
-          {guest ? (
+          {guest && linked ? (
+            <>
+              <p className="mono-label text-primary mb-3">Payment confirmed</p>
+              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-light-text">Your plan is on your account</h1>
+              <p className="mt-3 text-sm text-dark-text leading-relaxed">
+                Sign in the way you usually do and everything is unlocked. It can take a minute or two to switch on.
+                Your receipt is on its way to your email.
+              </p>
+              <p className="mt-3 text-xs text-dark-text leading-relaxed">
+                Changed the email in checkout? Then the plan is on that address instead, and we emailed it a link to
+                set a password.
+              </p>
+              <Link
+                href="/auth/signin?callbackUrl=%2Flearn"
+                className="mt-6 inline-flex items-center justify-center min-h-11 px-5 rounded-lg bg-primary text-white text-sm font-semibold hover:bg-primary-hover"
+              >
+                Sign in
+              </Link>
+            </>
+          ) : guest ? (
             <>
               <p className="mono-label text-primary mb-3">Payment confirmed</p>
               <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-light-text">Check your email</h1>

@@ -7,6 +7,14 @@ import { getPaddleEnv, getPaddleClientToken } from '@/modules/billing/paddle/env
 
 const PaddleContext = createContext<Paddle | undefined>(undefined);
 
+/** Window event fired when a Paddle checkout overlay closes. */
+export const CHECKOUT_CLOSED_EVENT = 'paddle-checkout-closed';
+export interface CheckoutClosedDetail {
+  /** True when this checkout completed before it closed. */
+  completed: boolean;
+  priceId: string | null;
+}
+
 /** The initialized Paddle instance, or undefined until it's ready / if init failed. */
 export function usePaddle(): Paddle | undefined {
   return useContext(PaddleContext);
@@ -36,6 +44,8 @@ export default function PaddleProvider({ children }: { children: React.ReactNode
   // events carry no `data`, so we merge this in to attribute an abandonment to a
   // specific tier — otherwise a `checkout_error` can't be tied to what was bought.
   const lastCtxRef = useRef<Record<string, unknown>>({});
+  // Whether the open checkout completed, so its close can say "left without paying".
+  const completedRef = useRef(false);
 
   useEffect(() => {
     let environment: ReturnType<typeof getPaddleEnv>;
@@ -112,6 +122,7 @@ export default function PaddleProvider({ children }: { children: React.ReactNode
             });
             break;
           case CheckoutEventNames.CHECKOUT_COMPLETED:
+            completedRef.current = true;
             phRef.current?.capture('checkout_completed', {
               ...base,
               transaction_id: d?.transaction_id,
@@ -119,6 +130,17 @@ export default function PaddleProvider({ children }: { children: React.ReactNode
             break;
           case CheckoutEventNames.CHECKOUT_CLOSED:
             phRef.current?.capture('checkout_closed', base);
+            // Let the page react to a checkout left without paying (e.g. offer
+            // "ask a parent to pay": most students who leave never pick a method).
+            window.dispatchEvent(
+              new CustomEvent<CheckoutClosedDetail>(CHECKOUT_CLOSED_EVENT, {
+                detail: {
+                  completed: completedRef.current,
+                  priceId: (base.price_id as string | undefined) ?? (ctx.price_id as string | undefined) ?? null,
+                },
+              }),
+            );
+            completedRef.current = false;
             break;
           // Terminal failure (distinct from a dismissed error dialog). No `data`,
           // so lean on the remembered context.
