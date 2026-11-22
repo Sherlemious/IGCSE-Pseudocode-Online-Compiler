@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback } from 'react';
 import { Interpreter, parse, PseudocodeError } from './index';
-import type { OutputEntry, DebugVariable, TraceRow } from './core/types';
+import type { OutputEntry, DebugVariable, TraceRow, TraceWrite } from './core/types';
 import { MAX_TRACE_ROWS } from './core/types';
 
 /**
@@ -536,7 +536,7 @@ export function useInterpreter(runContext?: RunContext) {
             setIsStepping(true);
             pushDebugSnapshot(line, variables, entriesLenRef.current);
           },
-          onTrace(line: number, variables: DebugVariable[]) {
+          onTrace(line: number, variables: DebugVariable[], writes: TraceWrite[]) {
             const output = traceOutputBuffer.current;
             traceOutputBuffer.current = [];
             traceStepRef.current += 1;
@@ -544,6 +544,7 @@ export function useInterpreter(runContext?: RunContext) {
               step: traceStepRef.current,
               line,
               variables,
+              writes,
               output,
             });
             if (traceFlushTimeout.current === null) {

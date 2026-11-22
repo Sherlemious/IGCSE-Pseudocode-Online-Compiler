@@ -3,7 +3,19 @@
 import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { Table2, Copy, Check, AlertTriangle } from 'lucide-react';
 import type { TraceRow } from '@/modules/interpreter/core/types';
-import { formatTraceVar, traceColumns } from '@/modules/compiler/traceTableModel';
+import { examTraceTable, formatTraceVar, traceColumns } from '@/modules/compiler/traceTableModel';
+import { captureEvent } from '@/modules/interpreter/analytics';
+
+type TraceView = 'steps' | 'exam';
+const VIEW_KEY = 'trace_view';
+
+function readStoredView(): TraceView {
+  try {
+    return localStorage.getItem(VIEW_KEY) === 'exam' ? 'exam' : 'steps';
+  } catch {
+    return 'steps';
+  }
+}
 
 interface TraceTableProps {
   rows: TraceRow[];
@@ -24,25 +36,50 @@ interface TraceTableProps {
  */
 const TraceTable: React.FC<TraceTableProps> = ({ rows, maxRows, isLive = false }) => {
   const [copied, setCopied] = useState(false);
+  // 'steps' = one row per statement (debugger view); 'exam' = the Cambridge
+  // mark-scheme layout. The server only ever renders the empty state, which
+  // doesn't depend on the view, so reading storage here can't mismatch.
+  const [view, setView] = useState<TraceView>(readStoredView);
 
   const columns = useMemo(() => traceColumns(rows), [rows]);
+  const exam = useMemo(() => (view === 'exam' ? examTraceTable(rows) : null), [rows, view]);
+
+  const changeView = (next: TraceView) => {
+    if (next === view) return;
+    setView(next);
+    try {
+      localStorage.setItem(VIEW_KEY, next);
+    } catch {
+      // storage blocked: the choice lasts for this page only
+    }
+    captureEvent('trace_view_changed', { view: next, row_count: rows.length });
+  };
 
   // Follow execution: keep the most recent (current) row in view while live.
   const lastRowRef = useRef<HTMLTableRowElement>(null);
+  const visibleRowCount = exam ? exam.rows.length : rows.length;
   useEffect(() => {
     if (isLive && lastRowRef.current) {
       lastRowRef.current.scrollIntoView({ block: 'nearest' });
     }
-  }, [rows.length, isLive]);
+  }, [visibleRowCount, isLive]);
 
   const handleCopy = () => {
-    const header = ['Step', 'Line', ...columns, 'OUTPUT'].join('\t');
-    const lines = rows.map((row) => {
-      const byName = new Map(row.variables.map((v) => [v.name, formatTraceVar(v.value, v.type)]));
-      const cells = columns.map((c) => byName.get(c) ?? '');
-      return [row.step, row.line, ...cells, row.output.join(' ')].join('\t');
-    });
-    navigator.clipboard.writeText([header, ...lines].join('\n')).then(() => {
+    let text: string;
+    if (exam) {
+      const header = [...exam.columns, 'OUTPUT'].join('\t');
+      const lines = exam.rows.map((r) => [...exam.columns.map((c) => r.cells[c] ?? ''), r.output ?? ''].join('\t'));
+      text = [header, ...lines].join('\n');
+    } else {
+      const header = ['Step', 'Line', ...columns, 'OUTPUT'].join('\t');
+      const lines = rows.map((row) => {
+        const byName = new Map(row.variables.map((v) => [v.name, formatTraceVar(v.value, v.type)]));
+        const cells = columns.map((c) => byName.get(c) ?? '');
+        return [row.step, row.line, ...cells, row.output.join(' ')].join('\t');
+      });
+      text = [header, ...lines].join('\n');
+    }
+    navigator.clipboard.writeText(text).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     });
@@ -84,17 +121,84 @@ const TraceTable: React.FC<TraceTableProps> = ({ rows, maxRows, isLive = false }
           <span className="mono-label text-dark-text/45">dry run</span>
           <span className="text-dark-text/45 text-xs whitespace-nowrap">· {rows.length} steps</span>
         </div>
-        <button
-          onClick={handleCopy}
-          className="flex items-center gap-1 text-[10px] text-dark-text hover:text-light-text px-1.5 py-1 rounded hover:bg-surface transition-colors shrink-0"
-          title="Copy as table (tab-separated)"
-        >
-          {copied ? <Check className="h-3 w-3 text-success" /> : <Copy className="h-3 w-3" />}
-          {copied ? 'Copied' : 'Copy'}
-        </button>
+        <div className="flex items-center gap-2 shrink-0">
+          <div role="group" aria-label="Trace table layout" className="flex rounded border border-dark-text/15 p-0.5">
+            {(
+              [
+                ['steps', 'Every step', 'One row per line that runs, every variable filled in'],
+                ['exam', 'Exam style', 'Laid out like a Cambridge mark scheme: a value only when it is assigned, blank when unchanged'],
+              ] as const
+            ).map(([id, label, title]) => (
+              <button
+                key={id}
+                type="button"
+                onClick={() => changeView(id)}
+                aria-pressed={view === id}
+                title={title}
+                className={`text-[10px] px-1.5 py-0.5 rounded-sm transition-colors whitespace-nowrap ${
+                  view === id ? 'bg-primary/15 text-light-text' : 'text-dark-text hover:text-light-text'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <button
+            onClick={handleCopy}
+            className="flex items-center gap-1 text-[10px] text-dark-text hover:text-light-text px-1.5 py-1 rounded hover:bg-surface transition-colors"
+            title="Copy as table (tab-separated)"
+          >
+            {copied ? <Check className="h-3 w-3 text-success" /> : <Copy className="h-3 w-3" />}
+            {copied ? 'Copied' : 'Copy'}
+          </button>
+        </div>
       </div>
 
       <div className="flex-1 min-h-0 overflow-auto px-3 pb-3 scrollbar-pretty">
+        {exam ? (
+          exam.rows.length === 0 ? (
+            <div className="text-xs text-dark-text/50 p-3">
+              No variable was assigned and nothing was output, so the exam-style table is empty.
+            </div>
+          ) : (
+          <table className="w-full text-xs font-mono border-collapse mt-1">
+            <thead>
+              <tr className="text-dark-text/60">
+                {exam.columns.map((name, i) => (
+                  <th key={name} className={`${headCell} text-light-text/80 whitespace-nowrap ${i > 0 ? `border-l ${RULE}` : ''}`}>
+                    {name}
+                  </th>
+                ))}
+                <th className={`${headCell} text-success/70 ${exam.columns.length > 0 ? `border-l ${RULE}` : ''}`}>OUTPUT</th>
+              </tr>
+            </thead>
+            <tbody>
+              {exam.rows.map((row, rowIdx) => {
+                const isCurrent = isLive && rowIdx === exam.rows.length - 1;
+                return (
+                  <tr
+                    key={rowIdx}
+                    ref={isCurrent ? lastRowRef : undefined}
+                    className={`border-b ${RULE} ${isCurrent ? 'bg-primary/[0.08]' : ''} hover:bg-surface/40`}
+                  >
+                    {exam.columns.map((name, i) => (
+                      <td
+                        key={name}
+                        className={`py-1 px-2 whitespace-nowrap text-light-text/85 ${i > 0 ? `border-l ${RULE}` : ''}`}
+                      >
+                        {row.cells[name] ?? ''}
+                      </td>
+                    ))}
+                    <td className={`py-1 px-2 text-success/80 whitespace-pre-wrap ${exam.columns.length > 0 ? `border-l ${RULE}` : ''}`}>
+                      {row.output ?? ''}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+          )
+        ) : (
         <table className="w-full text-xs font-mono border-collapse mt-1">
           <thead>
             {/* Sticky header — inset box-shadow (not border-b) so the divider
@@ -157,6 +261,7 @@ const TraceTable: React.FC<TraceTableProps> = ({ rows, maxRows, isLive = false }
             })}
           </tbody>
         </table>
+        )}
       </div>
 
       {truncated && (

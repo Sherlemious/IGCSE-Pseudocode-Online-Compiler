@@ -13,9 +13,16 @@ interface Variable {
 export class Environment {
   private variables = new Map<string, Variable>();
   private parent: Environment | null;
+  /** Set on the program scope only; told about every assignment made through `set`. */
+  private writeListener: ((name: string, value: RuntimeValue) => void) | null = null;
 
   constructor(parent: Environment | null = null) {
     this.parent = parent;
+  }
+
+  /** Watch assignments (not DECLAREs) in this scope tree, e.g. for the exam-style trace table. */
+  setWriteListener(listener: ((name: string, value: RuntimeValue) => void) | null): void {
+    this.writeListener = listener;
   }
 
   declare(name: string, value: RuntimeValue = mkNone()): void {
@@ -43,17 +50,21 @@ export class Environment {
     // auto-declared in the outermost (program) scope.
     const entry = this.lookup(name);
     if (!entry) {
-      this.root().variables.set(name, { value, constant: false });
+      const root = this.root();
+      root.variables.set(name, { value, constant: false });
+      root.writeListener?.(name, value);
       return;
     }
     if (entry.constant) {
       throw new RuntimeError(`Cannot assign to constant '${name}'`);
     }
     if (entry.ref) {
+      // The aliased location reports its own write (under the caller's name).
       entry.ref.set(value);
       return;
     }
     entry.value = value;
+    this.root().writeListener?.(name, value);
   }
 
   /** The nearest entry for `name` along the scope chain. */

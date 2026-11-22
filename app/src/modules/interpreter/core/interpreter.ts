@@ -115,6 +115,7 @@ import {
 import { createBuiltinLookup } from './builtins';
 import { VirtualFileSystem } from './filesystem';
 import { InterpreterCallbacks, RuntimeError, ExecutionCancelledError, DebugVariable, MAX_TRACE_ROWS } from './types';
+import type { TraceWrite } from './types';
 
 class ReturnSignal {
   constructor(public value: RuntimeValue) {}
@@ -151,6 +152,30 @@ interface MethodFrame {
  */
 export const MAX_CALL_DEPTH = 5000;
 
+const COMPOSITE_LABELS: Partial<Record<RuntimeValue['type'], string>> = {
+  ARRAY: 'Array',
+  RECORD: 'Record',
+  OBJECT: 'Object',
+  POINTER: 'Pointer',
+  SET: 'Set',
+};
+
+/** How a value appears in the debugger and trace table (composites as an opaque label). */
+function displayValue(value: RuntimeValue): string {
+  return COMPOSITE_LABELS[value.type] ?? toString(value);
+}
+
+/** IF / CASE / FOR / WHILE / REPEAT: statements whose body runs before their own trace row. */
+function isBlockStatement(ctx: StatementContext): boolean {
+  return !!(
+    ctx.ifStatement() ||
+    ctx.caseStatement() ||
+    ctx.forStatement() ||
+    ctx.whileStatement() ||
+    ctx.repeatStatement()
+  );
+}
+
 export class Interpreter {
   private env: Environment;
   /** Program scope. Routines see it plus their own locals, never their caller's. */
@@ -174,6 +199,9 @@ export class Interpreter {
   private _breakpoints = new Set<number>();
   private _traceMode = false;
   private _traceCount = 0;
+  private _lastTraceKey: string | null = null;
+  /** Assignments since the last emitted trace row (see TraceRow.writes). */
+  private _traceWrites = new Map<string, TraceWrite>();
 
   constructor(callbacks: InterpreterCallbacks, signal: AbortSignal, fileSystem?: VirtualFileSystem) {
     this.globalEnv = new Environment();
@@ -226,6 +254,19 @@ export class Interpreter {
   setTraceMode(enabled: boolean): void {
     this._traceMode = enabled;
     this._traceCount = 0;
+    this._lastTraceKey = null;
+    this._traceWrites.clear();
+    this.globalEnv.setWriteListener(
+      enabled
+        ? (name, value) => {
+            // Last value per name since the previous row: a FOR sets its counter
+            // before the loop and again on the first pass, which is one assignment
+            // on paper. Re-inserting moves the name to its latest position.
+            this._traceWrites.delete(name);
+            this._traceWrites.set(name, { name, value: displayValue(value), type: value.type });
+          }
+        : null,
+    );
   }
 
   step(): void {
@@ -238,18 +279,10 @@ export class Interpreter {
 
   private snapshotVariables(): DebugVariable[] {
     const vars: DebugVariable[] = [];
-    const COMPOSITE_LABELS: Partial<Record<RuntimeValue['type'], string>> = {
-      ARRAY: 'Array',
-      RECORD: 'Record',
-      OBJECT: 'Object',
-      POINTER: 'Pointer',
-      SET: 'Set',
-    };
     for (const [name, entry] of this.env.getAllVariables()) {
-      const label = COMPOSITE_LABELS[entry.value.type];
       vars.push({
         name,
-        value: label ?? toString(entry.value),
+        value: displayValue(entry.value),
         type: entry.value.type,
         constant: entry.constant,
       });
@@ -336,8 +369,18 @@ export class Interpreter {
     await this.dispatchStatement(ctx);
     // Record a trace row (variable state *after* the statement ran) when tracing.
     if (this._traceMode && line !== undefined && this._traceCount < MAX_TRACE_ROWS) {
+      const variables = this.snapshotVariables();
+      const key = variables.map((v) => `${v.name}\u0000${v.type}\u0000${v.value}`).join('\u0001');
+      // A block's own row lands after its body and usually repeats the body's last
+      // row, which reads as every row shown twice. Keep it only if it changed something
+      // (e.g. a FOR that never ran still sets its counter).
+      // A skipped row keeps its pending writes; they move to the next row.
+      if (isBlockStatement(ctx) && key === this._lastTraceKey) return;
+      this._lastTraceKey = key;
       this._traceCount++;
-      this.callbacks.onTrace?.(line, this.snapshotVariables());
+      const writes = [...this._traceWrites.values()];
+      this._traceWrites.clear();
+      this.callbacks.onTrace?.(line, variables, writes);
     }
   }
 

@@ -21,8 +21,21 @@ export interface TraceRow {
   line: number;
   /** Variable state immediately after the statement executed. */
   variables: DebugVariable[];
+  /**
+   * Assignments made since the previous row, in order (last value per name).
+   * Unlike a diff of `variables`, this includes assigning the value a variable
+   * already had, which a Cambridge trace table still writes down.
+   */
+  writes: TraceWrite[];
   /** Output emitted by this statement (if any). */
   output: string[];
+}
+
+/** One assignment recorded for the trace table. */
+export interface TraceWrite {
+  name: string;
+  value: string;
+  type: string;
 }
 
 export interface InterpreterCallbacks {
@@ -36,7 +49,7 @@ export interface InterpreterCallbacks {
   /** Called when a breakpoint is hit during normal execution. */
   onBreakpoint?(line: number, variables: DebugVariable[]): void;
   /** Called after each statement executes in trace mode (for the trace table). */
-  onTrace?(line: number, variables: DebugVariable[]): void;
+  onTrace?(line: number, variables: DebugVariable[], writes: TraceWrite[]): void;
 }
 
 export class PseudocodeError extends Error {
