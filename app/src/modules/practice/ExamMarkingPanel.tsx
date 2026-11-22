@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { CheckCircle, GraduationCap, XCircle } from 'lucide-react';
 import { useFeatureFlagEnabled } from 'posthog-js/react';
@@ -25,7 +25,24 @@ interface MarkingResponse {
  * Tests say whether the program works; this says what a Paper 2 examiner
  * would give it, point by point, and which fixes are worth the most marks.
  */
-export default function ExamMarkingPanel({ questionId, code, signedIn }: { questionId: string; code: string; signedIn: boolean }) {
+export default function ExamMarkingPanel({
+  questionId,
+  code,
+  signedIn,
+  autoMark = false,
+  onAutoMarkHandled,
+}: {
+  questionId: string;
+  code: string;
+  signedIn: boolean;
+  /**
+   * Set by the toolbar's "Mark like an examiner" button: mark as soon as this
+   * panel is showing. The Results tab mounts it only when opened, so the request
+   * lives in the workspace and is cleared through `onAutoMarkHandled`.
+   */
+  autoMark?: boolean;
+  onAutoMarkHandled?: () => void;
+}) {
   const [state, setState] = useState<'idle' | 'marking'>('idle');
   const [data, setData] = useState<MarkingResponse | null>(null);
   // `done`: today's free marking allowance is used up (comes back at `resetsAt`).
@@ -34,10 +51,10 @@ export default function ExamMarkingPanel({ questionId, code, signedIn }: { quest
   // PostHog decides who sees it; the route checks the same flag again.
   const enabled = useFeatureFlagEnabled(EXAM_MARKING_FLAG);
 
-  const mark = async () => {
+  const mark = async (from: 'results' | 'toolbar' = 'results') => {
     setState('marking');
     setError(null);
-    captureEvent('exam_marking_clicked', { question_id: questionId });
+    captureEvent('exam_marking_clicked', { question_id: questionId, source: from });
     try {
       const res = await fetch(`/api/questions/${questionId}/mark`, {
         method: 'POST',
@@ -76,6 +93,18 @@ export default function ExamMarkingPanel({ questionId, code, signedIn }: { quest
       setState('idle');
     }
   };
+
+  // Toolbar request: wait for the flag to load, then mark once. Signed out, the
+  // panel shows the sign-in card instead, so the request is just cleared.
+  const markRef = useRef(mark);
+  useEffect(() => {
+    markRef.current = mark;
+  });
+  useEffect(() => {
+    if (!autoMark || enabled === undefined) return;
+    onAutoMarkHandled?.();
+    if (enabled && signedIn && code.trim()) void markRef.current('toolbar');
+  }, [autoMark, enabled, signedIn, code, onAutoMarkHandled]);
 
   if (!enabled) return null;
 
@@ -125,7 +154,7 @@ export default function ExamMarkingPanel({ questionId, code, signedIn }: { quest
           </p>
           <button
             type="button"
-            onClick={mark}
+            onClick={() => mark('results')}
             disabled={state === 'marking' || !code.trim()}
             className="mt-2 rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-white hover:bg-primary-hover disabled:opacity-60"
           >

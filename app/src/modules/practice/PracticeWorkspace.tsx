@@ -14,6 +14,8 @@ import { findQuickFix } from '@/modules/interpreter/quickFix';
 import { diagnoseOutput } from './outputDiagnosis';
 import { PRACTICE_CHECK_HELP_FLAG, usePracticeVariant } from './practiceCoach';
 import ExamMarkingPanel from './ExamMarkingPanel';
+import { useFeatureFlagEnabled } from 'posthog-js/react';
+import { EXAM_MARKING_FLAG } from '@/modules/billing/featureFlags';
 import { suggestLearnPath } from '@/modules/learn/learnNudge';
 import PracticePassOffer from './PracticePassOffer';
 import { readStreak, recordSolveDay } from './practiceStreak';
@@ -36,6 +38,7 @@ import {
   ChevronRight,
   Terminal,
   ClipboardCheck,
+  GraduationCap,
   Trash2,
   EyeOff,
   Lightbulb,
@@ -232,6 +235,17 @@ export default function PracticeWorkspace({ questionId, starterCode, savedCode, 
   /* ── Confirm dialogs + mobile view + jump to line ───── */
   const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
   const [mobileView, setMobileView] = useState<'editor' | 'output'>('editor');
+  // Examiner marking from the toolbar (15-mark questions): until Nov 2026 it sat
+  // under the test results only, and nobody opened it. The panel picks the
+  // request up when the Results tab shows it.
+  const examMarkingOn = useFeatureFlagEnabled(EXAM_MARKING_FLAG) === true;
+  const [pendingMark, setPendingMark] = useState(false);
+  const clearPendingMark = useCallback(() => setPendingMark(false), []);
+  const requestExamMarking = () => {
+    setActiveTab('results');
+    setMobileView('output');
+    setPendingMark(true);
+  };
   const [jumpToLine, setJumpToLine] = useState<number | null>(null);
 
   /* ── Input field (for terminal INPUT prompts) ───────── */
@@ -639,6 +653,20 @@ export default function PracticeWorkspace({ questionId, starterCode, savedCode, 
             )}
             {isGrading ? 'Checking\u2026' : 'Check My Answer'}
           </button>
+          {examMarking && examMarkingOn && (
+            <button
+              onClick={requestExamMarking}
+              disabled={busy || !code.trim()}
+              className="flex items-center gap-1.5 px-3 py-1 text-xs font-medium rounded
+                border border-primary/40 text-light-text hover:bg-primary/10 transition-colors
+                disabled:opacity-50 disabled:cursor-not-allowed"
+              title="See what a Paper 2 examiner would give this answer, out of 15"
+            >
+              <GraduationCap className="h-3.5 w-3.5 text-primary" />
+              <span className="hidden sm:inline">Mark like an examiner</span>
+              <span className="sm:hidden">Mark /15</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -818,7 +846,21 @@ export default function PracticeWorkspace({ questionId, starterCode, savedCode, 
           ) : (
             <div className="flex-1 min-h-0 bg-background overflow-y-auto
               scrollbar-thin scrollbar-thumb-primary scrollbar-track-background scrollbar-thumb-rounded-full">
-              {renderResults()}
+              <div className="flex min-h-full flex-col">
+                {renderResults()}
+                {/* Outside renderResults so a marking survives re-checks and shows before the first one. */}
+                {examMarking && authStatus !== 'loading' && (
+                  <div className="px-3 pb-3">
+                    <ExamMarkingPanel
+                      questionId={questionId}
+                      code={code}
+                      signedIn={authStatus === 'authenticated'}
+                      autoMark={pendingMark}
+                      onAutoMarkHandled={clearPendingMark}
+                    />
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </div>
@@ -1039,7 +1081,7 @@ export default function PracticeWorkspace({ questionId, starterCode, savedCode, 
 
     if (!gradeResponse) {
       return (
-        <div className="h-full flex flex-col items-center justify-center gap-3 text-dark-text select-none p-4">
+        <div className="flex-1 min-h-[9rem] flex flex-col items-center justify-center gap-3 text-dark-text select-none p-4">
           <ClipboardCheck className="h-8 w-8 text-dark-text/20" />
           <div className="text-center space-y-1">
             <div className="text-xs text-dark-text/50">
@@ -1125,10 +1167,6 @@ export default function PracticeWorkspace({ questionId, starterCode, savedCode, 
               </button>
             )}
           </div>
-        )}
-
-        {examMarking && authStatus !== 'loading' && (
-          <ExamMarkingPanel questionId={questionId} code={code} signedIn={authStatus === 'authenticated'} />
         )}
 
         {/* Save-score nudge for anonymous students (Easy grades without sign-in) */}
