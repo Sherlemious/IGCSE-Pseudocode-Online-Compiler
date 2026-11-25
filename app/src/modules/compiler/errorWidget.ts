@@ -64,7 +64,9 @@ class InlineErrorWidget extends WidgetType {
     if (info.unchanged) {
       const note = document.createElement('div');
       note.className = 'cm-inline-error-note';
-      note.textContent = 'You ran the same code again — change this line first.';
+      note.textContent = info.fix
+        ? 'You ran the same code again — click Fix it below or edit this line.'
+        : 'You ran the same code again — edit this line before running.';
       root.append(note);
     }
 
@@ -84,11 +86,13 @@ class InlineErrorWidget extends WidgetType {
       const pre = document.createElement('pre');
       pre.className = 'cm-inline-error-detail';
       pre.textContent = detail;
-      pre.hidden = true;
+      // On an unchanged re-run, open the example automatically so the student
+      // sees what valid syntax looks like without having to hunt for the toggle.
+      pre.hidden = !info.unchanged;
       const toggle = document.createElement('button');
       toggle.type = 'button';
       toggle.className = 'cm-inline-error-toggle';
-      toggle.textContent = 'Show example';
+      toggle.textContent = pre.hidden ? 'Show example' : 'Hide example';
       toggle.addEventListener('mousedown', (e) => e.preventDefault());
       toggle.addEventListener('click', () => {
         pre.hidden = !pre.hidden;

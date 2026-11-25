@@ -17,8 +17,10 @@ import {
   FileUp,
   Play,
   SkipForward,
+  Sparkles,
   Square,
   Terminal,
+  X,
 } from 'lucide-react';
 import { captureEvent } from '@/modules/interpreter/analytics';
 import { parseFlowchartDoc, starterFlowchart, type FlowchartDoc } from '@/modules/interpreter/converters/flowchartDoc';
@@ -28,7 +30,7 @@ import Modal, { ConfirmDialog } from '@/shared/ui/Modal';
 import FlowchartBuilder from './FlowchartBuilder';
 import FlowchartTerminal from './FlowchartTerminal';
 import FlowchartExamplePicker from './FlowchartExamplePicker';
-import type { FlowchartExample } from './examples';
+import { FLOWCHART_EXAMPLES, type FlowchartExample } from './examples';
 import { FLOWCHART_IMPORT_KEY, FLOWCHART_VISITED_KEY } from './constants';
 import FlowchartUseSurvey from './FlowchartUseSurvey';
 import { flowchartFromCode } from './importCode';
@@ -179,6 +181,31 @@ export default function FlowchartStudio() {
     [load],
   );
 
+  const [starterDismissed, setStarterDismissed] = useState(false);
+  const starterShownRef = useRef(false);
+  const quickStarters = ['grade', 'total', 'validate']
+    .map((id) => FLOWCHART_EXAMPLES.find((ex) => ex.id === id))
+    .filter((ex): ex is FlowchartExample => Boolean(ex));
+  const showStarterBar = doc.nodes.length <= 2 && !starterDismissed && quickStarters.length > 0;
+
+  useEffect(() => {
+    if (showStarterBar && !starterShownRef.current) {
+      starterShownRef.current = true;
+      captureEvent('flowchart_starter_shown', { template_count: quickStarters.length });
+    }
+  }, [showStarterBar, quickStarters.length]);
+
+  const pickQuickStarter = useCallback(
+    (example: FlowchartExample) => {
+      const converted = flowchartFromCode(example.code);
+      if (converted.doc) {
+        captureEvent('flowchart_starter_clicked', { template: example.id, category: example.category });
+        loadExample(example, converted.doc);
+      }
+    },
+    [loadExample],
+  );
+
   const codeLines = program.code ? program.code.replace(/\n$/, '').split('\n') : [];
   const btn =
     'inline-flex items-center gap-1.5 min-h-9 px-2.5 rounded-md text-xs font-semibold transition-colors disabled:opacity-40 disabled:pointer-events-none shrink-0';
@@ -246,6 +273,36 @@ export default function FlowchartStudio() {
 
       <div className="flex-1 min-h-0 flex flex-col lg:flex-row">
         <section className="flex-1 min-h-[55%] lg:min-h-0 min-w-0 flex flex-col" aria-label="Flowchart canvas">
+          {showStarterBar && (
+            <div className="shrink-0 flex flex-wrap items-center gap-1.5 px-3 py-2 border-b border-border bg-primary/5 text-xs">
+              <span className="inline-flex items-center gap-1.5 text-light-text font-medium mr-1">
+                <Sparkles size={13} className="text-primary shrink-0" />
+                Start from a runnable example:
+              </span>
+              {quickStarters.map((ex) => (
+                <button
+                  key={ex.id}
+                  type="button"
+                  onClick={() => pickQuickStarter(ex)}
+                  className="inline-flex items-center gap-1 rounded-md border border-primary/30 bg-surface px-2.5 py-1 text-xs text-light-text hover:border-primary/60 hover:bg-primary/10 transition-colors"
+                >
+                  {ex.title}
+                </button>
+              ))}
+              <button
+                type="button"
+                onClick={() => {
+                  setStarterDismissed(true);
+                  captureEvent('flowchart_starter_dismissed', {});
+                }}
+                aria-label="Start blank and dismiss examples"
+                className="ml-auto inline-flex items-center gap-1 rounded px-1.5 py-1 text-[11px] text-dark-text hover:text-light-text transition-colors"
+              >
+                <span className="hidden sm:inline">Start blank</span>
+                <X size={13} />
+              </button>
+            </div>
+          )}
           <FlowchartBuilder
             key={canvasKey}
             doc={doc}

@@ -178,4 +178,47 @@ describe('quick fixes', () => {
     // into the procedure, so no fix is offered.
     expect(fixOf(prog('PROCEDURE Hi()', 'OUTPUT "hi"', 'CALL Hi()')).fix).toBeNull();
   });
+
+  it('inserts a missing inner ENDIF before an outer NEXT', () => {
+    expectFixedTo(
+      prog('FOR i <- 1 TO 3', '  IF i > 1 THEN', '    OUTPUT i', 'NEXT i', 'OUTPUT "done"'),
+      prog('FOR i <- 1 TO 3', '  IF i > 1 THEN', '    OUTPUT i', '  ENDIF', 'NEXT i', 'OUTPUT "done"'),
+    );
+  });
+
+  it('fixes common array declaration mistakes', () => {
+    expectFixedTo(
+      prog('DECLARE Scores : ARRAY[1..5] OF INTEGER'),
+      prog('DECLARE Scores : ARRAY[1:5] OF INTEGER'),
+    );
+    expectFixedTo(
+      prog('DECLARE Scores : ARRAY[5] OF INTEGER'),
+      prog('DECLARE Scores : ARRAY[1:5] OF INTEGER'),
+    );
+    expectFixedTo(
+      prog('DECLARE Scores : ARRAY[1:5] INTEGER'),
+      prog('DECLARE Scores : ARRAY[1:5] OF INTEGER'),
+    );
+    expectFixedTo(
+      prog('DECLARE Scores[5] : INTEGER'),
+      prog('DECLARE Scores : ARRAY[1:5] OF INTEGER'),
+    );
+  });
+
+  it('converts Python input() assignments into INPUT', () => {
+    expectFixedTo(
+      prog('age = int(input("Age: "))'),
+      prog('INPUT age, "Age: "'),
+    );
+    expectFixedTo(
+      prog('name = input()'),
+      prog('INPUT name'),
+    );
+  });
+
+  it('joins a space inside a variable name on INPUT, DECLARE, and assignment', () => {
+    expectFixedTo(prog('INPUT First Name'), prog('INPUT FirstName'));
+    expectFixedTo(prog('DECLARE First Name : STRING'), prog('DECLARE FirstName : STRING'));
+    expectFixedTo(prog('First Name <- "Ada"'), prog('FirstName <- "Ada"'));
+  });
 });

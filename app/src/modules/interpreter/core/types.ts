@@ -42,6 +42,14 @@ export interface InterpreterCallbacks {
   onOutput(text: string): void;
   onInputRequest(variableName: string, prompt?: string): void;
   onInputComplete(): void;
+  /**
+   * Optional interactive retry hook for scalar INPUT type mismatches (e.g. typing
+   * text into an INTEGER). When provided, the interpreter shows the retry notice
+   * and re-prompts instead of aborting the run. Omitted by the autograder/tests.
+   */
+  onInputRetry?(variableName: string, expectedType: string, message: string, attempt: number): void;
+  /** Called when a student recovers after one or more inline INPUT re-prompts. */
+  onInputRecovered?(expectedType: string, attempts: number): void;
   onComplete(): void;
   onError(error: PseudocodeError): void;
   /** Called before each statement in step mode. */

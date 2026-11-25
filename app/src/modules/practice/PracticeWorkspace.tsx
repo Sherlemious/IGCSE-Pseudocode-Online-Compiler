@@ -284,18 +284,36 @@ export default function PracticeWorkspace({ questionId, starterCode, savedCode, 
      deliberate tab switch while paused. */
   const activeTabRef = useRef(activeTab);
   useEffect(() => { activeTabRef.current = activeTab; }, [activeTab]);
+  const runCheckNudgeSentRef = useRef(false);
   useEffect(() => {
-    if (waitingForInput && activeTabRef.current !== 'output') {
-      setActiveTab('output');
-      toast.info('Input needed — switched to the Output tab');
+    runCheckNudgeSentRef.current = false;
+  }, [questionId]);
+  useEffect(() => {
+    if (waitingForInput) {
+      setMobileView('output');
+      if (activeTabRef.current !== 'output') {
+        setActiveTab('output');
+        toast.info('Input needed — switched to the Output tab');
+      }
     }
   }, [waitingForInput]);
+
+  const showRunCheckNudge =
+    !isRunning && !isGrading && !gradeResponse && entries.length > 0 && !entries.some((e) => e.kind === 'error');
+
+  useEffect(() => {
+    if (showRunCheckNudge && !runCheckNudgeSentRef.current) {
+      runCheckNudgeSentRef.current = true;
+      captureEvent('practice_run_check_nudge_shown', { question_id: questionId });
+    }
+  }, [showRunCheckNudge, questionId]);
 
   /* ── Handlers ───────────────────────────────────────── */
   const handleRun = useCallback(async () => {
     if (!code.trim() || isRunning) return;
     setGradeFix(null);
     setActiveTab('output');
+    setMobileView('output');
     await run(code, { cursorLine: cursorLineRef.current });
   }, [code, isRunning, run]);
 
@@ -313,6 +331,7 @@ export default function PracticeWorkspace({ questionId, starterCode, savedCode, 
     setGradeFix(null);
     setGradingError(null);
     setActiveTab('results');
+    setMobileView('output');
 
     try {
       const res = await fetch(`/api/questions/${questionId}/grade`, {
@@ -641,17 +660,18 @@ export default function PracticeWorkspace({ questionId, starterCode, savedCode, 
           <button
             onClick={attemptGrade}
             disabled={busy || !code.trim()}
-            className="flex items-center gap-1.5 px-3 py-1 text-xs font-medium rounded
+            className="shrink-0 flex items-center gap-1.5 px-2.5 sm:px-3 py-1 text-xs font-medium rounded
               bg-primary/15 text-primary hover:bg-primary/25 transition-colors
-              disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
             title="Check My Answer (Ctrl+Shift+Enter)"
           >
             {isGrading ? (
               <span className="inline-block h-3.5 w-3.5 rounded-full border-2 border-primary/30 border-t-primary animate-spin" />
             ) : (
-              <ClipboardCheck className="h-3.5 w-3.5" />
+              <ClipboardCheck className="h-3.5 w-3.5 shrink-0" />
             )}
-            {isGrading ? 'Checking\u2026' : 'Check My Answer'}
+            <span className="hidden sm:inline">{isGrading ? 'Checking\u2026' : 'Check My Answer'}</span>
+            <span className="sm:hidden">{isGrading ? 'Checking\u2026' : 'Check'}</span>
           </button>
           {examMarking && examMarkingOn && (
             <button
@@ -1040,6 +1060,24 @@ export default function PracticeWorkspace({ questionId, starterCode, savedCode, 
               entries.some((e) => e.kind === 'error') ? 'bg-error/60' : 'bg-success/60'
             }`} />
             {entries.some((e) => e.kind === 'error') ? 'Process exited with errors' : 'Process finished'}
+          </div>
+        )}
+        {showRunCheckNudge && (
+          <div className="mt-3 rounded-lg border border-primary/30 bg-primary/10 px-3 py-2.5 flex flex-wrap items-center justify-between gap-2 font-sans">
+            <span className="text-xs text-light-text">
+              Looks like it ran cleanly — ready to grade against all test cases?
+            </span>
+            <button
+              type="button"
+              onClick={() => {
+                captureEvent('practice_run_check_nudge_clicked', { question_id: questionId });
+                void attemptGrade();
+              }}
+              className="inline-flex items-center gap-1.5 rounded-md bg-primary px-2.5 py-1 text-xs font-semibold text-on-primary hover:bg-primary/90 transition-colors"
+            >
+              <ClipboardCheck className="h-3.5 w-3.5" />
+              Check My Answer
+            </button>
           </div>
         )}
       </div>

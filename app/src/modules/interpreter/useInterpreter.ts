@@ -26,6 +26,9 @@ import {
   captureHintResolved,
   captureFixApplied,
   captureErrorHelp,
+  captureInputReprompted,
+  captureInputRepromptRecovered,
+  captureUnchangedRunNudged,
   type RunContext,
   type RunOutcome,
   type RerunInfo,
@@ -321,7 +324,15 @@ export function useInterpreter(runContext?: RunContext) {
         // The editor holds the raw text: the fix is stale once that line changes.
         if (fix) fix = { ...fix, original: m.rawSource.split('\n')[fix.line - 1] ?? fix.original };
         if (line != null && display) {
-          setErrorInfo({ errorType, category, line, message: display, fix, unchanged });
+          const nextInfo: ErrorInfo = { errorType, category, line, message: display, fix, unchanged };
+          errorInfoRef.current = nextInfo;
+          setErrorInfo(nextInfo);
+          if (unchanged) {
+            captureUnchangedRunNudged(
+              { hintId: category, hasFix: Boolean(fix), errorStreak: m.rerun.errorStreak + 1 },
+              runContextRef.current,
+            );
+          }
         }
         captureHintShown(
           category,
@@ -494,6 +505,12 @@ export function useInterpreter(runContext?: RunContext) {
           },
           onInputComplete() {
             setWaitingForInput(false);
+          },
+          onInputRetry(_variableName: string, expectedType: string, _message: string, attempt: number) {
+            captureInputReprompted({ expectedType, attempt }, runContextRef.current);
+          },
+          onInputRecovered(expectedType: string, attempts: number) {
+            captureInputRepromptRecovered({ expectedType, attempts }, runContextRef.current);
           },
           onComplete() {
             // Flush any remaining output / trace rows

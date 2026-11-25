@@ -22,7 +22,7 @@ export interface RunContext {
  * so "did this change help?" is a before/after comparison of hint_shown →
  * hint_resolved (and the next run's outcome) split by `hint_version`.
  */
-export const HINT_VERSION = '2026-10-28.1';
+export const HINT_VERSION = '2026-11-26.1';
 
 export type RunOutcome = 'success' | 'parse_error' | 'runtime_error' | 'aborted';
 
@@ -183,6 +183,44 @@ export function captureErrorHelp(
   ctx: RunContext | undefined,
 ) {
   captureRaw('error_help_clicked', { hint_id: data.hintId, action: data.action, ...baseProps(ctx) });
+}
+
+/** An interactive INPUT value didn't match the target's type and was re-prompted inline. */
+export function captureInputReprompted(
+  data: { expectedType: string; attempt: number },
+  ctx: RunContext | undefined,
+) {
+  captureRaw('input_reprompted', {
+    expected_type: data.expectedType,
+    attempt: data.attempt,
+    ...baseProps(ctx),
+  });
+}
+
+/** The student recovered from one or more inline INPUT re-prompts with a valid value. */
+export function captureInputRepromptRecovered(
+  data: { expectedType: string; attempts: number },
+  ctx: RunContext | undefined,
+) {
+  captureRaw('input_reprompt_recovered', {
+    expected_type: data.expectedType,
+    attempts: data.attempts,
+    ...baseProps(ctx),
+  });
+}
+
+/** The student pressed Run again without editing their errored code; we focused the offending line. */
+export function captureUnchangedRunNudged(
+  data: { hintId: string | null; hasFix: boolean; errorStreak: number },
+  ctx: RunContext | undefined,
+) {
+  captureRaw('unchanged_run_nudged', {
+    hint_id: data.hintId,
+    has_fix: data.hasFix,
+    error_streak: data.errorStreak,
+    hint_version: HINT_VERSION,
+    ...baseProps(ctx),
+  });
 }
 
 /** Lightweight passthrough for surface-level funnel events (practice_*, exam_*). */

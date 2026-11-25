@@ -15,6 +15,12 @@ describe('diagnoseOutput', () => {
     expect(diagnoseOutput('5\n4\n3', '5').sentence).toBe('2 lines are missing.');
   });
 
+  it('explains extra OUTPUT prompts printed before INPUT', () => {
+    const res = diagnoseOutput('5', 'Enter a number:\n5');
+    expect(res.detail).toBe('extra_prompt_line');
+    expect(res.sentence).toContain('INPUT x, "prompt"');
+  });
+
   it('names a spacing difference when the characters otherwise match', () => {
     expect(diagnoseOutput('Score: 42', 'Score:42').sentence).toBe('A space is missing.');
     expect(diagnoseOutput('Score:42', 'Score: 42').sentence).toBe('You printed an extra space.');

@@ -366,7 +366,14 @@ export class Interpreter {
     if (line !== undefined) {
       await this.beforeStatement(line);
     }
-    await this.dispatchStatement(ctx);
+    try {
+      await this.dispatchStatement(ctx);
+    } catch (e) {
+      if (e instanceof RuntimeError && e.line === undefined && line !== undefined) {
+        e.line = line;
+      }
+      throw e;
+    }
     // Record a trace row (variable state *after* the statement ran) when tracing.
     if (this._traceMode && line !== undefined && this._traceCount < MAX_TRACE_ROWS) {
       const variables = this.snapshotVariables();
@@ -872,10 +879,24 @@ export class Interpreter {
         if (upper === 'INFINITY' || upper === 'INF') return mkReal(Infinity);
       }
 
-      return this.env.get(name);
+      try {
+        return this.env.get(name);
+      } catch (e) {
+        if (e instanceof RuntimeError && e.line === undefined && ctx.start?.line !== undefined) {
+          e.line = ctx.start.line;
+        }
+        throw e;
+      }
     }
 
-    return (await this.resolveDesignator(ctx)).get();
+    try {
+      return (await this.resolveDesignator(ctx)).get();
+    } catch (e) {
+      if (e instanceof RuntimeError && e.line === undefined && ctx.start?.line !== undefined) {
+        e.line = ctx.start.line;
+      }
+      throw e;
+    }
   }
 
   // ─── Assignment ─────────────────────────────────────────────────
@@ -898,20 +919,48 @@ export class Interpreter {
     const desig = ctx.designator();
     const promptToken = ctx.STRING_LITERAL();
     const prompt = promptToken ? promptToken.getText().slice(1, -1) : undefined;
-    const raw = await this.requestInput(desig.getText(), prompt);
-    this.callbacks.onInputComplete();
-    const ref = await this.resolveDesignator(desig);
-    let currentValue: RuntimeValue;
-    try {
-      currentValue = ref.get();
-    } catch (error) {
-      if (error instanceof RuntimeError && error.message.startsWith('Variable ') && error.message.endsWith(' is not defined')) {
-        ref.set(smartParse(raw));
-        return;
+    const targetName = desig.getText();
+    const line = ctx.start?.line;
+    const retryableTypes = new Set(['INTEGER', 'REAL', 'BOOLEAN', 'CHAR', 'DATE']);
+    const maxRetries = 5;
+
+    let attempts = 0;
+    let activePrompt = prompt;
+    while (true) {
+      const raw = await this.requestInput(targetName, activePrompt);
+      this.callbacks.onInputComplete();
+      const ref = await this.resolveDesignator(desig);
+      let currentValue: RuntimeValue;
+      try {
+        currentValue = ref.get();
+      } catch (error) {
+        if (error instanceof RuntimeError && error.message.startsWith('Variable ') && error.message.endsWith(' is not defined')) {
+          ref.set(smartParse(raw));
+          return;
+        }
+        throw error;
       }
-      throw error;
+      try {
+        ref.set(parseInputForTarget(raw, currentValue, ref.describe(), line));
+        if (attempts > 0) {
+          this.callbacks.onInputRecovered?.(currentValue.type, attempts);
+        }
+        return;
+      } catch (error) {
+        if (
+          error instanceof RuntimeError &&
+          this.callbacks.onInputRetry &&
+          retryableTypes.has(currentValue.type) &&
+          attempts < maxRetries
+        ) {
+          attempts += 1;
+          this.callbacks.onInputRetry(targetName, currentValue.type, error.message, attempts);
+          activePrompt = `${error.message}. Try again:`;
+          continue;
+        }
+        throw error;
+      }
     }
-    ref.set(parseInputForTarget(raw, currentValue, ref.describe(), ctx.start?.line));
   }
 
   // ─── OUTPUT ─────────────────────────────────────────────────────

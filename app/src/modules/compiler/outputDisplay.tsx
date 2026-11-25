@@ -182,6 +182,8 @@ interface OutputDisplayProps {
   onRefreshFlowchart?: () => void;
   /** Open this program in the flowchart builder. */
   onEditFlowchart?: () => void;
+  /** Optional contextual next-step bar shown under "Process finished" on a clean run. */
+  postRunCta?: React.ReactNode;
 }
 
 const OutputDisplay: React.FC<OutputDisplayProps> = ({
@@ -205,6 +207,7 @@ const OutputDisplay: React.FC<OutputDisplayProps> = ({
   pythonStale = false,
   onRefreshPython,
   onEditFlowchart,
+  postRunCta,
   flowchartNodes = [],
   flowchartEdges = [],
   flowchartNotes = [],
@@ -600,6 +603,7 @@ const OutputDisplay: React.FC<OutputDisplayProps> = ({
             {hadError ? 'Process exited with errors' : 'Process finished'}
           </div>
         )}
+        {!isRunning && entries.length > 0 && !hadError && postRunCta}
       </div>
     );
   };

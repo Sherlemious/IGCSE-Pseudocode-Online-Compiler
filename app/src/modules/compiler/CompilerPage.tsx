@@ -1,13 +1,17 @@
 'use client';
 
 import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
+import Link from 'next/link';
 import {
   FileText,
   PanelLeftOpen,
   PanelRightOpen,
   PanelTopOpen,
   PanelBottomOpen,
+  Target,
   Undo2,
+  Workflow,
+  X,
 } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { usePostHog } from 'posthog-js/react';
@@ -700,6 +704,29 @@ const CompilerPage: React.FC = () => {
     } catch { /* ignore */ }
   };
 
+  const [postRunCtaDismissed, setPostRunCtaDismissed] = useState(true);
+  const postRunCtaShownRef = useRef(false);
+  useEffect(() => {
+    try {
+      setPostRunCtaDismissed(localStorage.getItem('playground_post_run_cta_dismissed') === '1');
+    } catch {
+      setPostRunCtaDismissed(false);
+    }
+  }, []);
+
+  const showPostRunCta =
+    !interpreterRunning &&
+    entries.length > 0 &&
+    !entries.some((e) => e.kind === 'error') &&
+    !postRunCtaDismissed;
+
+  useEffect(() => {
+    if (showPostRunCta && !postRunCtaShownRef.current) {
+      postRunCtaShownRef.current = true;
+      captureEvent('post_run_cta_shown', { surface: 'playground' });
+    }
+  }, [showPostRunCta]);
+
   const handleDebugCode = async () => {
     if (!activeTab.content.trim()) return;
     setOutputTab('terminal');
@@ -843,6 +870,46 @@ const CompilerPage: React.FC = () => {
               captureEvent('flowchart_edit_clicked', { from: 'playground' });
               window.location.assign('/flowchart?from=playground');
             }}
+            postRunCta={
+              showPostRunCta ? (
+                <div className="mt-3 flex flex-wrap items-center gap-2 rounded-md border border-border/70 bg-surface/60 px-2.5 py-2 text-xs font-sans">
+                  <span className="text-dark-text">Next:</span>
+                  <Link
+                    href="/practice?from=post_run_cta"
+                    onClick={() => captureEvent('post_run_cta_clicked', { destination: 'practice', surface: 'playground' })}
+                    className="inline-flex items-center gap-1 rounded border border-primary/30 bg-primary/10 px-2 py-0.5 font-medium text-primary hover:bg-primary/20 transition-colors"
+                  >
+                    <Target className="h-3 w-3" />
+                    Try a Practice question
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      captureEvent('post_run_cta_clicked', { destination: 'flowchart', surface: 'playground' });
+                      handleOutputTabChange('flowchart');
+                    }}
+                    className="inline-flex items-center gap-1 rounded border border-border bg-background px-2 py-0.5 text-light-text hover:border-primary/40 transition-colors"
+                  >
+                    <Workflow className="h-3 w-3 text-primary" />
+                    See Flowchart
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPostRunCtaDismissed(true);
+                      captureEvent('post_run_cta_dismissed', { surface: 'playground' });
+                      try {
+                        localStorage.setItem('playground_post_run_cta_dismissed', '1');
+                      } catch { /* ignore */ }
+                    }}
+                    aria-label="Dismiss next steps"
+                    className="ml-auto p-0.5 text-dark-text/60 hover:text-light-text transition-colors"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              ) : null
+            }
           />
         </div>
 

@@ -66,7 +66,7 @@ export default function LearnFirstStart({ onUseCompiler }: Props) {
           </p>
 
           <Link
-            href="/learn?from=first_visit"
+            href="/learn/1/output?from=first_visit"
             onClick={(e) => {
               // A second tap while the page is loading must not fire the event again.
               if (opening) {
@@ -74,7 +74,7 @@ export default function LearnFirstStart({ onUseCompiler }: Props) {
                 return;
               }
               setOpening(true);
-              captureEvent('learn_first_start_clicked', { choice: 'learn' });
+              captureEvent('learn_first_start_clicked', { choice: 'learn', destination: 'lesson_1' });
             }}
             aria-busy={opening}
             className={`mt-5 flex items-center gap-3 rounded-xl border border-primary/30 bg-primary/10 px-4 py-3 text-left transition-colors hover:border-primary/50 hover:bg-primary/15 ${opening ? 'opacity-80' : ''}`}
@@ -84,9 +84,9 @@ export default function LearnFirstStart({ onUseCompiler }: Props) {
             </span>
             <span className="min-w-0 flex-1">
               <span className="block text-sm font-semibold text-light-text">
-                {opening ? 'Opening the Path…' : 'Start the Paper 2 Path'}
+                {opening ? 'Opening Lesson 1…' : 'Start Lesson 1 — Output'}
               </span>
-              <span className="block text-xs text-dark-text">Short lessons, checked as you go</span>
+              <span className="block text-xs text-dark-text">2-minute first lesson, checked as you go</span>
             </span>
             {opening ? (
               <Loader2 size={16} className="shrink-0 animate-spin text-primary" aria-hidden="true" />

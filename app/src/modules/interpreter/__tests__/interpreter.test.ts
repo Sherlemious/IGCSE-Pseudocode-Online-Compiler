@@ -2241,4 +2241,60 @@ describe('parse hints — sampled student mistakes', () => {
       'english_compare',
     );
   });
+
+  it('attaches the exact line number to undeclared variable RuntimeErrors so diagnosis fires', async () => {
+    const code = ['DECLARE Score : INTEGER', 'Score <- 10', 'OUTPUT score'].join('\n');
+    const { tree } = parse(code);
+    let caught: unknown = null;
+    const interp = new Interpreter(
+      {
+        onOutput: () => {},
+        onInputRequest: () => {},
+        onInputComplete: () => {},
+        onComplete: () => {},
+        onError: (e) => { caught = e; },
+      },
+      new AbortController().signal,
+    );
+    try {
+      await interp.execute(tree!);
+    } catch (e) {
+      caught = e;
+    }
+    expect(caught).toBeInstanceOf(Error);
+    expect((caught as { line?: number }).line).toBe(3);
+  });
+
+  it('re-prompts inline on scalar INPUT type mismatch when onInputRetry is provided', async () => {
+    const code = ['DECLARE Age : INTEGER', 'INPUT Age', 'OUTPUT Age'].join('\n');
+    const { tree } = parse(code);
+    const inputs = ['twenty', '16'];
+    const outputs: string[] = [];
+    const retries: Array<{ variableName: string; expectedType: string; attempt: number }> = [];
+    let recovered: { expectedType: string; attempts: number } | null = null;
+
+    const interp = new Interpreter(
+      {
+        onOutput: (t) => outputs.push(t),
+        onInputRequest: () => {
+          const next = inputs.shift() ?? '';
+          queueMicrotask(() => interp.provideInput(next));
+        },
+        onInputComplete: () => {},
+        onInputRetry: (variableName, expectedType, _msg, attempt) => {
+          retries.push({ variableName, expectedType, attempt });
+        },
+        onInputRecovered: (expectedType, attempts) => {
+          recovered = { expectedType, attempts };
+        },
+        onComplete: () => {},
+        onError: (e) => { throw e; },
+      },
+      new AbortController().signal,
+    );
+    await interp.execute(tree!);
+    expect(outputs).toEqual(['16']);
+    expect(retries).toEqual([{ variableName: 'Age', expectedType: 'INTEGER', attempt: 1 }]);
+    expect(recovered).toEqual({ expectedType: 'INTEGER', attempts: 1 });
+  });
 });

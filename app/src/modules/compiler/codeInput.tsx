@@ -479,9 +479,9 @@ const CodeInput: React.FC<CodeInputProps> = ({
                 title="Run Code (Ctrl+Enter)"
                 data-tour="run-button"
               >
-                <Play className="h-3.5 w-3.5" />
-                <span className="hidden @md:inline">Run</span>
-                <kbd className="hidden @2xl:inline ml-1">Ctrl+Enter</kbd>
+                <Play className="h-3.5 w-3.5 pointer-events-none" />
+                <span className="hidden @md:inline pointer-events-none">Run</span>
+                <kbd className="hidden @2xl:inline ml-1 pointer-events-none">Ctrl+Enter</kbd>
               </button>
             </>
           )}

@@ -2,6 +2,7 @@
 
 export type OutputMismatchDetail =
   | 'empty'
+  | 'extra_prompt_line'
   | 'extra_line'
   | 'missing_line'
   | 'spacing'
@@ -36,6 +37,16 @@ export function diagnoseOutput(expected: string, actual: string): OutputMismatch
 
   if (got.length > exp.length) {
     const extra = got.length - exp.length;
+    const leading = got.slice(0, extra);
+    const trailing = got.slice(extra);
+    const looksLikePrompt = leading.some((line) => /\b(?:enter|input|type|please|prompt)\b|[:?]\s*$/i.test(line));
+    if (looksLikePrompt && trailing.every((line, i) => line === exp[i])) {
+      return {
+        detail: 'extra_prompt_line',
+        sentence:
+          'Your answer is right, but you printed a prompt before INPUT (like "Enter..."). Remove prompt OUTPUT lines, or use INPUT x, "prompt" instead.',
+      };
+    }
     return {
       detail: 'extra_line',
       sentence: extra === 1 ? 'You printed an extra line.' : `You printed ${extra} extra lines.`,

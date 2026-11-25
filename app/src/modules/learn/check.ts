@@ -88,11 +88,14 @@ function mustContainMessage(code: string, needle: string): { message: string; li
       };
     }
   }
-  const at = code.toLowerCase().indexOf(needle.toLowerCase());
+  const body = withoutComments(code);
+  const at = body.toLowerCase().indexOf(needle.toLowerCase());
   if (at >= 0) {
-    const wrote = code.slice(at, at + needle.length);
-    const keyword = /^[A-Z_]+$/.test(needle) ? ' Keywords are written in capitals on the paper.' : '';
-    return { message: `Write \`${needle}\` exactly like that — you wrote \`${wrote}\`.${keyword}` };
+    const wrote = body.slice(at, at + needle.length);
+    if (wrote !== needle) {
+      const keyword = /^[A-Z_]+$/.test(needle) ? ' Keywords are written in capitals on the paper.' : '';
+      return { message: `Write \`${needle}\` exactly like that — you wrote \`${wrote}\`.${keyword}` };
+    }
   }
   return { message: `Your code must include \`${needle}\`.` };
 }

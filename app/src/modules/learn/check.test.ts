@@ -171,6 +171,8 @@ describe('mustContain ignores comments', () => {
   it('does not count a needle that only appears in a comment', async () => {
     const result = await checkLessonCode(divLesson, '// x <- 7 DIV 2\nOUTPUT 7 / 2');
     expect(result.reason).toBe('must_contain');
+    expect(result.message).toBe('Your code must include `DIV`.');
+    expect(result.message).not.toContain('you wrote `DIV`');
   });
 
   it('still finds the needle in code, and keeps // inside a string', async () => {

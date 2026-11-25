@@ -2414,9 +2414,11 @@ export function categorizeParseError(
 export function categorizeRuntimeError(rawMessage: string): string {
   if (/Variable 'console' is not defined/.test(rawMessage)) return 'console_log';
   if (/Variable '[^']+' is not defined/.test(rawMessage)) return 'undeclared_variable';
+  if (/^Input for .+ must be /.test(rawMessage) || /^INPUT cannot store text directly/.test(rawMessage))
+    return 'input_type_mismatch';
   if (/Cannot assign to constant/.test(rawMessage)) return 'const_reassignment';
   if (/is not an array/.test(rawMessage)) return 'not_an_array';
-  if (/is an array; use indexing/.test(rawMessage)) return 'array_needs_index';
+  if (/is an array; use indexing|^This value is an array/.test(rawMessage)) return 'array_needs_index';
   if (/Array index -?\d+ out of bounds/.test(rawMessage)) return 'array_out_of_bounds';
   if (/Array expects \d+ index/.test(rawMessage)) return 'array_dim_mismatch';
   if (/Division by zero/.test(rawMessage)) return 'division_by_zero';

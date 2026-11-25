@@ -126,13 +126,59 @@ const BLOCKS: { kind: string; closer: string }[] = [
 
 const codeOf = (line: string) => splitComment(line.replace(/"[^"]*"/g, '""'))[0].trim();
 
+const RESERVED_SPACE_WORDS = new Set([
+  'IF', 'ELSE', 'THEN', 'ENDIF', 'WHILE', 'DO', 'ENDWHILE', 'FOR', 'TO', 'STEP', 'NEXT',
+  'REPEAT', 'UNTIL', 'CASE', 'OF', 'OTHERWISE', 'ENDCASE', 'DECLARE', 'CONSTANT', 'SET',
+  'OUTPUT', 'PRINT', 'INPUT', 'RETURN', 'RETURNS', 'CALL', 'PROCEDURE', 'ENDPROCEDURE',
+  'FUNCTION', 'ENDFUNCTION', 'TYPE', 'ENDTYPE', 'CLASS', 'ENDCLASS', 'DEFINE', 'OPENFILE',
+  'READFILE', 'WRITEFILE', 'CLOSEFILE', 'SEEK', 'GETRECORD', 'PUTRECORD', 'PUBLIC', 'PRIVATE',
+  'AND', 'OR', 'NOT', 'DIV', 'MOD', 'AS', 'IN', 'IS', 'TRUE', 'FALSE', 'ARRAY', 'BYVAL', 'BYREF',
+]);
+
 /**
- * A block left open at the end of the program: add its closer after the block's
- * indented body (or after the last line when nothing is indented).
+ * A block left open before an outer closer (e.g. missing ENDIF before NEXT i)
+ * or at the end of the program: add its closer in the right place.
  */
 function unclosedBlockFix(lines: string[], flagged: number): QuickFix | null {
   const code = lines.map(codeOf);
   const lastCode = code.reduce((last, c, i) => (c ? i + 1 : last), 0);
+
+  // Case 1: flagged line is itself a closer for an outer block (e.g. NEXT i),
+  // leaving an inner block (e.g. IF) unclosed right above it.
+  const flaggedCode = code[flagged - 1] ?? '';
+  const flaggedCloser = BLOCKS.find((b) => new RegExp(`^${b.closer}\\b`, 'i').test(flaggedCode));
+  if (flaggedCloser && flagged > 1) {
+    const openBefore: { kind: string; closer: string; line: number }[] = [];
+    for (let i = 0; i < flagged - 1; i++) {
+      const c = code[i];
+      for (const b of BLOCKS) {
+        if (new RegExp(`^${b.kind}\\b`, 'i').test(c)) {
+          if (!new RegExp(`\\b${b.closer}\\b`, 'i').test(c)) openBefore.push({ ...b, line: i + 1 });
+        } else if (new RegExp(`^${b.closer}\\b`, 'i').test(c)) {
+          const idx = openBefore.map((o) => o.kind).lastIndexOf(b.kind);
+          if (idx >= 0) openBefore.splice(idx, 1);
+        }
+      }
+    }
+    const inner = openBefore[openBefore.length - 1];
+    const hasOuter = openBefore.slice(0, -1).some((o) => o.kind === flaggedCloser.kind);
+    if (inner && inner.kind !== flaggedCloser.kind && hasOuter) {
+      const openerIndent = indentOf(lines[inner.line - 1]).length;
+      const closer =
+        inner.kind === 'FOR'
+          ? `NEXT ${lines[inner.line - 1].match(/^\s*FOR\s+([A-Za-z_]\w*)/i)?.[1] ?? ''}`.trim()
+          : inner.closer;
+      return {
+        id: `add_${inner.closer.toLowerCase()}`,
+        label: `Add ${closer} before line ${flagged} to close ${inner.kind} on line ${inner.line}`,
+        line: flagged - 1,
+        kind: 'insert_after',
+        text: `${' '.repeat(openerIndent)}${closer}`,
+        original: lines[flagged - 2],
+      };
+    }
+  }
+
   if (flagged < lastCode) return null;
 
   const open: { kind: string; closer: string; line: number }[] = [];
@@ -243,6 +289,14 @@ function* candidates(lines: string[], flagged: number): Generator<QuickFix> {
     if (pyWhile && !/\bDO\b/i.test(code)) yield* yieldIf(replace('python_while', `WHILE ${pyWhile[1]} DO`));
     const pyPrint = code.match(/^print\s*\((.*)\)$/i);
     if (pyPrint && pyPrint[1].trim()) yield* yieldIf(replace('python_print', `OUTPUT ${pyPrint[1].trim()}`));
+    // Python input(): x = input("Enter age: ") / x = int(input()) → INPUT x[, "prompt"]
+    const pyInput = code.match(
+      new RegExp(`^(${ID})\\s*(?:=|<-|←)\\s*(?:(?:int|float|str)\\s*\\(\\s*)?input\\s*\\(\\s*("[^"]*"|'[^']*')?\\s*\\)\\s*\\)?$`, 'i'),
+    );
+    if (pyInput) {
+      const prompt = pyInput[2] ? `, "${pyInput[2].slice(1, -1)}"` : '';
+      yield* yieldIf(replace('python_input', `INPUT ${pyInput[1]}${prompt}`));
+    }
     // Output commands from other languages: DISPLAY("x") / println x → OUTPUT x
     const synonym = code.match(new RegExp(`^${OUTPUT_SYNONYMS}\\s*(?:\\((.*)\\)|\\s(.*))$`, 'i'));
     if (synonym && (synonym[1] ?? synonym[2])?.trim())
@@ -325,12 +379,56 @@ function* candidates(lines: string[], flagged: number): Generator<QuickFix> {
             .join('\n'),
         ),
       );
-    // ARRAY(1:5) / ARRAY[1,5] → ARRAY[1:5]
+    // ARRAY(1:5) / ARRAY[1,5] / ARRAY[1..5] / ARRAY[1 TO 5] / ARRAY[5] / missing OF
     if (/^DECLARE\b/i.test(code)) {
       const arr = code
         .replace(/ARRAY\s*\(([^)]*)\)/i, 'ARRAY[$1]')
-        .replace(/ARRAY\s*\[\s*(-?\d+)\s*,\s*(-?\d+)\s*\]/i, 'ARRAY[$1:$2]');
+        .replace(/ARRAY\s*\[\s*(-?\d+)\s*(?:,|\.\.|\bTO\b)\s*(-?\d+)\s*\]/i, 'ARRAY[$1:$2]')
+        .replace(/ARRAY\s*\[\s*(\d+)\s*\]/i, 'ARRAY[1:$1]')
+        .replace(/(ARRAY\s*\[[^\]]+\])\s+(?!OF\b)(INTEGER|REAL|STRING|CHAR|BOOLEAN|DATE)\b/i, '$1 OF $2');
       yield* yieldIf(replace('array_bounds', arr));
+
+      // DECLARE Scores[1:5] : INTEGER / DECLARE Scores[5] : INTEGER → DECLARE Scores : ARRAY[1:5] OF INTEGER
+      const declCStyle = code.match(
+        new RegExp(`^DECLARE\\s+(${ID})\\s*\\[\\s*([^\\]]+)\\s*\\]\\s*(?::|\\bOF\\b|\\bAS\\b)?\\s*(${DATA_TYPE})$`, 'i'),
+      );
+      if (declCStyle) {
+        const rawBounds = declCStyle[2].trim();
+        const bounds = /^\d+$/.test(rawBounds)
+          ? `1:${rawBounds}`
+          : rawBounds.replace(/\s*(?:\.\.|\bTO\b)\s*/i, ':');
+        yield* yieldIf(replace('declare_array_syntax', `DECLARE ${declCStyle[1]} : ARRAY[${bounds}] OF ${declCStyle[3]}`));
+      }
+
+      // DECLARE First Name : STRING → DECLARE FirstName : STRING
+      const declSpace = code.match(new RegExp(`^DECLARE\\s+(${ID})\\s+(${ID})\\s*:\\s*(.+)$`, 'i'));
+      if (
+        declSpace &&
+        !RESERVED_SPACE_WORDS.has(declSpace[1].toUpperCase()) &&
+        !RESERVED_SPACE_WORDS.has(declSpace[2].toUpperCase())
+      ) {
+        yield* yieldIf(replace('space_in_name', `DECLARE ${declSpace[1]}${declSpace[2]} : ${declSpace[3]}`));
+      }
+    }
+
+    // INPUT First Name → INPUT FirstName
+    const inputSpace = code.match(new RegExp(`^INPUT\\s+(${ID})\\s+(${ID})$`, 'i'));
+    if (
+      inputSpace &&
+      !RESERVED_SPACE_WORDS.has(inputSpace[1].toUpperCase()) &&
+      !RESERVED_SPACE_WORDS.has(inputSpace[2].toUpperCase())
+    ) {
+      yield* yieldIf(replace('space_in_name', `INPUT ${inputSpace[1]}${inputSpace[2]}`));
+    }
+
+    // First Name <- expr → FirstName <- expr
+    const assignSpace = code.match(new RegExp(`^(${ID})\\s+(${ID})\\s*(<-|←|=)\\s*(.+)$`));
+    if (
+      assignSpace &&
+      !RESERVED_SPACE_WORDS.has(assignSpace[1].toUpperCase()) &&
+      !RESERVED_SPACE_WORDS.has(assignSpace[2].toUpperCase())
+    ) {
+      yield* yieldIf(replace('space_in_name', `${assignSpace[1]}${assignSpace[2]} ${assignSpace[3]} ${assignSpace[4]}`));
     }
 
     // SET x = 0 / SET x TO 0 → x <- 0

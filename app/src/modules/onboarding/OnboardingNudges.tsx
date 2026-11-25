@@ -219,7 +219,12 @@ export default function OnboardingNudges() {
         triggerNudge('sitting');
         return;
       }
-      if (totalMs >= THRESHOLDS.flowchartMs && !lsGet(LS.flowchart) && !hasOpenedFlowchart()) {
+      if (
+        totalMs >= THRESHOLDS.flowchartMs &&
+        !playgroundRef.current &&
+        !lsGet(LS.flowchart) &&
+        !hasOpenedFlowchart()
+      ) {
         triggerNudge('flowchart');
         return;
       }

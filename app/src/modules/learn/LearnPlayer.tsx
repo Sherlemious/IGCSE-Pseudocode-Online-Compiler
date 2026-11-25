@@ -136,9 +136,18 @@ export default function LearnPlayer({ course, level, lesson, premiumAccess: init
         }
         return;
       }
+      let fromSource: string | null = null;
+      try {
+        fromSource = new URLSearchParams(window.location.search).get('from');
+      } catch {
+        /* ignore */
+      }
       captureLearn(
         'learn_lesson_started',
-        learnLessonProps(level, lesson, { already_complete: isComplete(map, lesson.id) }),
+        learnLessonProps(level, lesson, {
+          already_complete: isComplete(map, lesson.id),
+          ...(fromSource ? { from: fromSource } : {}),
+        }),
       );
     })();
     return () => {
@@ -555,6 +564,30 @@ export default function LearnPlayer({ course, level, lesson, premiumAccess: init
                   <ArrowRight size={12} />
                 </button>
               )}
+            </div>
+          )}
+
+          {level.number === 1 && lesson.slug === 'output' && (
+            <div className="mt-5 pt-3 border-t border-border/60 text-xs text-dark-text/75">
+              Just want a blank editor for your own code?{' '}
+              <Link
+                href="/?from=learn_escape"
+                onClick={() => {
+                  let fromSource: string | null = null;
+                  try {
+                    fromSource = new URLSearchParams(window.location.search).get('from');
+                  } catch {
+                    /* ignore */
+                  }
+                  captureLearn(
+                    'learn_playground_escape_clicked',
+                    learnLessonProps(level, lesson, { ...(fromSource ? { from: fromSource } : {}) }),
+                  );
+                }}
+                className="text-primary hover:underline font-medium"
+              >
+                Open Playground
+              </Link>
             </div>
           )}
         </aside>
