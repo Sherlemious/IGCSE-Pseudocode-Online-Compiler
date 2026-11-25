@@ -58,6 +58,16 @@ export default function LearnPlayer({ course, level, lesson, premiumAccess: init
   const isFlowchart = lesson.type === 'flowchart';
   const hasEditor = Boolean(lesson.starterCode) || isFlowchart;
   const access = { premium: premiumAccess };
+  const gateReason = level.free ? 'free_level_3' : 'paid_lesson';
+  const completedCount = useMemo(
+    () =>
+      flattenLessons(course).filter((item) => item.lesson.playable && isComplete(progress, item.lesson.id)).length,
+    [course, progress],
+  );
+  const firstFreeLesson = useMemo(
+    () => flattenLessons(course).find((item) => item.level.free && item.lesson.playable) ?? null,
+    [course],
+  );
 
   useEffect(() => {
     setPremiumAccess(initialPremium);
@@ -77,9 +87,18 @@ export default function LearnPlayer({ course, level, lesson, premiumAccess: init
       }
       const gate = (viaGoogle as LearnAuthGate | null) ?? gateShown.current;
       if (gate) {
+        const localMap = loadProgress(course.id);
+        const localCompleted = flattenLessons(course).filter(
+          (item) => item.lesson.playable && isComplete(localMap, item.lesson.id),
+        ).length;
         captureLearn(
           'learn_signup_gate_completed',
-          learnLessonProps(level, lesson, { gate, method: viaGoogle ? 'google' : 'email' }),
+          learnLessonProps(level, lesson, {
+            gate,
+            gate_reason: gateReason,
+            completed_count: localCompleted,
+            method: viaGoogle ? 'google' : 'email',
+          }),
         );
         gateShown.current = null;
         setAuthGate(null);
@@ -104,12 +123,27 @@ export default function LearnPlayer({ course, level, lesson, premiumAccess: init
       const accountFirst =
         status !== 'authenticated' && ((open && level.free && levelNeedsAccount(level)) || paywalled);
       if (accountFirst) {
+        const localCompleted = flattenLessons(course).filter(
+          (item) => item.lesson.playable && isComplete(map, item.lesson.id),
+        ).length;
+        // Free Level 3+ learners and returning learners with progress get the
+        // sheet right away. Cold visitors landing straight on a paid lesson see
+        // an honest preview + "Try Level 1 free" first instead of a modal wall.
+        const shouldAutoOpen = level.free || localCompleted > 0;
         // Not marked started: once they sign in this effect re-runs and continues.
         if (gateShown.current !== 'account') {
           gateShown.current = 'account';
-          captureLearn('learn_signup_gate_shown', learnLessonProps(level, lesson, { gate: 'account' }));
+          captureLearn(
+            'learn_signup_gate_shown',
+            learnLessonProps(level, lesson, {
+              gate: 'account',
+              gate_reason: gateReason,
+              completed_count: localCompleted,
+              auto_opened: shouldAutoOpen,
+            }),
+          );
         }
-        setAuthGate('account');
+        if (shouldAutoOpen) setAuthGate('account');
         return;
       }
       startedFor.current = lesson.id;
@@ -153,7 +187,7 @@ export default function LearnPlayer({ course, level, lesson, premiumAccess: init
     return () => {
       cancelled = true;
     };
-  }, [course, level, lesson, status, initialPremium]);
+  }, [course, level, lesson, status, initialPremium, gateReason]);
 
   const unlocked = isLessonUnlocked(course, lesson, progress, access);
   const done = isComplete(progress, lesson.id);
@@ -218,29 +252,52 @@ export default function LearnPlayer({ course, level, lesson, premiumAccess: init
 
   function openAuth(gate: LearnAuthGate) {
     gateShown.current = gate;
-    captureLearn('learn_signup_gate_opened', learnLessonProps(level, lesson, { gate }));
+    captureLearn(
+      'learn_signup_gate_opened',
+      learnLessonProps(level, lesson, {
+        gate,
+        gate_reason: gateReason,
+        completed_count: completedCount,
+      }),
+    );
     setAuthGate(gate);
   }
 
   function authSheet(returnPath: string) {
     if (!authGate || status === 'authenticated') return null;
     const gate = authGate;
-    const copy =
-      gate === 'account' && !level.free
-        ? {
-            header: 'Keep going',
-            title: 'Create a free account to continue.',
-            description:
-              'It is free. Your progress stays on the account, and you pick up this lesson once you are signed in.',
-          }
-        : undefined;
+    const lessonsWord = completedCount === 1 ? 'lesson' : 'lessons';
+    let copy: { header: string; title: string; description: string } | undefined;
+    if (gate === 'account' && !level.free) {
+      copy = {
+        header: `${levelTitle(level)} · Paper 2 Pass`,
+        title: `Sign in to unlock ${levelTitle(level)}`,
+        description:
+          completedCount > 0
+            ? `Your ${completedCount} completed ${lessonsWord} come with you. Sign in first so student pricing and your pass land on your account.`
+            : `Levels 4–10 are part of the Paper 2 Pass. Sign in first so student pricing and your pass land on your account.`,
+      };
+    } else if (gate === 'account' && completedCount > 0) {
+      copy = {
+        header: `${completedCount} ${lessonsWord} done · Free`,
+        title: `Save your ${completedCount} completed ${lessonsWord} & start ${levelTitle(level)}`,
+        description: `${levelTitle(level)} is free. Create a free account in 10 seconds so your progress stays saved across devices and you pick up right here.`,
+      };
+    }
     return (
       <LearnAccountSheet
         gate={gate}
         copy={copy}
         returnPath={returnPath}
         onClose={() => {
-          captureLearn('learn_signup_gate_dismissed', learnLessonProps(level, lesson, { gate }));
+          captureLearn(
+            'learn_signup_gate_dismissed',
+            learnLessonProps(level, lesson, {
+              gate,
+              gate_reason: gateReason,
+              completed_count: completedCount,
+            }),
+          );
           setAuthGate(null);
         }}
         onAuthenticated={async () => {
@@ -250,32 +307,106 @@ export default function LearnPlayer({ course, level, lesson, premiumAccess: init
     );
   }
 
-  function accountGate(body: string) {
+  function accountGate(isPaidPreview: boolean) {
     const lessonPath = lessonHref(level, lesson, course.basePath);
+    const lessonsWord = completedCount === 1 ? 'lesson' : 'lessons';
+    const tryFreeHref = firstFreeLesson
+      ? `${lessonHref(firstFreeLesson.level, firstFreeLesson.lesson, course.basePath)}?from=paid_gate_try_free`
+      : null;
+
     return (
       <div className="flex-1 min-h-0 overflow-y-auto bg-background bg-dot-grid px-4 py-8 sm:py-10">
         <div className="max-w-lg mx-auto rounded-2xl border border-border bg-surface p-5 sm:p-6">
-          <UserPlus className="h-5 w-5 text-primary mb-3" />
+          <div className="flex items-center justify-between gap-2 mb-3">
+            <span className={`inline-flex items-center gap-1.5 text-xs font-medium ${isPaidPreview ? 'text-warning' : 'text-primary'}`}>
+              {isPaidPreview ? <Crown className="h-4 w-4" /> : <UserPlus className="h-4 w-4" />}
+              {isPaidPreview ? `${levelTitle(level)} · Paper 2 Pass` : `${levelTitle(level)} · Free with account`}
+            </span>
+            {completedCount > 0 && (
+              <span className="inline-flex items-center gap-1 rounded-full border border-success/30 bg-success/10 px-2.5 py-0.5 text-[11px] font-medium text-success">
+                <Check className="h-3 w-3" />
+                {completedCount} {lessonsWord} done
+              </span>
+            )}
+          </div>
+
           <h1 className="display-serif text-xl font-semibold text-light-text mb-2">{lesson.title}</h1>
-          <p className="text-sm text-dark-text mb-4">{body}</p>
-          <button
-            type="button"
-            onClick={() => openAuth('account')}
-            className="inline-flex items-center gap-1.5 min-h-10 px-3 mb-4 rounded-lg bg-primary/15 text-primary text-sm font-medium hover:bg-primary/25"
-          >
-            <UserPlus size={14} />
-            Create a free account
-          </button>
-          <div>
+          <p className="text-sm text-light-text/90 mb-3">{lesson.why}</p>
+
+          <div className="mb-4 rounded-xl border border-border bg-background/60 p-3 text-xs text-dark-text space-y-1.5">
+            <p>
+              <strong className="text-light-text">{levelTitle(level)} outcome:</strong> {level.leaveWith}
+            </p>
+            {isPaidPreview && offer && (
+              <div className="pt-1.5 border-t border-border/60">
+                <PassPriceLine offer={offer} />
+              </div>
+            )}
+          </div>
+
+          <p className="text-xs text-dark-text mb-4 leading-relaxed">
+            {isPaidPreview
+              ? 'Levels 4–10 are part of the Paper 2 Pass. Sign in first to view your unlock options and keep your progress on your account.'
+              : completedCount > 0
+                ? `Level 3 is completely free. Create a free account so your ${completedCount} completed ${lessonsWord} stay saved across devices and you continue right here.`
+                : 'Levels 1 and 2 are open to everyone. From level 3 you need a free account so your progress saves across devices.'}
+          </p>
+
+          <div className="flex flex-wrap items-center gap-2.5 mb-4">
+            <button
+              type="button"
+              onClick={() => openAuth('account')}
+              className="inline-flex items-center gap-1.5 min-h-10 px-4 rounded-lg bg-primary text-on-primary text-sm font-semibold hover:bg-primary/90 transition-colors"
+            >
+              {isPaidPreview ? <Crown size={14} /> : <UserPlus size={14} />}
+              {isPaidPreview
+                ? `Sign in to unlock ${levelTitle(level)}`
+                : completedCount > 0
+                  ? `Save progress & start ${levelTitle(level)}`
+                  : `Create free account for ${levelTitle(level)}`}
+            </button>
+
+            {isPaidPreview && tryFreeHref && completedCount === 0 && (
+              <Link
+                href={tryFreeHref}
+                onClick={() =>
+                  captureLearn(
+                    'learn_gate_try_free_clicked',
+                    learnLessonProps(level, lesson, { completed_count: completedCount }),
+                  )
+                }
+                className="inline-flex items-center gap-1.5 min-h-10 px-3.5 rounded-lg border border-border bg-background text-light-text text-sm font-medium hover:border-primary/40 transition-colors"
+              >
+                Try Level 1 free
+                <ArrowRight size={13} />
+              </Link>
+            )}
+          </div>
+
+          <div className="flex flex-wrap items-center gap-4 text-xs">
             <Link
               href={course.basePath}
-              className="text-sm text-primary hover:underline"
+              className="text-primary hover:underline"
               onClick={() =>
                 captureLearn('learn_path_clicked', learnLessonProps(level, lesson, { source: 'account_gate' }))
               }
             >
               Back to the path
             </Link>
+            {isPaidPreview && (
+              <Link
+                href="/pricing?view=student&from=learn_signed_out_gate"
+                className="text-dark-text hover:text-light-text hover:underline"
+                onClick={() =>
+                  captureLearn(
+                    'learn_gate_pricing_clicked',
+                    learnLessonProps(level, lesson, { completed_count: completedCount }),
+                  )
+                }
+              >
+                Compare plans and passes
+              </Link>
+            )}
           </div>
         </div>
         {authSheet(lessonPath)}
@@ -289,9 +420,7 @@ export default function LearnPlayer({ course, level, lesson, premiumAccess: init
     if (status === 'loading') {
       return <div className="flex-1 min-h-0 bg-background bg-dot-grid" />;
     }
-    return accountGate(
-      'Create a free account to open this lesson. Your progress stays on the account, and you continue from here.',
-    );
+    return accountGate(true);
   }
 
   if (!lesson.playable || !unlocked) {
@@ -359,9 +488,7 @@ export default function LearnPlayer({ course, level, lesson, premiumAccess: init
   }
 
   if (level.free && levelNeedsAccount(level) && status === 'unauthenticated') {
-    return accountGate(
-      'Levels 1 and 2 are open to everyone. From level 3 you need a free account. It keeps your progress so far, saves it across devices, and gets you ready for the full path.',
-    );
+    return accountGate(false);
   }
 
   const showLesson = mobilePane === 'lesson' || (isQuiz && !hasEditor);

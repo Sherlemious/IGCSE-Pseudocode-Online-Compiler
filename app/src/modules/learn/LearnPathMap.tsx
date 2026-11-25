@@ -593,7 +593,7 @@ function LessonNode({
         aria-current={state === 'current' ? 'step' : undefined}
         aria-label={
           paywalled
-            ? `${lesson.title} (${status === 'authenticated' ? 'needs a plan' : 'needs a free account'})`
+            ? `${lesson.title} (needs a plan)`
             : `${lesson.title}, ${meta.label}, ${lesson.minutes} minutes`
         }
         onClick={() => {
@@ -625,7 +625,7 @@ function LessonNode({
         )}
         {row && paywalled && (
           <span className="mono-label text-warning shrink-0 inline-flex items-center gap-1">
-            {status === 'authenticated' ? 'Plan' : 'Account'}
+            Plan
             <ArrowRight size={11} />
           </span>
         )}
