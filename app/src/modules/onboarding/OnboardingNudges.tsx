@@ -18,9 +18,11 @@
  *  - Right after sign-in, teachers only, once per account: the partner card
  *    for The Learning Mate (paper-script marking). Waits for the DB nudge
  *    sync so it never shows twice across devices.
- *  - 3rd+ session, free student (or signed out), May/June on sale: a small
- *    May/June pass toast (passToast.tsx). Also right after a student answers
- *    the sitting card with May/Jun 2027. Once per browser.
+ *  - 3rd+ session, free student (or signed out), May/June on sale, and not on
+ *    the playground: a small May/June pass toast (passToast.tsx). The playground
+ *    asks after a successful run on a later day instead (returnPassToast.tsx).
+ *    Also right after a student answers the sitting card with May/Jun 2027.
+ *    Once per browser.
  *
  * One card at a time. A card that is already up is left alone until it is
  * dismissed or the visitor lands on a quiet page, so a later threshold
@@ -100,6 +102,9 @@ export default function OnboardingNudges() {
   const pathname = usePathname();
   const quietRef = useRef(isQuietPath(pathname));
   quietRef.current = isQuietPath(pathname);
+  // The playground asks for the pass after a return-day run, not on page load.
+  const playgroundRef = useRef(pathname === '/');
+  playgroundRef.current = pathname === '/';
   const startRef = useRef<number>(Date.now());
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const dbSyncedRef = useRef(false);
@@ -227,7 +232,12 @@ export default function OnboardingNudges() {
         return;
       }
       // A toast, not a card: it doesn't hold the card slot, so it waits for a session with no card.
-      if (sessions >= THRESHOLDS.passSession && passEligibleRef.current && !lsGet(PASS_TOAST_SHOWN_KEY)) {
+      if (
+        sessions >= THRESHOLDS.passSession &&
+        passEligibleRef.current &&
+        !playgroundRef.current &&
+        !lsGet(PASS_TOAST_SHOWN_KEY)
+      ) {
         showPassToast('returning', capture, { signedIn: signedInRef.current });
       }
     },

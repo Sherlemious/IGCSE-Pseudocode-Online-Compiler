@@ -37,6 +37,8 @@ import { ONBOARDING_KEY } from '@/modules/onboarding/constants';
 import { formatOutputEntries } from '@/modules/compiler/formatOutputEntries';
 import { LEARN_FIRST_START_FLAG } from '@/modules/telemetry/experiments';
 import SaveProgramSheet from './SaveProgramSheet';
+import { shouldOfferSessionPass } from '@/modules/billing/paddle/passes';
+import { offerReturnPass } from '@/modules/onboarding/returnPassToast';
 import { suggestPlaygroundPractice } from '@/modules/practice/playgroundPractice';
 import LearnFirstStart, { LEARN_FIRST_SEEN_KEY } from '@/modules/learn/LearnFirstStart';
 import { loadProgress } from '@/modules/learn/progress';
@@ -115,7 +117,7 @@ function isFirstPlaygroundVisit(openedSharedCode: boolean): boolean {
 }
 
 const CompilerPage: React.FC = () => {
-  const { status: authStatus, update: updateSession } = useSession();
+  const { data: session, status: authStatus, update: updateSession } = useSession();
   const ph = usePostHog();
   const savedCode = useRef('');
   const [tabs, setTabs] = useState<EditorTab[]>([{ id: 'main', name: 'main.pseudo', content: '' }]);
@@ -658,6 +660,17 @@ const CompilerPage: React.FC = () => {
     return () => clearTimeout(timer);
   }, [triggerFeedback]);
 
+  const offerAfterRun = () => {
+    if (learnFirst !== 'off') return;
+    const eligible = shouldOfferSessionPass({
+      role: authStatus === 'authenticated' ? session?.user?.role : null,
+      plan: authStatus === 'authenticated' ? session?.user?.plan : 'FREE',
+      planExpiresAt: authStatus === 'authenticated' ? session?.user?.planExpiresAt : null,
+    });
+    if (offerReturnPass({ eligible, signedIn: authStatus === 'authenticated' })) return;
+    suggestPlaygroundPractice();
+  };
+
   const handleRunCode = async () => {
     if (!activeTab.content.trim()) return;
     setOutputTab('terminal');
@@ -670,11 +683,11 @@ const CompilerPage: React.FC = () => {
     ) {
       markSavePromptShown();
       setSaveSheetOpen(true);
-    } else if (outcome === 'success' && learnFirst === 'off') {
-      // The easy-question toast owns this run. (The playground "start the Paper 2 Path"
-      // toast was retired in Nov 2026: 0.8% clicked, and the timed `learn` card and the
-      // first-visit start card already cover it.)
-      suggestPlaygroundPractice();
+    } else if (outcome === 'success') {
+      // A return day's run asks for the May/June pass. The easy-question toast
+      // keeps the first day. (The playground "start the Paper 2 Path" toast was
+      // retired in Nov 2026: 0.8% clicked.)
+      offerAfterRun();
     }
 
     // Track run count and trigger feedback survey after threshold
@@ -859,7 +872,7 @@ const CompilerPage: React.FC = () => {
         <SaveProgramSheet
           onClose={() => {
             setSaveSheetOpen(false);
-            if (learnFirst === 'off') suggestPlaygroundPractice();
+            offerAfterRun();
           }}
           onFlushBeforeOAuth={() => {
             try {
@@ -872,7 +885,7 @@ const CompilerPage: React.FC = () => {
             setSaveSheetOpen(false);
             await putPlaygroundSnapshot(mainTabContent);
             toast.success('Program saved to your account');
-            if (learnFirst === 'off') suggestPlaygroundPractice();
+            offerAfterRun();
           }}
         />
       )}
