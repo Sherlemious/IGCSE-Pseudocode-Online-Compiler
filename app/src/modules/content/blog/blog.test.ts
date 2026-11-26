@@ -20,6 +20,7 @@ describe('blog posts', () => {
     for (const post of BLOG_POSTS) {
       expect(post.slug).toMatch(/^[a-z0-9-]+$/);
       expect(post.slug).not.toBe('page');
+      expect(['student', 'teacher', 'both']).toContain(post.audience);
       expect(post.description.length, post.slug).toBeLessThanOrEqual(155);
       expect(post.published).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     }

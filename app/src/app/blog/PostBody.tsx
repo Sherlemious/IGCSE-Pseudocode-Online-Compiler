@@ -3,7 +3,7 @@ import CodeBlock from '@/shared/ui/CodeBlock';
 import type { BlogBlock } from '@/modules/content/blog';
 import { BlogLink } from './BlogAnalytics';
 
-const p = 'text-[15px] text-dark-text leading-relaxed';
+const p = 'text-[17px] leading-[1.7] text-brand-ink';
 
 /** `code`, **bold** and [text](href) inside a block's text. */
 export function Inline({ text, slug }: { text: string; slug: string }) {
@@ -15,21 +15,27 @@ export function Inline({ text, slug }: { text: string; slug: string }) {
           return (
             <code
               key={i}
-              className="bg-code-bg border border-border px-1 py-0.5 rounded font-mono text-primary text-[0.9em]"
+              className="rounded bg-[#E4DCCB] px-1.5 py-0.5 font-mono text-[0.88em] text-brand-ink"
             >
               {part.slice(1, -1)}
             </code>
           );
         if (part.startsWith('**') && part.endsWith('**') && part.length > 4)
           return (
-            <strong key={i} className="text-light-text font-semibold">
+            <strong key={i} className="font-semibold text-brand-ink">
               {part.slice(2, -2)}
             </strong>
           );
         const link = part.match(/^\[([^\]]+)\]\(([^)]+)\)$/);
         if (link)
           return (
-            <BlogLink key={i} href={link[2]} slug={slug} source="inline" className="text-primary hover:underline">
+            <BlogLink
+              key={i}
+              href={link[2]}
+              slug={slug}
+              source="inline"
+              className="underline decoration-brand-ink/35 underline-offset-[3px] hover:decoration-brand-red"
+            >
               {link[1]}
             </BlogLink>
           );
@@ -49,18 +55,18 @@ function Block({ block, slug }: { block: BlogBlock; slug: string }) {
       );
     case 'h2':
       return (
-        <h2 id={block.id} className="scroll-mt-20 pt-4 text-xl font-semibold text-light-text">
-          <a href={`#${block.id}`} className="hover:text-primary transition-colors">
+        <h2 id={block.id} className="display-serif scroll-mt-24 pt-6 text-[1.5rem] font-semibold leading-snug text-brand-ink">
+          <a href={`#${block.id}`} className="hover:text-brand-red/90">
             {block.text}
           </a>
         </h2>
       );
     case 'h3':
-      return <h3 className="text-base font-semibold text-light-text">{block.text}</h3>;
+      return <h3 className="display-serif pt-2 text-xl font-semibold text-brand-ink">{block.text}</h3>;
     case 'list': {
       const Tag = block.ordered ? 'ol' : 'ul';
       return (
-        <Tag className={`${block.ordered ? 'list-decimal' : 'list-disc'} pl-5 space-y-1.5`}>
+        <Tag className={`${block.ordered ? 'list-decimal' : 'list-disc'} space-y-2 pl-6 marker:text-brand-ink`}>
           {block.items.map((item, i) => (
             <li key={i} className={p}>
               <Inline text={item} slug={slug} />
@@ -74,10 +80,16 @@ function Block({ block, slug }: { block: BlogBlock; slug: string }) {
         <figure className="my-1">
           {block.variant && (
             <figcaption
-              className={`mono-label mb-1 ${block.variant === 'wrong' ? 'text-error' : 'text-success'}`}
+              className={`mb-1.5 font-mono text-[11px] font-semibold uppercase tracking-wider ${
+                block.variant === 'wrong' ? 'text-[#8C2F24]' : 'text-[#1F6B3A]'
+              }`}
             >
-              {block.variant === 'wrong' ? '✗ Wrong' : '✓ Right'}
-              {block.caption && <span className="ml-2 normal-case tracking-normal text-dark-text">{block.caption}</span>}
+              {block.variant === 'wrong' ? 'Wrong' : 'Right'}
+              {block.caption && (
+                <span className="ml-2 font-sans text-[13px] font-normal normal-case tracking-normal text-brand-ink/75">
+                  {block.caption}
+                </span>
+              )}
             </figcaption>
           )}
           <CodeBlock
@@ -89,42 +101,44 @@ function Block({ block, slug }: { block: BlogBlock; slug: string }) {
       );
     case 'stats':
       return (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 border-y border-brand-ink/15 py-4 sm:grid-cols-3">
           {block.items.map((item) => (
-            <div key={item.label} className="rounded-lg border border-border bg-background/60 px-4 py-3">
-              <div className="text-2xl font-bold tracking-tight text-light-text tabular-nums">{item.value}</div>
-              <div className="text-xs text-dark-text mt-0.5">{item.label}</div>
+            <div key={item.label}>
+              <div className="display-serif text-[1.75rem] font-semibold leading-none text-brand-ink tabular-nums">
+                {item.value}
+              </div>
+              <div className="mt-1.5 text-sm leading-snug text-brand-ink/75">{item.label}</div>
             </div>
           ))}
         </div>
       );
     case 'callout':
       return (
-        <div className="rounded-lg border border-primary/30 bg-primary/5 px-4 py-3">
-          {block.title && <p className="text-sm font-semibold text-light-text mb-1">{block.title}</p>}
-          <p className="text-sm text-dark-text leading-relaxed">
+        <aside className="border-l-4 border-brand-ink bg-[#E7E0D2] px-4 py-3">
+          {block.title && <p className="mb-1 text-[15px] font-semibold text-brand-ink">{block.title}</p>}
+          <p className="text-[15px] leading-relaxed text-brand-ink">
             <Inline text={block.text} slug={slug} />
           </p>
-        </div>
+        </aside>
       );
     case 'table':
       return (
-        <div className="overflow-x-auto rounded-lg border border-border">
-          <table className="w-full text-sm">
-            <thead className="bg-background/60">
-              <tr>
+        <div className="overflow-x-auto border border-brand-ink/20">
+          <table className="w-full text-[15px] leading-snug">
+            <thead>
+              <tr className="border-b border-brand-ink/20">
                 {block.head.map((h) => (
-                  <th key={h} className="px-3 py-2 text-left font-semibold text-light-text">
+                  <th key={h} className="px-3 py-2.5 text-left font-semibold text-brand-ink">
                     {h}
                   </th>
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-border">
+            <tbody>
               {block.rows.map((row, i) => (
-                <tr key={i}>
+                <tr key={i} className="border-b border-brand-ink/10 last:border-b-0">
                   {row.map((cell, j) => (
-                    <td key={j} className="px-3 py-2 text-dark-text align-top">
+                    <td key={j} className="px-3 py-2.5 align-top text-brand-ink">
                       <Inline text={cell} slug={slug} />
                     </td>
                   ))}
@@ -139,7 +153,7 @@ function Block({ block, slug }: { block: BlogBlock; slug: string }) {
 
 export default function PostBody({ blocks, slug }: { blocks: readonly BlogBlock[]; slug: string }) {
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       {blocks.map((block, i) => (
         <Block key={i} block={block} slug={slug} />
       ))}

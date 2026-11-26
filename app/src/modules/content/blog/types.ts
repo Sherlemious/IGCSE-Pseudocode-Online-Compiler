@@ -25,6 +25,9 @@ export type BlogBlock =
   | { kind: 'callout'; title?: string; text: string }
   | { kind: 'table'; head: string[]; rows: string[][] };
 
+/** Who the post is written for. Emails go to that audience. */
+export type BlogAudience = 'student' | 'teacher' | 'both';
+
 export interface BlogPost {
   slug: string;
   title: string;
@@ -32,6 +35,8 @@ export interface BlogPost {
   description: string;
   /** Short label above the title, e.g. "Paper 2 · Common mistakes". */
   eyebrow: string;
+  /** Students, teachers, or both. Drives the index label and which email it belongs in. */
+  audience: BlogAudience;
   /** ISO date (YYYY-MM-DD). */
   published: string;
   updated?: string;

@@ -1,7 +1,14 @@
-import type { BlogPost } from './types';
+import type { BlogAudience, BlogPost } from './types';
 import { commonMistakes } from './posts/commonMistakes';
+import { traceTables } from './posts/traceTables';
+import { arraysStartAtOne } from './posts/arraysStartAtOne';
+import { validationChecks } from './posts/validationChecks';
+import { stringsStartAtOne } from './posts/stringsStartAtOne';
+import { proceduresAndFunctions } from './posts/proceduresAndFunctions';
+import { setHomework } from './posts/setHomework';
+import { writeAQuestion } from './posts/writeAQuestion';
 
-export type { BlogBlock, BlogPost } from './types';
+export type { BlogAudience, BlogBlock, BlogPost } from './types';
 
 export const BLOG_PATH = '/blog';
 export const BLOG_TITLE = 'Pseudocode blog';
@@ -10,9 +17,17 @@ export const BLOG_DESCRIPTION =
 export const BLOG_PAGE_SIZE = 9;
 
 /** Newest first. `page` is reserved (it is the pagination route). */
-export const BLOG_POSTS: readonly BlogPost[] = [commonMistakes].sort((a, b) =>
-  b.published.localeCompare(a.published),
-);
+/** Newest first. Posts that share a date stay in this order. */
+export const BLOG_POSTS: readonly BlogPost[] = [
+  traceTables,
+  arraysStartAtOne,
+  validationChecks,
+  stringsStartAtOne,
+  proceduresAndFunctions,
+  setHomework,
+  writeAQuestion,
+  commonMistakes,
+].sort((a, b) => b.published.localeCompare(a.published) || 0);
 
 export function getBlogPost(slug: string): BlogPost | null {
   return BLOG_POSTS.find((post) => post.slug === slug) ?? null;
@@ -34,6 +49,12 @@ export function blogPageHref(page: number): string {
 
 export function blogPostHref(post: Pick<BlogPost, 'slug'>): string {
   return `${BLOG_PATH}/${post.slug}`;
+}
+
+export function audienceLabel(audience: BlogAudience): string {
+  if (audience === 'teacher') return 'For teachers';
+  if (audience === 'student') return 'For students';
+  return 'For students and teachers';
 }
 
 export function formatBlogDate(iso: string): string {

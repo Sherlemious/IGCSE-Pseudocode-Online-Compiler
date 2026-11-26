@@ -11,6 +11,7 @@ export const commonMistakes: BlogPost = {
   description:
     'The pseudocode mistakes IGCSE 0478 and O Level 2210 students make most, ranked from real compiler errors — with the fix for each one.',
   eyebrow: 'Paper 2 · Common mistakes',
+  audience: 'both',
   published: '2026-09-26',
   readingMinutes: 9,
   keywords: [
